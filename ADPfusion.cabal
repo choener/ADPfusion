@@ -60,7 +60,8 @@ description:
 
 Extra-Source-Files:
   README.md
-  ADP/Fusion/Quickcheck.hs
+  ADP/Fusion/QuickCheck.hs
+  ADP/Fusion/QuickCheck/Arbitrary.hs
 
 Flag llvm
   description: build using llvm backend

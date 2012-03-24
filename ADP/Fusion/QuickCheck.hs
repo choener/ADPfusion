@@ -9,21 +9,20 @@
 
 module ADP.Fusion.QuickCheck where
 
+import Data.List
 import Data.Vector.Fusion.Stream.Size
 import Data.Vector.Fusion.Util
 import qualified Data.Vector.Fusion.Stream as S
 import qualified Data.Vector.Unboxed as VU
 import Test.QuickCheck
 import Test.QuickCheck.All
-import Data.List
 
 import "PrimitiveArray" Data.Array.Repa.Index
 
-import qualified ADP.Legacy as L
+import ADP.Fusion.QuickCheck.Arbitrary
 import qualified ADP.Fusion as F
 import qualified ADP.Fusion.Monadic as M
 import qualified ADP.Fusion.Monadic.Internal as F
-import ADP.Fusion.QuickCheck.Arbitrary
 
 
 

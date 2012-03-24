@@ -67,6 +67,11 @@ own.
 
 For a more global installation, "cabal install ADPfusion" should do the trick.
 
+To run the Quickcheck tests, do an additional "cabal-dev install QuickCheck",
+then "cabal-dev ghci", ":l ADP/Fusion/QuickCheck.hs", and "allProps". Loading
+the quickcheck module should take a bit due to compilation. "allProps" tests
+all properties and should yield no errors.
+
 
 
 Notes
