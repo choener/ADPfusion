@@ -2,7 +2,7 @@ name:           ADPfusion
 version:        0.0.1.0
 author:         Christian Hoener zu Siederdissen, 2011-2012
 copyright:      Christian Hoener zu Siederdissen, 2011-2012
-homepage:       http://www.tbi.univie.ac.at/~choener/ADPfusion
+homepage:       http://www.tbi.univie.ac.at/~choener/adpfusion
 maintainer:     choener@tbi.univie.ac.at
 category:       Algorithms, Data Structures, Bioinformatics
 license:        BSD3
