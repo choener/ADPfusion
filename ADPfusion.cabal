@@ -1,0 +1,89 @@
+name:           ADPfusion
+version:        0.0.1.0
+author:         Christian Hoener zu Siederdissen, 2011-2012
+copyright:      Christian Hoener zu Siederdissen, 2011-2012
+homepage:       http://www.tbi.univie.ac.at/~choener/ADPfusion
+maintainer:     choener@tbi.univie.ac.at
+category:       Algorithms, Data Structures, Bioinformatics
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+stability:      experimental
+cabal-version:  >= 1.6.0
+synopsis:
+                Efficient, high-level dynamic programming.
+description:
+                ADPfusion combines stream-fusion (using the stream interface
+                provided by the vector library) and type-level programming to
+                provide highly efficient dynamic programming combinators.
+                .
+                From the programmers' viewpoint, ADPfusion behaves very much
+                like the original ADP implementation
+                <http://bibiserv.techfak.uni-bielefeld.de/adp/> developed by
+                Robert Giegerich and colleagues, though both combinator
+                semantics and backtracking are different.
+                .
+                The library internals, however, are designed not only to speed
+                up ADP by a large margin (which this library does), but also to
+                provide further runtime improvements by allowing the programmer
+                to switch over to other kinds of data structures with better
+                time and space behaviour. Most importantly, dynamic programming
+                tables can be strict, removing indirections present in lazy,
+                boxed tables.
+                .
+                As an example, even rather complex ADP code tends to be
+                completely optimized to loops that use only unboxed variables
+                (Int# and others, indexIntArray# and others).
+                .
+                Completely novel (compared to ADP), is the idea of allowing
+                efficient monadic combinators. This facilitates writing code
+                that performs backtracking, or samples structures
+                stochastically, among others things.
+                .
+                This version is still highly experimental and makes use of
+                multiple recent improvements in GHC. This is particularly true
+                for the monadic interface.
+                .
+                Long term goals: Outer indices with more than two dimensions,
+                specialized table design, a combinator library, a library for
+                computational biology.
+                .
+                If possible, build using the GHC llvm backend, and GHC-7.2.2.
+                GHC-7.4.x produces very bad code on my system, please benchmark
+                using 7.2.2.
+                .
+                Two algorithms from the realm of computational biology are
+                provided as examples on how to write dynamic programming
+                algorithms using this library:
+                <http://hackage.haskell.org/package/Nussinov78> and
+                <http://hackage.haskell.org/package/RNAfold>.
+
+Extra-Source-Files:
+  README.md
+  ADP/Fusion/Quickcheck.hs
+
+Flag llvm
+  description: build using llvm backend
+  default: True
+
+library
+  build-depends:
+    base >= 4 && < 5,
+--    array,
+--    containers,
+--    strict,
+--    tuple,
+    primitive      == 0.4.*   ,
+    vector         == 0.9.*   ,
+    PrimitiveArray == 0.2.1.1
+  exposed-modules:
+    ADP.Fusion
+    ADP.Fusion.Monadic
+    ADP.Fusion.Monadic.Internal
+
+  ghc-options:
+    -Odph -funbox-strict-fields -fspec-constr
+  if flag(llvm)
+    ghc-options:
+      -fllvm -optlo-O3 -optlo-inline -optlo-std-compile-opts
+
