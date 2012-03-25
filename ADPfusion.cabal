@@ -70,10 +70,6 @@ Flag llvm
 library
   build-depends:
     base >= 4 && < 5,
---    array,
---    containers,
---    strict,
---    tuple,
     primitive      == 0.4.*   ,
     vector         == 0.9.*   ,
     PrimitiveArray == 0.2.1.1
@@ -87,4 +83,10 @@ library
   if flag(llvm)
     ghc-options:
       -fllvm -optlo-O3 -optlo-inline -optlo-std-compile-opts
+
+
+
+source-repository head
+  type: git
+  location: git://github.com/choener/ADPfusion
 
