@@ -56,7 +56,7 @@ description:
                 provided as examples on how to write dynamic programming
                 algorithms using this library:
                 <http://hackage.haskell.org/package/Nussinov78> and
-                <http://hackage.haskell.org/package/RNAfold>.
+                <http://hackage.haskell.org/package/RNAFold>.
 
 Extra-Source-Files:
   README.md
