@@ -25,14 +25,14 @@ import ADP.Fusion.Monadic.Internal
 
 infixl 8 #<<
 (#<<) f t ij = S.mapM (\(_,_,c) -> apply f c) $ streamGen t ij
-{-# INLINE (#<<) #-}
+{-# INLINE [2] (#<<) #-}
 
 -- | Pure function application combinator. Applies 'f' which is pure. The
 -- arguments to 'f', meaning 't' can be monadic, however!
 
 infixl 8 <<<
 (<<<) f t ij = S.map (\(_,_,c) -> apply f c) $ streamGen t ij
-{-# INLINE (<<<) #-}
+{-# INLINE [2] (<<<) #-}
 
 
 
@@ -60,14 +60,14 @@ infixl 7 |||
 
 infixl 6 ...
 (...) stream h ij = h $ stream ij
-{-# INLINE [2] (...) #-}
+{-# INLINE [0] (...) #-}
 
 -- | Specialized version of choice function application, with a choice function
 -- that needs to know the subword index it is working on.
 
 infixl 6 ..@
 (..@) stream h ij = h ij $ stream ij
-{-# INLINE (..@) #-}
+{-# INLINE [0] (..@) #-}
 
 
 
