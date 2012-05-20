@@ -192,11 +192,11 @@ instance
     x `seq` return x
   extractStream cnt stream = S.mapM addElm stream where
     addElm (z:.k:.x:.l, astack, vstack) = do
-      vadd <- PA.readM cnt (Z:.k:.x) -- extractValue cnt (Z:.k:.x) Z
+      vadd <- PA.readM cnt (Z:.k:.x)
       vadd `seq` return (z:.k:.x:.l, astack:.Z, vstack :. vadd)
   extractStreamLast sngl stream = S.mapM addElm stream where
     addElm (z:.k:.x, astack, vstack) = do
-      vadd <- PA.readM sngl (Z:.k:.x) -- extractValue sngl (Z:.k:.x) Z
+      vadd <- PA.readM sngl (Z:.k:.x)
       vadd `seq` return (z:.k:.x, astack:.Z, vstack:.vadd)
   {-# INLINE extractValue #-}
   {-# INLINE extractStream #-}
