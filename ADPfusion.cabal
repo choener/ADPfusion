@@ -48,15 +48,17 @@ description:
                 specialized table design, a combinator library, a library for
                 computational biology.
                 .
-                If possible, build using the GHC llvm backend, and GHC-7.2.2.
-                GHC-7.4.x produces very bad code on my system, please benchmark
-                using 7.2.2.
-                .
                 Two algorithms from the realm of computational biology are
                 provided as examples on how to write dynamic programming
                 algorithms using this library:
                 <http://hackage.haskell.org/package/Nussinov78> and
                 <http://hackage.haskell.org/package/RNAFold>.
+                .
+                Changes since 0.0.1.0:
+                .
+                * compatibility with GHC 7.4
+                .
+                * note: still using fundeps & and TFs together. The TF-only version does not optimize as well (I know why but not yet how to fix it)
 
 Extra-Source-Files:
   README.md
