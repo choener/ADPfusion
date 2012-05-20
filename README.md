@@ -40,9 +40,6 @@ improvements in GHC. This is particularly true for the monadic interface.
 Long term goals: Outer indices with more than two dimensions, specialized table
 design, a combinator library, a library for computational biology.
 
-If possible, build using the GHC llvm backend, and GHC-7.2.2.  GHC-7.4.x
-produces very bad code on my system, please benchmark using 7.2.2.
-
 Two algorithms from the realm of computational biology are provided as examples
 on how to write dynamic programming algorithms using this library:
 <http://hackage.haskell.org/package/Nussinov78> and
@@ -52,14 +49,9 @@ on how to write dynamic programming algorithms using this library:
 Installation
 ============
 
-Please use GHC-7.2.2, if possible. GHC-7.4 currently seems to have problems
-optimizing vector-dependent code:
-http://hackage.haskell.org/trac/ghc/ticket/5539
-(and others?)
-
-If GHC-7.2.2, LLVM and cabal-install are available, you should be all set. I
-recommend using cabal-dev as it provides a very nice sandbox (replace cabal-dev
-with cabal otherwise).
+If GHC-7.2.2/GHC-7.4, LLVM and cabal-install are available, you should be all
+set. I recommend using cabal-dev as it provides a very nice sandbox (replace
+cabal-dev with cabal otherwise).
 
 If you go with cabal-dev, no explicit installation is necessary and ADPfusion
 will be installed in the sandbox together with the example algorithms or your
@@ -119,3 +111,7 @@ VERSION HISTORY
 - 0.0.1.0
   - providing just the library. Examples are found in different libraries.
 
+- 0.0.1.1
+  - this version should be compatible with GHC-7.4, at least GHC-7,4.2-rc1.
+  - a type family (TF) version has not been able to show the same performance
+    as fundeps. This means that fundeps for Internal.hs stay alive, for now.
