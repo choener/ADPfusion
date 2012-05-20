@@ -81,7 +81,7 @@ library
     ADP.Fusion.Monadic.Internal
 
   ghc-options:
-    -O2 -funbox-strict-fields -fspec-constr
+    -Odph -funbox-strict-fields -fspec-constr
   if flag(llvm)
     ghc-options:
       -fllvm -optlo-O3 -optlo-inline -optlo-std-compile-opts
