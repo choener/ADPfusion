@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DoAndIfThenElse #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -12,6 +13,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS_HADDOCK hide #-}
+{-# OPTIONS_GHC -fexpose-all-unfoldings #-}
 
 -- | The internal working of ADPfusion. All combinator applications are turned
 -- into efficient code during compile time.
@@ -24,6 +26,8 @@
 --
 -- TODO If possible, instance generation will be using the Generics system in
 -- the future.
+--
+-- TODO SPECIALIZE INLINE preStreamGen ?
 
 module ADP.Fusion.Monadic.Internal where
 
@@ -42,120 +46,97 @@ import qualified Data.PrimitiveArray as PA
 import qualified Data.PrimitiveArray.Unboxed.Zero as UZ
 import qualified Data.PrimitiveArray.Zero as Z
 
+import GHC.Exts
 
+type S t = (SIX t, SAX t, SAR t)
+type family SIX t :: *
+type family SAX t :: *
+type family SAR t :: *
 
--- * StreamGen
+class
+  ( Monad m
+  ) => StreamGen m t where
+  streamGen :: t -> DIM2 -> S.Stream m (S t)
 
--- | Generate stream from either one (DIM2 -> m cnt) or some combination of
--- terminals derived from uses of nextTo.
+type P t = (PIX t, PAX t, PAR t)
+type family PIX t :: *
+type family PAX t :: *
+type family PAR t :: *
 
-class Monad m => StreamGen m t r | t -> r where
-  streamGen :: t -> DIM2 -> S.Stream m r
+class
+  ( Monad m
+  ) => PreStreamGen m t where
+  preStreamGen :: t -> DIM2 -> S.Stream m (P t)
 
-#define mkStreamGen(cnt) \
-instance (Monad m, ExtractValue m (cnt), Asor (cnt) ~ k, Elem (cnt) ~ elm) \
-=> StreamGen m (cnt) (DIM2,Z:.k,Z:.elm) where { \
-  {-# INLINE streamGen #-} \
-;  streamGen x ij = extractStreamLast x $ preStreamGen x ij }
+type instance SIX (DIM2 -> Scalar Int) = DIM2
+type instance SAX (DIM2 -> Scalar Int) = Z:. Asor (DIM2 -> Scalar Int)
+type instance SAR (DIM2 -> Scalar Int) = Z:. Elem (DIM2 -> Scalar Int)
 
-mkStreamGen(DIM2 -> Scalar elm)
-mkStreamGen(DIM2 -> ScalarM elm)
-mkStreamGen(DIM2 -> Vect elm)
-mkStreamGen(DIM2 -> VectM elm)
-mkStreamGen(UZ.MArr0 s sh elm)
-mkStreamGen(UZ.Arr0 sh elm)
+type instance SIX (Box mk step xs ys) = SIX xs :. Int
+type instance SAX (Box mk step xs ys) = SAX xs :. Asor ys
+type instance SAR (Box mk step xs ys) = SAR xs :. Elem ys
 
-mkStreamGen(Z.MArr0 s sh (VU.Vector elm))
-mkStreamGen(Z.Arr0 sh (VU.Vector elm))
-
--- | two or more elements combined by NextTo (~~~), "xs" as anything, "ys" is
--- monadic.
 
 instance
   ( Monad m
-  , ExtractValue m cntY, Asor cntY ~ cY, Elem cntY ~ eY
-  , cntY ~ ys
-  , PreStreamGen m (Box mk step xs ys) (idx:.Int,adx:.cX,arg:.eX)
-  , Idx2 _idx ~ idx
-  ) => StreamGen m (Box mk step xs ys) (idx:.Int,adx:.cX:.cY,arg:.eX:.eY) where
+  ) => StreamGen m (DIM2 -> Scalar Int) where
+  streamGen f ij
+    = extractStreamLast f
+    $ singleStreamGen ij
+  {-# INLINE streamGen #-}
+
+instance
+  ( Monad m
+  , ExtractValue m ys
+  , SIX xs ~ Idx1 z0
+  , PreStreamGen m (Box mk step xs ys)
+  ) => StreamGen m (Box mk step xs ys) where
   streamGen (Box mk step xs ys) ij
     = extractStreamLast ys
     $ preStreamGen (Box mk step xs ys) ij
   {-# INLINE streamGen #-}
 
-
-
--- * PreStreamGen
-
--- | Required by most 'StreamGen' instances just before 'extractStreamLast' is
--- called.
-
-class Monad m => PreStreamGen m s q | s -> q where
-  preStreamGen
-    :: s      -- ^ the composite type of the arguments
-    -> DIM2   -- ^ the original index @(Z:.i:.j)@
-    -> S.Stream m q -- ^ the stream we get out of it
-
--- | Creates the single step on the left which does nothing more then set the
--- outermost indices to (i,j). This does not use the alpha/omega's
-
-singlePreStreamGen ij = S.unfoldr step ij where
-  {-# INLINE step #-}
-  step (Z:.i:.j)
-    | i<=j      = Just ((Z:.i:.j ,Z,Z), Z:.j+1:.j)
-    | otherwise = Nothing
-{-# INLINE singlePreStreamGen #-}
-
-#define mkPreStreamGen(s) \
-instance (Monad m) => PreStreamGen m (s) (DIM2,Z,Z) where { \
-  {-# INLINE preStreamGen #-} \
-;  preStreamGen _ = singlePreStreamGen }
-
-mkPreStreamGen(DIM2 -> Scalar elm)
-mkPreStreamGen(DIM2 -> ScalarM elm)
-mkPreStreamGen(DIM2 -> Vect elm)
-mkPreStreamGen(DIM2 -> VectM elm)
-mkPreStreamGen(UZ.MArr0 s sh elm)
-mkPreStreamGen(UZ.Arr0 sh elm)
-
-mkPreStreamGen(Z.MArr0 s sh (VU.Vector elm))
-mkPreStreamGen(Z.Arr0 sh (VU.Vector elm))
-
--- | the first two arguments from nextTo, monadic xs.
-
-instance ( Monad m
-         , ExtractValue m cntX, Asor cntX ~ cX, Elem cntX ~ eX
-         , cntX ~ xs
-         , PreStreamGen m xs xsStack
-         , (idxX,adxX,argX) ~ xsStack
-         , (z0:.Int:.Int) ~ idxX
-         , ((idxX,adxX,argX) -> m (idxX:.Int,adxX,argX)) ~ mk
-         , ((idxX:.Int,adxX,argX) -> m (S.Step (idxX:.Int,adxX,argX) (idxX:.Int,adxX,argX))) ~ step
-         ) => PreStreamGen m (Box mk step xs ys) (idxX:.Int,adxX:.cX,argX:.eX) where
-  preStreamGen (Box mk step xs ys) ij
-    = extractStream xs
-    $ S.flatten mk step Unknown
-    $ preStreamGen xs ij
-  {-# INLINE preStreamGen #-}
-
--- | Pre-stream generation for deeply nested boxes.
+type instance PIX (Box mk step xs ys) = SIX (Box mk step xs ys)
+type instance PAX (Box mk step xs ys) = SAX xs
+type instance PAR (Box mk step xs ys) = SAR xs
 
 instance
   ( Monad m
-  , ExtractValue m cntX, Asor cntX ~ cX, Elem cntX ~ eX
-  , cntX ~ xs
-  , PreStreamGen m (Box box2 box3 box1 xs) xsStack
-  , (idxX,adxX,argX) ~ xsStack
-  , (z0:.Int:.Int) ~ idxX
-  , ((idxX,adxX,argX) -> m (idxX:.Int,adxX,argX)) ~ mk
-  , ((idxX:.Int,adxX,argX) -> m (S.Step (idxX:.Int,adxX,argX) (idxX:.Int,adxX,argX))) ~ step
-  ) => PreStreamGen m (Box mk step (Box box2 box3 box1 xs) ys) (idxX:.Int,adxX:.cX,argX:.eX) where
-  preStreamGen (Box mk step box@(Box _ _ _ xs) ys) ij
+  , mk ~ ((DIM2,Z,Z) -> m (DIM3,Z,Z))
+  , step ~ ((DIM3,Z,Z) -> m (S.Step (DIM3,Z,Z) (DIM3,Z,Z)))
+  ) => PreStreamGen m (Box mk step (DIM2 -> Scalar Int) ys) where
+  preStreamGen (Box mk step xs ys) ij
     = extractStream xs
+    $ S.flatten mk step Unknown
+    $ singleStreamGen ij
+  {-# INLINE preStreamGen #-}
+
+type Mk z0 m xs = (Idx2 z0, PAX xs, PAR xs) -> m (Idx3 z0, PAX xs, PAR xs)
+type Stp z0 m xs = (Idx3 z0, PAX xs, PAR xs) -> m (S.Step (Idx3 z0, PAX xs, PAR xs) (Idx3 z0, PAX xs, PAR xs))
+
+instance
+  ( Monad m
+  , mk ~ Mk z0 m (Box mkI stepI xs ys)
+  , step ~ Stp z0 m (Box mkI stepI xs ys)
+  , PreStreamGen m (Box mkI stepI xs ys)
+  , SIX xs ~ Idx1 z0
+  , ExtractValue m ys
+  ) => PreStreamGen m (Box mk step (Box mkI stepI xs ys) zs) where
+  preStreamGen (Box mk step box@(Box _ _ _ ys) zs) ij
+    = extractStream ys
     $ S.flatten mk step Unknown
     $ preStreamGen box ij
   {-# INLINE preStreamGen #-}
 
+
+
+
+singleStreamGen ij = S.unfoldr step ij where
+  {-# INLINE step #-}
+  step (Z:.i:.j)
+    | i<=j      = Just ((Z:.i:.j ,Z,Z), Z:.j+1:.j)
+    | otherwise = Nothing
+{-# INLINE singleStreamGen #-}
 
 
 -- * ExtractValue: extract values from data structures.
@@ -235,9 +216,11 @@ instance
     let Scalar x = cnt ij
     x `seq` return x
   extractStream cnt stream = S.map addElm stream where
+    {-# INLINE addElm #-}
     addElm (z:.k:.x:.l, astack, vstack) = let Scalar vadd = cnt (Z:.k:.x) in
       vadd `seq` (z:.k:.x:.l, astack:.Z, vstack :. vadd)
   extractStreamLast cnt stream = S.map addElm stream where
+    {-# INLINE addElm #-}
     addElm (z:.k:.x, astack, vstack) = let Scalar vadd = cnt (Z:.k:.x) in
       vadd `seq` (z:.k:.x, astack:.Z, vstack:.vadd)
   {-# INLINE extractValue #-}
@@ -285,7 +268,7 @@ instance
   extractStream cnt stream = S.flatten mk step Unknown $ stream where
     mk (z:.k:.l:.j,as,vs) = do
       let strm = cnt (Z:.k:.l)
-      return (z:.k:.l:.j,as:.strm,vs)
+      strm `seq` return (z:.k:.l:.j,as:.strm,vs)
     step (idx,as:.strm,vs) = do
       isNull <- S.null strm
       if isNull
@@ -295,7 +278,7 @@ instance
   extractStreamLast cnt stream = S.flatten mk step Unknown $ stream where
     mk (z:.l:.j,as,vs) = do
       let strm = cnt (Z:.l:.j)
-      return (z:.l:.j,as:.strm,vs)
+      strm `seq` return (z:.l:.j,as:.strm,vs)
     step (idx,as:.strm,vs) = do
       isNull <- S.null strm
       if isNull
@@ -480,6 +463,8 @@ type Idx3 z = z:.Int:.Int:.Int
 
 type Idx2 z = z:.Int:.Int
 
+type Idx1 z = z:.Int
+
 
 
 -- * wrappers for functions instead of arrays as arguments. It can be much
@@ -493,3 +478,112 @@ newtype ScalarM a = ScalarM {unScalarM :: a}
 newtype Vect a = Vect {unVect :: a}
 
 newtype VectM a = VectM {unVectM :: a}
+
+
+
+
+
+-- * bliblablu
+
+{-
+instance
+  ( Monad m
+  )
+  => PreStreamGen m (DIM2 -> Scalar elm) where
+  type PIX (DIM2 -> Scalar elm) = DIM2
+  type PAX (DIM2 -> Scalar elm) = Z
+  type PAR (DIM2 -> Scalar elm) = Z
+  preStreamGen _ = singlePreStreamGen
+
+instance
+  ( Monad m
+  )
+  => StreamGen m (DIM2 -> Scalar elm) where
+  type SIX (DIM2 -> Scalar elm) = PIX (DIM2 -> Scalar elm)
+  type SAX (DIM2 -> Scalar elm) = PAX (DIM2 -> Scalar elm) :. Asor (DIM2 -> Scalar elm)
+  type SAR (DIM2 -> Scalar elm) = PAR (DIM2 -> Scalar elm) :. Elem (DIM2 -> Scalar elm)
+  streamGen t ij = extractStreamLast t $ preStreamGen t ij
+-}
+
+
+
+{-
+-- | two or more elements combined by NextTo (~~~), "xs" as anything, "ys" is
+-- monadic.
+
+instance
+  ( Monad m
+  , ExtractValue m cntY, Asor cntY ~ cY, Elem cntY ~ eY
+  , cntY ~ ys
+  , PreStreamGen m (Box mk step xs ys) (idx:.Int,adx:.cX,arg:.eX)
+  , Idx2 _idx ~ idx
+  ) => StreamGen m (Box mk step xs ys) (idx:.Int,adx:.cX:.cY,arg:.eX:.eY) where
+  streamGen (Box mk step xs ys) ij
+    = extractStreamLast ys
+    $ preStreamGen (Box mk step xs ys) ij
+  {-# INLINE streamGen #-}
+
+
+-- | Creates the single step on the left which does nothing more then set the
+-- outermost indices to (i,j). This does not use the alpha/omega's
+
+instance
+  ( Monad m
+  ) => PreStreamGen m (DIM2 -> Scalar elm) where
+  type PIX (DIM2 -> Scalar elm) = DIM2
+  type PAX (DIM2 -> Scalar elm) = Asor (DIM2 -> Scalar elm)
+  type PAR (DIM2 -> Scalar elm) = Elem (DIM2 -> Scalar elm)
+  preStreamGen s ij = extractStream s $ singlePreStreamGen ij
+
+-- | the first two arguments from nextTo, monadic xs.
+
+instance ( Monad m
+         , ExtractValue m xs
+         , PreStreamGen m xs
+--         , (idxX,adxX,argX) ~ xsStack
+         , (z0:.Int:.Int) ~ idxX
+         , ((idxX,adxX,argX) -> m (idxX:.Int,adxX,argX)) ~ mk
+         , ((idxX:.Int,adxX,argX) -> m (S.Step (idxX:.Int,adxX,argX) (idxX:.Int,adxX,argX))) ~ step
+         ) => PreStreamGen m (Box ((idxX,adxX,argX) -> m (idxX:.Int,adxX,argX)) step xs ys) where
+  type PreStreamStack (Box  ((idxX,adxX,argX) -> m (idxX:.Int,adxX,argX)) step xs ys) = (idxX:.Int,adxX:.Asor xs,argX:.Elem xs)
+  preStreamGen (Box mk step xs ys) ij
+    = extractStream xs
+    $ S.flatten mk step Unknown
+    $ preStreamGen xs ij
+  {-# INLINE preStreamGen #-}
+
+instance
+  ( Monad m
+  , PreStreamGen m xs
+  , ExtractValue m ys
+  , ((PIX xs,PAX xs, PAR xs) -> m (PIX xs :. Int, PAX xs, PAR xs)) ~ mk
+  , ((PIX (Box mk step xs ys), PAX xs, PAR xs) -> m (S.Step (PIX (Box mk step xs ys), PAX xs, PAR xs) (PIX (Box mk step xs ys), PAX xs, PAR xs) )) ~ step
+  , PIX xs ~ (z0 :. Int :. Int)
+  ) => PreStreamGen m (Box mk step xs ys) where
+  type PIX (Box mk step xs ys) = PIX xs :. Int
+  type PAX (Box mk step xs ys) = PAX xs :. Asor ys
+  type PAR (Box mk step xs ys) = PAR xs :. Elem ys
+  preStreamGen (Box mk step xs ys) ij
+    = extractStream ys
+    $ S.flatten mk step Unknown
+    $ preStreamGen xs ij
+  {-# INLINE preStreamGen #-}
+
+-- | Pre-stream generation for deeply nested boxes.
+
+instance
+  ( Monad m
+  , ExtractValue m cntX, Asor cntX ~ cX, Elem cntX ~ eX
+  , cntX ~ xs
+  , PreStreamGen m (Box box2 box3 box1 xs) xsStack
+  , (idxX,adxX,argX) ~ xsStack
+  , (z0:.Int:.Int) ~ idxX
+  , ((idxX,adxX,argX) -> m (idxX:.Int,adxX,argX)) ~ mk
+  , ((idxX:.Int,adxX,argX) -> m (S.Step (idxX:.Int,adxX,argX) (idxX:.Int,adxX,argX))) ~ step
+  ) => PreStreamGen m (Box mk step (Box box2 box3 box1 xs) ys) (idxX:.Int,adxX:.cX,argX:.eX) where
+  preStreamGen (Box mk step box@(Box _ _ _ xs) ys) ij
+    = extractStream xs
+    $ S.flatten mk step Unknown
+    $ preStreamGen box ij
+  {-# INLINE preStreamGen #-}
+-}
