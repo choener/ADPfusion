@@ -73,8 +73,7 @@ mkStreamGen(Z.Arr0 sh (VU.Vector elm))
 
 instance
   ( Monad m
-  , ExtractValue m cntY, Asor cntY ~ cY, Elem cntY ~ eY
-  , cntY ~ ys
+  , ExtractValue m ys, Asor ys ~ cY, Elem ys ~ eY
   , PreStreamGen m (Box mk step xs ys) (idx:.Int,adx:.cX,arg:.eX)
   , Idx2 _idx ~ idx
   ) => StreamGen m (Box mk step xs ys) (idx:.Int,adx:.cX:.cY,arg:.eX:.eY) where
@@ -124,8 +123,7 @@ mkPreStreamGen(Z.Arr0 sh (VU.Vector elm))
 -- | the first two arguments from nextTo, monadic xs.
 
 instance ( Monad m
-         , ExtractValue m cntX, Asor cntX ~ cX, Elem cntX ~ eX
-         , cntX ~ xs
+         , ExtractValue m xs, Asor xs ~ cX, Elem xs ~ eX
          , PreStreamGen m xs xsStack
          , (idxX,adxX,argX) ~ xsStack
          , (z0:.Int:.Int) ~ idxX
@@ -142,8 +140,7 @@ instance ( Monad m
 
 instance
   ( Monad m
-  , ExtractValue m cntX, Asor cntX ~ cX, Elem cntX ~ eX
-  , cntX ~ xs
+  , ExtractValue m xs, Asor xs ~ cX, Elem xs ~ eX
   , PreStreamGen m (Box box2 box3 box1 xs) xsStack
   , (idxX,adxX,argX) ~ xsStack
   , (z0:.Int:.Int) ~ idxX
