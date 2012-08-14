@@ -20,13 +20,22 @@ import "PrimitiveArray" Data.Array.Repa.Shape
 import Text.Printf
 import GHC.Prim (Constraint(..))
 import Debug.Trace
+import qualified Data.Vector.Unboxed as VU
+import ADP.Fusion.Monadic.Internal (Apply(..))
+import Data.Char
 
 
-test1 = stack $ b ~~ r ~~ r ~~ b -- ~~r  ~~ r ~~ b -- ~~ lr ~~ r ~~ lr ~~ b
+test1 = stack $ b ~~ r ~~ r ~~ r ~~ b -- ~~r  ~~ r ~~ b -- ~~ lr ~~ r ~~ lr ~~ b
 {-# INLINE test1 #-}
 --test2 = mapM_ runTest2 [0..10]
-test2 i j = S.length $ mkStreamLast test1 (Z:.i:.j)
+test2 i j = S.foldl' (+) 0 . S.map (\(_,_,v) -> apply brrrb v) $ mkStreamLast test1 (Z:.i:.j)
 {-# NOINLINE test2 #-}
+
+brrb b1 r1 r2 b2 = ord b1 + r1 + r2 + ord b2
+{-# INLINE brrb #-}
+
+brrrb b1 r1 r2 r3 b2 = ord b1 + r1 + r2 + r3 + ord b2
+{-# INLINE brrrb #-}
 
 runTest2 k = do
   putStrLn ""
@@ -41,10 +50,13 @@ class MkStream x where
   type LeftAdx x :: *
   type NewAdx x  :: *
   --
+  type LeftArg x :: *
+  type NewArg x  :: *
+  --
   type StreamConstraint x t :: Constraint
-  mkStream, mkStreamLast :: (t ~ NewIdx x, StreamConstraint x t) => x -> DIM2 -> S.Stream (t,NewAdx x)
-  mk, mkLast             :: (t ~ NewIdx x, StreamConstraint x t) => x -> Int -> (LeftIdx x, LeftAdx x) -> (t, LeftAdx x)
-  step, stepLast         :: (t ~ NewIdx x, StreamConstraint x t) => x -> Int -> (t, LeftAdx x) -> S.Step (t, LeftAdx x) (t, LeftAdx x)
+  mkStream, mkStreamLast :: (t ~ NewIdx x, StreamConstraint x t) => x -> DIM2 -> S.Stream (t,NewAdx x, NewArg x)
+  mk, mkLast             :: (t ~ NewIdx x, StreamConstraint x t) => x -> Int -> (LeftIdx x, LeftAdx x, LeftArg x) -> (t, LeftAdx x, LeftArg x)
+  step, stepLast         :: (t ~ NewIdx x, StreamConstraint x t) => x -> Int -> (t, LeftAdx x, LeftArg x) -> S.Step (t, LeftAdx x, LeftArg x) (t, LeftAdx x, LeftArg x)
 
 instance MkStream Z where
   --
@@ -54,8 +66,11 @@ instance MkStream Z where
   type LeftAdx Z = Z
   type NewAdx  Z = Z
   --
+  type LeftArg Z = Z
+  type NewArg  Z = Z
+  --
   type StreamConstraint Z t = ()
-  mkStream Z (Z:.i:.j) = S.singleton (Z:.I i, Z)
+  mkStream Z (Z:.i:.j) = S.singleton (Z:.I i, Z, Z)
   mkStreamLast = mkStream
   mk       = error "MkStream Z/mk: should never be called"
   mkLast   = error "MkStream Z/mkLast: should never be called"
@@ -72,16 +87,19 @@ instance (MkStream y, StreamConstraint y (NewIdx y), (NewIdx y) ~ (t0 :. Index t
   type LeftAdx (y :. Base) = NewAdx y
   type NewAdx  (y :. Base) = NewAdx y :. Z
   --
+  type LeftArg (y :. Base) = NewArg y
+  type NewArg  (y :. Base) = NewArg y :. Char
+  --
   type StreamConstraint (y:.Base) t = ()  -- (Deep t)
-  mkStream     yx@(y:._) ij@(Z:.i:.j) = S.map (\(i,a) -> (i,a:.Z)) . S.flatten (mk yx j)     (step yx j)     Unknown $ mkStream     y ij
-  mkStreamLast yx@(y:._) ij@(Z:.i:.j) = S.map (\(i,a) -> (i,a:.Z)) . S.flatten (mkLast yx j) (stepLast yx j) Unknown $ mkStreamLast y (Z:.i:.j-1)
-  mk _ _ (zi@(z:.I i),adx) = ((zi:.I (i+1)),adx)
+  mkStream     yx@(y:.Base cs) ij@(Z:.i:.j) = S.map (\(i,a,v) -> let (_:.I k:._) = i in (i,a:.Z,v:.cs `VU.unsafeIndex` k)) . S.flatten (mk yx j)     (step yx j)     Unknown $ mkStream     y ij
+  mkStreamLast yx@(y:.Base cs) ij@(Z:.i:.j) = S.map (\(i,a,v) -> let (_:.I k:._) = i in (i,a:.Z,v:.cs `VU.unsafeIndex` k)) . S.flatten (mkLast yx j) (stepLast yx j) Unknown $ mkStreamLast y (Z:.i:.j-1)
+  mk _ _ (zi@(z:.I i),adx,vs) = ((zi:.I (i+1)),adx,vs)
   mkLast = mk
-  step _ j ((z:.I i:.I k),adx)
-    | k<=j      = S.Yield ((z:.I i:.I k),adx) ((z:.I i:. I (j+1)),adx)
+  step _ j ((z:.I i:.I k),adx,vs)
+    | k<=j      = S.Yield ((z:.I i:.I k),adx,vs) ((z:.I i:. I (j+1)),adx,vs)
     | otherwise = S.Done
-  stepLast _ j ((z:.I i:.I k),adx)
-    | k==j      = S.Yield ((z:.I i:.I k),adx) ((z:.I i:. I (j+1)),adx)
+  stepLast _ j ((z:.I i:.I k),adx,vs)
+    | k==j      = S.Yield ((z:.I i:.I k),adx,vs) ((z:.I i:. I (j+1)),adx,vs)
     | otherwise = S.Done
   {-# INLINE mkStream #-}
   {-# INLINE mkStreamLast #-}
@@ -98,13 +116,16 @@ instance (MkStream y, StreamConstraint y (NewIdx y), (NewIdx y) ~ (t0 :. Index t
   type LeftAdx (y :. Region) = NewAdx y
   type NewAdx  (y :. Region) = NewAdx y :. Z
   --
+  type LeftArg (y :. Region) = NewArg y
+  type NewArg  (y :. Region) = NewArg y :. Int
+  --
   type StreamConstraint (y:.Region) t = ()
-  mkStream     yx@(y:._) ij@(Z:.i:.j) = S.map (\(i,a) -> (i,a:.Z)) . S.flatten (mk yx j)     (step yx j)     Unknown $ mkStream y ij
-  mkStreamLast yx@(y:._) ij@(Z:.i:.j) = S.map (\(i,a) -> (i,a:.Z)) . S.flatten (mkLast yx j) (stepLast yx j) Unknown $ mkStream y ij
-  mk     _ _ (zi@(z:.I i),adx) = ((zi:.I i),adx)
-  mkLast _ j (zi,adx)          = ((zi:.I j),adx)
-  step _ j (zik@(z:.I i:.I k),adx)
-    | k<=j      = S.Yield ((z:.I i:.I k),adx) ((z:.I i:. I (k+1)),adx)
+  mkStream     yx@(y:.Region cs) ij@(Z:.i:.j) = S.map (\(i,a,v) -> let (_:.I k:.I j) = i in (i,a:.Z,v:.(j-k))) . S.flatten (mk yx j)     (step yx j)     Unknown $ mkStream y ij
+  mkStreamLast yx@(y:.Region cs) ij@(Z:.i:.j) = S.map (\(i,a,v) -> let (_:.I k:.I j) = i in (i,a:.Z,v:.(j-k))) . S.flatten (mkLast yx j) (stepLast yx j) Unknown $ mkStream y ij
+  mk     _ _ (zi@(z:.I i),adx,vs) = ((zi:.I i),adx,vs)
+  mkLast _ j (zi,adx,vs)          = ((zi:.I j),adx,vs)
+  step _ j (zik@(z:.I i:.I k),adx,vs)
+    | k<=j      = S.Yield ((z:.I i:.I k),adx,vs) ((z:.I i:. I (k+1)),adx,vs)
     | otherwise = S.Done
   stepLast = step
   {-# INLINE mkStream #-}
@@ -178,16 +199,19 @@ instance (MkStack y) => MkStack (x,y) where
   stack (x,y) = stack y :. x
   {-# INLINE stack #-}
 
-data Base = Base [Char]
+data Base = Base (VU.Vector Char)
   deriving (Show)
 
-b = Base ['a' .. 'z']
+b = Base dvu
 
-data Region = Region [Char]
+data Region = Region (VU.Vector Char)
 
-r = Region ['a'..'z']
+r = Region dvu
 
 data LRegion = LRegion [Char]
 
 lr = LRegion ['a'..'z']
 
+
+dvu = VU.fromList . concat $ replicate 1000 ['a' .. 'z']
+{-# NOINLINE dvu #-}

@@ -84,6 +84,13 @@ library
   ghc-options:
     -O2 -funbox-strict-fields
 
+executable GAPcriterion
+  build-depends:
+    criterion == 0.6.*
+  main-is:
+    GAPcriterion.hs
+  ghc-options:
+    -O2 -funbox-strict-fields -fllvm -optlo-O3 -optlo-inline -optlo-std-compile-opts
 
 
 source-repository head
