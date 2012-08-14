@@ -1,5 +1,5 @@
 name:           ADPfusion
-version:        0.0.1.2
+version:        0.1.0.0
 author:         Christian Hoener zu Siederdissen, 2011-2012
 copyright:      Christian Hoener zu Siederdissen, 2011-2012
 homepage:       http://www.tbi.univie.ac.at/~choener/adpfusion
@@ -44,6 +44,25 @@ description:
                 multiple recent improvements in GHC. This is particularly true
                 for the monadic interface.
                 .
+                .
+                .
+                Newley added are the ADP.Fusion.GAPlike modules. These allow
+                for writing grammars with only one (non)-terminal combinator.
+                The logic for index manipulation is now moved into data types
+                for terminals and non-terminals.
+                .
+                While this change leads to slightly more complicated instances
+                for each new terminal or non-terminal, the overall code
+                complexity is significantly lower. In addition, Constraint
+                Kinds make complex interactions between (non)-terminals
+                possible, while still managing to produce high-performance
+                code.
+                .
+                The final goal would, of course, be to have no inter-terminal
+                combinators anymore.
+                .
+                .
+                .
                 Long term goals: Outer indices with more than two dimensions,
                 specialized table design, a combinator library, a library for
                 computational biology.
@@ -53,6 +72,14 @@ description:
                 algorithms using this library:
                 <http://hackage.haskell.org/package/Nussinov78> and
                 <http://hackage.haskell.org/package/RNAFold>.
+                .
+                Changes since 0.0.1.2:
+                .
+                * require GHC 7.4
+                .
+                * ADP.Fusion.GAPlike modules for (almost) combinator-less grammars
+                .
+                .
                 .
                 Changes since 0.0.1.0:
                 .
