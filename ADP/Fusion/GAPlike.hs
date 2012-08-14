@@ -25,10 +25,10 @@ import ADP.Fusion.Monadic.Internal (Apply(..))
 import Data.Char
 
 
-test1 = stack $ b ~~ r ~~ r ~~ r ~~ b -- ~~r  ~~ r ~~ b -- ~~ lr ~~ r ~~ lr ~~ b
+test1 = stack $ r ~~ r ~~ r ~~ r -- ~~r  ~~ r ~~ b -- ~~ lr ~~ r ~~ lr ~~ b
 {-# INLINE test1 #-}
 --test2 = mapM_ runTest2 [0..10]
-test2 i j = S.foldl' (+) 0 . S.map (\(_,_,v) -> apply brrrb v) $ mkStreamLast test1 (Z:.i:.j)
+test2 i j = S.foldl' (+) 0 . S.map (\(_,_,v) -> apply rrrr v) $ mkStreamLast test1 (Z:.i:.j)
 {-# NOINLINE test2 #-}
 
 brrb b1 r1 r2 b2 = ord b1 + r1 + r2 + ord b2
@@ -36,6 +36,9 @@ brrb b1 r1 r2 b2 = ord b1 + r1 + r2 + ord b2
 
 brrrb b1 r1 r2 r3 b2 = ord b1 + r1 + r2 + r3 + ord b2
 {-# INLINE brrrb #-}
+
+rrrr r1 r2 r3 r4 = r1 + r2 + r3 + r4
+{-# INLINE rrrr #-}
 
 runTest2 k = do
   putStrLn ""
