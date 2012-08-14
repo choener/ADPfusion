@@ -22,54 +22,70 @@ import GHC.Prim (Constraint(..))
 import Debug.Trace
 
 
-test1 = stack $ b ~~r  ~~ r ~~ b -- ~~ lr ~~ r ~~ lr ~~ b
+test1 = stack $ b ~~ r ~~ b -- ~~r  ~~ r ~~ b -- ~~ lr ~~ r ~~ lr ~~ b
 {-# INLINE test1 #-}
---test2 = mapM_ print . take 500 . S.toList $ mkStream test1 (Z:.0:.50)
-test2 = S.length $ mkStream test1 (Z:.0:.50)
+--test2 = mapM_ runTest2 [0..10]
+test2 = S.length $ mkStreamLast test1 (Z:.0:.50)
 {-# NOINLINE test2 #-}
+
+runTest2 k = do
+  putStrLn ""
+  print (Z:.0:.k)
+  mapM_ print . take 500 . S.toList $ mkStreamLast test1 (Z:.0:.k)
 
 class MkStream x where
   type LeftIdx x :: *
   type NewIdx x :: *
   type StreamConstraint x t :: Constraint
-  mkStream :: (t ~ NewIdx x, StreamConstraint x t) => x -> DIM2 -> S.Stream t
-  mk       :: (t ~ NewIdx x, StreamConstraint x t) => x -> LeftIdx x -> t
-  step     :: (t ~ NewIdx x, StreamConstraint x t) => x -> Int -> t -> S.Step t t
+  mkStream, mkStreamLast :: (t ~ NewIdx x, StreamConstraint x t) => x -> DIM2 -> S.Stream t
+  mk, mkLast             :: (t ~ NewIdx x, StreamConstraint x t) => x -> Int -> LeftIdx x -> t
+  step, stepLast         :: (t ~ NewIdx x, StreamConstraint x t) => x -> Int -> t -> S.Step t t
 
 instance MkStream Z where
   type LeftIdx Z = Z
-  type NewIdx Z = Z:.Index Z
-  type StreamConstraint Z t = (Deep t)
+  type NewIdx  Z = Z:.Index Z
+  type StreamConstraint Z t = ()
   mkStream Z (Z:.i:.j) = S.singleton (Z:.I i)
+  mkStreamLast = mkStream
+  mk       = error "MkStream Z/mk: should never be called"
+  mkLast   = error "MkStream Z/mkLast: should never be called"
+  step     = error "MkStream Z/step: should never be called"
+  stepLast = error "MkStream Z/stepLast: should never be called"
   {-# INLINE mkStream #-}
 
 instance (MkStream y, StreamConstraint y (NewIdx y), (NewIdx y) ~ (t0 :. Index t1)) => MkStream (y :. Base) where
   type LeftIdx (y :. Base) = NewIdx y
-  type NewIdx (y :. Base) = NewIdx y :. Index Base
-  type StreamConstraint (y:.Base) t = (Deep t)
-  mkStream yx@(y:._) ij@(Z:.i:.j) = S.flatten (mk yx) (step yx j) Unknown $ mkStream y ij
-  step _ j zik@(z:.I i:.I k)
-    | k<=j && d<10 = S.Yield (z:.I i:.I k) (z:.I i:. I (k+1))
-    | otherwise    = S.Done
-    where d = down zik
-  mk _ zi@(z:.I i) = (zi:.I i)
+  type NewIdx  (y :. Base) = NewIdx y :. Index Base
+  type StreamConstraint (y:.Base) t = ()  -- (Deep t)
+  mkStream     yx@(y:._) ij@(Z:.i:.j) = S.flatten (mk yx j)     (step yx j)     Unknown $ mkStream     y ij
+  mkStreamLast yx@(y:._) ij@(Z:.i:.j) = S.flatten (mkLast yx j) (stepLast yx j) Unknown $ mkStreamLast y (Z:.i:.j-1)
+  mk _ _ zi@(z:.I i) = (zi:.I (i+1))
+  mkLast = mk
+  step _ j (z:.I i:.I k)
+    | k<=j      = S.Yield (z:.I i:.I k) (z:.I i:. I (j+1))
+    | otherwise = S.Done
+  stepLast _ j (z:.I i:.I k)
+    | k==j      = S.Yield (z:.I i:.I k) (z:.I i:. I (j+1))
+    | otherwise = S.Done
   {-# INLINE mk #-}
   {-# INLINE step #-}
   {-# INLINE mkStream #-}
 
 instance (MkStream y, StreamConstraint y (NewIdx y), (NewIdx y) ~ (t0 :. Index t1)) => MkStream (y :. Region) where
   type LeftIdx (y :. Region) = NewIdx y
-  type NewIdx (y :. Region) = NewIdx y :. Index Region
+  type NewIdx  (y :. Region) = NewIdx y :. Index Region
   type StreamConstraint (y:.Region) t = ()
-  mkStream yx@(y:._) ij@(Z:.i:.j) = S.flatten (mk yx) (step yx j) Unknown $ mkStream y ij
+  mkStream     yx@(y:._) ij@(Z:.i:.j) = S.flatten (mk yx j)     (step yx j)     Unknown $ mkStream y ij
+  mkStreamLast yx@(y:._) ij@(Z:.i:.j) = S.flatten (mkLast yx j) (stepLast yx j) Unknown $ mkStream y ij
+  mk     _ _ zi@(z:.I i) = (zi:.I i)
+  mkLast _ j zi          = (zi:.I j)
   step _ j zik@(z:.I i:.I k)
     | k<=j      = S.Yield (z:.I i:.I k) (z:.I i:. I (k+1))
     | otherwise = S.Done
-  mk _ zi@(z:.I i) = (zi:.I i)
+  stepLast = step
   {-# INLINE mk #-}
   {-# INLINE step #-}
   {-# INLINE mkStream #-}
-
 
 
 newtype Index t = I Int
