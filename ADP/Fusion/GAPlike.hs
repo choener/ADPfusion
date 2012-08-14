@@ -11,7 +11,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ADP.Fusion.MultiArg where
+module ADP.Fusion.GAPlike where
 
 import qualified Data.Vector.Fusion.Stream as S
 import Data.Vector.Fusion.Stream.Size
@@ -34,18 +34,28 @@ runTest2 k = do
   mapM_ print . take 500 . S.toList $ mkStreamLast test1 (Z:.0:.k)
 
 class MkStream x where
+  -- indices
   type LeftIdx x :: *
   type NewIdx x  :: *
+  -- argument indices
+  type LeftAdx x :: *
+  type NewAdx x  :: *
+  --
   type StreamConstraint x t :: Constraint
-  mkStream, mkStreamLast :: (t ~ NewIdx x, StreamConstraint x t) => x -> DIM2 -> S.Stream t
-  mk, mkLast             :: (t ~ NewIdx x, StreamConstraint x t) => x -> Int -> LeftIdx x -> t
-  step, stepLast         :: (t ~ NewIdx x, StreamConstraint x t) => x -> Int -> t -> S.Step t t
+  mkStream, mkStreamLast :: (t ~ NewIdx x, StreamConstraint x t) => x -> DIM2 -> S.Stream (t,NewAdx x)
+  mk, mkLast             :: (t ~ NewIdx x, StreamConstraint x t) => x -> Int -> (LeftIdx x, LeftAdx x) -> (t, LeftAdx x)
+  step, stepLast         :: (t ~ NewIdx x, StreamConstraint x t) => x -> Int -> (t, LeftAdx x) -> S.Step (t, LeftAdx x) (t, LeftAdx x)
 
 instance MkStream Z where
+  --
   type LeftIdx Z = Z
   type NewIdx  Z = Z:.Index Z
+  --
+  type LeftAdx Z = Z
+  type NewAdx  Z = Z
+  --
   type StreamConstraint Z t = ()
-  mkStream Z (Z:.i:.j) = S.singleton (Z:.I i)
+  mkStream Z (Z:.i:.j) = S.singleton (Z:.I i, Z)
   mkStreamLast = mkStream
   mk       = error "MkStream Z/mk: should never be called"
   mkLast   = error "MkStream Z/mkLast: should never be called"
@@ -55,18 +65,23 @@ instance MkStream Z where
   {-# INLINE mkStreamLast #-}
 
 instance (MkStream y, StreamConstraint y (NewIdx y), (NewIdx y) ~ (t0 :. Index t1)) => MkStream (y :. Base) where
+  --
   type LeftIdx (y :. Base) = NewIdx y
   type NewIdx  (y :. Base) = NewIdx y :. Index Base
+  --
+  type LeftAdx (y :. Base) = NewAdx y
+  type NewAdx  (y :. Base) = NewAdx y :. Z
+  --
   type StreamConstraint (y:.Base) t = ()  -- (Deep t)
-  mkStream     yx@(y:._) ij@(Z:.i:.j) = S.flatten (mk yx j)     (step yx j)     Unknown $ mkStream     y ij
-  mkStreamLast yx@(y:._) ij@(Z:.i:.j) = S.flatten (mkLast yx j) (stepLast yx j) Unknown $ mkStreamLast y (Z:.i:.j-1)
-  mk _ _ zi@(z:.I i) = (zi:.I (i+1))
+  mkStream     yx@(y:._) ij@(Z:.i:.j) = S.map (\(i,a) -> (i,a:.Z)) . S.flatten (mk yx j)     (step yx j)     Unknown $ mkStream     y ij
+  mkStreamLast yx@(y:._) ij@(Z:.i:.j) = S.map (\(i,a) -> (i,a:.Z)) . S.flatten (mkLast yx j) (stepLast yx j) Unknown $ mkStreamLast y (Z:.i:.j-1)
+  mk _ _ (zi@(z:.I i),adx) = ((zi:.I (i+1)),adx)
   mkLast = mk
-  step _ j (z:.I i:.I k)
-    | k<=j      = S.Yield (z:.I i:.I k) (z:.I i:. I (j+1))
+  step _ j ((z:.I i:.I k),adx)
+    | k<=j      = S.Yield ((z:.I i:.I k),adx) ((z:.I i:. I (j+1)),adx)
     | otherwise = S.Done
-  stepLast _ j (z:.I i:.I k)
-    | k==j      = S.Yield (z:.I i:.I k) (z:.I i:. I (j+1))
+  stepLast _ j ((z:.I i:.I k),adx)
+    | k==j      = S.Yield ((z:.I i:.I k),adx) ((z:.I i:. I (j+1)),adx)
     | otherwise = S.Done
   {-# INLINE mkStream #-}
   {-# INLINE mkStreamLast #-}
@@ -76,15 +91,20 @@ instance (MkStream y, StreamConstraint y (NewIdx y), (NewIdx y) ~ (t0 :. Index t
   {-# INLINE stepLast #-}
 
 instance (MkStream y, StreamConstraint y (NewIdx y), (NewIdx y) ~ (t0 :. Index t1)) => MkStream (y :. Region) where
+  --
   type LeftIdx (y :. Region) = NewIdx y
   type NewIdx  (y :. Region) = NewIdx y :. Index Region
+  --
+  type LeftAdx (y :. Region) = NewAdx y
+  type NewAdx  (y :. Region) = NewAdx y :. Z
+  --
   type StreamConstraint (y:.Region) t = ()
-  mkStream     yx@(y:._) ij@(Z:.i:.j) = S.flatten (mk yx j)     (step yx j)     Unknown $ mkStream y ij
-  mkStreamLast yx@(y:._) ij@(Z:.i:.j) = S.flatten (mkLast yx j) (stepLast yx j) Unknown $ mkStream y ij
-  mk     _ _ zi@(z:.I i) = (zi:.I i)
-  mkLast _ j zi          = (zi:.I j)
-  step _ j zik@(z:.I i:.I k)
-    | k<=j      = S.Yield (z:.I i:.I k) (z:.I i:. I (k+1))
+  mkStream     yx@(y:._) ij@(Z:.i:.j) = S.map (\(i,a) -> (i,a:.Z)) . S.flatten (mk yx j)     (step yx j)     Unknown $ mkStream y ij
+  mkStreamLast yx@(y:._) ij@(Z:.i:.j) = S.map (\(i,a) -> (i,a:.Z)) . S.flatten (mkLast yx j) (stepLast yx j) Unknown $ mkStream y ij
+  mk     _ _ (zi@(z:.I i),adx) = ((zi:.I i),adx)
+  mkLast _ j (zi,adx)          = ((zi:.I j),adx)
+  step _ j (zik@(z:.I i:.I k),adx)
+    | k<=j      = S.Yield ((z:.I i:.I k),adx) ((z:.I i:. I (k+1)),adx)
     | otherwise = S.Done
   stepLast = step
   {-# INLINE mkStream #-}
@@ -93,7 +113,6 @@ instance (MkStream y, StreamConstraint y (NewIdx y), (NewIdx y) ~ (t0 :. Index t
   {-# INLINE mkLast #-}
   {-# INLINE step #-}
   {-# INLINE stepLast #-}
-
 
 newtype Index t = I Int
   deriving (Show)
