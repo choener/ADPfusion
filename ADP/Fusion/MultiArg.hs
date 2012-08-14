@@ -22,7 +22,7 @@ import GHC.Prim (Constraint(..))
 import Debug.Trace
 
 
-test1 = stack $ b ~~ lr ~~ r ~~ lr ~~ b
+test1 = stack $ b ~~r  ~~ r ~~ b -- ~~ lr ~~ r ~~ lr ~~ b
 {-# INLINE test1 #-}
 --test2 = mapM_ print . take 500 . S.toList $ mkStream test1 (Z:.0:.50)
 test2 = S.length $ mkStream test1 (Z:.0:.50)
@@ -31,108 +31,85 @@ test2 = S.length $ mkStream test1 (Z:.0:.50)
 class MkStream x where
   type LeftIdx x :: *
   type NewIdx x :: *
-  type StreamConstraint x :: Constraint
-  type StreamConstraint x = ()
-  mkStream :: StreamConstraint x => x -> DIM2 -> S.Stream (NewIdx x)
-  mk   :: StreamConstraint x => x -> Int -> LeftIdx x -> NewIdx x
-  step :: StreamConstraint x => x -> Int -> NewIdx x -> S.Step (NewIdx x) (NewIdx x)
-  mk _ _ _ = undefined
-  step _ _ _ = undefined
-  {-# INLINE mk #-}
-  {-# INLINE step #-}
+  type StreamConstraint x t :: Constraint
+  mkStream :: (t ~ NewIdx x, StreamConstraint x t) => x -> DIM2 -> S.Stream t
+  mk       :: (t ~ NewIdx x, StreamConstraint x t) => x -> LeftIdx x -> t
+  step     :: (t ~ NewIdx x, StreamConstraint x t) => x -> Int -> t -> S.Step t t
 
 instance MkStream Z where
   type LeftIdx Z = Z
-  type NewIdx Z = DIM1
-  mkStream Z (Z:.i:.j) = S.singleton (Z:.i)
+  type NewIdx Z = Z:.Index Z
+  type StreamConstraint Z t = (Deep t)
+  mkStream Z (Z:.i:.j) = S.singleton (Z:.I i)
   {-# INLINE mkStream #-}
 
-instance (MkStream y, StreamConstraint y, NewIdx y ~ Dim1 z) => MkStream (y :. Base) where
+instance (MkStream y, StreamConstraint y (NewIdx y), (NewIdx y) ~ (t0 :. Index t1)) => MkStream (y :. Base) where
   type LeftIdx (y :. Base) = NewIdx y
-  type NewIdx (y :. Base) = NewIdx y :. Int
-  type StreamConstraint (y:.Base) = ()
-  mkStream (y :. x) ij@(Z:.i:.j) = S.flatten (mk (y:.x) j) (step (y:.x) j) Unknown $ mkStream y ij
-  mk yx j (z:.i) = (z:.i:.i+1)
-  step yx j (z:.i:.k)
-    | i+1==k && k <=j = S.Yield (z:.i:.k) (z:.i:.j+1)
-    | otherwise       = S.Done
-  {-# INLINE mkStream #-}
+  type NewIdx (y :. Base) = NewIdx y :. Index Base
+  type StreamConstraint (y:.Base) t = (Deep t)
+  mkStream yx@(y:._) ij@(Z:.i:.j) = S.flatten (mk yx) (step yx j) Unknown $ mkStream y ij
+  step _ j zik@(z:.I i:.I k)
+    | k<=j && d<10 = S.Yield (z:.I i:.I k) (z:.I i:. I (k+1))
+    | otherwise    = S.Done
+    where d = down zik
+  mk _ zi@(z:.I i) = (zi:.I i)
   {-# INLINE mk #-}
   {-# INLINE step #-}
+  {-# INLINE mkStream #-}
 
-instance (MkStream y, StreamConstraint y, NewIdx y ~ Dim1 z) => MkStream (y :. Region) where
+instance (MkStream y, StreamConstraint y (NewIdx y), (NewIdx y) ~ (t0 :. Index t1)) => MkStream (y :. Region) where
   type LeftIdx (y :. Region) = NewIdx y
-  type NewIdx (y :. Region) = NewIdx y :. Int
-  type StreamConstraint (y:.Region) = ()
-  mkStream (y :. x) ij@(Z:.i:.j) = S.flatten (mk (y:.x) j) (step (y:.x) j) Unknown $ mkStream y ij
-  mk yx j (z:.i) = (z:.i:.i+1)
-  step yx j (z:.i:.k)
-    | i+1<=k && k <=j = S.Yield (z:.i:.k) (z:.i:.k+1)
-    | otherwise       = S.Done
-  {-# INLINE mkStream #-}
+  type NewIdx (y :. Region) = NewIdx y :. Index Region
+  type StreamConstraint (y:.Region) t = ()
+  mkStream yx@(y:._) ij@(Z:.i:.j) = S.flatten (mk yx) (step yx j) Unknown $ mkStream y ij
+  step _ j zik@(z:.I i:.I k)
+    | k<=j      = S.Yield (z:.I i:.I k) (z:.I i:. I (k+1))
+    | otherwise = S.Done
+  mk _ zi@(z:.I i) = (zi:.I i)
   {-# INLINE mk #-}
   {-# INLINE step #-}
-
-instance (MkStream y, StreamConstraint y, NewIdx y ~ Dim1 z) => MkStream (y :. LRegion) where
-  type LeftIdx (y :. LRegion) = NewIdx y
-  type NewIdx (y :. LRegion) = NewIdx y :. Int
-  type StreamConstraint (y:.LRegion) = Deep (y:.LRegion)
-  mkStream (y :. x) ij@(Z:.i:.j) = S.flatten (mk (y:.x) j) (step (y:.x) j) Unknown $ mkStream y ij
-  mk _ j (z:.i) = (z:.i:.i+1)
-  step yx j (z:.i:.k)
-    | i+1<=k && k <=j && g<=10 = {- trace (printf "g: %d\n" g) $ -} S.Yield (z:.i:.k) (z:.i:.k+1)
-    | otherwise       = S.Done
-    where g = tot yx (z:.i:.i+1)
   {-# INLINE mkStream #-}
-  {-# INLINE mk #-}
-  {-# INLINE step #-}
 
-class Deep x where
-  get :: x -> NewIdx x -> Int
-  tot :: x -> NewIdx x -> Int
 
-instance Deep Z where
-  get _ (Z:.i) = i
-  tot _ _ = 0
+
+newtype Index t = I Int
+  deriving (Show)
+
+class Deep t where
+  get :: t -> Int
+  down :: t -> Int
+
+instance Deep (Z:.Index Z) where
+  get (z:.I i) = i
+  down (z:.I i) = i
   {-# INLINE get #-}
-  {-# INLINE tot #-}
+  {-# INLINE down #-}
 
-instance Deep z => Deep (z:.LRegion) where
-  get _ (_:.i) = i
-  tot (z:._) (ii:.j) = tot z ii + (j - get z ii)
+instance Deep y => Deep (y:.Index Base) where
+  get (z:.I i) = i
+  down (z:.I i) = down z + (i - get z)
   {-# INLINE get #-}
-  {-# INLINE tot #-}
+  {-# INLINE down #-}
 
-instance Deep z => Deep (z:.Region) where
-  get _ (_:.i) = i
-  tot (z:._) (ii:._) = tot z ii
+instance Deep y => Deep (y:.Index Region) where
+  get (z:.I i) = i
+  down (z:.I i) = i
   {-# INLINE get #-}
-  {-# INLINE tot #-}
+  {-# INLINE down #-}
 
-instance Deep z => Deep (z:.Base) where
-  get _ (_:.i) = i
-  tot (z:._) (ii:._) = tot z ii
-  {-# INLINE get #-}
-  {-# INLINE tot #-}
+
+
+
+
+
+
+
 
 
 
 type Dim1 z = z:.Int
 type Dim2 z = Dim1 z :. Int
 type Dim3 z = Dim2 z :. Int
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 infixr ~~
 (~~) = (,)
