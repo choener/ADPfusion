@@ -22,10 +22,10 @@ import GHC.Prim (Constraint(..))
 import Debug.Trace
 
 
-test1 = stack $ b ~~ r ~~ b -- ~~r  ~~ r ~~ b -- ~~ lr ~~ r ~~ lr ~~ b
+test1 = stack $ b ~~ r ~~ r ~~ b -- ~~r  ~~ r ~~ b -- ~~ lr ~~ r ~~ lr ~~ b
 {-# INLINE test1 #-}
 --test2 = mapM_ runTest2 [0..10]
-test2 = S.length $ mkStreamLast test1 (Z:.0:.50)
+test2 i j = S.length $ mkStreamLast test1 (Z:.i:.j)
 {-# NOINLINE test2 #-}
 
 runTest2 k = do
@@ -35,7 +35,7 @@ runTest2 k = do
 
 class MkStream x where
   type LeftIdx x :: *
-  type NewIdx x :: *
+  type NewIdx x  :: *
   type StreamConstraint x t :: Constraint
   mkStream, mkStreamLast :: (t ~ NewIdx x, StreamConstraint x t) => x -> DIM2 -> S.Stream t
   mk, mkLast             :: (t ~ NewIdx x, StreamConstraint x t) => x -> Int -> LeftIdx x -> t
@@ -52,6 +52,7 @@ instance MkStream Z where
   step     = error "MkStream Z/step: should never be called"
   stepLast = error "MkStream Z/stepLast: should never be called"
   {-# INLINE mkStream #-}
+  {-# INLINE mkStreamLast #-}
 
 instance (MkStream y, StreamConstraint y (NewIdx y), (NewIdx y) ~ (t0 :. Index t1)) => MkStream (y :. Base) where
   type LeftIdx (y :. Base) = NewIdx y
@@ -67,9 +68,12 @@ instance (MkStream y, StreamConstraint y (NewIdx y), (NewIdx y) ~ (t0 :. Index t
   stepLast _ j (z:.I i:.I k)
     | k==j      = S.Yield (z:.I i:.I k) (z:.I i:. I (j+1))
     | otherwise = S.Done
-  {-# INLINE mk #-}
-  {-# INLINE step #-}
   {-# INLINE mkStream #-}
+  {-# INLINE mkStreamLast #-}
+  {-# INLINE mk #-}
+  {-# INLINE mkLast #-}
+  {-# INLINE step #-}
+  {-# INLINE stepLast #-}
 
 instance (MkStream y, StreamConstraint y (NewIdx y), (NewIdx y) ~ (t0 :. Index t1)) => MkStream (y :. Region) where
   type LeftIdx (y :. Region) = NewIdx y
@@ -83,9 +87,12 @@ instance (MkStream y, StreamConstraint y (NewIdx y), (NewIdx y) ~ (t0 :. Index t
     | k<=j      = S.Yield (z:.I i:.I k) (z:.I i:. I (k+1))
     | otherwise = S.Done
   stepLast = step
-  {-# INLINE mk #-}
-  {-# INLINE step #-}
   {-# INLINE mkStream #-}
+  {-# INLINE mkStreamLast #-}
+  {-# INLINE mk #-}
+  {-# INLINE mkLast #-}
+  {-# INLINE step #-}
+  {-# INLINE stepLast #-}
 
 
 newtype Index t = I Int
