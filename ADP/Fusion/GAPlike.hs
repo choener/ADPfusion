@@ -37,7 +37,7 @@ test2 i j = (brrb <<< test1 ... (SPure.foldl' (+) 0)) (Z:.i:.j)
 -}
 
 infixl 8 <<<
-(<<<) f t ij = S.map (\(_,_,c) -> apply f c) $ mkStreamLast t ij
+(<<<) f t ij = S.map (\(_,_,c) -> apply f c) $ mkStreamLast (stack t) ij
 {-# INLINE (<<<) #-}
 
 infixl 7 |||
@@ -198,7 +198,7 @@ type Dim1 z = z:.Int
 type Dim2 z = Dim1 z :. Int
 type Dim3 z = Dim2 z :. Int
 
-infixr 9 ~~
+infixl 9 ~~
 (~~) = (,)
 {-# INLINE (~~) #-}
 
@@ -218,17 +218,22 @@ instance MkStack Region where
   stack r = Z :. r
   {-# INLINE stack #-}
 
-instance (MkStack y) => MkStack (x,y) where
-  type Stack (x,y) = Stack y :. x
-  stack (x,y) = stack y :. x
+instance (MkStack y) => MkStack (y,x) where
+  type Stack (y,x) = Stack y :. x
+  stack (y,x) = stack y :. x
   {-# INLINE stack #-}
 
 data Base = Base (VU.Vector Char)
-  deriving (Show)
+
+instance Show Base where
+  show _ = "Base"
 
 b = Base dvu
 
 data Region = Region (VU.Vector Char)
+
+instance Show Region where
+  show _ = "Region"
 
 r = Region dvu
 
