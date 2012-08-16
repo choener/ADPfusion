@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -26,220 +27,90 @@ import ADP.Fusion.Monadic.Internal (Apply(..))
 import Data.Char
 
 
-{-
-test1 = stack $ b ~~r  ~~ r ~~ b -- ~~ lr ~~ r ~~ lr ~~ b
-{-# INLINE test1 #-}
---test2 = mapM_ runTest2 [0..10]
---test2 :: Int -> Int -> Int
-test2 :: Int -> Int -> Int
-test2 i j = (brrb <<< test1 ... (SPure.foldl' (+) 0)) (Z:.i:.j)
-{-# NOINLINE test2 #-}
--}
+class Expr sem where
+  type Pre sem a :: Constraint
+  constant :: Pre sem a => a -> sem a
+  add :: Pre sem a => sem a -> sem a -> sem a
 
-infixl 8 <<<
-(<<<) f t ij = S.map (\(_,_,c) -> apply f c) $ mkStreamLast (stack t) ij
-{-# INLINE (<<<) #-}
+data E a = E {eval :: a}
 
-infixl 7 |||
-(|||) xs ys ij = xs ij S.++ ys ij
-{-# INLINE (|||) #-}
+instance Expr E where
+  type Pre E a = Num a
+  constant c = E c
+  add e1 e2 = E $ (eval e1) + (eval e2)
 
-infixl 6 ...
-(...) stream h ij = h $ stream ij
-{-# INLINE (...) #-}
+class Arg x where
+  type C x s :: Constraint
+  type C x s = (Get s) -- s.th. like s ~ (_:.Int)
+  mk   :: (C x s) => x ->               s -> (s:.Int)
+  grd  :: (C x s) => x -> Int -> (s:.Int) -> Bool
+  next :: (C x s) => x -> Int -> (s:.Int) -> (s:.Int)
 
-{-
-brrb b1 r1 r2 b2 = ord b1 + r1 + r2 + ord b2
-{-# INLINE brrb #-}
+class Get x where
+  get :: x -> Int
+  put :: x -> Int -> x
 
-runTest2 k = do
-  putStrLn ""
-  print (Z:.0:.k)
-  mapM_ print . take 500 . SPure.toList $ ((,,,) <<< test1) (Z:.0:.k)
--}
+instance Get Z where
+  get _ = undefined
+  put _ _ = undefined
 
-class (Monad m) => MkStream m x where
-  -- indices
-  type LeftIdx x :: *
-  type NewIdx x  :: *
-  -- argument indices
-  type LeftAdx x :: *
-  type NewAdx x  :: *
-  --
-  type LeftArg x :: *
-  type NewArg x  :: *
-  --
-  type StreamConstraint x t :: Constraint
-  mkStream, mkStreamLast :: (t ~ NewIdx x, StreamConstraint x t) => x -> DIM2 -> S.Stream m (t,NewAdx x, NewArg x)
-  mk, mkLast             :: (t ~ NewIdx x, StreamConstraint x t) => x -> Int -> (LeftIdx x, LeftAdx x, LeftArg x) -> m (t, LeftAdx x, LeftArg x)
-  step, stepLast         :: (t ~ NewIdx x, StreamConstraint x t) => x -> Int -> (t, LeftAdx x, LeftArg x) -> m (S.Step (t, LeftAdx x, LeftArg x) (t, LeftAdx x, LeftArg x))
+instance Get (z:.Int) where
+  get (z:.x) = x
+  put (z:._) x = (z:.x)
 
-instance (Monad m) => MkStream m Z where
-  --
-  type LeftIdx Z = Z
-  type NewIdx  Z = Z:.Index Z
-  --
-  type LeftAdx Z = Z
-  type NewAdx  Z = Z
-  --
-  type LeftArg Z = Z
-  type NewArg  Z = Z
-  --
-  type StreamConstraint Z t = ()
-  mkStream Z (Z:.i:.j) = S.singleton (Z:.I i, Z, Z)
-  mkStreamLast = mkStream
-  mk       = error "MkStream Z/mk: should never be called"
-  mkLast   = error "MkStream Z/mkLast: should never be called"
-  step     = error "MkStream Z/step: should never be called"
-  stepLast = error "MkStream Z/stepLast: should never be called"
-  {-# INLINE mkStream #-}
-  {-# INLINE mkStreamLast #-}
+data Chr = Chr (VU.Vector Char)
+c = Chr dvu
 
-instance (Monad m, MkStream m y, StreamConstraint y (NewIdx y), (NewIdx y) ~ (t0 :. Index t1)) => MkStream m (y :. Base) where
-  --
-  type LeftIdx (y :. Base) = NewIdx y
-  type NewIdx  (y :. Base) = NewIdx y :. Index Base
-  --
-  type LeftAdx (y :. Base) = NewAdx y
-  type NewAdx  (y :. Base) = NewAdx y :. Z
-  --
-  type LeftArg (y :. Base) = NewArg y
-  type NewArg  (y :. Base) = NewArg y :. Char
-  --
-  type StreamConstraint (y:.Base) t = ()  -- (Deep t)
-  mkStream     yx@(y:.Base cs) ij@(Z:.i:.j) = S.map (\(i,a,v) -> let (_:.I k:._) = i in (i,a:.Z,v:.cs `VU.unsafeIndex` k))
-                                            . S.flatten (mk yx j)     (step yx j)     Unknown
-                                            $ mkStream     y ij
-  mkStreamLast yx@(y:.Base cs) ij@(Z:.i:.j) = S.map (\(i,a,v) -> let (_:.I k:._) = i in (i,a:.Z,v:.cs `VU.unsafeIndex` k))
-                                            . S.flatten (mkLast yx j) (stepLast yx j) Unknown
-                                            $ mkStreamLast y (Z:.i:.j-1)
-  mk _ _ (zi@(z:.I i),adx,vs) = return ((zi:.I (i+1)),adx,vs)
-  mkLast = mk
-  step _ j ((z:.I i:.I k),adx,vs)
-    | k<=j      = return $ S.Yield ((z:.I i:.I k),adx,vs) ((z:.I i:. I (j+1)),adx,vs)
-    | otherwise = return $ S.Done
-  stepLast _ j ((z:.I i:.I k),adx,vs)
-    | k==j      = return $ S.Yield ((z:.I i:.I k),adx,vs) ((z:.I i:. I (j+1)),adx,vs)
-    | otherwise = return $ S.Done
-  {-# INLINE mkStream #-}
-  {-# INLINE mkStreamLast #-}
-  {-# INLINE mk #-}
-  {-# INLINE mkLast #-}
-  {-# INLINE step #-}
-  {-# INLINE stepLast #-}
+instance Arg Chr where
+  type C Chr s = (Get s) -- s.th. like s ~ (_:.Int)
+  mk   _   z = (z:.get z)
+  grd  _ j z = get z <= j
+  next _ j z = put z (get z + 1)
 
-instance (Monad m, MkStream m y, StreamConstraint y (NewIdx y), (NewIdx y) ~ (t0 :. Index t1)) => MkStream m (y :. Region) where
-  --
-  type LeftIdx (y :. Region) = NewIdx y
-  type NewIdx  (y :. Region) = NewIdx y :. Index Region
-  --
-  type LeftAdx (y :. Region) = NewAdx y
-  type NewAdx  (y :. Region) = NewAdx y :. Z
-  --
-  type LeftArg (y :. Region) = NewArg y
-  type NewArg  (y :. Region) = NewArg y :. Int
-  --
-  type StreamConstraint (y:.Region) t = ()
-  mkStream     yx@(y:.Region cs) ij@(Z:.i:.j) = S.map (\(i,a,v) -> let (_:.I k:.I j) = i in (i,a:.Z,v:.(j-k)))
-                                              . S.flatten (mk yx j)     (step yx j)     Unknown
-                                              $ mkStream y ij
-  mkStreamLast yx@(y:.Region cs) ij@(Z:.i:.j) = S.map (\(i,a,v) -> let (_:.I k:.I j) = i in (i,a:.Z,v:.(j-k)))
-                                              . S.flatten (mkLast yx j) (stepLast yx j) Unknown
-                                              $ mkStream y ij
-  mk     _ _ (zi@(z:.I i),adx,vs) = return ((zi:.I i),adx,vs)
-  mkLast _ j (zi,adx,vs)          = return ((zi:.I j),adx,vs)
-  step _ j (zik@(z:.I i:.I k),adx,vs)
-    | k<=j      = return $ S.Yield ((z:.I i:.I k),adx,vs) ((z:.I i:. I (k+1)),adx,vs)
-    | otherwise = return $ S.Done
-  stepLast = step
-  {-# INLINE mkStream #-}
-  {-# INLINE mkStreamLast #-}
-  {-# INLINE mk #-}
-  {-# INLINE mkLast #-}
-  {-# INLINE step #-}
-  {-# INLINE stepLast #-}
+data Dhr = Dhr (VU.Vector Char)
+d = Dhr dvu
 
-newtype Index t = I Int
-  deriving (Show)
+class Get2 x where
+  get2 :: x -> (Int,Int)
+  put2 :: x -> (Int,Int) -> x
 
-class Deep t where
-  get :: t -> Int
-  down :: t -> Int
+instance Get2 Z where
+  get2 _ = undefined
+  put2 _ _ = undefined
 
-instance Deep (Z:.Index Z) where
-  get (z:.I i) = i
-  down (z:.I i) = i
-  {-# INLINE get #-}
-  {-# INLINE down #-}
+instance Get2 (z:.Int:.Int) where
+  get2 (z:.x:.y) = (x,y)
+  put2 (z:._:._) (x,y) = (z:.x:.y)
 
-instance Deep y => Deep (y:.Index Base) where
-  get (z:.I i) = i
-  down (z:.I i) = down z + (i - get z)
-  {-# INLINE get #-}
-  {-# INLINE down #-}
+instance Arg Dhr where
+  type C Dhr s = (Get s, Get2 s)
+  mk   _   z = (z:.get z)
+  grd  _ j z = get z <= j -- && get2 z == (1,3)
+  next _ j z = put z (get z + 1)
 
-instance Deep y => Deep (y:.Index Region) where
-  get (z:.I i) = i
-  down (z:.I i) = i
-  {-# INLINE get #-}
-  {-# INLINE down #-}
+type family Stack x :: *
+type instance Stack Z = Z:.Int
+type instance Stack (x:.y) = Stack x :. Int
 
+class (Monad m) => MkStack m x where
+  mkStack :: x -> DIM2 -> S.Stream m (Stack x)
 
+instance (Monad m) => MkStack m Z where
+  mkStack Z (Z:.i:.j) = S.singleton (Z:.i)
 
+instance (Monad m, MkStack m x, Arg y, Stack x ~ (t0:.Int)) => MkStack m (x:.y) where
+  mkStack (x:.y) (Z:.i:.j) = i `seq` j `seq` S.flatten make step Unknown $ mkStack x (Z:.i:.j-1) where
+    make s = return $ mk y s
+    step s
+      | grd y j s = return $ S.Yield s (next y j s)
+      | otherwise = return $ S.Done
 
-
-
-
-
-
-
-
-type Dim1 z = z:.Int
-type Dim2 z = Dim1 z :. Int
-type Dim3 z = Dim2 z :. Int
+--testZ i j = SPure.length $ mkStack (Z:.c:.c) (Z:.i:.j)
+--{-# NOINLINE testZ #-}
 
 infixl 9 ~~
 (~~) = (,)
 {-# INLINE (~~) #-}
-
-
-
-class MkStack x where
-  type Stack x :: *
-  stack :: x -> Stack x
-
-instance MkStack Base where
-  type Stack Base = Z :. Base
-  stack b = Z :. b
-  {-# INLINE stack #-}
-
-instance MkStack Region where
-  type Stack Region = Z :. Region
-  stack r = Z :. r
-  {-# INLINE stack #-}
-
-instance (MkStack y) => MkStack (y,x) where
-  type Stack (y,x) = Stack y :. x
-  stack (y,x) = stack y :. x
-  {-# INLINE stack #-}
-
-data Base = Base (VU.Vector Char)
-
-instance Show Base where
-  show _ = "Base"
-
-b = Base dvu
-
-data Region = Region (VU.Vector Char)
-
-instance Show Region where
-  show _ = "Region"
-
-r = Region dvu
-
-data LRegion = LRegion [Char]
-
-lr = LRegion ['a'..'z']
 
 
 dvu = VU.fromList . concat $ replicate 1000 ['a' .. 'z']
