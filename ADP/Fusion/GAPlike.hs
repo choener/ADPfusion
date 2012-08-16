@@ -26,87 +26,59 @@ import qualified Data.Vector.Unboxed as VU
 import ADP.Fusion.Monadic.Internal (Apply(..))
 import Data.Char
 
+type family ST x :: *
+type instance ST Z   = (W Z  , Int)
+type instance ST Chr = (W Chr, Int)
 
-class Expr sem where
-  type Pre sem a :: Constraint
-  constant :: Pre sem a => a -> sem a
-  add :: Pre sem a => sem a -> sem a -> sem a
+type family Stack x :: *
+type instance Stack Z = Z:.ST Z
+type instance Stack (x:.y) = Stack x :. ST y
 
-data E a = E {eval :: a}
+data W t = W
 
-instance Expr E where
-  type Pre E a = Num a
-  constant c = E c
-  add e1 e2 = E $ (eval e1) + (eval e2)
+class Monad m => MkStream m x where
+  type SC x :: Constraint
+  type SC x = ()
+  mkStream :: (SC x) => x -> DIM2 -> S.Stream m (Stack x)
 
-class Arg x where
-  type C x s :: Constraint
-  type C x s = (Get s) -- s.th. like s ~ (_:.Int)
-  mk   :: (C x s) => x ->               s -> (s:.Int)
-  grd  :: (C x s) => x -> Int -> (s:.Int) -> Bool
-  next :: (C x s) => x -> Int -> (s:.Int) -> (s:.Int)
+instance (Monad m) => MkStream m Z where
+  mkStream Z (Z:.i:.j) = i `seq` j `seq` S.unfoldr step i where
+    step i
+      | i<=j      = Just (Z:.(W,i), (j+1))
+      | otherwise = Nothing
+    {-# INLINE step #-}
+  {-# INLINE mkStream #-}
+
+instance (Monad m, MkStream m x, SC x) => MkStream m (x:.Chr) where
+  type SC (x:.Chr) = (Get (Stack x))
+  mkStream (x:.Chr cs) (Z:.i:.j) = i `seq` j `seq` cs `seq` x `seq` S.flatten mk step Unknown $ mkStream x (Z:.i:.j) where
+    mk z = z `seq` return $ z:.(W, get z)
+    step zj@(z:.(w, k))
+      | k<=j      = zj `seq` z `seq` w `seq` k `seq` return $ S.Yield zj (z:.(w,(j+1)))
+      | otherwise = return $ S.Done
+    {-# INLINE mk #-}
+    {-# INLINE step #-}
+  {-# INLINE mkStream #-}
 
 class Get x where
   get :: x -> Int
-  put :: x -> Int -> x
 
 instance Get Z where
   get _ = undefined
-  put _ _ = undefined
+  {-# INLINE get #-}
 
-instance Get (z:.Int) where
-  get (z:.x) = x
-  put (z:._) x = (z:.x)
+instance  Get (x:.(W y, Int)) where
+  get (_:.(_,i)) = i
+  {-# INLINE get #-}
+
+testZ i j = SPure.length $ mkStream (Z:.ccc) (Z:.i:.j)
+{-# NOINLINE testZ #-}
+
 
 data Chr = Chr (VU.Vector Char)
-c = Chr dvu
+ccc = Chr dvu
 
-instance Arg Chr where
-  type C Chr s = (Get s) -- s.th. like s ~ (_:.Int)
-  mk   _   z = (z:.get z)
-  grd  _ j z = get z <= j
-  next _ j z = put z (get z + 1)
 
-data Dhr = Dhr (VU.Vector Char)
-d = Dhr dvu
-
-class Get2 x where
-  get2 :: x -> (Int,Int)
-  put2 :: x -> (Int,Int) -> x
-
-instance Get2 Z where
-  get2 _ = undefined
-  put2 _ _ = undefined
-
-instance Get2 (z:.Int:.Int) where
-  get2 (z:.x:.y) = (x,y)
-  put2 (z:._:._) (x,y) = (z:.x:.y)
-
-instance Arg Dhr where
-  type C Dhr s = (Get s, Get2 s)
-  mk   _   z = (z:.get z)
-  grd  _ j z = get z <= j -- && get2 z == (1,3)
-  next _ j z = put z (get z + 1)
-
-type family Stack x :: *
-type instance Stack Z = Z:.Int
-type instance Stack (x:.y) = Stack x :. Int
-
-class (Monad m) => MkStack m x where
-  mkStack :: x -> DIM2 -> S.Stream m (Stack x)
-
-instance (Monad m) => MkStack m Z where
-  mkStack Z (Z:.i:.j) = S.singleton (Z:.i)
-
-instance (Monad m, MkStack m x, Arg y, Stack x ~ (t0:.Int)) => MkStack m (x:.y) where
-  mkStack (x:.y) (Z:.i:.j) = i `seq` j `seq` S.flatten make step Unknown $ mkStack x (Z:.i:.j-1) where
-    make s = return $ mk y s
-    step s
-      | grd y j s = return $ S.Yield s (next y j s)
-      | otherwise = return $ S.Done
-
---testZ i j = SPure.length $ mkStack (Z:.c:.c) (Z:.i:.j)
---{-# NOINLINE testZ #-}
 
 infixl 9 ~~
 (~~) = (,)
