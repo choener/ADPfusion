@@ -42,7 +42,7 @@ class Monad m => MkStream m x where
   mkStream :: (SC x) => x -> DIM2 -> S.Stream m (Stack x)
 
 instance (Monad m) => MkStream m Z where
-  mkStream Z (Z:.i:.j) = i `seq` j `seq` S.unfoldr step i where
+  mkStream Z (Z:.i:.j) = S.unfoldr step i where
     step i
       | i<=j      = Just (Z:.(W,i), (j+1))
       | otherwise = Nothing
@@ -51,10 +51,10 @@ instance (Monad m) => MkStream m Z where
 
 instance (Monad m, MkStream m x, SC x) => MkStream m (x:.Chr) where
   type SC (x:.Chr) = (Get (Stack x))
-  mkStream (x:.Chr cs) (Z:.i:.j) = i `seq` j `seq` cs `seq` x `seq` S.flatten mk step Unknown $ mkStream x (Z:.i:.j) where
+  mkStream (x:.Chr cs) (Z:.i:.j) = S.flatten mk step Unknown $ mkStream x (Z:.i:.j) where
     mk z = z `seq` return $ z:.(W, get z)
     step zj@(z:.(w, k))
-      | k<=j      = zj `seq` z `seq` w `seq` k `seq` return $ S.Yield zj (z:.(w,(j+1)))
+      | k<=j      = return $ S.Yield zj (z:.(w,(j+1)))
       | otherwise = return $ S.Done
     {-# INLINE mk #-}
     {-# INLINE step #-}
