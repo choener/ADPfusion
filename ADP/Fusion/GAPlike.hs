@@ -106,6 +106,7 @@ instance Build (MArr0 s DIM2 elm) where
   {-# INLINE build #-}
 
 instance (Monad m, PrimMonad m, PrimState m ~ s, Prim elm, MkStream m x, SC x, TopIdx x ~ (t0:.Int)) => MkStream m (x:.MArr0 s DIM2 elm) where
+  type SC (x:.MArr0 s DIM2 elm) = ()
   -- | If this is an outermost stream, create only one element with size
   -- '[k,j]'. The recursive stream generation then switches to 'mkStreamInner'.
   mkStream (x:.marr) (Z:.i:.j) = S.flatten mk step Unknown $ mkStreamInner x (Z:.i:.j) where
@@ -152,6 +153,7 @@ instance Build (PAsingle elm) where
   {-# INLINE build #-}
 
 instance (Monad m, Prim elm, MkStream m x, SC x, TopIdx x ~ (t0:.Int)) => MkStream m (x:.PAsingle elm) where
+  type SC (x:.PAsingle elm) = ()
   -- | We are still in the outer stream and have only encountered constant-size
   -- arguments. We handle this single argument and decrease the constant width
   -- of the remaining (left) arguments.
@@ -203,8 +205,38 @@ infixl 9 %
 (%) = (,)
 {-# INLINE (%) #-}
 
+testST :: PAsingle Char -> Int -> Int -> Int
+testST inp i j = runST $ embedST inp i j
+{-# NOINLINE testST #-}
 
+embedST :: PAsingle Char -> Int -> Int -> ST s Int
+embedST inp i j = do
+  vm :: VUM.MVector s Int <- VUM.replicate 10 0
+  vn :: VUM.MVector s Int <- VUM.replicate 10 0
+  tbl :: MArr0 s DIM2 Int <- fromAssocsM (Z:.0:.0) (Z:.10:.10) 0 []
+  -- (fcic <<< inp % tbl % inp ... (S.foldl' (+) 0)) (Z:.i:.j)
+  gST (fcic, (S.foldl' (+) 0)) inp tbl (Z:.i:.j)
+{-# NOINLINE embedST #-}
 
+fcic :: Char -> Int -> Char -> Int
+fcic l x r = ord l + x + ord r
+-- {-# INLINE fcic #-}
+
+-- a simple test grammar
+
+gST (fcic, h) inp tbl =
+  ( (fcic <<< inp % tbl % inp ... h)
+  )
+{-# INLINE gST #-}
+
+{-
+ - This is how it should look like in the future, 'tbl' is defined by the rules
+ - to the right.
+ -
+gST (fcic, h) inp tbl =
+  ( ( tbl, fcic <<< inp % tbl % inp ... h )
+  )
+-}
 
 
 
@@ -304,17 +336,6 @@ instance Show LR where
 
 testZ i j = SPure.length $ mkStream (Z:.ccc) (Z:.i:.j)
 {-# NOINLINE testZ #-}
-
-testST :: Dhr -> Int -> Int -> Int
-testST inp i j = runST $ embedST inp i j
-{-# NOINLINE testST #-}
-
-embedST :: Dhr -> Int -> Int -> ST s Int
-embedST inp i j = do
-  vm :: VUM.MVector s Int <- VUM.replicate 10 0
-  vn :: VUM.MVector s Int <- VUM.replicate 10 0
-  (fic <<< vn % inp ... (S.foldl' (+) 0)) (Z:.i:.j)
-{-# NOINLINE embedST #-}
 
 gnignu f (Z:.a:.b) = a `seq` b `seq` f a b
 {-# INLINE gnignu #-}
