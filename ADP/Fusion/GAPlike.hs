@@ -84,6 +84,7 @@ instance (Monad m, MkStream m x, SC x, TopIdx x ~ (t0:.Int)) => MkStream m (x:.C
   type SC (x:.Chr) = ()
   mkStream (x:.Chr cs) (Z:.i:.j) = S.flatten mk step Unknown $ mkStream x (Z:.i:.j) where
     mk (zw,zi,za) = let (_:.k) = zi in return (zw:.W, zi:.k, za)
+    step :: StepType m x Chr
     step (zw,zi,za)
       | k<=j      = c `seq` return $ S.Yield (zw,zi,za:.c) (zw,zi':.j+1,za)
       | otherwise = return $ S.Done
@@ -107,13 +108,15 @@ instance (Monad m, MkStream m x, SC x, TopIdx x ~ (t0:.Int)) => MkStream m (x:.D
   {-# INLINE mkStream #-}
 
 instance (Monad m, PrimMonad m, VUM.Unbox elm, PrimState m ~ s, MkStream m x, SC x, TopIdx x ~ (t0:.Int)) => MkStream m (x:.VUM.MVector s elm) where
-  type SC (x:.VUM.MVector s elm) = ()
+  type SC (x:.VUM.MVector s elm) = () -- (XYZ x)
   mkStream (x:.mvec) (Z:.i:.j) = S.flatten mk step Unknown $ mkStream x (Z:.i:.j) where
     mk (zw,zi:.k,za) = return $ (zw:.W, zi:.k:.k, za)
+    step :: StepType m x (VUM.MVector s elm)
     step (zw,zi:.k,za)
-      | k<=j      = do  c <- VUM.unsafeRead mvec k
-                        return $ S.Yield (zw,zi:.k,za:.c) (zw,zi:.j+1,za)
+      | k<=j && xyz < 1 = do  c <- VUM.unsafeRead mvec k
+                              return $ S.Yield (zw,zi:.k,za:.c) (zw,zi:.j+1,za)
       | otherwise = return $ S.Done
+      where xyz = 0 -- rofl (x,zi)
     {-# INLINE [0] mk #-}
     {-# INLINE [0] step #-}
   {-# INLINE mkStream #-}
@@ -143,7 +146,24 @@ instance DS x => DS (x:.y) where
   ds (x:.y) a = ds x (y `seq` a)
   {-# INLINE ds #-}
 
+class XYZ x where
+  rofl :: (x, TopIdx x) -> Int
 
+instance XYZ Z where
+  rofl _ = 0
+  {-# INLINE rofl #-}
+
+instance XYZ x => XYZ (x:.VUM.MVector s elm) where
+  rofl (x:._,zi:._) = 1 + rofl (x,zi)
+  {-# INLINE rofl #-}
+
+instance XYZ x => XYZ (x:.LR) where
+  rofl (x:._,zi:._) = 1 + rofl (x,zi)
+  {-# INLINE rofl #-}
+
+instance XYZ x => XYZ (x:.Dhr) where
+  rofl (x:._,zi:._) = 1 + rofl (x,zi)
+  {-# INLINE rofl #-}
 
 class Get x where
   getI :: (x, TopIdx x) -> Int
@@ -167,6 +187,12 @@ instance Get x => Get (x:.Dhr) where
   {-# INLINE getI #-}
   {-# INLINE down #-}
 
+instance Get x => Get (x:.VUM.MVector s elm) where
+  getI (_,_:.k) = k
+  down (x:._,zi:._) = down (x,zi)
+  {-# INLINE getI #-}
+  {-# INLINE down #-}
+
 testZ i j = SPure.length $ mkStream (Z:.ccc) (Z:.i:.j)
 {-# NOINLINE testZ #-}
 
@@ -178,7 +204,7 @@ embedST :: Dhr -> Int -> Int -> ST s Int
 embedST inp i j = do
   vm :: VUM.MVector s Int <- VUM.replicate 10 0
   vn :: VUM.MVector s Int <- VUM.replicate 10 0
-  (fici <<< lr ~~ inp ~~ lr ... (S.foldl' (+) 0)) (Z:.i:.j)
+  (fiicii <<< vn % vm % inp % vn % vm ... (S.foldl' (+) 0)) (Z:.i:.j)
 {-# NOINLINE embedST #-}
 
 infix 8 <<<
@@ -206,6 +232,10 @@ fic i c = i `seq` c `seq` ord c + i
 
 fici :: Int -> Char -> Int -> Int
 fici i c j = i + ord c + j
+
+fiicii :: Int -> Int -> Char -> Int -> Int -> Int
+fiicii i j c k l = i+j+k+l + ord c
+{- INLINE fiicii #-}
 
 cv :: Char -> Int -> Int
 cv c i = case c of
@@ -238,6 +268,10 @@ instance Show LR where
 infixl 9 ~~
 (~~) = (,)
 {-# INLINE (~~) #-}
+
+infixl 9 %
+(%) = (,)
+{-# INLINE (%) #-}
 
 class Build x where
   type Bld x :: *
