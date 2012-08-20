@@ -47,9 +47,10 @@ type family   TopArg x :: *
 class (Monad m) => MkStream m x where
   type SC x :: Constraint
   type SC x = ()
+  -- | The inner stream generator.
+  mkStreamInner :: (SC x) => x -> DIM2 -> S.Stream m (TopIdx x, TopArg x)
   -- | The outer stream generator.
   mkStream      :: (SC x) => x -> DIM2 -> S.Stream m (TopIdx x, TopArg x)
-  mkStreamInner :: (SC x) => x -> DIM2 -> S.Stream m (TopIdx x, TopArg x)
 
 type StepType m x y
   =  (TopIdx x:.TopIdx y, TopArg x)
@@ -83,18 +84,20 @@ type instance TopIdx Z = Z:.Int
 type instance TopArg Z = Z
 
 instance (Monad m) => MkStream m Z where
-  mkStream = mkStreamInner
   mkStreamInner Z (Z:.i:.j) = S.unfoldr step i where
     step i
       | i<=j      = Just ((Z:.i, Z), (j+1))
       | otherwise = Nothing
     {-# INLINE [0] step #-}
-  {-# INLINE mkStream #-}
   {-# INLINE mkStreamInner #-}
+  mkStream = mkStreamInner
+  {-# INLINE mkStream #-}
 
 
 
--- ** Stream generation for our typical two-dimensional tables.
+-- ** Stream generation for our typical two-dimensional tables. Assumes that
+-- the width is 1+. If you need zero-width tables, specialize this instance
+-- with a nice newtype wrapper.
 
 type instance TopIdx (MArr0 s DIM2 elm) = Int
 
@@ -107,31 +110,31 @@ instance Build (MArr0 s DIM2 elm) where
 
 instance (Monad m, PrimMonad m, PrimState m ~ s, Prim elm, MkStream m x, SC x, TopIdx x ~ (t0:.Int)) => MkStream m (x:.MArr0 s DIM2 elm) where
   type SC (x:.MArr0 s DIM2 elm) = ()
-  -- | If this is an outermost stream, create only one element with size
-  -- '[k,j]'. The recursive stream generation then switches to 'mkStreamInner'.
-  mkStream (x:.marr) (Z:.i:.j) = S.flatten mk step Unknown $ mkStreamInner x (Z:.i:.j) where
-    mk :: MkType m x (MArr0 s DIM2 elm)
-    mk (zi:.k,za) = return $ (zi:.k:.k,za)
-    step :: StepType m x (MArr0 s DIM2 elm)
-    step (zi:.k,za)
-      | k<=j      = do c <- readM marr (Z:.k:.j)
-                       return $ S.Yield (zi:.k,za:.c) (zi:.j+1,za)
-      | otherwise = return $ S.Done
-    {-# INLINE [0] mk #-}
-    {-# INLINE [0] step #-}
-  {-# INLINE mkStream #-}
   -- | Inner streams advance by one from one step to the next.
   mkStreamInner (x:.marr) (Z:.i:.j) = S.flatten mk step Unknown $ mkStreamInner x (Z:.i:.j) where
     mk :: MkType m x (MArr0 s DIM2 elm)
-    mk (zi:.k,za) = return $ (zi:.k:.k,za)
+    mk (zi:.k,za) = return $ (zi:.k:.k+1,za)
     step :: StepType m x (MArr0 s DIM2 elm)
-    step (zi:.k,za)
-      | k<=j      = do c <- readM marr (Z:.k:.j)
-                       return $ S.Yield (zi:.k,za:.c) (zi:.k+1,za)
+    step (zi:.k:.l,za)
+      | l<=j      = do c <- readM marr (Z:.k:.l)
+                       return $ S.Yield (zi:.k:.l,za:.c) (zi:.k:.l+1,za)
       | otherwise = return $ S.Done
     {-# INLINE [0] mk #-}
     {-# INLINE [0] step #-}
   {-# INLINE mkStreamInner #-}
+  -- | If this is an outermost stream, create only one element with size
+  -- '[k,j]'. The recursive stream generation then switches to 'mkStreamInner'.
+  mkStream (x:.marr) (Z:.i:.j) = S.flatten mk step Unknown $ mkStreamInner x (Z:.i:.j) where
+    mk :: MkType m x (MArr0 s DIM2 elm)
+    mk (zi:.l,za) = return $ (zi:.l:.l+1,za)
+    step :: StepType m x (MArr0 s DIM2 elm)
+    step (zi:.l,za)
+      | l<=j      = do c <- readM marr (Z:.l:.j)
+                       return $ S.Yield (zi:.l,za:.c) (zi:.j+1,za)
+      | otherwise = return $ S.Done
+    {-# INLINE [0] mk #-}
+    {-# INLINE [0] step #-}
+  {-# INLINE mkStream #-}
 
 
 
@@ -154,6 +157,21 @@ instance Build (PAsingle elm) where
 
 instance (Monad m, Prim elm, MkStream m x, SC x, TopIdx x ~ (t0:.Int)) => MkStream m (x:.PAsingle elm) where
   type SC (x:.PAsingle elm) = ()
+  -- | We can not decrease 'j' anymore, as we could well be within moving
+  -- indices.
+  mkStreamInner (x:.PAsingle arr) (Z:.i:.j) = S.flatten mk step Unknown $ mkStream x (Z:.i:.j) where
+    -- | Create a new width of size [k,k+1]
+    mk :: MkType m x (PAsingle elm)
+    mk (zi:.k,za) = return $ (zi:.k:.k+1,za)
+    -- | Do a step of size 1 [k,k+1], then finish.
+    step :: StepType m x (PAsingle elm)
+    step (zi:.k:.l,za)
+      | l<=j      = do let c = arr ! (Z:.k)
+                       return $ S.Yield (zi:.k:.l,za:.c) (zi:.k:.j+1,za)
+      | otherwise = return $ S.Done
+    {-# INLINE [0] mk #-}
+    {-# INLINE [0] step #-}
+  {-# INLINE mkStreamInner #-}
   -- | We are still in the outer stream and have only encountered constant-size
   -- arguments. We handle this single argument and decrease the constant width
   -- of the remaining (left) arguments.
@@ -163,36 +181,25 @@ instance (Monad m, Prim elm, MkStream m x, SC x, TopIdx x ~ (t0:.Int)) => MkStre
     mk (zi,za) = return $ (zi:.j-1,za)
     -- | If 'i>=k' we have a valid region of size [j-1,j] ('mk').
     step :: StepType m x (PAsingle elm)
-    step (zi:.k,za)
+    step (zi:.k:.l,za)
       | i>=k      = do let c = arr ! (Z:.k)
-                       return $ S.Yield (zi:.k,za:.c) (zi:.j+1,za)
+                       return $ S.Yield (zi:.k:.l,za:.c) (zi:.k:.j+1,za)
       | otherwise = return $ S.Done
     {-# INLINE [0] mk #-}
     {-# INLINE [0] step #-}
   {-# INLINE mkStream #-}
-  -- | We can not decrease 'j' anymore, as we could well be within moving
-  -- indices.
-  mkStreamInner (x:.PAsingle arr) (Z:.i:.j) = S.flatten mk step Unknown $ mkStream x (Z:.i:.j) where
-    -- | Create a new width of size [k,k+1]
-    mk :: MkType m x (PAsingle elm)
-    mk (zi:.k,za) = return $ (zi:.k:.k+1,za)
-    -- | Do a step of size 1 [k,k+1], then finish.
-    step :: StepType m x (PAsingle elm)
-    step (zi:.k,za)
-      | k<=j      = do let c = arr ! (Z:.k)
-                       return $ S.Yield (zi:.k,za:.c) (zi:.j+1,za)
-      | otherwise = return $ S.Done
-    {-# INLINE [0] mk #-}
-    {-# INLINE [0] step #-}
-  {-# INLINE mkStreamInner #-}
 
 
 
-infix 8 <<<
+infixl 8 <<<
 (<<<) f t ij = S.map (\(_,za) -> apply f za) $ mkStream (build t) ij
 {-# INLINE (<<<) #-}
 
-infix 7 ...
+infixl 7 |||
+(|||) xs ys ij = xs ij S.++ ys ij
+{-# INLINE (|||) #-}
+
+infixl 6 ...
 (...) s h ij = h $ s ij
 {-# INLINE (...) #-}
 
@@ -224,8 +231,8 @@ fcic l x r = ord l + x + ord r
 
 -- a simple test grammar
 
-gST (fcic, h) inp tbl =
-  ( (fcic <<< inp % tbl % inp ... h)
+gST (fcic, h) b s =
+  ( (fcic <<< b % s % b ... h)
   )
 {-# INLINE gST #-}
 
