@@ -117,11 +117,10 @@ instance (Monad m, PrimMonad m, PrimState m ~ s, Prim elm, MkStream m x, SC x, T
   -- | Inner streams advance by one from one step to the next.
   mkStreamInner (x:.marr) (Z:.i:.j) = x `seq` marr `seq` S.flatten mk step Unknown $ mkStreamInner x (Z:.i:.j) where
     mk :: MkType m x (MArr0 s DIM2 elm)
-    mk (zi:.k,za) = zi `seq` za `seq` return $ (zi:.k:.k+1,za)
+    mk (zi:.k,za) = {- zi `seq` za `seq` -} return $ (zi:.k:.k+1,za)
     step :: StepType m x (MArr0 s DIM2 elm)
     step (zi:.k:.l,za)
-      | l<=j      = do c <- readM marr (Z:.k:.l)
-                       zi `seq` za `seq` c `seq` return $ S.Yield (zi:.k:.l,za:.c) (zi:.k:.l+1,za)
+      | l<=j      = readM marr (Z:.k:.l) >>= \c -> {- zi `seq` za `seq` -} c `seq` return $ S.Yield (zi:.k:.l,za:.c) (zi:.k:.l+1,za)
       | otherwise = return $ S.Done
     {-# INLINE [0] mk #-}
     {-# INLINE [0] step #-}
@@ -130,11 +129,10 @@ instance (Monad m, PrimMonad m, PrimState m ~ s, Prim elm, MkStream m x, SC x, T
   -- '[k,j]'. The recursive stream generation then switches to 'mkStreamInner'.
   mkStream (x:.marr) (Z:.i:.j) = x `seq` marr `seq` S.flatten mk step Unknown $ mkStreamInner x (Z:.i:.j) where
     mk :: MkType m x (MArr0 s DIM2 elm)
-    mk (zi:.k,za) = zi `seq` za `seq` return $ (zi:.k:.j,za)
+    mk (zi:.k,za) = {- zi `seq` za `seq` -} return $ (zi:.k:.j,za)
     step :: StepType m x (MArr0 s DIM2 elm)
     step (zi:.k:.l,za)
-      | k<l && l<=j = do c <- readM marr (Z:.k:.l)
-                         zi `seq` za `seq` c `seq` return $ S.Yield (zi:.k:.l,za:.c) (zi:.k:.j+1,za)
+      | k<l && l<=j = readM marr (Z:.k:.l) >>= \c -> {- zi `seq` za `seq` -} c `seq` return $ S.Yield (zi:.k:.l,za:.c) (zi:.k:.j+1,za)
       | otherwise   = return $ S.Done
     {-# INLINE [0] mk #-}
     {-# INLINE [0] step #-}
@@ -226,12 +224,26 @@ embedST inp i j = do
   vn :: VUM.MVector s Int <- VUM.replicate 10 0
   tbl :: MArr0 s DIM2 Int <- fromAssocsM (Z:.0:.0) (Z:.10:.10) 0 []
   -- (fcic <<< inp % tbl % inp ... (S.foldl' (+) 0)) (Z:.i:.j)
-  gST (fcic, (S.foldl' (+) 0)) inp tbl (Z:.i:.j)
+  -- gST (fcic, (S.foldl' (+) 0)) inp tbl (Z:.i:.j)
+  -- (fi <<<   tbl     ... (S.foldl' (+) 0)) (Z:.i:.j)
+  S.foldl' (+) 0 . S.map (\(_,za) -> apply fi za) $ mkStream (Z:.tbl) (Z:.i:.j)
 {-# NOINLINE embedST #-}
 
 fcic :: Char -> Int -> Char -> Int
 fcic l x r = ord l + x + ord r
--- {-# INLINE fcic #-}
+{-# INLINE fcic #-}
+
+fi :: Int -> Int
+fi a = a
+{-# INLINE fi #-}
+
+fii :: Int -> Int -> Int
+fii a b = a+b
+{-# INLINE fii #-}
+
+fiii :: Int -> Int -> Int -> Int
+fiii a b c = a+b+c
+{-# INLINE fiii #-}
 
 -- a simple test grammar
 
