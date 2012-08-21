@@ -15,6 +15,10 @@
 
 -- | The "GAP-like" version of ADPfusion. We now encode arguments as distinct
 -- data types. The 'MkStream' type class determines the creation of streams.
+--
+-- Writing your own instances:
+--
+-- 1. scopetypevariables for the inner MkType, StepType types
 
 module ADP.Fusion.GAPlike where
 
@@ -111,27 +115,27 @@ instance Build (MArr0 s DIM2 elm) where
 instance (Monad m, PrimMonad m, PrimState m ~ s, Prim elm, MkStream m x, SC x, TopIdx x ~ (t0:.Int)) => MkStream m (x:.MArr0 s DIM2 elm) where
   type SC (x:.MArr0 s DIM2 elm) = ()
   -- | Inner streams advance by one from one step to the next.
-  mkStreamInner (x:.marr) (Z:.i:.j) = S.flatten mk step Unknown $ mkStreamInner x (Z:.i:.j) where
+  mkStreamInner (x:.marr) (Z:.i:.j) = x `seq` marr `seq` S.flatten mk step Unknown $ mkStreamInner x (Z:.i:.j) where
     mk :: MkType m x (MArr0 s DIM2 elm)
-    mk (zi:.k,za) = return $ (zi:.k:.k+1,za)
+    mk (zi:.k,za) = zi `seq` za `seq` return $ (zi:.k:.k+1,za)
     step :: StepType m x (MArr0 s DIM2 elm)
     step (zi:.k:.l,za)
       | l<=j      = do c <- readM marr (Z:.k:.l)
-                       return $ S.Yield (zi:.k:.l,za:.c) (zi:.k:.l+1,za)
+                       zi `seq` za `seq` c `seq` return $ S.Yield (zi:.k:.l,za:.c) (zi:.k:.l+1,za)
       | otherwise = return $ S.Done
     {-# INLINE [0] mk #-}
     {-# INLINE [0] step #-}
   {-# INLINE mkStreamInner #-}
   -- | If this is an outermost stream, create only one element with size
   -- '[k,j]'. The recursive stream generation then switches to 'mkStreamInner'.
-  mkStream (x:.marr) (Z:.i:.j) = S.flatten mk step Unknown $ mkStreamInner x (Z:.i:.j) where
+  mkStream (x:.marr) (Z:.i:.j) = x `seq` marr `seq` S.flatten mk step Unknown $ mkStreamInner x (Z:.i:.j) where
     mk :: MkType m x (MArr0 s DIM2 elm)
-    mk (zi:.l,za) = return $ (zi:.l:.l+1,za)
+    mk (zi:.k,za) = zi `seq` za `seq` return $ (zi:.k:.j,za)
     step :: StepType m x (MArr0 s DIM2 elm)
-    step (zi:.l,za)
-      | l<=j      = do c <- readM marr (Z:.l:.j)
-                       return $ S.Yield (zi:.l,za:.c) (zi:.j+1,za)
-      | otherwise = return $ S.Done
+    step (zi:.k:.l,za)
+      | k<l && l<=j = do c <- readM marr (Z:.k:.l)
+                         zi `seq` za `seq` c `seq` return $ S.Yield (zi:.k:.l,za:.c) (zi:.k:.j+1,za)
+      | otherwise   = return $ S.Done
     {-# INLINE [0] mk #-}
     {-# INLINE [0] step #-}
   {-# INLINE mkStream #-}
@@ -159,15 +163,15 @@ instance (Monad m, Prim elm, MkStream m x, SC x, TopIdx x ~ (t0:.Int)) => MkStre
   type SC (x:.PAsingle elm) = ()
   -- | We can not decrease 'j' anymore, as we could well be within moving
   -- indices.
-  mkStreamInner (x:.PAsingle arr) (Z:.i:.j) = S.flatten mk step Unknown $ mkStream x (Z:.i:.j) where
+  mkStreamInner (x:.PAsingle arr) (Z:.i:.j) = x `seq` arr `seq` S.flatten mk step Unknown $ mkStreamInner x (Z:.i:.j) where
     -- | Create a new width of size [k,k+1]
     mk :: MkType m x (PAsingle elm)
-    mk (zi:.k,za) = return $ (zi:.k:.k+1,za)
+    mk (zi:.k,za) = zi `seq` za `seq` return $ (zi:.k:.k+1,za)
     -- | Do a step of size 1 [k,k+1], then finish.
     step :: StepType m x (PAsingle elm)
     step (zi:.k:.l,za)
       | l<=j      = do let c = arr ! (Z:.k)
-                       return $ S.Yield (zi:.k:.l,za:.c) (zi:.k:.j+1,za)
+                       zi `seq` za `seq` c `seq` return $ S.Yield (zi:.k:.l,za:.c) (zi:.k:.j+1,za)
       | otherwise = return $ S.Done
     {-# INLINE [0] mk #-}
     {-# INLINE [0] step #-}
@@ -175,15 +179,15 @@ instance (Monad m, Prim elm, MkStream m x, SC x, TopIdx x ~ (t0:.Int)) => MkStre
   -- | We are still in the outer stream and have only encountered constant-size
   -- arguments. We handle this single argument and decrease the constant width
   -- of the remaining (left) arguments.
-  mkStream (x:.PAsingle arr) (Z:.i:.j) = S.flatten mk step Unknown $ mkStream x (Z:.i:.j-1) where
+  mkStream (x:.PAsingle arr) (Z:.i:.j) = x `seq` arr `seq` S.flatten mk step Unknown $ mkStream x (Z:.i:.j-1) where
     -- | Set the local width to [j-1,j].
     mk :: MkType m x (PAsingle elm)
-    mk (zi,za) = return $ (zi:.j-1,za)
+    mk (zi,za) = zi `seq` za `seq` return $ (zi:.j,za)
     -- | If 'i>=k' we have a valid region of size [j-1,j] ('mk').
     step :: StepType m x (PAsingle elm)
     step (zi:.k:.l,za)
-      | i>=k      = do let c = arr ! (Z:.k)
-                       return $ S.Yield (zi:.k:.l,za:.c) (zi:.k:.j+1,za)
+      | k+1==l      = do let c = arr ! (Z:.k)
+                         zi `seq` za `seq` c `seq` return $ S.Yield (zi:.k:.l,za:.c) (zi:.k:.j+1,za)
       | otherwise = return $ S.Done
     {-# INLINE [0] mk #-}
     {-# INLINE [0] step #-}
@@ -244,6 +248,17 @@ gST (fcic, h) inp tbl =
   ( ( tbl, fcic <<< inp % tbl % inp ... h )
   )
 -}
+
+class DS x where
+  ds :: x -> y -> y
+
+instance DS Z where
+  ds Z a = a
+  {-# INLINE ds #-}
+
+instance DS x => DS (x:.y) where
+  ds (x:.y) a = ds x (y `seq` a)
+  {-# INLINE ds #-}
 
 
 
@@ -412,17 +427,6 @@ instance Get x => Get (x:.Dhr) where
   down (x:._,zi:._) = down (x,zi)
   {-# INLINE getI #-}
   {-# INLINE down #-}
-
-class DS x where
-  ds :: x -> y -> y
-
-instance DS Z where
-  ds Z a = a
-  {-# INLINE ds #-}
-
-instance DS x => DS (x:.y) where
-  ds (x:.y) a = ds x (y `seq` a)
-  {-# INLINE ds #-}
 
 class XYZ x where
   rofl :: (x, TopIdx x) -> Int
