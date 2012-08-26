@@ -61,6 +61,10 @@ description:
                 The final goal would, of course, be to have no inter-terminal
                 combinators anymore.
                 .
+                * GHC 7.6, LLVM, and -fnew-codegen recommended: gives a speedup
+                  of x2 for GAPcriterion
+                .
+                .
                 .
                 .
                 Long term goals: Outer indices with more than two dimensions,
@@ -102,23 +106,27 @@ library
     ghc-prim,
     primitive      == 0.4.*   ,
     vector         == 0.9.*   ,
-    PrimitiveArray == 0.2.2.0
+    PrimitiveArray == 0.3.0.0
   exposed-modules:
-    ADP.Fusion
-    ADP.Fusion.Monadic
-    ADP.Fusion.Monadic.Internal
-    ADP.Fusion.GAPlike
+--    ADP.Fusion
+--    ADP.Fusion.Monadic
+--    ADP.Fusion.Monadic.Internal
+--    ADP.Fusion.GAPlike
+    ADP.Fusion.GAPlike2
 
   ghc-options:
     -O2 -funbox-strict-fields
 
---executable GAPcriterion
---  build-depends:
---    criterion == 0.6.*
---  main-is:
---    GAPcriterion.hs
---  ghc-options:
---    -O2 -funbox-strict-fields -fllvm -optlo-O3 -optlo-inline -optlo-std-compile-opts
+executable GAPcriterion
+  build-depends:
+    criterion == 0.6.*
+  main-is:
+    GAPcriterion.hs
+  ghc-options:
+    -fllvm -O2 -funbox-strict-fields -optlo-constprop -optlo-O3 -optlo-std-compile-opts
+  if impl(GHC > 7.4)
+    ghc-options:
+      -fnew-codegen
 
 
 source-repository head
