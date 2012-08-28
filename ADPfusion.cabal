@@ -123,7 +123,7 @@ executable GAPcriterion
   main-is:
     GAPcriterion.hs
   ghc-options:
-    -fllvm -O2 -funbox-strict-fields -optlo-constprop -optlo-O3 -optlo-std-compile-opts
+    -fllvm -O2 -funbox-strict-fields -optlo-O3 -optlo-std-compile-opts
   if impl(GHC > 7.4)
     ghc-options:
       -fnew-codegen
