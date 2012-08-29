@@ -106,7 +106,8 @@ library
     ghc-prim,
     primitive      == 0.4.*   ,
     vector         == 0.9.*   ,
-    PrimitiveArray == 0.3.0.0
+    PrimitiveArray == 0.3.0.0 ,
+    QuickCheck
   exposed-modules:
 --    ADP.Fusion
 --    ADP.Fusion.Monadic

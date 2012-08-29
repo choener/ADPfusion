@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE EmptyDataDecls #-}
 {- LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -17,6 +18,7 @@ import Control.Monad.Primitive
 import Control.Monad.ST
 import Data.Primitive
 import Data.PrimitiveArray
+import qualified Data.PrimitiveArray as PA
 import Data.PrimitiveArray.Unboxed.Zero as UZ
 import Data.PrimitiveArray.Unboxed.VectorZero as UVZ
 import Data.Vector.Fusion.Stream.Size
@@ -29,6 +31,9 @@ import qualified Data.Vector.Unboxed as VU
 import Text.Printf
 import Data.List (intersperse)
 import Data.Char
+import ADP.Fusion.QuickCheck.Arbitrary
+import Test.QuickCheck
+import Test.QuickCheck.All
 
 
 
@@ -156,7 +161,7 @@ instance (Monad m, PrimMonad m, PrimState m ~ s, MkStream m x, StreamElement x, 
   -}
   mkStream (x:.NonEmptyTbl t) (i,j) = S.mapM step $ mkStreamInner x (i,j-1) where
     step :: StreamElm x -> m (StreamElm (x:.NonEmptyTbl s e))
-    step x = let k = getTopIdx x in readM t (Z:.k:.j) >>= \e -> return $ SeNonEmptyTbl x k e
+    step x = let k = getTopIdx x in readM t (Z:.k:.j) >>= \e -> return $ SeNonEmptyTbl x j e
     {-# INLINE step #-}
   {-# INLINE mkStream #-}
   mkStreamInner (x:.NonEmptyTbl t) (i,j) = S.flatten mk step Unknown $ mkStreamInner x (i,j-1) where
@@ -190,7 +195,7 @@ instance (StreamElement x) => StreamElement (x:.UVZ.MArr0 s DIM2 e) where
 instance (Monad m, PrimMonad m, PrimState m ~ s, MkStream m x, StreamElement x, StreamTopIdx x ~ Int, VU.Unbox e) => MkStream m (x:.UVZ.MArr0 s DIM2 e) where
   mkStream (x:.t) (i,j) = S.mapM step $ mkStreamInner x (i,j-1) where
     step :: StreamElm x -> m (StreamElm (x:.UVZ.MArr0 s DIM2 e))
-    step x = let k = getTopIdx x in readM t (Z:.k:.j) >>= \e -> return $ SeUVZMA x k e
+    step x = let k = getTopIdx x in readM t (Z:.k:.j) >>= \e -> return $ SeUVZMA x j e
     {-# INLINE step #-}
   {-# INLINE mkStream #-}
   mkStreamInner (x:.t) (i,j) = S.flatten mk step Unknown $ mkStreamInner x (i,j-1) where
@@ -214,6 +219,47 @@ data N -- | only non-empty subwords
 
 data Tbl c es = Tbl !es
 
+instance Build (Tbl typ cnt) where
+  type BuildStack (Tbl typ cnt) = None:.Tbl typ cnt
+  build tbl = None:.tbl
+
+-- *** 2D-table of immutable data.
+
+instance (StreamElement x) => StreamElement (x:.Tbl E (UVZ.Arr0 DIM2 e)) where
+  data StreamElm    (x:.Tbl E (UVZ.Arr0 DIM2 e)) = SeTblEuvzA !(StreamElm x) !Int !e
+  type StreamTopIdx (x:.Tbl E (UVZ.Arr0 DIM2 e)) = Int
+  type StreamArg    (x:.Tbl E (UVZ.Arr0 DIM2 e)) = StreamArg x :. e
+  getTopIdx (SeTblEuvzA _ k _) = k
+  getArg    (SeTblEuvzA x _ e) = getArg x :. e
+  {-# INLINE getTopIdx #-}
+  {-# INLINE getArg #-}
+
+instance (Monad m, MkStream m x, StreamElement x, StreamTopIdx x ~ Int, VU.Unbox e) => MkStream m (x:.Tbl E (UVZ.Arr0 DIM2 e)) where
+  -- | The outer stream function assumes that mkStreamInner generates a valid
+  -- stream that does not need to be checked. (This should always be true!).
+  -- The table entry to read is [k,j], as we supposedly are generating the
+  -- outermost stream. Even more "outermost" streams will have changed 'j'
+  -- beforehand. 'mkStream' should only ever be used if 'j' can be fixed.
+  mkStream (x:.Tbl t) (i,j) = S.map step $ mkStreamInner x (i,j) where
+    step :: StreamElm x -> StreamElm (x:.Tbl E (UVZ.Arr0 DIM2 e))
+    step x = let k = getTopIdx x in SeTblEuvzA x j (t PA.! (Z:.k:.j))
+    {-# INLINE step #-}
+  -- | The inner stream will, in each step, check if the current subword [k,l]
+  -- (forall l>=k) is valid and terminate the stream once l>j.
+  mkStreamInner (x:.Tbl t) (i,j) = S.flatten mk step Unknown $ mkStreamInner x (i,j) where
+    mk :: StreamElm x -> m (StreamElm x, Int)
+    mk x = return (x, getTopIdx x)
+    step :: (StreamElm x, Int) -> m (S.Step (StreamElm x, Int) (StreamElm (x:.Tbl E (UVZ.Arr0 DIM2 e))))
+    step (x,l)
+      | l<=j      = return $ S.Yield (SeTblEuvzA x l (t PA.! (Z:.k:.l))) (x,l+1)
+      | otherwise = return $ S.Done
+      where k = getTopIdx x
+    {-# INLINE mk #-}
+    {-# INLINE step #-}
+  {-# INLINE mkStream #-}
+
+
+{-
 instance (Monad m, PrimMonad m, PrimState m ~ s, MkStream m x, StreamElement x, StreamTopIdx x ~ Int, VU.Unbox e) => MkStream m (x:.Tbl E (UVZ.MArr0 s DIM2 e)) where
 
 instance (Monad m, PrimMonad m, PrimState m ~ s, MkStream m x, StreamElement x, StreamTopIdx x ~ Int, VU.Unbox e) => MkStream m (x:.Tbl N (UVZ.MArr0 s DIM2 e)) where
@@ -224,6 +270,7 @@ instance (Monad m, PrimMonad m, PrimState m ~ s, MkStream m x, StreamElement x, 
 
 instance (MkStream m (x:.Tbl N y)) => MkStream m (x:.Tbl N (Tbl E y)) where
 --  mkStream (x:.Tbl (Tbl t)) = mkStream (x:.Tbl t)
+-}
 
 -- * Build
 
@@ -267,7 +314,37 @@ infixl 9 %
 
 
 
+-- * QuickCheck
 
+checkC_fusion (i,j) = id <<< Chr dvu ... SP.toList $ (i,j)
+checkC_list   (i,j) = [dvu VU.! i | i+1==j]
+prop_checkC = checkC_fusion === checkC_list
+
+checkCC_fusion (i,j) = (,) <<< Chr dvu % Chr dvu ... SP.toList $ (i,j)
+checkCC_list   (i,j) = [ (dvu VU.! i, dvu VU.! (i+1)) | i+2==j ]
+prop_checkCC = checkCC_fusion === checkCC_list
+
+checkP_fusion (i,j) = id <<< (Tbl pat :: Tbl E PAT)  ... SP.toList $ (i,j)
+checkP_list   (i,j) = [ (pat!(Z:.i:.j)) | i<=j ]
+prop_checkP = checkP_fusion === checkP_list
+
+checkPP_fusion (i,j) = let tbl = Tbl pat :: Tbl E PAT
+                       in  (,) <<< tbl % tbl ... SP.toList $ (i,j)
+checkPP_list   (i,j) = [ (pat!(Z:.i:.k), pat!(Z:.k:.j)) | k<-[i..j] ]
+prop_checkPP = checkPP_fusion === checkPP_list
+
+checkCPC_fusion (i,j) = let tbl = Tbl pat :: Tbl E PAT
+                        in  (,,) <<< Chr dvu % tbl % Chr dvu ... SP.toList $ (i,j)
+checkCPC_list (i,j) = [ (dvu VU.! i, pat!(Z:.i+1:.j-1), dvu VU.! (j-1)) | i+2<=j ]
+prop_checkCPC = checkCPC_fusion === checkCPC_list
+
+
+
+options = stdArgs {maxSuccess = 1000}
+
+customCheck = quickCheckWithResult options
+
+allProps = $forAllProperties customCheck
 
 -- * Criterion tests
 
@@ -363,6 +440,11 @@ ghsum = S.foldl' (+) 0
 
 dvu = VU.fromList $ concat $ replicate 10 ['a'..'z']
 {-# NOINLINE dvu #-}
+
+type PAT = UVZ.Arr0 DIM2 Int
+pat :: PAT
+pat = PA.fromAssocs (Z:.0:.0) (Z:.1000:.1000) 0 [(Z:.i:.j,j-i) | i <-[0..1000], j<-[i..1000] ]
+{-# NOINLINE pat #-}
 
 {-
 testM3 :: Int -> Int -> Int
