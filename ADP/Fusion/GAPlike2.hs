@@ -1,3 +1,4 @@
+{-# LANGUAGE EmptyDataDecls #-}
 {- LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -203,6 +204,26 @@ instance (Monad m, PrimMonad m, PrimState m ~ s, MkStream m x, StreamElement x, 
     {-# INLINE mk #-}
     {-# INLINE step #-}
   {-# INLINE mkStreamInner #-}
+
+-- ** by default, every table should be wrapped. Instances for wrapped two-dim.
+-- tables with underlying primitive or unboxed-vector instances.
+
+data E -- | empty subwords allowed
+
+data N -- | only non-empty subwords
+
+data Tbl c es = Tbl !es
+
+instance (Monad m, PrimMonad m, PrimState m ~ s, MkStream m x, StreamElement x, StreamTopIdx x ~ Int, VU.Unbox e) => MkStream m (x:.Tbl E (UVZ.MArr0 s DIM2 e)) where
+
+instance (Monad m, PrimMonad m, PrimState m ~ s, MkStream m x, StreamElement x, StreamTopIdx x ~ Int, VU.Unbox e) => MkStream m (x:.Tbl N (UVZ.MArr0 s DIM2 e)) where
+
+instance (Monad m, PrimMonad m, PrimState m ~ s, MkStream m x, StreamElement x, StreamTopIdx x ~ Int, VU.Unbox e) => MkStream m (x:.Tbl E (UZ.MArr0 s DIM2 e)) where
+
+instance (Monad m, PrimMonad m, PrimState m ~ s, MkStream m x, StreamElement x, StreamTopIdx x ~ Int, VU.Unbox e) => MkStream m (x:.Tbl N (UZ.MArr0 s DIM2 e)) where
+
+instance (MkStream m (x:.Tbl N y)) => MkStream m (x:.Tbl N (Tbl E y)) where
+--  mkStream (x:.Tbl (Tbl t)) = mkStream (x:.Tbl t)
 
 -- * Build
 
