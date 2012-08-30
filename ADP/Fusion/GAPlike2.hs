@@ -140,9 +140,15 @@ instance (Monad m, MkStream m x, StreamElement x, StreamTopIdx x ~ Int, VU.Unbox
 -- ** by default, every table should be wrapped. Instances for wrapped two-dim.
 -- tables with underlying primitive or unboxed-vector instances.
 
-data E -- | empty subwords allowed
+-- | empty subwords allowed
 
-data N -- | only non-empty subwords
+data E
+
+-- | only non-empty subwords
+
+data N
+
+-- | Phantom typing the table.
 
 data Tbl c es = Tbl !es
 
@@ -385,14 +391,13 @@ instance (Monad m, PrimMonad m, PrimState m ~ s, MkStream m x, StreamElement x, 
 
 
 
-{-
+tNtoE :: Tbl N x -> Tbl E x
+tNtoE (Tbl x) = Tbl x
+{-# INLINE tNtoE #-}
 
-
-
-instance (MkStream m (x:.Tbl N y)) => MkStream m (x:.Tbl N (Tbl E y)) where
---  mkStream (x:.Tbl (Tbl t)) = mkStream (x:.Tbl t)
--}
-
+tEtoN :: Tbl E x -> Tbl N x
+tEtoN (Tbl x) = Tbl x
+{-# INLINE tEtoN #-}
 
 
 -- * Build
