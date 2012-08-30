@@ -186,6 +186,7 @@ instance (Monad m, MkStream m x, StreamElement x, StreamTopIdx x ~ Int, VU.Unbox
     {-# INLINE mk #-}
     {-# INLINE step #-}
   {-# INLINE mkStream #-}
+  {-# INLINE mkStreamInner #-}
 
 instance (StreamElement x) => StreamElement (x:.Tbl E (UVZ.MArr0 s DIM2 e)) where
   data StreamElm    (x:.Tbl E (UVZ.MArr0 s DIM2 e)) = SeTblEuvzMA !(StreamElm x) !Int !e
@@ -212,6 +213,7 @@ instance (Monad m, PrimMonad m, PrimState m ~ s, MkStream m x, StreamElement x, 
     {-# INLINE mk #-}
     {-# INLINE step #-}
   {-# INLINE mkStream #-}
+  {-# INLINE mkStreamInner #-}
 
 instance (StreamElement x) => StreamElement (x:.Tbl E (UZ.MArr0 s DIM2 e)) where
   data StreamElm    (x:.Tbl E (UZ.MArr0 s DIM2 e)) = SeTblEuzMA !(StreamElm x) !Int !e
@@ -238,6 +240,7 @@ instance (Monad m, PrimMonad m, PrimState m ~ s, MkStream m x, StreamElement x, 
     {-# INLINE mk #-}
     {-# INLINE step #-}
   {-# INLINE mkStream #-}
+  {-# INLINE mkStreamInner #-}
 
 
 -- *** non-empty.
@@ -270,6 +273,7 @@ instance (Monad m, MkStream m x, StreamElement x, StreamTopIdx x ~ Int, VU.Unbox
     {-# INLINE mk #-}
     {-# INLINE step #-}
   {-# INLINE mkStream #-}
+  {-# INLINE mkStreamInner #-}
 
 instance (StreamElement x) => StreamElement (x:.Tbl N (UVZ.MArr0 s DIM2 e)) where
   data StreamElm    (x:.Tbl N (UVZ.MArr0 s DIM2 e)) = SeTblNuvzMA !(StreamElm x) !Int !e
@@ -296,6 +300,7 @@ instance (Monad m, PrimMonad m, PrimState m ~ s, MkStream m x, StreamElement x, 
     {-# INLINE mk #-}
     {-# INLINE step #-}
   {-# INLINE mkStream #-}
+  {-# INLINE mkStreamInner #-}
 
 instance (StreamElement x) => StreamElement (x:.Tbl N (UZ.MArr0 s DIM2 e)) where
   data StreamElm    (x:.Tbl N (UZ.MArr0 s DIM2 e)) = SeTblNuzMA !(StreamElm x) !Int !e
@@ -309,19 +314,20 @@ instance (StreamElement x) => StreamElement (x:.Tbl N (UZ.MArr0 s DIM2 e)) where
 instance (Monad m, PrimMonad m, PrimState m ~ s, MkStream m x, StreamElement x, StreamTopIdx x ~ Int, Prim e) => MkStream m (x:.Tbl N (UZ.MArr0 s DIM2 e)) where
   mkStream (x:.Tbl t) (i,j) = S.mapM step $ mkStreamInner x (i,j-1) where
     step :: StreamElm x -> m (StreamElm (x:.Tbl N (UZ.MArr0 s DIM2 e)))
-    step x = let k = getTopIdx x in assert (i<=k && k<j) $ readM t (Z:.k:.j) >>= \e -> return $ SeTblNuzMA x j e
+    step x = let k = getTopIdx x in assert (i<=k && k<j) $ readM t (Z:.k:.j) >>= \e -> e `seq` return $ SeTblNuzMA x j e
     {-# INLINE step #-}
   mkStreamInner (x:.Tbl t) (i,j) = S.flatten mk step Unknown $ mkStreamInner x (i,j-1) where
     mk :: StreamElm x -> m (StreamElm x, Int)
     mk x = return (x, getTopIdx x +1)
     step :: (StreamElm x, Int) -> m (S.Step (StreamElm x, Int) (StreamElm (x:.Tbl N (UZ.MArr0 s DIM2 e))))
     step (x,l)
-      | l<=j      = assert (i<=k) $ readM t (Z:.k:.l) >>= \e -> return $ S.Yield (SeTblNuzMA x l e) (x,l+1)
+      | l<=j      = assert (i<=k) $ readM t (Z:.k:.l) >>= \e -> e `seq` return $ S.Yield (SeTblNuzMA x l e) (x,l+1)
       | otherwise = return $ S.Done
       where k = getTopIdx x
     {-# INLINE mk #-}
     {-# INLINE step #-}
   {-# INLINE mkStream #-}
+  {-# INLINE mkStreamInner #-}
 
 
 

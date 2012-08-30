@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE PackageImports #-}
 
 module ADP.Fusion.GAPlike2.Criterion where
@@ -8,6 +9,7 @@ import Data.Char
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
 import Data.PrimitiveArray
+import Data.PrimitiveArray.Unboxed.VectorZero as UVZ
 import "PrimitiveArray" Data.Array.Repa.Index
 import "PrimitiveArray" Data.Array.Repa.Shape
 
@@ -62,11 +64,13 @@ testCC i j = runST doST where
     (gord2 <<< c % d ... ghsum) (i,j)
 {-# NOINLINE testCC #-}
 
+type TBL s = Tbl N (UVZ.MArr0 s DIM2 Int)
+
 testT :: Int -> Int -> Int
 testT i j = runST doST where
   doST :: ST s Int
   doST = do
-    tbl <- NonEmptyTbl `fmap` fromAssocsM (Z:.0:.0) (Z:.j:.j) 1 []
+    tbl :: TBL s <- Tbl `fmap` fromAssocsM (Z:.0:.0) (Z:.j:.j) 1 []
     (id <<< tbl ... ghsum) (i,j)
 {-# NOINLINE testT #-}
 
@@ -74,7 +78,7 @@ testTT :: Int -> Int -> Int
 testTT i j = runST doST where
   doST :: ST s Int
   doST = do
-    tbl <- NonEmptyTbl `fmap` fromAssocsM (Z:.0:.0) (Z:.j:.j) 1 []
+    tbl :: TBL s <- Tbl `fmap` fromAssocsM (Z:.0:.0) (Z:.j:.j) 1 []
     (gplus2 <<< tbl % tbl ... ghsum) (i,j)
   {-# INLINE doST #-}
 {-# NOINLINE testTT #-}
@@ -83,7 +87,7 @@ testTTT :: Int -> Int -> Int
 testTTT i j = runST doST where
   doST :: ST s Int
   doST = do
-    tbl <- NonEmptyTbl `fmap` fromAssocsM (Z:.0:.0) (Z:.j:.j) 1 []
+    tbl :: TBL s <- Tbl `fmap` fromAssocsM (Z:.0:.0) (Z:.j:.j) 1 []
     (gplus3 <<< tbl % tbl % tbl ... ghsum) (i,j)
 {-# NOINLINE testTTT #-}
 
@@ -91,7 +95,7 @@ testTTTT :: Int -> Int -> Int
 testTTTT i j = runST doST where
   doST :: ST s Int
   doST = do
-    tbl <- NonEmptyTbl `fmap` fromAssocsM (Z:.0:.0) (Z:.j:.j) (1::Int) []
+    tbl :: TBL s <- Tbl `fmap` fromAssocsM (Z:.0:.0) (Z:.j:.j) (1::Int) []
     (gplus4 <<< tbl % tbl % tbl % tbl ... ghsum) (i,j)
   {-# INLINE doST #-}
 {-# NOINLINE testTTTT #-}
@@ -100,8 +104,7 @@ testTTTTga :: Int -> Int -> Int
 testTTTTga i j = runST doST where
   doST :: ST s Int
   doST = do
-    tbl <- NonEmptyTbl `fmap` fromAssocsM (Z:.0:.0) (Z:.j:.j) (1::Int) []
-    -- (gplus4 <<< tbl % tbl % tbl % tbl ... ghsum) (i,j)
+    tbl :: TBL s <- Tbl `fmap` fromAssocsM (Z:.0:.0) (Z:.j:.j) (1::Int) []
     gTTTga aTTTga tbl (i,j)
   {-# INLINE doST #-}
 {-# NOINLINE testTTTTga #-}
