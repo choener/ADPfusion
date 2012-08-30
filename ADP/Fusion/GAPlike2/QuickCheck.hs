@@ -42,6 +42,11 @@ checkCPC_fusion (i,j) = let tbl = Tbl pat :: Tbl E PAT
 checkCPC_list (i,j) = [ (dvu VU.! i, pat!(Z:.i+1:.j-1), dvu VU.! (j-1)) | i+2<=j ]
 prop_checkCPC = checkCPC_fusion === checkCPC_list
 
+checkNN_fusion (i,j) = let tbl = Tbl pat :: Tbl N PAT
+                       in  (,) <<< tbl % tbl ... SP.toList $ (i,j)
+checkNN_list   (i,j) = [ (pat!(Z:.i:.k), pat!(Z:.k:.j)) | k<-[i+1..j-1] ]
+prop_checkNN = checkNN_fusion === checkNN_list
+
 
 
 options = stdArgs {maxSuccess = 1000}
