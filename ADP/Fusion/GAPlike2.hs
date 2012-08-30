@@ -188,6 +188,33 @@ instance (Monad m, MkStream m x, StreamElement x, StreamTopIdx x ~ Int, VU.Unbox
   {-# INLINE mkStream #-}
   {-# INLINE mkStreamInner #-}
 
+instance (StreamElement x) => StreamElement (x:.Tbl E (UZ.Arr0 DIM2 e)) where
+  data StreamElm    (x:.Tbl E (UZ.Arr0 DIM2 e)) = SeTblEuzA !(StreamElm x) !Int !e
+  type StreamTopIdx (x:.Tbl E (UZ.Arr0 DIM2 e)) = Int
+  type StreamArg    (x:.Tbl E (UZ.Arr0 DIM2 e)) = StreamArg x :. e
+  getTopIdx (SeTblEuzA _ k _) = k
+  getArg    (SeTblEuzA x _ e) = getArg x :. e
+  {-# INLINE getTopIdx #-}
+  {-# INLINE getArg #-}
+
+instance (Monad m, MkStream m x, StreamElement x, StreamTopIdx x ~ Int, Prim e) => MkStream m (x:.Tbl E (UZ.Arr0 DIM2 e)) where
+  mkStream (x:.Tbl t) (i,j) = S.map step $ mkStreamInner x (i,j) where
+    step :: StreamElm x -> StreamElm (x:.Tbl E (UZ.Arr0 DIM2 e))
+    step x = let k = getTopIdx x in SeTblEuzA x j (t PA.! (Z:.k:.j))
+    {-# INLINE step #-}
+  mkStreamInner (x:.Tbl t) (i,j) = S.flatten mk step Unknown $ mkStreamInner x (i,j) where
+    mk :: StreamElm x -> m (StreamElm x, Int)
+    mk x = return (x, getTopIdx x)
+    step :: (StreamElm x, Int) -> m (S.Step (StreamElm x, Int) (StreamElm (x:.Tbl E (UZ.Arr0 DIM2 e))))
+    step (x,l)
+      | l<=j      = return $ S.Yield (SeTblEuzA x l (t PA.! (Z:.k:.l))) (x,l+1)
+      | otherwise = return $ S.Done
+      where k = getTopIdx x
+    {-# INLINE mk #-}
+    {-# INLINE step #-}
+  {-# INLINE mkStream #-}
+  {-# INLINE mkStreamInner #-}
+
 instance (StreamElement x) => StreamElement (x:.Tbl E (UVZ.MArr0 s DIM2 e)) where
   data StreamElm    (x:.Tbl E (UVZ.MArr0 s DIM2 e)) = SeTblEuvzMA !(StreamElm x) !Int !e
   type StreamTopIdx (x:.Tbl E (UVZ.MArr0 s DIM2 e)) = Int
@@ -259,7 +286,7 @@ instance (Monad m, MkStream m x, StreamElement x, StreamTopIdx x ~ Int, VU.Unbox
   -- an available subword [k,j] of at least size 1.
   mkStream (x:.Tbl t) (i,j) = S.map step $ mkStreamInner x (i,j-1) where
     step :: StreamElm x -> StreamElm (x:.Tbl N (UVZ.Arr0 DIM2 e))
-    step x = let k = getTopIdx x in assert (i<=k && k<j) $ SeTblNuvzA x j (t PA.! (Z:.k:.j))
+    step x = let k = getTopIdx x; e = t PA.! (Z:.k:.j) in assert (i<=k && k<j) $ e `seq` SeTblNuvzA x j e
     {-# INLINE step #-}
   -- | Inner stream, run an index l between k<l<=j. The subword we generate is [k,l].
   mkStreamInner (x:.Tbl t) (i,j) = S.flatten mk step Unknown $ mkStreamInner x (i,j-1) where
@@ -267,7 +294,34 @@ instance (Monad m, MkStream m x, StreamElement x, StreamTopIdx x ~ Int, VU.Unbox
     mk x = return (x, getTopIdx x +1)
     step :: (StreamElm x, Int) -> m (S.Step (StreamElm x, Int) (StreamElm (x:.Tbl N (UVZ.Arr0 DIM2 e))))
     step (x,l)
-      | l<=j      = assert (i<=k) . return $ S.Yield (SeTblNuvzA x l (t PA.! (Z:.k:.l))) (x,l+1)
+      | l<=j      = let e = t PA.! (Z:.k:.l) in assert (i<=k) . return $ e `seq` S.Yield (SeTblNuvzA x l e) (x,l+1)
+      | otherwise = return $ S.Done
+      where k = getTopIdx x
+    {-# INLINE mk #-}
+    {-# INLINE step #-}
+  {-# INLINE mkStream #-}
+  {-# INLINE mkStreamInner #-}
+
+instance (StreamElement x) => StreamElement (x:.Tbl N (UZ.Arr0 DIM2 e)) where
+  data StreamElm    (x:.Tbl N (UZ.Arr0 DIM2 e)) = SeTblNuzA !(StreamElm x) !Int !e
+  type StreamTopIdx (x:.Tbl N (UZ.Arr0 DIM2 e)) = Int
+  type StreamArg    (x:.Tbl N (UZ.Arr0 DIM2 e)) = StreamArg x :. e
+  getTopIdx (SeTblNuzA _ k _) = k
+  getArg    (SeTblNuzA x _ e) = getArg x :. e
+  {-# INLINE getTopIdx #-}
+  {-# INLINE getArg #-}
+
+instance (Monad m, MkStream m x, StreamElement x, StreamTopIdx x ~ Int, Prim e) => MkStream m (x:.Tbl N (UZ.Arr0 DIM2 e)) where
+  mkStream (x:.Tbl t) (i,j) = S.map step $ mkStreamInner x (i,j-1) where
+    step :: StreamElm x -> StreamElm (x:.Tbl N (UZ.Arr0 DIM2 e))
+    step x = let k = getTopIdx x; e = t PA.! (Z:.k:.j) in assert (i<=k && k<j) $ e `seq` SeTblNuzA x j e
+    {-# INLINE step #-}
+  mkStreamInner (x:.Tbl t) (i,j) = S.flatten mk step Unknown $ mkStreamInner x (i,j-1) where
+    mk :: StreamElm x -> m (StreamElm x, Int)
+    mk x = return (x, getTopIdx x +1)
+    step :: (StreamElm x, Int) -> m (S.Step (StreamElm x, Int) (StreamElm (x:.Tbl N (UZ.Arr0 DIM2 e))))
+    step (x,l)
+      | l<=j      = let e = t PA.! (Z:.k:.l) in assert (i<=k) . return $ e `seq` S.Yield (SeTblNuzA x l e) (x,l+1)
       | otherwise = return $ S.Done
       where k = getTopIdx x
     {-# INLINE mk #-}
