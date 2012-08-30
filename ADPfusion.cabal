@@ -121,6 +121,10 @@ library
 executable GAPcriterion
   build-depends:
     criterion == 0.6.*
+  other-modules:
+    ADP.Fusion.GAPlike2.Common
+    ADP.Fusion.GAPlike2.Criterion
+    ADP.Fusion.GAPlike2.QuickCheck
   main-is:
     GAPcriterion.hs
   ghc-options:
