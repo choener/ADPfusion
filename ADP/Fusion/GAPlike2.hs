@@ -427,6 +427,10 @@ infixl 6 ...
 (...) s h ij = h $ s ij
 {-# INLINE (...) #-}
 
+infixl 6 ..@
+(..@) s h ij = h ij $ s ij
+{-# INLINE (..@) #-}
+
 infixl 9 ~~
 (~~) = (,)
 {-# INLINE (~~) #-}
