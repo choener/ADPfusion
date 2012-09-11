@@ -400,6 +400,40 @@ tEtoN (Tbl x) = Tbl x
 {-# INLINE tEtoN #-}
 
 
+
+-- ** Parses an empty subword. Can not be part of a more complex RHS for
+-- obvious reasons: S -> E S doesn't make sense. Used in some grammars as the
+-- base case.
+
+data Empty = Empty
+
+instance Build Empty where
+  type BuildStack Empty = Empty
+  build c = c
+  {-# INLINE build #-}
+
+instance StreamElement (Empty) where
+  data StreamElm    Empty = SeEmpty !Int
+  type StreamTopIdx Empty = Int
+  type StreamArg    Empty = ArgZ :. ()
+  getTopIdx (SeEmpty k) = k
+  getArg    (SeEmpty _) = ArgZ :. ()
+  {-# INLINE getTopIdx #-}
+  {-# INLINE getArg #-}
+
+instance (Monad m) => MkStream m (Empty) where
+  mkStream Empty (i,j) = S.unfoldr step i where
+    step k
+      | k==j      = Just (SeEmpty k, j+1)
+      | otherwise = Nothing
+    {-# INLINE step #-}
+  mkStreamInner = error "undefined for Empty"
+  {-# INLINE mkStream #-}
+  {-# INLINE mkStreamInner #-}
+
+
+
+
 -- * Build
 
 class Build x where
