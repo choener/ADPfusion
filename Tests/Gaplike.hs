@@ -88,12 +88,15 @@ fillTable  (Tbl tbl, f) = do
     v <- f (i,j)
     v `seq` writeM tbl (Z:.i:.j) v
 
-backtrack (inp :: VU.Vector Char) (tbl :: PA.Arr0 DIM2 Int) = undefined where -- g (0,n) where
+backtrack (inp :: VU.Vector Char) (tbl :: PA.Arr0 DIM2 Int) = unId . SM.toList $ g (0,n) where
   n = VU.length inp
   c = Chr inp
   e = Empty
-  t = BTtbl tbl g -- (g :: (Int,Int) -> SM.Stream Id Int)
-  (_,g) = gSimple ((aMax :: Signature Id Int) `aP` (aMax :: Signature Id Int)) t c e -- (aMax `aP` aPretty) t c e
+  t = BTtbl tbl g
+  (_,g) = gSimple ((aMax :: Signature Id Int) `aP` (aMax :: Signature Id Int)) t c e
+  
+bla (t :: (Int,Int) -> SM.Stream Id Int)
+  = gSimple ((aMax :: Signature Id Int) `aP` (aMax :: Signature Id Int)) (BTtbl (undefined :: PA.Arr0 DIM2 Int) t) (Chr (undefined :: VU.Vector Char)) Empty
 
 data BTtbl t g = BTtbl t g
 
@@ -101,14 +104,22 @@ instance Build (BTtbl t g) where
   type BuildStack (BTtbl t g) = None:.BTtbl t g
   build tbl = None:.tbl
 
-instance (StreamElement x) => StreamElement (x:.BTtbl (PA.Arr0 DIM2 e) g) where
-  data StreamElm    (x:.BTtbl (PA.Arr0 DIM2 e) g) = SeBTtbl !(StreamElm x) !Int !e g
-  type StreamTopIdx (x:.BTtbl (PA.Arr0 DIM2 e) g) = Int
-  type StreamArg    (x:.BTtbl (PA.Arr0 DIM2 e) g) = StreamArg x :. (e,g)
+type SI = SM.Stream Id Int
+type ISI = SM.Stream Id (Int, SI)
+type PISI = (Int,Int) -> ISI
+type PSI = (Int,Int) -> SI
+
+instance (StreamElement x) => StreamElement (x:.BTtbl (PA.Arr0 DIM2 Int) PSI) where
+  data StreamElm    (x:.BTtbl (PA.Arr0 DIM2 Int) PSI) = SeBTtbl !(StreamElm x) !Int !Int SI
+  type StreamTopIdx (x:.BTtbl (PA.Arr0 DIM2 Int) PSI) = Int
+  type StreamArg    (x:.BTtbl (PA.Arr0 DIM2 Int) PSI) = StreamArg x :. (Int,SI)
   getTopIdx (SeBTtbl _ k _ _) = k
   getArg    (SeBTtbl x _ e g) = getArg x :. (e,g)
 
-instance (Monad m, MkStream m x, StreamElement x, StreamTopIdx x ~ Int) => MkStream m (x:.BTtbl t g) where
+instance (Monad m, MkStream m x, StreamElement x, StreamTopIdx x ~ Int) => MkStream m (x:.BTtbl (PA.Arr0 DIM2 Int) PSI) where
+  mkStream (x:.BTtbl t g) (i,j) = SM.map step $ mkStreamInner x (i,j) where
+    step :: StreamElm x -> StreamElm (x:.BTtbl (PA.Arr0 DIM2 Int) PSI)
+    step x = let k = getTopIdx x in SeBTtbl x j (t PA.! (Z:.k:.j)) (g (k,j))
 
 -- |
 --
@@ -118,13 +129,12 @@ instance (Monad m, MkStream m x, StreamElement x, StreamTopIdx x ~ Int) => MkStr
 type APSignature =
   ( () -> (Int, SM.Stream Id Int)
   , Char -> (Int, SM.Stream Id Int) -> Char -> (Int, SM.Stream Id Int)
-  , (Int, SM.Stream Id Int) -> SM.Stream Id Int
+  , SM.Stream Id (Int, SM.Stream Id Int) -> SM.Stream Id Int
   )
 
 aP
-  :: (Monad m)
-  => Signature m Int
-  -> Signature m Int
+  :: Signature Id Int
+  -> Signature Id Int
   -> APSignature
 aP f s = (empty,pair,h) where
   (emptyF,pairF,hF) = f
