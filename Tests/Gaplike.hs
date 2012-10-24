@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -54,8 +55,12 @@ gSimple (empty,pair,h) tbl c e =
 aMax :: Monad m => Signature m Int
 aMax = (empty,pair,h) where
   empty _ = 0
+  {-# INLINE empty #-}
   pair l x r = if l==r then x+1 else x
+  {-# INLINE pair #-}
   h = SM.foldl' max (-999999)
+  {-# INLINE h #-}
+{-# INLINE aMax #-}
 
 -- | Pretty Printer
 
@@ -69,9 +74,10 @@ aPretty = (empty,pair,h) where
 runFill inp = (arr ! (Z:.0:.n), bt) where
   (_,Z:._:.n) = bounds arr
   len = P.length inp
-  arr = runST (fill vinp)
+  !arr = runST (fill vinp)
   vinp = VU.fromList $ inp
-  bt = backtrack vinp arr
+  bt = arr `seq` backtrack vinp arr
+{-# NOINLINE runFill #-}
 
 type TBL s = Tbl E (PA.MArr0 s DIM2 Int)
 
@@ -79,11 +85,15 @@ fill :: forall s . VU.Vector Char -> ST s (Arr0 DIM2 Int)
 fill inp = do
   let n = VU.length inp
   t' <- fromAssocsM (Z:.0:.0) (Z:.n:.n) (-999999) []
-  let t = Tbl t' -- :: TBL s
+  let t = Tbl t'
+      {-# INLINE t #-}
   let c = Chr inp
+      {-# INLINE c #-}
   let e = Empty
+      {-# INLINE e #-}
   fillTable $ gSimple aMax t c e
   PA.freeze t'
+{-# NOINLINE fill #-}
 
 fillTable :: PrimMonad m => (Tbl E (MArr0 (PrimState m) DIM2 Int), ((Int,Int) -> m Int)) -> m ()
 fillTable  (Tbl tbl, f) = do
@@ -91,6 +101,7 @@ fillTable  (Tbl tbl, f) = do
   forM_ [n,n-1..0] $ \i -> forM_ [i..n] $ \j -> do
     v <- f (i,j)
     v `seq` writeM tbl (Z:.i:.j) v
+{-# INLINE fillTable #-}
 
 backtrack (inp :: VU.Vector Char) (tbl :: PA.Arr0 DIM2 Int) = unId . SM.toList $ g (0,n) where
   n = VU.length inp
@@ -98,15 +109,19 @@ backtrack (inp :: VU.Vector Char) (tbl :: PA.Arr0 DIM2 Int) = unId . SM.toList $
   e = Empty
   t = BTtbl tbl g
   (_,g) = gSimple ((aMax :: Signature Id Int) `aP` (aMax :: Signature Id Int)) t c e
+{-# INLINE backtrack #-}
 
+{-
 bla (t :: (Int,Int) -> SM.Stream Id Int)
   = gSimple ((aMax :: Signature Id Int) `aP` (aMax :: Signature Id Int)) (BTtbl (undefined :: PA.Arr0 DIM2 Int) t) (Chr (undefined :: VU.Vector Char)) Empty
+-}
 
 data BTtbl t g = BTtbl t g
 
 instance Build (BTtbl t g) where
   type BuildStack (BTtbl t g) = None:.BTtbl t g
   build tbl = None:.tbl
+  {-# INLINE build #-}
 
 type SI = SM.Stream Id Int
 type ISI = SM.Stream Id (Int, SI)
@@ -119,11 +134,15 @@ instance (StreamElement x) => StreamElement (x:.BTtbl (PA.Arr0 DIM2 Int) PSI) wh
   type StreamArg    (x:.BTtbl (PA.Arr0 DIM2 Int) PSI) = StreamArg x :. (Int,SI)
   getTopIdx (SeBTtbl _ k _ _) = k
   getArg    (SeBTtbl x _ e g) = getArg x :. (e,g)
+  {-# INLINE getTopIdx #-}
+  {-# INLINE getArg #-}
 
 instance (Monad m, MkStream m x, StreamElement x, StreamTopIdx x ~ Int) => MkStream m (x:.BTtbl (PA.Arr0 DIM2 Int) PSI) where
   mkStream (x:.BTtbl t g) (i,j) = SM.map step $ mkStreamInner x (i,j) where
     step :: StreamElm x -> StreamElm (x:.BTtbl (PA.Arr0 DIM2 Int) PSI)
     step x = let k = getTopIdx x in SeBTtbl x j (t PA.! (Z:.k:.j)) (g (k,j))
+    {-# INLINE step #-}
+  {-# INLINE mkStream #-}
 
 -- |
 --
@@ -158,4 +177,8 @@ aP f s = (empty,pair,h) where
     hfs = unId . hF $ SM.map fst xs
     phfs = SM.filter ((hfs==) . fst) xs
     ss = SM.concatMap snd $ phfs
+  {-# INLINE empty #-}
+  {-# INLINE pair #-}
+  {-# INLINE h #-}
+{-# INLINE aP #-}
 
