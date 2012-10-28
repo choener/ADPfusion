@@ -1,3 +1,4 @@
+{-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE EmptyDataDecls #-}
 {- LANGUAGE NoMonomorphismRestriction #-}
@@ -42,6 +43,31 @@ import qualified Data.PrimitiveArray as PA
 
 
 
+-- * The required type classes. Each class does its own thing.
+
+-- | The 'Build' class. Combines the arguments into a stack before they are
+-- turned into a stream.
+--
+--
+--
+-- To use, simply write "instance Build MyDataCtor" as we have sensible default
+-- instances.
+
+class Build x where
+  -- | The stack of arguments we are building.
+  type BuildStack x :: *
+  -- | The default is for the left-most element.
+  type BuildStack x = None :. x
+  -- | Given an element, create the stack.
+  build :: x -> BuildStack x
+  -- | Default for the left-most element.
+  default build :: (BuildStack x ~ (None :. x)) => x -> BuildStack x
+  build x = None :. x
+  {-# INLINE build #-}
+
+-- | The stream element. Creates a type-level recursive data type containing
+-- the extracted arguments.
+
 class StreamElement x where
   -- | one element of the stream, recursively defined
   data StreamElm x :: *
@@ -53,6 +79,8 @@ class StreamElement x where
   getTopIdx :: StreamElm x -> StreamTopIdx x
   -- | extract the recursively defined argument in a well-defined way for 'apply'
   getArg :: StreamElm x -> StreamArg x
+
+-- | Given the arguments, creates a stream of 'StreamElement's.
 
 class (StreamConstraint x) => MkStream m x where
   type StreamConstraint x :: Constraint
@@ -97,10 +125,14 @@ instance (Monad m) => MkStream m None where
 
 data Chr e = Chr !(VU.Vector e)
 
+instance Build (Chr e)
+
+{-
 instance Build (Chr e) where
   type BuildStack (Chr e) = None:.(Chr e)
   build c = None:.c
   {-# INLINE build #-}
+-}
 
 instance (StreamElement x) => StreamElement (x:.Chr e) where
   data StreamElm (x:.Chr e) = SeChr !(StreamElm x) !Int !e
@@ -154,9 +186,13 @@ data Tbl c es = Tbl !es
 
 -- | Build all variants of 'Tbl's.
 
+instance Build (Tbl typ cnt)
+
+{-
 instance Build (Tbl typ cnt) where
   type BuildStack (Tbl typ cnt) = None:.Tbl typ cnt
   build tbl = None:.tbl
+-}
 
 -- *** 2D-table of immutable data.
 
@@ -435,10 +471,14 @@ instance (Monad m) => MkStream m (Empty) where
 
 data RestrictedRegion e = RRegion !Int !Int !(VU.Vector e)
 
+instance Build (RestrictedRegion e)
+
+{-
 instance Build (RestrictedRegion e) where
   type BuildStack (RestrictedRegion e) = None:.RestrictedRegion e
   build c = None:.c
   {-# INLINE build #-}
+-}
 
 instance (StreamElement x) => StreamElement (x:.RestrictedRegion e) where
   data StreamElm (x:.RestrictedRegion e) = SeResRegion !(StreamElm x) !Int (VU.Vector e)
@@ -475,10 +515,6 @@ instance (Monad m, MkStream m x, StreamElement x, StreamTopIdx x ~ Int, VU.Unbox
 
 
 -- * Build
-
-class Build x where
-  type BuildStack x :: *
-  build :: x -> BuildStack x
 
 instance Build x => Build (x,y) where
   type BuildStack (x,y) = BuildStack x :. y
