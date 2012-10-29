@@ -1,12 +1,12 @@
 {-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE PackageImports #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 
 -- | The palindrome mini-example showing how to use the new GAPlike-version of
 -- ADP together with algebra products. Given nested paired equal characters,
@@ -109,7 +109,7 @@ fillPalindrome :: forall s . VU.Vector Char -> ST s (Arr0 DIM2 Int)
 fillPalindrome inp = do
   let n = VU.length inp
   t' <- fromAssocsM (Z:.0:.0) (Z:.n:.n) (-999999) []
-  let t = Tbl t'
+  let t = MTbl t'
       {-# INLINE t #-}
   let c = Chr inp
       {-# INLINE c #-}
@@ -125,8 +125,8 @@ fillPalindrome inp = do
 --
 -- TODO We actually need to make a small library of fillXYZ functions.
 
-fillTable :: PrimMonad m => (Tbl E (MArr0 (PrimState m) DIM2 Int), ((Int,Int) -> m Int)) -> m ()
-fillTable  (Tbl tbl, f) = do
+fillTable :: PrimMonad m => (MTbl E (MArr0 (PrimState m) DIM2 Int), ((Int,Int) -> m Int)) -> m ()
+fillTable  (MTbl tbl, f) = do
   let (_,Z:.n:._) = boundsM tbl
   forM_ [n,n-1..0] $ \i -> forM_ [i..n] $ \j -> do
     v <- f (i,j)
