@@ -1,200 +1,433 @@
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE EmptyDataDecls #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverlappingInstances #-}
 {-# LANGUAGE PackageImports #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
 
--- | The "GAP-like" version of ADPfusion. We now encode arguments as distinct
--- data types. The 'MkStream' type class determines the creation of streams.
+-- | 
 --
--- Writing your own instances:
+-- HINTS for writing your own (Non-) terminals:
 --
--- 1. scopetypevariables for the inner MkType, StepType types
+-- - ALWAYS provide types for local functions of 'mkStream' and
+-- 'mkStreamInner'. Otherwise stream-fusion gets confused and doesn't optimize.
+-- (Observable in core by looking for 'Left', 'RIght' constructors and 'SPEC'
+-- constructors.
 
 module ADP.Fusion.GAPlike where
 
-import ADP.Fusion.Monadic.Internal (Apply(..))
 import Control.Monad.Primitive
-import Control.Monad.ST
-import Data.Char
-import Data.Primitive
-import Data.PrimitiveArray
-import Data.PrimitiveArray.Unboxed.Zero
+import Data.Primitive.Types (Prim(..))
 import Data.Vector.Fusion.Stream.Size
-import Debug.Trace
-import GHC.Prim (Constraint(..))
-import "PrimitiveArray" Data.Array.Repa.Index
-import "PrimitiveArray" Data.Array.Repa.Shape
-import qualified Data.Vector.Fusion.Stream as SPure
+import GHC.Prim (Constraint)
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Unboxed as VU
-import qualified Data.Vector.Unboxed.Mutable as VUM
-import Text.Printf
+
+import Data.PrimitiveArray (PrimArrayOps(..), MPrimArrayOps(..))
+import "PrimitiveArray" Data.Array.Repa.Index
+import qualified Data.PrimitiveArray as PA
+import qualified Data.PrimitiveArray.Unboxed.Zero as UZ
 
 
 
--- *
+-- * The required type classes. Each class does its own thing.
 
-type family   TopIdx x :: *
-
-type family   TopArg x :: *
-
-class (Monad m) => MkStream m x where
-  type SC x :: Constraint
-  type SC x = ()
-  -- | The inner stream generator.
-  mkStreamInner :: (SC x) => x -> DIM2 -> S.Stream m (TopIdx x, TopArg x)
-  -- | The outer stream generator.
-  mkStream      :: (SC x) => x -> DIM2 -> S.Stream m (TopIdx x, TopArg x)
-
-type StepType m x y
-  =  (TopIdx x:.TopIdx y, TopArg x)
-  -> m (S.Step (TopIdx x:.TopIdx y, TopArg x) (TopIdx x:.TopIdx y, TopArg x:.TopArg y))
-
-type MkType m x y
-  =  (TopIdx x, TopArg x)
-  -> m (TopIdx x:.TopIdx y, TopArg x)
+-- | The 'Build' class. Combines the arguments into a stack before they are
+-- turned into a stream.
+--
+--
+--
+-- To use, simply write "instance Build MyDataCtor" as we have sensible default
+-- instances.
 
 class Build x where
-  type Bld x :: *
-  build :: x -> Bld x
+  -- | The stack of arguments we are building.
+  type BuildStack x :: *
+  -- | The default is for the left-most element.
+  type BuildStack x = None :. x
+  -- | Given an element, create the stack.
+  build :: x -> BuildStack x
+  -- | Default for the left-most element.
+  default build :: (BuildStack x ~ (None :. x)) => x -> BuildStack x
+  build x = None :. x
+  {-# INLINE build #-}
 
--- ** Stack TopIdx / TopArg
+-- | The stream element. Creates a type-level recursive data type containing
+-- the extracted arguments.
 
-type instance TopIdx (x:.y) = TopIdx x :. TopIdx y
+class StreamElement x where
+  -- | one element of the stream, recursively defined
+  data StreamElm x :: *
+  -- | top-most index of the stream -- typically int
+  type StreamTopIdx  x :: *
+  -- | complete, recursively defined argument of the stream
+  type StreamArg  x :: *
+  -- | Given a stream element, we extract the top-most idx
+  getTopIdx :: StreamElm x -> StreamTopIdx x
+  -- | extract the recursively defined argument in a well-defined way for 'apply'
+  getArg :: StreamElm x -> StreamArg x
 
-type instance TopArg (x:.y) = TopArg x :. TopArg y
+-- | Given the arguments, creates a stream of 'StreamElement's.
+
+class (StreamConstraint x) => MkStream m x where
+  type StreamConstraint x :: Constraint
+  type StreamConstraint x = ()
+  mkStream      :: (StreamConstraint x) => x -> (Int,Int) -> S.Stream m (StreamElm x)
+  mkStreamInner :: (StreamConstraint x) => x -> (Int,Int) -> S.Stream m (StreamElm x)
+
+
+
+-- * Terminates the stack of arguments
+
+-- | Very simple data ctor
+
+data None = None
+
+-- | For CORE-language, we have our own Arg-terminator
+
+data ArgZ = ArgZ
+
+instance StreamElement None where
+  data StreamElm None    = SeNone !Int
+  type StreamTopIdx None = Int
+  type StreamArg    None = ArgZ
+  getTopIdx (SeNone k) = k
+  getArg _ = ArgZ
+  {-# INLINE getTopIdx #-}
+  {-# INLINE getArg #-}
+
+instance (Monad m) => MkStream m None where
+  mkStream None (i,j) = S.unfoldr step i where
+    step k
+      | k<=j = Just (SeNone i, j+1)
+      | otherwise = Nothing
+    {-# INLINE step #-}
+  {-# INLINE mkStream #-}
+  mkStreamInner = mkStream
+  {-# INLINE mkStreamInner #-}
+
+
+
+-- * A single character terminal. Using unboxed vector to hold the input. Note
+-- that "character" means parsing a scalar, not that the 'Chr' parser only
+-- accepts "Char"s.
+
+data Chr e = Chr !(VU.Vector e)
+
+instance Build (Chr e)
+
+instance (StreamElement x) => StreamElement (x:.Chr e) where
+  data StreamElm (x:.Chr e) = SeChr !(StreamElm x) !Int !e
+  type StreamTopIdx (x:.Chr e) = Int
+  type StreamArg (x:.Chr e) = StreamArg x :. e
+  getTopIdx (SeChr _ k _) = k
+  getArg (SeChr x _ e) = getArg x :. e
+  {-# INLINE getTopIdx #-}
+  {-# INLINE getArg #-}
+
+-- TODO I think, we can rewrite both versions to use S.map instead of S.flatten.
+
+instance (Monad m, MkStream m x, StreamElement x, StreamTopIdx x ~ Int, VU.Unbox e) => MkStream m (x:.Chr e) where
+  mkStream (x:.Chr es) (i,j) = S.flatten mk step Unknown $ mkStream x (i,j-1) where
+    mk :: StreamElm x -> m (StreamElm x, Int)
+    mk x = return (x, getTopIdx x)
+    step :: (StreamElm x, Int) -> m (S.Step (StreamElm x, Int) (StreamElm (x:.Chr e)))
+    step (x,k)
+      | k+1 == j = return $ S.Yield (SeChr x (k+1) (VU.unsafeIndex es k)) (x,j+1)
+      | otherwise = return S.Done
+    {-# INLINE mk #-}
+    {-# INLINE step #-}
+  {-# INLINE mkStream #-}
+  mkStreamInner (x:.Chr es) (i,j) = S.flatten mk step Unknown $ mkStreamInner x (i,j-1) where
+    mk :: StreamElm x -> m (StreamElm x, Int)
+    mk x = return (x, getTopIdx x)
+    step :: (StreamElm x, Int) -> m (S.Step (StreamElm x, Int) (StreamElm (x:.Chr e)))
+    step (x,k)
+      | k < j     = return $ S.Yield (SeChr x (k+1) (VU.unsafeIndex es k)) (x,j+1)
+      | otherwise = return $ S.Done
+    {-# INLINE mk #-}
+    {-# INLINE step #-}
+  {-# INLINE mkStreamInner #-}
+
+
+
+-- * Empty and non-empty tables.
+--
+-- TODO This will probably become more funny with triangular tables ...
+
+-- | empty subwords allowed
+
+data E
+
+-- | only non-empty subwords
+
+data N
+
+-- | Used by the instances below for index calculations.
+
+class TblType tt where
+  initDeltaIdx :: tt -> Int
+
+instance TblType E where
+  initDeltaIdx _ = 0
+  {-# INLINE initDeltaIdx #-}
+
+instance TblType N where
+  initDeltaIdx _ = 1
+  {-# INLINE initDeltaIdx #-}
+
+-- ** Immutable tables
+
+data Tbl c es = Tbl !es
+
+instance Build (Tbl c es)
+
+instance (StreamElement x, PrimArrayOps arr DIM2 e, TblType c) => StreamElement (x:.Tbl c (arr DIM2 e)) where
+  data StreamElm    (x:.Tbl c (arr DIM2 e)) = SeTbl !(StreamElm x) !Int !e
+  type StreamTopIdx (x:.Tbl c (arr DIM2 e)) = Int
+  type StreamArg    (x:.Tbl c (arr DIM2 e)) = StreamArg x :. e
+  getTopIdx (SeTbl _ k _) = k
+  getArg    (SeTbl x _ e) = getArg x :. e
+  {-# INLINE getTopIdx #-}
+  {-# INLINE getArg #-}
+
+instance (Monad m, MkStream m x, StreamElement x, StreamTopIdx x ~ Int, PrimArrayOps arr DIM2 e, TblType c) => MkStream m (x:.Tbl c (arr DIM2 e)) where
+  -- | The outer stream function assumes that mkStreamInner generates a valid
+  -- stream that does not need to be checked. (This should always be true!).
+  -- The table entry to read is [k,j], as we supposedly are generating the
+  -- outermost stream. Even more "outermost" streams will have changed 'j'
+  -- beforehand. 'mkStream' should only ever be used if 'j' can be fixed.
+  mkStream (x:.Tbl t) (i,j) = S.map step $ mkStreamInner x (i,j - initDeltaIdx (undefined :: c)) where
+    step :: StreamElm x -> StreamElm (x:.Tbl c (arr DIM2 e))
+    step x = let k = getTopIdx x in SeTbl x j (t PA.! (Z:.k:.j))
+    {-# INLINE step #-}
+  -- | The inner stream will, in each step, check if the current subword [k,l]
+  -- (forall l>=k) is valid and terminate the stream once l>j.
+  mkStreamInner (x:.Tbl t) (i,j) = S.flatten mk step Unknown $ mkStreamInner x (i,j) where
+    mk :: StreamElm x -> m (StreamElm x, Int)
+    mk x = return (x, getTopIdx x + initDeltaIdx (undefined :: c))
+    step :: (StreamElm x, Int) -> m (S.Step (StreamElm x, Int) (StreamElm (x:.Tbl c (arr DIM2 e))))
+    step (x,l)
+      | l<=j      = return $ S.Yield (SeTbl x l (t PA.! (Z:.k:.l))) (x,l+1)
+      | otherwise = return $ S.Done
+      where k = getTopIdx x
+    {-# INLINE mk #-}
+    {-# INLINE step #-}
+  {-# INLINE mkStream #-}
+  {-# INLINE mkStreamInner #-}
+
+-- ** Mutable tables in some monad.
+
+data MTbl c es = MTbl !es
+
+instance Build (MTbl c es)
+
+instance (StreamElement x, MPrimArrayOps marr DIM2 e, TblType c) => StreamElement (x:.MTbl c (marr s DIM2 e)) where
+  data StreamElm    (x:.MTbl c (marr s DIM2 e)) = SeMTbl !(StreamElm x) !Int !e
+  type StreamTopIdx (x:.MTbl c (marr s DIM2 e)) = Int
+  type StreamArg    (x:.MTbl c (marr s DIM2 e)) = StreamArg x :. e
+  getTopIdx (SeMTbl _ k _) = k
+  getArg    (SeMTbl x _ e) = getArg x :. e
+  {-# INLINE getTopIdx #-}
+  {-# INLINE getArg #-}
+
+instance
+  ( Monad m
+  , PrimMonad m
+  , MkStream m x
+  , StreamElement x
+  , StreamTopIdx x ~ Int
+  , MPrimArrayOps marr DIM2 e
+  , TblType c
+  , s ~ PrimState m
+  ) => MkStream m (x:.MTbl c (marr s DIM2 e)) where
+  -- | The outer stream function assumes that mkStreamInner generates a valid
+  -- stream that does not need to be checked. (This should always be true!).
+  -- The table entry to read is [k,j], as we supposedly are generating the
+  -- outermost stream. Even more "outermost" streams will have changed 'j'
+  -- beforehand. 'mkStream' should only ever be used if 'j' can be fixed.
+  mkStream (x:.MTbl t) (i,j) = S.mapM step $ mkStreamInner x (i,j - initDeltaIdx (undefined :: c)) where
+    step :: StreamElm x -> m (StreamElm (x:.MTbl c (marr s DIM2 e)))
+    step x = let k = getTopIdx x in PA.readM t (Z:.k:.j) >>= \e -> return $ SeMTbl x j e
+    {-# INLINE step #-}
+  -- | The inner stream will, in each step, check if the current subword [k,l]
+  -- (forall l>=k) is valid and terminate the stream once l>j.
+  mkStreamInner (x:.MTbl t) (i,j) = S.flatten mk step Unknown $ mkStreamInner x (i,j) where
+    mk :: StreamElm x -> m (StreamElm x, Int)
+    mk x = return (x, getTopIdx x + initDeltaIdx (undefined :: c))
+    step :: (StreamElm x, Int) -> m (S.Step (StreamElm x, Int) (StreamElm (x:.MTbl c (marr s DIM2 e))))
+    step (x,l)
+      | l<=j      = readM t (Z:.k:.l) >>= \e -> return $ S.Yield (SeMTbl x l e) (x,l+1)
+      | otherwise = return $ S.Done
+      where k = getTopIdx x
+    {-# INLINE mk #-}
+    {-# INLINE step #-}
+  {-# INLINE mkStream #-}
+  {-# INLINE mkStreamInner #-}
+
+-- ** Some convenience functions.
+
+tNtoE :: Tbl N x -> Tbl E x
+tNtoE (Tbl x) = Tbl x
+{-# INLINE tNtoE #-}
+
+tEtoN :: Tbl E x -> Tbl N x
+tEtoN (Tbl x) = Tbl x
+{-# INLINE tEtoN #-}
+
+
+
+-- * Parses an empty subword.
+
+-- | The empty subword. Can not be part of a more complex RHS for obvious
+-- reasons: "S -> E S" doesn't make sense. Used in some grammars as the base
+-- case.
+
+data Empty = Empty
+
+instance Build Empty where
+  type BuildStack Empty = Empty
+  build c = c
+  {-# INLINE build #-}
+
+instance StreamElement (Empty) where
+  data StreamElm    Empty = SeEmpty !Int
+  type StreamTopIdx Empty = Int
+  type StreamArg    Empty = ArgZ :. ()
+  getTopIdx (SeEmpty k) = k
+  getArg    (SeEmpty _) = ArgZ :. ()
+  {-# INLINE getTopIdx #-}
+  {-# INLINE getArg #-}
+
+instance (Monad m) => MkStream m (Empty) where
+  mkStream Empty (i,j) = S.unfoldr step i where
+    step k
+      | k==j      = Just (SeEmpty k, j+1)
+      | otherwise = Nothing
+    {-# INLINE step #-}
+  mkStreamInner = error "undefined for Empty"
+  {-# INLINE mkStream #-}
+  {-# INLINE mkStreamInner #-}
+
+
+
+-- * Parsing subwords with restriced size. Both min- and max-size are given
+-- when binding input.
+
+data RestrictedRegion e = RRegion !Int !Int !(VU.Vector e)
+
+instance Build (RestrictedRegion e)
+
+instance (StreamElement x) => StreamElement (x:.RestrictedRegion e) where
+  data StreamElm (x:.RestrictedRegion e) = SeResRegion !(StreamElm x) !Int (VU.Vector e)
+  type StreamTopIdx (x:.RestrictedRegion e) = Int
+  type StreamArg (x:.RestrictedRegion e) = StreamArg x :. (VU.Vector e)
+  getTopIdx (SeResRegion _ k _) = k
+  getArg (SeResRegion x _ e) = getArg x :. e
+  {-# INLINE getTopIdx #-}
+  {-# INLINE getArg #-}
+
+instance (Monad m, MkStream m x, StreamElement x, StreamTopIdx x ~ Int, VU.Unbox e) => MkStream m (x:.RestrictedRegion e) where
+  mkStream (x:.RRegion minR maxR xs) (i,j) = S.flatten mk step Unknown $ mkStream x (i,j-1) where
+    mk :: StreamElm x -> m (StreamElm x, Int)
+    mk x = return (x, getTopIdx x)
+    step :: (StreamElm x, Int) -> m (S.Step (StreamElm x, Int) (StreamElm (x:.RestrictedRegion e)))
+    step (x,k)
+      | k+minR <= j && k+maxR >= j = return $ S.Yield (SeResRegion x k (VU.unsafeSlice k (max maxR (j-k)) xs)) (x,j+1)
+      | otherwise = return S.Done
+    {-# INLINE mk #-}
+    {-# INLINE step #-}
+  {-# INLINE mkStream #-}
+  mkStreamInner (x:.RRegion minR maxR xs) (i,j) = S.flatten mk step Unknown $ mkStream x (i,j) where
+    mk :: StreamElm x -> m (StreamElm x, Int)
+    mk x = return (x, getTopIdx x + minR)
+    step :: (StreamElm x, Int) -> m (S.Step (StreamElm x, Int) (StreamElm (x:.RestrictedRegion e)))
+    step (x,l)
+      | l<=j && (l-k)<=maxR = return $ S.Yield (SeResRegion x l (VU.unsafeSlice k (l-k) xs)) (x,j+1)
+      | otherwise           = return S.Done
+      where k = getTopIdx x
+    {-# INLINE mk #-}
+    {-# INLINE step #-}
+  {-# INLINE mkStreamInner #-}
+
+
+
+-- * Backtracking tables.
+--
+-- Since we want the slow forward phase to be fast, in the backtracking phase,
+-- we need to keep track of additional things. The backtracking table 'BTtbl'
+-- requires the table and an additional backtracking function. You should use
+-- the same composed function as for the forward pahse creating the bound table
+-- in the first place.
+
+-- | The backtracking table 'BTtbl" captures a DP table and the function used
+-- to fill it.
+
+data BTtbl t g = BTtbl t g
+
+instance Build (BTtbl t g)
+
+-- | The backtracking function, given our index pair, return a stream of
+-- backtracked results. (Return as in we are in a monad).
+--
+-- TODO Should this be "(Int,Int) -> m (SM.Stream Id b)" or are there cases
+-- where we'd like to have monadic effects on the "b"s?
+
+type BTfun m b = (Int,Int) -> m (S.Stream m b)
+
+instance (Monad m, StreamElement x) => StreamElement (x:.BTtbl (UZ.Arr0 DIM2 e) (BTfun m b)) where
+  data StreamElm    (x:.BTtbl (UZ.Arr0 DIM2 e) (BTfun m b)) = SeBTtbl !(StreamElm x) !Int !e (m (S.Stream m b))
+  type StreamTopIdx (x:.BTtbl (UZ.Arr0 DIM2 e) (BTfun m b)) = Int
+  type StreamArg    (x:.BTtbl (UZ.Arr0 DIM2 e) (BTfun m b)) = StreamArg x :. (e, m (S.Stream m b))
+  getTopIdx (SeBTtbl _ k _ _) = k
+  getArg    (SeBTtbl x _ e g) = getArg x :. (e,g)
+  {-# INLINE getTopIdx #-}
+  {-# INLINE getArg #-}
+
+instance
+  ( Monad m
+  , MkStream m x
+  , StreamElement x
+  , Prim e
+  , StreamTopIdx x ~ Int
+  ) => MkStream m (x:.BTtbl (UZ.Arr0 DIM2 e) (BTfun m b)) where
+  mkStream (x:.BTtbl t g) (i,j) = S.map step $ mkStreamInner x (i,j) where
+    step :: StreamElm x -> StreamElm (x:.BTtbl (UZ.Arr0 DIM2 e) (BTfun m b))
+    step x = let k = getTopIdx x in SeBTtbl x j (t PA.! (Z:.k:.j)) (g (k,j))
+    {-# INLINE step #-}
+  mkStreamInner (x:.BTtbl t g) (i,j) = S.flatten mk step Unknown $ mkStreamInner x (i,j) where
+    mk :: StreamElm x -> m (StreamElm x, Int)
+    mk x = return (x, getTopIdx x)
+    step :: (StreamElm x, Int) -> m (S.Step (StreamElm x, Int) (StreamElm (x:.BTtbl (UZ.Arr0 DIM2 e) (BTfun m b))))
+    step (x,l)
+      | l<=j      = return $ S.Yield (SeBTtbl x j (t PA.! (Z:.k:.l)) (g (k,l))) (x,l+1)
+      | otherwise = return $ S.Done
+      where k = getTopIdx x
+    {-# INLINE mk #-}
+    {-# INLINE step #-}
+  {-# INLINE mkStream #-}
+  {-# INLINE mkStreamInner #-}
+
+
+
+-- * Build complex stacks
 
 instance Build x => Build (x,y) where
-  type Bld (x,y) = Bld x :. y
-  build (a,b) = build a :. b
+  type BuildStack (x,y) = BuildStack x :. y
+  build (x,y) = build x :. y
   {-# INLINE build #-}
 
 
 
--- ** Stream generation for the bottom of the argument stack.
-
-type instance TopIdx Z = Z:.Int
-
-type instance TopArg Z = Z
-
-instance (Monad m) => MkStream m Z where
-  mkStreamInner Z (Z:.i:.j) = S.unfoldr step i where
-    step i
-      | i<=j      = Just ((Z:.i, Z), (j+1))
-      | otherwise = Nothing
-    {-# INLINE [0] step #-}
-  {-# INLINE mkStreamInner #-}
-  mkStream = mkStreamInner
-  {-# INLINE mkStream #-}
-
-
-
--- ** Stream generation for our typical two-dimensional tables. Assumes that
--- the width is 1+. If you need zero-width tables, specialize this instance
--- with a nice newtype wrapper.
-
-type instance TopIdx (MArr0 s DIM2 elm) = Int
-
-type instance TopArg (MArr0 s DIM2 elm) = elm
-
-instance Build (MArr0 s DIM2 elm) where
-  type Bld (MArr0 s DIM2 elm) = Z:.MArr0 s DIM2 elm
-  build a = Z:.a
-  {-# INLINE build #-}
-
-instance (Monad m, PrimMonad m, PrimState m ~ s, Prim elm, MkStream m x, SC x, TopIdx x ~ (t0:.Int)) => MkStream m (x:.MArr0 s DIM2 elm) where
-  type SC (x:.MArr0 s DIM2 elm) = ()
-  -- | Inner streams advance by one from one step to the next.
-  mkStreamInner (x:.marr) (Z:.i:.j) = x `seq` marr `seq` S.flatten mk step Unknown $ mkStreamInner x (Z:.i:.j) where
-    mk :: MkType m x (MArr0 s DIM2 elm)
-    mk (zi:.k,za) = {- zi `seq` za `seq` -} return $ (zi:.k:.k+1,za)
-    step :: StepType m x (MArr0 s DIM2 elm)
-    step (zi:.k:.l,za)
-      | l<=j      = readM marr (Z:.k:.l) >>= \c -> {- zi `seq` za `seq` -} c `seq` return $ S.Yield (zi:.k:.l,za:.c) (zi:.k:.l+1,za)
-      | otherwise = return $ S.Done
-    {-# INLINE [0] mk #-}
-    {-# INLINE [0] step #-}
-  {-# INLINE mkStreamInner #-}
-  -- | If this is an outermost stream, create only one element with size
-  -- '[k,j]'. The recursive stream generation then switches to 'mkStreamInner'.
-  mkStream (x:.marr) (Z:.i:.j) = x `seq` marr `seq` S.flatten mk step Unknown $ mkStreamInner x (Z:.i:.j) where
-    mk :: MkType m x (MArr0 s DIM2 elm)
-    mk (zi:.k,za) = {- zi `seq` za `seq` -} return $ (zi:.k:.j,za)
-    step :: StepType m x (MArr0 s DIM2 elm)
-    step (zi:.k:.l,za)
-      | k<l && l<=j = readM marr (Z:.k:.l) >>= \c -> {- zi `seq` za `seq` -} c `seq` return $ S.Yield (zi:.k:.l,za:.c) (zi:.k:.j+1,za)
-      | otherwise   = return $ S.Done
-    {-# INLINE [0] mk #-}
-    {-# INLINE [0] step #-}
-  {-# INLINE mkStream #-}
-
-
-
--- ** A terminal symbol with a width of 1. The underlying input is stored in a
--- primitive array 'Arr0' of dimension one ('DIM1'). The element type 'elm' is
--- variable.
-
--- | A terminal symbol 'PAsingle' of width 1.
-
-data PAsingle elm = PAsingle !(Arr0 DIM1 elm)
-
-type instance TopIdx (PAsingle elm) = Int
-
-type instance TopArg (PAsingle elm) = elm
-
-instance Build (PAsingle elm) where
-  type Bld (PAsingle elm) = Z:.PAsingle elm
-  build a = Z:.a
-  {-# INLINE build #-}
-
-instance (Monad m, Prim elm, MkStream m x, SC x, TopIdx x ~ (t0:.Int)) => MkStream m (x:.PAsingle elm) where
-  type SC (x:.PAsingle elm) = ()
-  -- | We can not decrease 'j' anymore, as we could well be within moving
-  -- indices.
-  mkStreamInner (x:.PAsingle arr) (Z:.i:.j) = x `seq` arr `seq` S.flatten mk step Unknown $ mkStreamInner x (Z:.i:.j) where
-    -- | Create a new width of size [k,k+1]
-    mk :: MkType m x (PAsingle elm)
-    mk (zi:.k,za) = zi `seq` za `seq` return $ (zi:.k:.k+1,za)
-    -- | Do a step of size 1 [k,k+1], then finish.
-    step :: StepType m x (PAsingle elm)
-    step (zi:.k:.l,za)
-      | l<=j      = do let c = arr ! (Z:.k)
-                       zi `seq` za `seq` c `seq` return $ S.Yield (zi:.k:.l,za:.c) (zi:.k:.j+1,za)
-      | otherwise = return $ S.Done
-    {-# INLINE [0] mk #-}
-    {-# INLINE [0] step #-}
-  {-# INLINE mkStreamInner #-}
-  -- | We are still in the outer stream and have only encountered constant-size
-  -- arguments. We handle this single argument and decrease the constant width
-  -- of the remaining (left) arguments.
-  mkStream (x:.PAsingle arr) (Z:.i:.j) = x `seq` arr `seq` S.flatten mk step Unknown $ mkStream x (Z:.i:.j-1) where
-    -- | Set the local width to [j-1,j].
-    mk :: MkType m x (PAsingle elm)
-    mk (zi,za) = zi `seq` za `seq` return $ (zi:.j,za)
-    -- | If 'i>=k' we have a valid region of size [j-1,j] ('mk').
-    step :: StepType m x (PAsingle elm)
-    step (zi:.k:.l,za)
-      | k+1==l      = do let c = arr ! (Z:.k)
-                         zi `seq` za `seq` c `seq` return $ S.Yield (zi:.k:.l,za:.c) (zi:.k:.j+1,za)
-      | otherwise = return $ S.Done
-    {-# INLINE [0] mk #-}
-    {-# INLINE [0] step #-}
-  {-# INLINE mkStream #-}
-
-
+-- * combinators
 
 infixl 8 <<<
-(<<<) f t ij = S.map (\(_,za) -> apply f za) $ mkStream (build t) ij
+(<<<) f t ij = S.map (\s -> apply f $ getArg s) $ mkStream (build t) ij
 {-# INLINE (<<<) #-}
 
 infixl 7 |||
@@ -205,6 +438,9 @@ infixl 6 ...
 (...) s h ij = h $ s ij
 {-# INLINE (...) #-}
 
+infixl 6 ..@
+(..@) s h ij = h ij $ s ij
+{-# INLINE (..@) #-}
 
 infixl 9 ~~
 (~~) = (,)
@@ -214,260 +450,86 @@ infixl 9 %
 (%) = (,)
 {-# INLINE (%) #-}
 
-testST :: PAsingle Char -> Int -> Int -> Int
-testST inp i j = runST $ embedST inp i j
-{-# NOINLINE testST #-}
-
-embedST :: PAsingle Char -> Int -> Int -> ST s Int
-embedST inp i j = do
-  vm :: VUM.MVector s Int <- VUM.replicate 10 0
-  vn :: VUM.MVector s Int <- VUM.replicate 10 0
-  tbl :: MArr0 s DIM2 Int <- fromAssocsM (Z:.0:.0) (Z:.10:.10) 0 []
-  -- (fcic <<< inp % tbl % inp ... (S.foldl' (+) 0)) (Z:.i:.j)
-  -- gST (fcic, (S.foldl' (+) 0)) inp tbl (Z:.i:.j)
-  -- (fi <<<   tbl     ... (S.foldl' (+) 0)) (Z:.i:.j)
-  S.foldl' (+) 0 . S.map (\(_,za) -> apply fi za) $ mkStream (Z:.tbl) (Z:.i:.j)
-{-# NOINLINE embedST #-}
-
-fcic :: Char -> Int -> Char -> Int
-fcic l x r = ord l + x + ord r
-{-# INLINE fcic #-}
-
-fi :: Int -> Int
-fi a = a
-{-# INLINE fi #-}
-
-fii :: Int -> Int -> Int
-fii a b = a+b
-{-# INLINE fii #-}
-
-fiii :: Int -> Int -> Int -> Int
-fiii a b c = a+b+c
-{-# INLINE fiii #-}
-
--- a simple test grammar
-
-gST (fcic, h) b s =
-  ( (fcic <<< b % s % b ... h)
-  )
-{-# INLINE gST #-}
-
-{-
- - This is how it should look like in the future, 'tbl' is defined by the rules
- - to the right.
- -
-gST (fcic, h) inp tbl =
-  ( ( tbl, fcic <<< inp % tbl % inp ... h )
-  )
--}
-
-class DS x where
-  ds :: x -> y -> y
-
-instance DS Z where
-  ds Z a = a
-  {-# INLINE ds #-}
-
-instance DS x => DS (x:.y) where
-  ds (x:.y) a = ds x (y `seq` a)
-  {-# INLINE ds #-}
 
 
+-- * Apply function 'f' in '(<<<)'
 
--- test stuff
+class Apply x where
+  type Fun x :: *
+  apply :: Fun x -> x
 
-{-
+instance Apply (ArgZ:.a -> res) where
+  type Fun (ArgZ:.a -> res) = a -> res
+  apply fun (ArgZ:.a) = fun a
+  {-# INLINE apply #-}
 
--- **
+instance Apply (ArgZ:.a:.b -> res) where
+  type Fun (ArgZ:.a:.b -> res) = a->b -> res
+  apply fun (ArgZ:.a:.b) = fun a b
+  {-# INLINE apply #-}
 
-type instance TopIdx (VUM.MVector s elm) = Int
+instance Apply (ArgZ:.a:.b:.c -> res) where
+  type Fun (ArgZ:.a:.b:.c -> res) = a->b->c -> res
+  apply fun (ArgZ:.a:.b:.c) = fun a b c
+  {-# INLINE apply #-}
 
-type instance TopArg (VUM.MVector s elm) = elm
+instance Apply (ArgZ:.a:.b:.c:.d -> res) where
+  type Fun (ArgZ:.a:.b:.c:.d -> res) = a->b->c->d -> res
+  apply fun (ArgZ:.a:.b:.c:.d) = fun a b c d
+  {-# INLINE apply #-}
 
-instance (Monad m, PrimMonad m, VUM.Unbox elm, PrimState m ~ s, MkStream m x, SC x, TopIdx x ~ (t0:.Int)) => MkStream m (x:.VUM.MVector s elm) where
-  type SC (x:.VUM.MVector s elm) = ()
-  mkStream (x:.mvec) (Z:.i:.j) = S.flatten mk step Unknown $ mkStream x (Z:.i:.j) where
-    mk :: MkType m x (VUM.MVector s elm)
-    mk (zi:.k,za) = return $ (zi:.k:.k, za)
-    step :: StepType m x (VUM.MVector s elm)
-    step (zi:.k,za)
-      | k<=j      = do  c <- VUM.unsafeRead mvec k
-                        return $ S.Yield (zi:.k,za:.c) (zi:.j+1,za)
-      | otherwise = return $ S.Done
-    {-# INLINE [0] mk #-}
-    {-# INLINE [0] step #-}
-  {-# INLINE mkStream #-}
+instance Apply (ArgZ:.a:.b:.c:.d:.e -> res) where
+  type Fun (ArgZ:.a:.b:.c:.d:.e -> res) = a->b->c->d->e -> res
+  apply fun (ArgZ:.a:.b:.c:.d:.e) = fun a b c d e
+  {-# INLINE apply #-}
 
-instance Build (VUM.MVector s elm) where
-  type Bld (VUM.MVector s elm) = Z:.VUM.MVector s elm
-  build a = Z:.a
-  {-# INLINE build #-}
+instance Apply (ArgZ:.a:.b:.c:.d:.e:.f -> res) where
+  type Fun (ArgZ:.a:.b:.c:.d:.e:.f -> res) = a->b->c->d->e->f -> res
+  apply fun (ArgZ:.a:.b:.c:.d:.e:.f) = fun a b c d e f
+  {-# INLINE apply #-}
 
--}
+instance Apply (ArgZ:.a:.b:.c:.d:.e:.f:.g -> res) where
+  type Fun (ArgZ:.a:.b:.c:.d:.e:.f:.g -> res) = a->b->c->d->e->f->g -> res
+  apply fun (ArgZ:.a:.b:.c:.d:.e:.f:.g) = fun a b c d e f g
+  {-# INLINE apply #-}
 
+instance Apply (ArgZ:.a:.b:.c:.d:.e:.f:.g:.h -> res) where
+  type Fun (ArgZ:.a:.b:.c:.d:.e:.f:.g:.h -> res) = a->b->c->d->e->f->g->h -> res
+  apply fun (ArgZ:.a:.b:.c:.d:.e:.f:.g:.h) = fun a b c d e f g h
+  {-# INLINE apply #-}
 
+instance Apply (ArgZ:.a:.b:.c:.d:.e:.f:.g:.h:.i -> res) where
+  type Fun (ArgZ:.a:.b:.c:.d:.e:.f:.g:.h:.i -> res) = a->b->c->d->e->f->g->h->i -> res
+  apply fun (ArgZ:.a:.b:.c:.d:.e:.f:.g:.h:.i) = fun a b c d e f g h i
+  {-# INLINE apply #-}
 
-{-
-instance (Monad m, MkStream m x, SC x, TopIdx x ~ (t0:.Int)) => MkStream m (x:.Chr) where
-  type SC (x:.Chr) = ()
-  mkStream (x:.Chr cs) (Z:.i:.j) = S.flatten mk step Unknown $ mkStream x (Z:.i:.j) where
-    mk (zi,za) = let (_:.k) = zi in return (zi:.k, za)
-    step :: StepType m x Chr
-    step (zi,za)
-      | k<=j      = c `seq` return $ S.Yield (zi,za:.c) (zi':.j+1,za)
-      | otherwise = return $ S.Done
-      where (zi':.k) = zi
-            c        = VU.unsafeIndex cs k
-    {-# INLINE [0] mk #-}
-    {-# INLINE [0] step #-}
-  {-# INLINE mkStream #-}
+instance Apply (ArgZ:.a:.b:.c:.d:.e:.f:.g:.h:.i:.j -> res) where
+  type Fun (ArgZ:.a:.b:.c:.d:.e:.f:.g:.h:.i:.j -> res) = a->b->c->d->e->f->g->h->i->j -> res
+  apply fun (ArgZ:.a:.b:.c:.d:.e:.f:.g:.h:.i:.j) = fun a b c d e f g h i j
+  {-# INLINE apply #-}
 
-instance (Monad m, MkStream m x, SC x, TopIdx x ~ (t0:.Int)) => MkStream m (x:.Dhr) where
-  type SC (x:.Dhr) = ()
-  mkStream (x:.Dhr ds) (Z:.i:.j) = S.flatten mk step Unknown $ mkStream x (Z:.i:.j) where
-    mk (zi:.k,za) = return $ (zi:.k:.k, za)
-    step :: StepType m x Dhr
-    step (zi:.k,za)
-      | k<=j      = do  let c = ds ! (Z:.k)
-                        return $ S.Yield (zi:.k,za:.c) (zi:.j+1,za)
-      | otherwise = return $ S.Done
-    {-# INLINE [0] mk #-}
-    {-# INLINE [0] step #-}
-  {-# INLINE mkStream #-}
+instance Apply (ArgZ:.a:.b:.c:.d:.e:.f:.g:.h:.i:.j:.k -> res) where
+  type Fun (ArgZ:.a:.b:.c:.d:.e:.f:.g:.h:.i:.j:.k -> res) = a->b->c->d->e->f->g->h->i->j->k -> res
+  apply fun (ArgZ:.a:.b:.c:.d:.e:.f:.g:.h:.i:.j:.k) = fun a b c d e f g h i j k
+  {-# INLINE apply #-}
 
-instance Build Chr where
-  type Bld Chr = Z:.Chr
-  build a = Z:.a
-  {-# INLINE build #-}
+instance Apply (ArgZ:.a:.b:.c:.d:.e:.f:.g:.h:.i:.j:.k:.l -> res) where
+  type Fun (ArgZ:.a:.b:.c:.d:.e:.f:.g:.h:.i:.j:.k:.l -> res) = a->b->c->d->e->f->g->h->i->j->k->l -> res
+  apply fun (ArgZ:.a:.b:.c:.d:.e:.f:.g:.h:.i:.j:.k:.l) = fun a b c d e f g h i j k l
+  {-# INLINE apply #-}
 
-instance Build LR where
-  type Bld LR = Z:.LR
-  build a = Z:.a
+instance Apply (ArgZ:.a:.b:.c:.d:.e:.f:.g:.h:.i:.j:.k:.l:.m -> res) where
+  type Fun (ArgZ:.a:.b:.c:.d:.e:.f:.g:.h:.i:.j:.k:.l:.m -> res) = a->b->c->d->e->f->g->h->i->j->k->l->m -> res
+  apply fun (ArgZ:.a:.b:.c:.d:.e:.f:.g:.h:.i:.j:.k:.l:.m) = fun a b c d e f g h i j k l m
+  {-# INLINE apply #-}
 
-dvu = VU.fromList . concat $ replicate 1000 ['a' .. 'z']
-{-# NOINLINE dvu #-}
+instance Apply (ArgZ:.a:.b:.c:.d:.e:.f:.g:.h:.i:.j:.k:.l:.m:.n -> res) where
+  type Fun (ArgZ:.a:.b:.c:.d:.e:.f:.g:.h:.i:.j:.k:.l:.m:.n -> res) = a->b->c->d->e->f->g->h->i->j->k->l->m->n -> res
+  apply fun (ArgZ:.a:.b:.c:.d:.e:.f:.g:.h:.i:.j:.k:.l:.m:.n) = fun a b c d e f g h i j k l m n
+  {-# INLINE apply #-}
 
-data Chr = Chr !(VU.Vector Char)
-ccc = dvu `seq` Chr dvu
-{-# NOINLINE ccc #-}
-
-instance Show Chr where
-  show _ = "Chr"
-
-data Dhr = Dhr !(Arr0 DIM1 Char)
-ddd = Dhr $ fromAssocs (Z:.0) (Z:.10) 'a' []
-{-# NOINLINE ddd #-}
-
-instance Show Dhr where
-  show _ = "Dhr"
-
-data LR = LR Int !(VU.Vector Int)
-lr = LR 15 (VU.fromList [1 .. 100])
-{-# NOINLINE lr #-}
-
-instance Show LR where
-  show _ = "LR"
-
-testZ i j = SPure.length $ mkStream (Z:.ccc) (Z:.i:.j)
-{-# NOINLINE testZ #-}
-
-gnignu f (Z:.a:.b) = a `seq` b `seq` f a b
-{-# INLINE gnignu #-}
-
-fii :: Int -> Int -> Int
-fii i j = i+j
-{-# INLINE fii #-}
-
-fiic :: Int -> Int -> Char -> Int
-fiic i j c = i `seq` j `seq` c `seq` ord c + i+j
-{-# INLINE fiic #-}
-
-fic :: Int -> Char -> Int
-fic i c = i `seq` c `seq` ord c + i
-{-# INLINE fic #-}
-
-fici :: Int -> Char -> Int -> Int
-fici i c j = i + ord c + j
-
-fiicii :: Int -> Int -> Char -> Int -> Int -> Int
-fiicii i j c k l = i+j+k+l + ord c
-{- INLINE fiicii #-}
-
-cv :: Char -> Int -> Int
-cv c i = case c of
-  'A' -> 1+i
-  _   -> 2+i
-{-# INLINE cv #-}
-
-instance (Monad m, MkStream m x, SC x, TopIdx x ~ (t0:.Int)) => MkStream m (x:.LR) where
-  type SC (x:.LR) = (Get x)
-  mkStream (x:.LR limit lr) (Z:.i:.j) = S.flatten mk step Unknown $ mkStream x (Z:.i:.j) where
-    mk (zi:.k,za) = return $ (zi:.k:.k, za)
-    step :: StepType m x LR
-    step (zi:.k,za)
-      | k<=j && dd <= limit = do  let c = VU.unsafeIndex lr k
-                                  return $ S.Yield (zi:.k,za:.c) (zi:.j+1,za)
-      | otherwise = return $ S.Done
-      where dd = down (x,zi)
-    {-# INLINE [0] mk #-}
-    {-# INLINE [0] step #-}
-  {-# INLINE mkStream #-}
-
-type instance TopIdx Chr = Int
-type instance TopIdx Dhr = Int
-type instance TopIdx LR = Int
-type instance TopArg Chr = Char
-type instance TopArg Dhr = Char
-type instance TopArg LR = Int
-
-instance XYZ x => XYZ (x:.LR) where
-  rofl (x:._,zi:._) = 1 + rofl (x,zi)
-  {-# INLINE rofl #-}
-
-instance XYZ x => XYZ (x:.Dhr) where
-  rofl (x:._,zi:._) = 1 + rofl (x,zi)
-  {-# INLINE rofl #-}
-
-instance Get x => Get (x:.LR) where
-  getI (_,_:.k) = k
-  down (x:._,zi:.k) = down (x,zi) + (k - getI (x,zi))
-  {-# INLINE getI #-}
-  {-# INLINE down #-}
-
-instance Get x => Get (x:.Dhr) where
-  getI (_,_:.k) = k
-  down (x:._,zi:._) = down (x,zi)
-  {-# INLINE getI #-}
-  {-# INLINE down #-}
-
-class XYZ x where
-  rofl :: (x, TopIdx x) -> Int
-
-instance XYZ Z where
-  rofl _ = 0
-  {-# INLINE rofl #-}
-
-instance XYZ x => XYZ (x:.VUM.MVector s elm) where
-  rofl (x:._,zi:._) = 1 + rofl (x,zi)
-  {-# INLINE rofl #-}
-
-class Get x where
-  getI :: (x, TopIdx x) -> Int
-  down :: (x, TopIdx x) -> Int
-
-instance Get Z where
-  getI (_,zi:.k) = k
-  down _          = 0
-  {-# INLINE getI #-}
-  {-# INLINE down #-}
-
-instance Get x => Get (x:.VUM.MVector s elm) where
-  getI (_,_:.k) = k
-  down (x:._,zi:._) = down (x,zi)
-  {-# INLINE getI #-}
-  {-# INLINE down #-}
-
--}
-
-
+instance Apply (ArgZ:.a:.b:.c:.d:.e:.f:.g:.h:.i:.j:.k:.l:.m:.n:.o -> res) where
+  type Fun (ArgZ:.a:.b:.c:.d:.e:.f:.g:.h:.i:.j:.k:.l:.m:.n:.o -> res) = a->b->c->d->e->f->g->h->i->j->k->l->m->n->o -> res
+  apply fun (ArgZ:.a:.b:.c:.d:.e:.f:.g:.h:.i:.j:.k:.l:.m:.n:.o) = fun a b c d e f g h i j k l m n o
+  {-# INLINE apply #-}
 

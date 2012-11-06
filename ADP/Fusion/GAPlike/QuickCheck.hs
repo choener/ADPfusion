@@ -1,7 +1,7 @@
 {-# LANGUAGE PackageImports #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module ADP.Fusion.GAPlike2.QuickCheck where
+module ADP.Fusion.GAPlike.QuickCheck where
 
 import Test.QuickCheck
 import Test.QuickCheck.All
@@ -13,8 +13,8 @@ import "PrimitiveArray" Data.Array.Repa.Shape
 import Data.PrimitiveArray
 
 import ADP.Fusion.QuickCheck.Arbitrary
-import ADP.Fusion.GAPlike2.Common
-import ADP.Fusion.GAPlike2
+import ADP.Fusion.GAPlike.DevelCommon
+import ADP.Fusion.GAPlike
 
 
 

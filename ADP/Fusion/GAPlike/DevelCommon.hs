@@ -1,6 +1,6 @@
 {-# LANGUAGE PackageImports #-}
 
-module ADP.Fusion.GAPlike2.Common where
+module ADP.Fusion.GAPlike.DevelCommon where
 
 import qualified Data.PrimitiveArray as PA
 import qualified Data.Vector.Unboxed as VU

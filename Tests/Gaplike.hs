@@ -21,7 +21,7 @@
 -- write the forward and backward/backtracking steps.
 --
 -- TODO Though in that case, it could be useful, to parametrize over two
--- different monad (transformer stacks)...
+-- different monads (transformer stacks)...
 
 module Tests.Gaplike where
 
@@ -39,7 +39,7 @@ import qualified Data.Vector.Unboxed as VU
 import Data.PrimitiveArray as PA
 import Data.PrimitiveArray.Unboxed.Zero as PA
 
-import ADP.Fusion.GAPlike2
+import ADP.Fusion.GAPlike
 
 
 
@@ -82,6 +82,7 @@ aPretty = (empty,pair,h) where
   empty _ = ""
   pair l x r = if l==r then "<" P.++ x P.++ ">" else "." P.++ x P.++ "."
   h = return . id
+{-# INLINE aPretty #-}
 
 -- | Run the palindrome dynamic program, giving the number of pairs, and the
 -- nested brackets.
@@ -150,47 +151,6 @@ backtrack (inp :: VU.Vector Char) (tbl :: PA.Arr0 DIM2 Int) = unId . SM.toList .
   (_,g) = gSimple (aMax <** aPretty) t c e
 {-# INLINE backtrack #-}
 
--- | The backtracking table 'BTtbl" captures a DP table and the function used
--- to fill it.
-
-data BTtbl t g = BTtbl t g
-
-instance Build (BTtbl t g)
-
--- | The backtracking function, given our index pair, return a stream of
--- backtracked results. (Return as in we are in a monad).
---
--- TODO Should this be "(Int,Int) -> m (SM.Stream Id b)" or are there cases
--- where we'd like to have monadic effects on the "b"s?
-
-type BTfun m b = (Int,Int) -> m (SM.Stream m b)
-
-instance (Monad m, StreamElement x) => StreamElement (x:.BTtbl (PA.Arr0 DIM2 e) (BTfun m b)) where
-  data StreamElm    (x:.BTtbl (PA.Arr0 DIM2 e) (BTfun m b)) = SeBTtbl !(StreamElm x) !Int !e (m (SM.Stream m b))
-  type StreamTopIdx (x:.BTtbl (PA.Arr0 DIM2 e) (BTfun m b)) = Int
-  type StreamArg    (x:.BTtbl (PA.Arr0 DIM2 e) (BTfun m b)) = StreamArg x :. (e, m (SM.Stream m b))
-  getTopIdx (SeBTtbl _ k _ _) = k
-  getArg    (SeBTtbl x _ e g) = getArg x :. (e,g)
-  {-# INLINE getTopIdx #-}
-  {-# INLINE getArg #-}
-
-instance (Monad m, MkStream m x, StreamElement x, Prim e, StreamTopIdx x ~ Int) => MkStream m (x:.BTtbl (PA.Arr0 DIM2 e) (BTfun m b)) where
-  mkStream (x:.BTtbl t g) (i,j) = SM.map step $ mkStreamInner x (i,j) where
-    step :: StreamElm x -> StreamElm (x:.BTtbl (PA.Arr0 DIM2 e) (BTfun m b))
-    step x = let k = getTopIdx x in SeBTtbl x j (t PA.! (Z:.k:.j)) (g (k,j))
-    {-# INLINE step #-}
-  mkStreamInner (x:.BTtbl t g) (i,j) = SM.flatten mk step Unknown $ mkStreamInner x (i,j) where
-    mk :: StreamElm x -> m (StreamElm x, Int)
-    mk x = return (x, getTopIdx x)
-    step :: (StreamElm x, Int) -> m (SM.Step (StreamElm x, Int) (StreamElm (x:.BTtbl (PA.Arr0 DIM2 e) (BTfun m b))))
-    step (x,l)
-      | l<=j      = return $ SM.Yield (SeBTtbl x j (t PA.! (Z:.k:.l)) (g (k,l))) (x,l+1)
-      | otherwise = return $ SM.Done
-      where k = getTopIdx x
-    {-# INLINE mk #-}
-    {-# INLINE step #-}
-  {-# INLINE mkStream #-}
-
 -- | The signature, given two algebras. The first algebra should normally be
 -- the same one used to fill the table (or some stochastic version of it),
 -- while the second should produce some result, say a prettry-printed
@@ -227,8 +187,4 @@ type CombSignature m e b =
     hfs <- hF $ SM.map fst xs
     let phfs = SM.concatMapM snd . SM.filter ((hfs==) . fst) $ xs
     hS phfs
-  {-# INLINE empty #-}
-  {-# INLINE pair #-}
-  {-# INLINE h #-}
-{-# INLINE (<**) #-}
 

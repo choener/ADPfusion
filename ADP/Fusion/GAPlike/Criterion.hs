@@ -1,7 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE PackageImports #-}
 
-module ADP.Fusion.GAPlike2.Criterion where
+module ADP.Fusion.GAPlike.Criterion where
 
 import Control.Monad.ST
 import Criterion.Main
@@ -15,8 +15,8 @@ import Data.PrimitiveArray.Unboxed.Zero as UZ
 import "PrimitiveArray" Data.Array.Repa.Index
 import "PrimitiveArray" Data.Array.Repa.Shape
 
-import ADP.Fusion.GAPlike2
-import ADP.Fusion.GAPlike2.Common
+import ADP.Fusion.GAPlike
+import ADP.Fusion.GAPlike.DevelCommon
 
 
 

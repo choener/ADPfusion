@@ -99,7 +99,7 @@ Extra-Source-Files:
   ADP/Fusion/QuickCheck/Arbitrary.hs
 
 
-Flag criterion
+Flag devel
   description: build criterion benchmarks and pull in QuickCheck
   default: False
 
@@ -116,7 +116,7 @@ library
     ADP.Fusion.Monadic
     ADP.Fusion.Monadic.Internal
 --    ADP.Fusion.GAPlike
-    ADP.Fusion.GAPlike2
+    ADP.Fusion.GAPlike
 
   ghc-options:
     -O2 -funbox-strict-fields
@@ -124,16 +124,16 @@ library
 executable GAPcriterion
   buildable:
     False
-  if flag(criterion)
+  if flag(devel)
     buildable:
       True
     build-depends:
       criterion  == 0.6.* ,
       QuickCheck == 2.5
   other-modules:
-    ADP.Fusion.GAPlike2.Common
-    ADP.Fusion.GAPlike2.Criterion
-    ADP.Fusion.GAPlike2.QuickCheck
+    ADP.Fusion.GAPlike.DevelCommon
+    ADP.Fusion.GAPlike.Criterion
+    ADP.Fusion.GAPlike.QuickCheck
   main-is:
     GAPcriterion.hs
   ghc-options:
