@@ -115,7 +115,6 @@ library
     ADP.Fusion
     ADP.Fusion.Monadic
     ADP.Fusion.Monadic.Internal
---    ADP.Fusion.GAPlike
     ADP.Fusion.GAPlike
 
   ghc-options:
