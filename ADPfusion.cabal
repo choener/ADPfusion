@@ -1,5 +1,5 @@
 name:           ADPfusion
-version:        0.0.1.2
+version:        0.1.0.0
 author:         Christian Hoener zu Siederdissen, 2011-2012
 copyright:      Christian Hoener zu Siederdissen, 2011-2012
 homepage:       http://www.tbi.univie.ac.at/~choener/adpfusion
@@ -31,9 +31,26 @@ description:
                 tables can be strict, removing indirections present in lazy,
                 boxed tables.
                 .
-                As an example, even rather complex ADP code tends to be
-                completely optimized to loops that use only unboxed variables
-                (Int# and others, indexIntArray# and others).
+                As a simple benchmark, consider the Nussinov78 algorithm which
+                translates to three nested for loops (for C). In the figure,
+                four different approaches are compared using inputs with size
+                100 characters to 1000 characters in increments of 100
+                characters. "C" is an implementation ("./C/" directory) in "C"
+                using "gcc -O3". "ADP" is the original ADP approach (see link
+                above), while "GAPC" uses the "GAP" language
+                (<http://gapc.eu/>).
+                <<https://github.com/choener/ADPfusion/gaplike-performance.png>>
+                .
+                Please note that actual performance will depend much on table
+                layout and data structures accessed during calculations, but in
+                general performance is very good: close to C and better than
+                other high-level approaches (that I know of).
+                .
+                .
+                .
+                Even complex ADP code tends to be completely optimized to loops
+                that use only unboxed variables (Int# and others,
+                indexIntArray# and others).
                 .
                 Completely novel (compared to ADP), is the idea of allowing
                 efficient monadic combinators. This facilitates writing code
@@ -43,6 +60,29 @@ description:
                 This version is still highly experimental and makes use of
                 multiple recent improvements in GHC. This is particularly true
                 for the monadic interface.
+                .
+                .
+                .
+                Newley added are the ADP.Fusion.GAPlike modules. These allow
+                for writing grammars with only one (non)-terminal combinator.
+                The logic for index manipulation is now moved into data types
+                for terminals and non-terminals.
+                .
+                While this change leads to slightly more complicated instances
+                for each new terminal or non-terminal, the overall code
+                complexity is significantly lower. In addition, Constraint
+                Kinds make complex interactions between (non)-terminals
+                possible, while still managing to produce high-performance
+                code.
+                .
+                The final goal would, of course, be to have no inter-terminal
+                combinators anymore.
+                .
+                * GHC 7.6, LLVM, and -fnew-codegen recommended: gives a speedup
+                  of x2 for GAPcriterion
+                .
+                .
+                .
                 .
                 Long term goals: Outer indices with more than two dimensions,
                 specialized table design, a combinator library, a library for
@@ -54,11 +94,28 @@ description:
                 <http://hackage.haskell.org/package/Nussinov78> and
                 <http://hackage.haskell.org/package/RNAFold>.
                 .
+                Changes since 0.0.1.2:
+                .
+                * require GHC 7.6
+                .
+                * ADP.Fusion.GAPlike module for (almost) combinator-less grammars
+                .
+                * ConstraintKinds for constrained parsers in GAPlike.
+                .
+                .
+                .
                 Changes since 0.0.1.0:
                 .
                 * compatibility with GHC 7.4
                 .
                 * note: still using fundeps & and TFs together. The TF-only version does not optimize as well (I know why but not yet how to fix it)
+                .
+                .
+                .
+                Using the new code generator?
+                .
+                The new code generator is not official yet, but I recommend trying it out:
+                <<https://github.com/choener/ADPfusion/gaplike-newcodegen.png>>
 
 
 
@@ -68,21 +125,47 @@ Extra-Source-Files:
   ADP/Fusion/QuickCheck/Arbitrary.hs
 
 
+Flag devel
+  description: build criterion benchmarks and pull in QuickCheck
+  default: False
+
 
 library
   build-depends:
     base >= 4 && < 5,
-    primitive      == 0.4.*   ,
-    vector         == 0.9.*   ,
-    PrimitiveArray == 0.2.2.0
+    ghc-prim,
+    primitive      == 0.5.*   ,
+    vector         == 0.10.*  ,
+    PrimitiveArray == 0.4.*
   exposed-modules:
     ADP.Fusion
     ADP.Fusion.Monadic
     ADP.Fusion.Monadic.Internal
+    ADP.Fusion.GAPlike
 
   ghc-options:
     -O2 -funbox-strict-fields
 
+executable GAPcriterion
+  buildable:
+    False
+  if flag(devel)
+    buildable:
+      True
+    build-depends:
+      criterion  == 0.6.* ,
+      QuickCheck == 2.5
+  other-modules:
+    ADP.Fusion.GAPlike.DevelCommon
+    ADP.Fusion.GAPlike.Criterion
+    ADP.Fusion.GAPlike.QuickCheck
+  main-is:
+    Tests/GAPcriterion.hs
+  ghc-options:
+    -fllvm -O2 -funbox-strict-fields -optlo-O3 -optlo-std-compile-opts
+  if impl(GHC > 7.4)
+    ghc-options:
+      -fnew-codegen
 
 
 source-repository head
