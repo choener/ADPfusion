@@ -168,6 +168,10 @@ data E
 
 data N
 
+class TransToN t where
+  type TransTo t :: *
+  transToN :: t -> TransTo t
+
 -- | Used by the instances below for index calculations.
 
 class TblType tt where
@@ -184,6 +188,11 @@ instance TblType N where
 -- ** Immutable tables
 
 data Tbl c es = Tbl !es
+
+instance TransToN (Tbl c es) where
+  type TransTo (Tbl c es) = Tbl N es
+  transToN (Tbl es) = Tbl es
+  {-# INLINE transToN #-}
 
 instance Build (Tbl c es)
 
@@ -224,6 +233,19 @@ instance (Monad m, MkStream m x, StreamElement x, StreamTopIdx x ~ Int, PrimArra
 -- ** Mutable tables in some monad.
 
 data MTbl c es = MTbl !es
+
+instance TransToN (MTbl c es) where
+  type TransTo (MTbl c es) = MTbl N es
+  transToN (MTbl es) = MTbl es
+  {-# INLINE transToN #-}
+
+mtblN :: es -> MTbl N es
+mtblN es = MTbl es
+{-# INLINE mtblN #-}
+
+mtblE :: es -> MTbl E es
+mtblE es = MTbl es
+{-# INLINE mtblE #-}
 
 instance Build (MTbl c es)
 
@@ -368,9 +390,22 @@ instance (Monad m, MkStream m x, StreamElement x, StreamTopIdx x ~ Int, VU.Unbox
 -- | The backtracking table 'BTtbl" captures a DP table and the function used
 -- to fill it.
 
-data BTtbl t g = BTtbl t g
+data BTtbl c t g = BTtbl t g
 
-instance Build (BTtbl t g)
+instance TransToN (BTtbl c t g) where
+  type TransTo (BTtbl c t g) = BTtbl N t g
+  transToN (BTtbl t g) = BTtbl t g
+  {-# INLINE transToN #-}
+
+bttblN :: t -> g -> BTtbl N t g
+bttblN t g = BTtbl t g
+{-# INLINE bttblN #-}
+
+bttblE :: t -> g -> BTtbl E t g
+bttblE t g = BTtbl t g
+{-# INLINE bttblE #-}
+
+instance Build (BTtbl c t g)
 
 -- | The backtracking function, given our index pair, return a stream of
 -- backtracked results. (Return as in we are in a monad).
@@ -380,10 +415,10 @@ instance Build (BTtbl t g)
 
 type BTfun m b = (Int,Int) -> m (S.Stream m b)
 
-instance (Monad m, StreamElement x) => StreamElement (x:.BTtbl (UZ.Arr0 DIM2 e) (BTfun m b)) where
-  data StreamElm    (x:.BTtbl (UZ.Arr0 DIM2 e) (BTfun m b)) = SeBTtbl !(StreamElm x) !Int !e (m (S.Stream m b))
-  type StreamTopIdx (x:.BTtbl (UZ.Arr0 DIM2 e) (BTfun m b)) = Int
-  type StreamArg    (x:.BTtbl (UZ.Arr0 DIM2 e) (BTfun m b)) = StreamArg x :. (e, m (S.Stream m b))
+instance (Monad m, StreamElement x, TblType c) => StreamElement (x:.BTtbl c (UZ.Arr0 DIM2 e) (BTfun m b)) where
+  data StreamElm    (x:.BTtbl c (UZ.Arr0 DIM2 e) (BTfun m b)) = SeBTtbl !(StreamElm x) !Int !e (m (S.Stream m b))
+  type StreamTopIdx (x:.BTtbl c (UZ.Arr0 DIM2 e) (BTfun m b)) = Int
+  type StreamArg    (x:.BTtbl c (UZ.Arr0 DIM2 e) (BTfun m b)) = StreamArg x :. (e, m (S.Stream m b))
   getTopIdx (SeBTtbl _ k _ _) = k
   getArg    (SeBTtbl x _ e g) = getArg x :. (e,g)
   {-# INLINE getTopIdx #-}
@@ -395,17 +430,18 @@ instance
   , StreamElement x
   , Prim e
   , StreamTopIdx x ~ Int
-  ) => MkStream m (x:.BTtbl (UZ.Arr0 DIM2 e) (BTfun m b)) where
-  mkStream (x:.BTtbl t g) (i,j) = S.map step $ mkStreamInner x (i,j) where
-    step :: StreamElm x -> StreamElm (x:.BTtbl (UZ.Arr0 DIM2 e) (BTfun m b))
+  , TblType c
+  ) => MkStream m (x:.BTtbl c (UZ.Arr0 DIM2 e) (BTfun m b)) where
+  mkStream (x:.BTtbl t g) (i,j) = S.map step $ mkStreamInner x (i,j - initDeltaIdx (undefined :: c)) where
+    step :: StreamElm x -> StreamElm (x:.BTtbl c (UZ.Arr0 DIM2 e) (BTfun m b))
     step x = let k = getTopIdx x in SeBTtbl x j (t PA.! (Z:.k:.j)) (g (k,j))
     {-# INLINE step #-}
   mkStreamInner (x:.BTtbl t g) (i,j) = S.flatten mk step Unknown $ mkStreamInner x (i,j) where
     mk :: StreamElm x -> m (StreamElm x, Int)
-    mk x = return (x, getTopIdx x)
-    step :: (StreamElm x, Int) -> m (S.Step (StreamElm x, Int) (StreamElm (x:.BTtbl (UZ.Arr0 DIM2 e) (BTfun m b))))
+    mk x = return (x, getTopIdx x + initDeltaIdx (undefined :: c))
+    step :: (StreamElm x, Int) -> m (S.Step (StreamElm x, Int) (StreamElm (x:.BTtbl c (UZ.Arr0 DIM2 e) (BTfun m b))))
     step (x,l)
-      | l<=j      = return $ S.Yield (SeBTtbl x j (t PA.! (Z:.k:.l)) (g (k,l))) (x,l+1)
+      | l<=j      = return $ S.Yield (SeBTtbl x l (t PA.! (Z:.k:.l)) (g (k,l))) (x,l+1)
       | otherwise = return $ S.Done
       where k = getTopIdx x
     {-# INLINE mk #-}

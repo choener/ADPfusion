@@ -41,6 +41,8 @@ import Data.PrimitiveArray.Unboxed.Zero as PA
 
 import ADP.Fusion.GAPlike
 
+import Debug.Trace
+
 
 
 -- | Signature: we have three functions: (i) the empty case "() -> x", (ii)
@@ -110,7 +112,7 @@ fillPalindrome :: forall s . VU.Vector Char -> ST s (Arr0 DIM2 Int)
 fillPalindrome inp = do
   let n = VU.length inp
   t' <- fromAssocsM (Z:.0:.0) (Z:.n:.n) (-999999) []
-  let t = MTbl t'
+  let t = mtblE t'
       {-# INLINE t #-}
   let c = Chr inp
       {-# INLINE c #-}
@@ -147,7 +149,7 @@ backtrack (inp :: VU.Vector Char) (tbl :: PA.Arr0 DIM2 Int) = unId . SM.toList .
   n = VU.length inp
   c = Chr inp
   e = Empty
-  t = BTtbl tbl (g :: BTfun Id String)
+  t = bttblE tbl (g :: BTfun Id String)
   (_,g) = gSimple (aMax <** aPretty) t c e
 {-# INLINE backtrack #-}
 
@@ -172,8 +174,11 @@ type CombSignature m e b =
 -- results of the second function, finally applying the objective function for
 -- those things. And done.
 
+instance Show (Id [String]) where
+  show xs = show $ unId xs
+
 (<**)
-  :: (Monad m, Eq b, Eq e)
+  :: (Monad m, Eq b, Eq e, Show b, Show e, Show (m [b]))
   => Signature m e e
   -> Signature m b (SM.Stream m b)
   -> CombSignature m e b

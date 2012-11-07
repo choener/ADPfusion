@@ -134,7 +134,7 @@ executable GAPcriterion
     ADP.Fusion.GAPlike.Criterion
     ADP.Fusion.GAPlike.QuickCheck
   main-is:
-    GAPcriterion.hs
+    Tests.GAPcriterion.hs
   ghc-options:
     -fllvm -O2 -funbox-strict-fields -optlo-O3 -optlo-std-compile-opts
   if impl(GHC > 7.4)
