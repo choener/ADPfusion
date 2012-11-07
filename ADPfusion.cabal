@@ -39,7 +39,7 @@ description:
                 using "gcc -O3". "ADP" is the original ADP approach (see link
                 above), while "GAPC" uses the "GAP" language
                 (<http://gapc.eu/>).
-                <<https://github.com/choener/ADPfusion/gaplike-performance.png>>
+                <<https://raw.github.com/choener/ADPfusion/master/gaplike-performance.png>>
                 .
                 Please note that actual performance will depend much on table
                 layout and data structures accessed during calculations, but in
@@ -115,7 +115,7 @@ description:
                 Using the new code generator?
                 .
                 The new code generator is not official yet, but I recommend trying it out:
-                <<https://github.com/choener/ADPfusion/gaplike-newcodegen.png>>
+                <<https://raw.github.com/choener/ADPfusion/master/gaplike-newcodegen.png>>
 
 
 
