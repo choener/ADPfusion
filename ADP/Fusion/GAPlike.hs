@@ -31,7 +31,7 @@ import qualified Data.Vector.Unboxed as VU
 import Data.PrimitiveArray (PrimArrayOps(..), MPrimArrayOps(..))
 import "PrimitiveArray" Data.Array.Repa.Index
 import qualified Data.PrimitiveArray as PA
-import qualified Data.PrimitiveArray.Unboxed.Zero as UZ
+import qualified Data.PrimitiveArray.Zero.Unboxed as ZU
 
 
 
@@ -415,10 +415,10 @@ instance Build (BTtbl c t g)
 
 type BTfun m b = (Int,Int) -> m (S.Stream m b)
 
-instance (Monad m, StreamElement x, TblType c) => StreamElement (x:.BTtbl c (UZ.Arr0 DIM2 e) (BTfun m b)) where
-  data StreamElm    (x:.BTtbl c (UZ.Arr0 DIM2 e) (BTfun m b)) = SeBTtbl !(StreamElm x) !Int !e (m (S.Stream m b))
-  type StreamTopIdx (x:.BTtbl c (UZ.Arr0 DIM2 e) (BTfun m b)) = Int
-  type StreamArg    (x:.BTtbl c (UZ.Arr0 DIM2 e) (BTfun m b)) = StreamArg x :. (e, m (S.Stream m b))
+instance (Monad m, StreamElement x, TblType c) => StreamElement (x:.BTtbl c (ZU.Arr0 DIM2 e) (BTfun m b)) where
+  data StreamElm    (x:.BTtbl c (ZU.Arr0 DIM2 e) (BTfun m b)) = SeBTtbl !(StreamElm x) !Int !e (m (S.Stream m b))
+  type StreamTopIdx (x:.BTtbl c (ZU.Arr0 DIM2 e) (BTfun m b)) = Int
+  type StreamArg    (x:.BTtbl c (ZU.Arr0 DIM2 e) (BTfun m b)) = StreamArg x :. (e, m (S.Stream m b))
   getTopIdx (SeBTtbl _ k _ _) = k
   getArg    (SeBTtbl x _ e g) = getArg x :. (e,g)
   {-# INLINE getTopIdx #-}
@@ -428,18 +428,18 @@ instance
   ( Monad m
   , MkStream m x
   , StreamElement x
-  , Prim e
+  , VU.Unbox e
   , StreamTopIdx x ~ Int
   , TblType c
-  ) => MkStream m (x:.BTtbl c (UZ.Arr0 DIM2 e) (BTfun m b)) where
+  ) => MkStream m (x:.BTtbl c (ZU.Arr0 DIM2 e) (BTfun m b)) where
   mkStream (x:.BTtbl t g) (i,j) = S.map step $ mkStreamInner x (i,j - initDeltaIdx (undefined :: c)) where
-    step :: StreamElm x -> StreamElm (x:.BTtbl c (UZ.Arr0 DIM2 e) (BTfun m b))
+    step :: StreamElm x -> StreamElm (x:.BTtbl c (ZU.Arr0 DIM2 e) (BTfun m b))
     step x = let k = getTopIdx x in SeBTtbl x j (t PA.! (Z:.k:.j)) (g (k,j))
     {-# INLINE step #-}
   mkStreamInner (x:.BTtbl t g) (i,j) = S.flatten mk step Unknown $ mkStreamInner x (i,j) where
     mk :: StreamElm x -> m (StreamElm x, Int)
     mk x = return (x, getTopIdx x + initDeltaIdx (undefined :: c))
-    step :: (StreamElm x, Int) -> m (S.Step (StreamElm x, Int) (StreamElm (x:.BTtbl c (UZ.Arr0 DIM2 e) (BTfun m b))))
+    step :: (StreamElm x, Int) -> m (S.Step (StreamElm x, Int) (StreamElm (x:.BTtbl c (ZU.Arr0 DIM2 e) (BTfun m b))))
     step (x,l)
       | l<=j      = return $ S.Yield (SeBTtbl x l (t PA.! (Z:.k:.l)) (g (k,l))) (x,l+1)
       | otherwise = return $ S.Done

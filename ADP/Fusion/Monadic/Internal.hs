@@ -39,7 +39,7 @@ import qualified Data.Vector.Unboxed as VU
 import Text.Printf
 
 import qualified Data.PrimitiveArray as PA
-import qualified Data.PrimitiveArray.Unboxed.Zero as UZ
+import qualified Data.PrimitiveArray.Zero.Unboxed as ZU
 import qualified Data.PrimitiveArray.Zero as Z
 
 
@@ -62,8 +62,8 @@ mkStreamGen(DIM2 -> Scalar elm)
 mkStreamGen(DIM2 -> ScalarM elm)
 mkStreamGen(DIM2 -> Vect elm)
 mkStreamGen(DIM2 -> VectM elm)
-mkStreamGen(UZ.MArr0 s sh elm)
-mkStreamGen(UZ.Arr0 sh elm)
+mkStreamGen(ZU.MArr0 s sh elm)
+mkStreamGen(ZU.Arr0 sh elm)
 
 mkStreamGen(Z.MArr0 s sh (VU.Vector elm))
 mkStreamGen(Z.Arr0 sh (VU.Vector elm))
@@ -114,8 +114,8 @@ mkPreStreamGen(DIM2 -> Scalar elm)
 mkPreStreamGen(DIM2 -> ScalarM elm)
 mkPreStreamGen(DIM2 -> Vect elm)
 mkPreStreamGen(DIM2 -> VectM elm)
-mkPreStreamGen(UZ.MArr0 s sh elm)
-mkPreStreamGen(UZ.Arr0 sh elm)
+mkPreStreamGen(ZU.MArr0 s sh elm)
+mkPreStreamGen(ZU.Arr0 sh elm)
 
 mkPreStreamGen(Z.MArr0 s sh (VU.Vector elm))
 mkPreStreamGen(Z.Arr0 sh (VU.Vector elm))
@@ -178,12 +178,12 @@ class (Monad m) => ExtractValue m cnt where
 
 instance
   ( PrimMonad m
-  , Prim elm
+  , VU.Unbox elm
   , PrimState m ~ s
   , DIM2 ~ sh
-  ) => ExtractValue m (UZ.MArr0 s sh elm) where
-  type Asor (UZ.MArr0 s sh elm) = Z
-  type Elem (UZ.MArr0 s sh elm) = elm
+  ) => ExtractValue m (ZU.MArr0 s sh elm) where
+  type Asor (ZU.MArr0 s sh elm) = Z
+  type Elem (ZU.MArr0 s sh elm) = elm
   extractValue cnt ij z = do
     x <- PA.readM cnt ij
     x `seq` return x
@@ -203,11 +203,11 @@ instance
 
 instance
   ( Monad m
-  , Prim elm
+  , VU.Unbox elm
   , DIM2 ~ sh
-  ) => ExtractValue m (UZ.Arr0 sh elm) where
-  type Asor (UZ.Arr0 sh elm) = Z
-  type Elem (UZ.Arr0 sh elm) = elm
+  ) => ExtractValue m (ZU.Arr0 sh elm) where
+  type Asor (ZU.Arr0 sh elm) = Z
+  type Elem (ZU.Arr0 sh elm) = elm
   extractValue cnt ij z = do
     let x = PA.index cnt ij
     x `seq` return x

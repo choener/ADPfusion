@@ -31,9 +31,26 @@ description:
                 tables can be strict, removing indirections present in lazy,
                 boxed tables.
                 .
-                As an example, even rather complex ADP code tends to be
-                completely optimized to loops that use only unboxed variables
-                (Int# and others, indexIntArray# and others).
+                As a simple benchmark, consider the Nussinov78 algorithm which
+                translates to three nested for loops (for C). In the figure,
+                four different approaches are compared using inputs with size
+                100 characters to 1000 characters in increments of 100
+                characters. "C" is an implementation ("./C/" directory) in "C"
+                using "gcc -O3". "ADP" is the original ADP approach (see link
+                above), while "GAPC" uses the "GAP" language
+                (<http://gapc.eu/>).
+                <<https://github.com/choener/ADPfusion/gaplike-performance.png>>
+                .
+                Please note that actual performance will depend much on table
+                layout and data structures accessed during calculations, but in
+                general performance is very good: close to C and better than
+                other high-level approaches (that I know of).
+                .
+                .
+                .
+                Even complex ADP code tends to be completely optimized to loops
+                that use only unboxed variables (Int# and others,
+                indexIntArray# and others).
                 .
                 Completely novel (compared to ADP), is the idea of allowing
                 efficient monadic combinators. This facilitates writing code
@@ -79,9 +96,11 @@ description:
                 .
                 Changes since 0.0.1.2:
                 .
-                * require GHC 7.4
+                * require GHC 7.6
                 .
-                * ADP.Fusion.GAPlike modules for (almost) combinator-less grammars
+                * ADP.Fusion.GAPlike module for (almost) combinator-less grammars
+                .
+                * ConstraintKinds for constrained parsers in GAPlike.
                 .
                 .
                 .
@@ -90,6 +109,13 @@ description:
                 * compatibility with GHC 7.4
                 .
                 * note: still using fundeps & and TFs together. The TF-only version does not optimize as well (I know why but not yet how to fix it)
+                .
+                .
+                .
+                Using the new code generator?
+                .
+                The new code generator is not official yet, but I recommend trying it out:
+                <<https://github.com/choener/ADPfusion/gaplike-newcodegen.png>>
 
 
 
@@ -110,7 +136,7 @@ library
     ghc-prim,
     primitive      == 0.5.*   ,
     vector         == 0.10.*  ,
-    PrimitiveArray == 0.3.0.0
+    PrimitiveArray == 0.4.*
   exposed-modules:
     ADP.Fusion
     ADP.Fusion.Monadic
