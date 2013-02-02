@@ -1,5 +1,5 @@
 name:           ADPfusion
-version:        0.1.0.0
+version:        0.1.1.0
 author:         Christian Hoener zu Siederdissen, 2011-2012
 copyright:      Christian Hoener zu Siederdissen, 2011-2012
 homepage:       http://www.tbi.univie.ac.at/~choener/adpfusion
@@ -136,7 +136,7 @@ library
     ghc-prim,
     primitive      == 0.5.*   ,
     vector         == 0.10.*  ,
-    PrimitiveArray == 0.4.*
+    PrimitiveArray == 0.5.*
   exposed-modules:
     ADP.Fusion
     ADP.Fusion.Monadic
@@ -166,6 +166,9 @@ executable GAPcriterion
   if impl(GHC > 7.4)
     ghc-options:
       -fnew-codegen
+--  if impl(GHC > 7.6.1)
+--    ghc-options:
+--      -fllvm-tbaa
 
 
 source-repository head

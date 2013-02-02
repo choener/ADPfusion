@@ -39,11 +39,11 @@ import qualified Data.Vector.Unboxed as VU
 import Text.Printf
 
 import qualified Data.PrimitiveArray as PA
-import qualified Data.PrimitiveArray.Zero.Unboxed as ZU
+--import qualified Data.PrimitiveArray.Zero.Unboxed as ZU
 import qualified Data.PrimitiveArray.Zero as Z
 
 
-
+{-
 -- * StreamGen
 
 -- | Generate stream from either one (DIM2 -> m cnt) or some combination of
@@ -369,7 +369,7 @@ instance
   {-# INLINE extractValue #-}
   {-# INLINE extractStream #-}
   {-# INLINE extractStreamLast #-}
-
+-}
 
 -- * Apply function 'f' with arguments on a stack 'x'.
 --
