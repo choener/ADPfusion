@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE EmptyDataDecls #-}
@@ -104,10 +105,9 @@ instance StreamElement None where
 
 instance (Monad m) => MkStream m None where
   mkStream None (i,j) = S.unfoldr step i where
-    step k
+    step !k
       | k<=j = Just (SeNone i, j+1)
       | otherwise = Nothing
-    {-# INLINE step #-}
   {-# INLINE mkStream #-}
   mkStreamInner = mkStream
   {-# INLINE mkStreamInner #-}
@@ -136,23 +136,19 @@ instance (StreamElement x) => StreamElement (x:.Chr e) where
 instance (Monad m, MkStream m x, StreamElement x, StreamTopIdx x ~ Int, VU.Unbox e) => MkStream m (x:.Chr e) where
   mkStream (x:.Chr es) (i,j) = S.flatten mk step Unknown $ mkStream x (i,j-1) where
     mk :: StreamElm x -> m (StreamElm x, Int)
-    mk x = return (x, getTopIdx x)
+    mk !x = return (x, getTopIdx x)
     step :: (StreamElm x, Int) -> m (S.Step (StreamElm x, Int) (StreamElm (x:.Chr e)))
-    step (x,k)
+    step (!x,!k)
       | k+1 == j = return $ S.Yield (SeChr x (k+1) (VU.unsafeIndex es k)) (x,j+1)
       | otherwise = return S.Done
-    {-# INLINE mk #-}
-    {-# INLINE step #-}
   {-# INLINE mkStream #-}
   mkStreamInner (x:.Chr es) (i,j) = S.flatten mk step Unknown $ mkStreamInner x (i,j-1) where
     mk :: StreamElm x -> m (StreamElm x, Int)
-    mk x = return (x, getTopIdx x)
+    mk !x = return (x, getTopIdx x)
     step :: (StreamElm x, Int) -> m (S.Step (StreamElm x, Int) (StreamElm (x:.Chr e)))
-    step (x,k)
+    step (!x,!k)
       | k < j     = return $ S.Yield (SeChr x (k+1) (VU.unsafeIndex es k)) (x,j+1)
       | otherwise = return $ S.Done
-    {-# INLINE mk #-}
-    {-# INLINE step #-}
   {-# INLINE mkStreamInner #-}
 
 
@@ -214,20 +210,17 @@ instance (Monad m, MkStream m x, StreamElement x, StreamTopIdx x ~ Int, PA.PAO a
   -- beforehand. 'mkStream' should only ever be used if 'j' can be fixed.
   mkStream (x:.Tbl t) (i,j) = S.map step $ mkStreamInner x (i,j - initDeltaIdx (undefined :: c)) where
     step :: StreamElm x -> StreamElm (x:.Tbl c arr)
-    step x = let k = getTopIdx x in SeTbl x j (t PA.! (Z:.k:.j))
-    {-# INLINE step #-}
+    step !x = let k = getTopIdx x in SeTbl x j (t PA.! (Z:.k:.j))
   -- | The inner stream will, in each step, check if the current subword [k,l]
   -- (forall l>=k) is valid and terminate the stream once l>j.
   mkStreamInner (x:.Tbl t) (i,j) = S.flatten mk step Unknown $ mkStreamInner x (i,j) where
     mk :: StreamElm x -> m (StreamElm x, Int)
-    mk x = return (x, getTopIdx x + initDeltaIdx (undefined :: c))
+    mk !x = return (x, getTopIdx x + initDeltaIdx (undefined :: c))
     step :: (StreamElm x, Int) -> m (S.Step (StreamElm x, Int) (StreamElm (x:.Tbl c arr)))
-    step (x,l)
+    step (!x,!l)
       | l<=j      = return $ S.Yield (SeTbl x l (t PA.! (Z:.k:.l))) (x,l+1)
       | otherwise = return $ S.Done
       where k = getTopIdx x
-    {-# INLINE mk #-}
-    {-# INLINE step #-}
   {-# INLINE mkStream #-}
   {-# INLINE mkStreamInner #-}
 
@@ -278,20 +271,17 @@ instance
   -- beforehand. 'mkStream' should only ever be used if 'j' can be fixed.
   mkStream (x:.MTbl t) (i,j) = S.mapM step $ mkStreamInner x (i,j - initDeltaIdx (undefined :: c)) where
     step :: StreamElm x -> m (StreamElm (x:.MTbl c (PA.MutArr m arr)))
-    step x = let k = getTopIdx x in PA.readM t (Z:.k:.j) >>= \e -> return $ SeMTbl x j e
-    {-# INLINE step #-}
+    step !x = let k = getTopIdx x in PA.readM t (Z:.k:.j) >>= \e -> return $ SeMTbl x j e
   -- | The inner stream will, in each step, check if the current subword [k,l]
   -- (forall l>=k) is valid and terminate the stream once l>j.
   mkStreamInner (x:.MTbl t) (i,j) = S.flatten mk step Unknown $ mkStreamInner x (i,j) where
     mk :: StreamElm x -> m (StreamElm x, Int)
-    mk x = return (x, getTopIdx x + initDeltaIdx (undefined :: c))
+    mk !x = return (x, getTopIdx x + initDeltaIdx (undefined :: c))
     step :: (StreamElm x, Int) -> m (S.Step (StreamElm x, Int) (StreamElm (x:.MTbl c (PA.MutArr m arr))))
-    step (x,l)
+    step (!x,!l)
       | l<=j      = PA.readM t (Z:.k:.l) >>= \e -> return $ S.Yield (SeMTbl x l e) (x,l+1)
       | otherwise = return $ S.Done
       where k = getTopIdx x
-    {-# INLINE mk #-}
-    {-# INLINE step #-}
   {-# INLINE mkStream #-}
   {-# INLINE mkStreamInner #-}
 
@@ -330,10 +320,9 @@ instance StreamElement (Empty) where
 
 instance (Monad m) => MkStream m (Empty) where
   mkStream Empty (i,j) = S.unfoldr step i where
-    step k
+    step !k
       | k==j      = Just (SeEmpty k, j+1)
       | otherwise = Nothing
-    {-# INLINE step #-}
   mkStreamInner = error "undefined for Empty"
   {-# INLINE mkStream #-}
   {-# INLINE mkStreamInner #-}
@@ -438,18 +427,15 @@ instance
   ) => MkStream m (x:.BTtbl c arr (BTfun m b)) where
   mkStream (x:.BTtbl t g) (i,j) = S.map step $ mkStreamInner x (i,j - initDeltaIdx (undefined :: c)) where
     step :: StreamElm x -> StreamElm (x:.BTtbl c arr (BTfun m b))
-    step x = let k = getTopIdx x in SeBTtbl x j (t PA.! (Z:.k:.j)) (g (k,j))
-    {-# INLINE step #-}
+    step !x = let k = getTopIdx x in SeBTtbl x j (t PA.! (Z:.k:.j)) (g (k,j))
   mkStreamInner (x:.BTtbl t g) (i,j) = S.flatten mk step Unknown $ mkStreamInner x (i,j) where
     mk :: StreamElm x -> m (StreamElm x, Int)
-    mk x = return (x, getTopIdx x + initDeltaIdx (undefined :: c))
+    mk !x = return (x, getTopIdx x + initDeltaIdx (undefined :: c))
     step :: (StreamElm x, Int) -> m (S.Step (StreamElm x, Int) (StreamElm (x:.BTtbl c arr (BTfun m b))))
-    step (x,l)
+    step (!x,!l)
       | l<=j      = return $ S.Yield (SeBTtbl x l (t PA.! (Z:.k:.l)) (g (k,l))) (x,l+1)
       | otherwise = return $ S.Done
       where k = getTopIdx x
-    {-# INLINE mk #-}
-    {-# INLINE step #-}
   {-# INLINE mkStream #-}
   {-# INLINE mkStreamInner #-}
 

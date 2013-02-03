@@ -1,7 +1,7 @@
 name:           ADPfusion
 version:        0.1.1.0
-author:         Christian Hoener zu Siederdissen, 2011-2012
-copyright:      Christian Hoener zu Siederdissen, 2011-2012
+author:         Christian Hoener zu Siederdissen, 2011-2013
+copyright:      Christian Hoener zu Siederdissen, 2011-2013
 homepage:       http://www.tbi.univie.ac.at/~choener/adpfusion
 maintainer:     choener@tbi.univie.ac.at
 category:       Algorithms, Data Structures, Bioinformatics
@@ -93,6 +93,12 @@ description:
                 algorithms using this library:
                 <http://hackage.haskell.org/package/Nussinov78> and
                 <http://hackage.haskell.org/package/RNAFold>.
+                .
+                Changes since 0.1.0.0:
+                .
+                * using generalized tables from new PrimitiveArray
+                .
+                .
                 .
                 Changes since 0.0.1.2:
                 .

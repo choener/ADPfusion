@@ -36,8 +36,8 @@ import Prelude as P
 import "PrimitiveArray" Data.Array.Repa.Index
 import qualified Data.Vector.Unboxed as VU
 
-import Data.PrimitiveArray as PA
-import Data.PrimitiveArray.Unboxed.Zero as PA
+import Data.PrimitiveArray as PA hiding (E)
+import qualified Data.PrimitiveArray.Zero as Z
 
 import ADP.Fusion.GAPlike
 
@@ -52,6 +52,8 @@ import Debug.Trace
 type Signature m x y =
   ( () -> x
   , Char -> x -> Char -> x
+  , Char -> Char -> x
+  , x -> x -> x
   , SM.Stream m x -> m y
   )
 
@@ -59,9 +61,14 @@ type Signature m x y =
 -- current string with a character to the left and to the right. There is only
 -- one non-terminal: "tbl".
 
-gSimple (empty,pair,h) tbl c e = 
-  (tbl, empty <<< e           |||
-        pair  <<< c % tbl % c ... h)
+gSimple (empty,pair,chrchr,tbltbl,h) tbl c e = 
+  (tbl,
+        empty <<< e           |||
+        chrchr <<< c % c      |||
+--        (\ij -> SM.map (\s -> apply chrchr $ getArg s) $ mkStream (None:.c:.c) ij) ... h
+        pair  <<< c % tbl % c |||
+        tbltbl <<< tbl % tbl ... h
+  )
 {-# INLINE gSimple #-}
 
 -- | Simple scoring system. The empty string has a score of "0", a palindrome
@@ -69,20 +76,26 @@ gSimple (empty,pair,h) tbl c e =
 -- score is reset to "-999999".
 
 aMax :: Monad m => Signature m Int Int
-aMax = (empty,pair,h) where
+aMax = (empty,pair,chrchr,tbltbl,h) where
   empty _ = 0
   {-# INLINE empty #-}
   pair l x r = if l==r then x+1 else -999999
   {-# INLINE pair #-}
+  chrchr (!l) (!r) = if l==r then 2 else -999999
+  {-# INLINE chrchr #-}
+  tbltbl (!l) (!r) = l+r
+  {-# INLINE tbltbl #-}
   h = SM.foldl' max (-999999)
   {-# INLINE h #-}
 {-# INLINE aMax #-}
 
 -- | Pretty Printer. Will print nested angled brackets for a palindrome.
 
-aPretty = (empty,pair,h) where
+aPretty = (empty,pair,chrchr,tbltbl,h) where
   empty _ = ""
   pair l x r = if l==r then "<" P.++ x P.++ ">" else "." P.++ x P.++ "."
+  chrchr l r = if l==r then "<>" else ".."
+  tbltbl l r = l P.++ r
   h = return . id
 {-# INLINE aPretty #-}
 
@@ -108,7 +121,7 @@ palindrome inp = (arr ! (Z:.0:.n), bt) where
 -- performance improvements. Also, it is nice to be able to look at the core of
 -- "fillPalindrome".
 
-fillPalindrome :: forall s . VU.Vector Char -> ST s (Arr0 DIM2 Int)
+fillPalindrome :: forall s . VU.Vector Char -> ST s (Z.U DIM2 Int)
 fillPalindrome inp = do
   let n = VU.length inp
   t' <- fromAssocsM (Z:.0:.0) (Z:.n:.n) (-999999) []
@@ -128,7 +141,7 @@ fillPalindrome inp = do
 --
 -- TODO We actually need to make a small library of fillXYZ functions.
 
-fillTable :: PrimMonad m => (MTbl E (MArr0 (PrimState m) DIM2 Int), ((Int,Int) -> m Int)) -> m ()
+fillTable :: PrimMonad m => (MTbl E (Z.MU m DIM2 Int), ((Int,Int) -> m Int)) -> m ()
 fillTable  (MTbl tbl, f) = do
   let (_,Z:.n:._) = boundsM tbl
   forM_ [n,n-1..0] $ \i -> forM_ [i..n] $ \j -> do
@@ -145,7 +158,7 @@ fillTable  (MTbl tbl, f) = do
 -- backtracking, that would otherwise not be possible. And we can /combine/
 -- functions.
 
-backtrack (inp :: VU.Vector Char) (tbl :: PA.Arr0 DIM2 Int) = unId . SM.toList . unId $ g (0,n) where
+backtrack (inp :: VU.Vector Char) (tbl :: Z.U DIM2 Int) = unId . SM.toList . unId $ g (0,n) where
   n = VU.length inp
   c = Chr inp
   e = Empty
@@ -164,6 +177,8 @@ backtrack (inp :: VU.Vector Char) (tbl :: PA.Arr0 DIM2 Int) = unId . SM.toList .
 type CombSignature m e b =
   ( () -> (e, m (SM.Stream m b))
   , Char -> (e, m (SM.Stream m b)) -> Char -> (e, m (SM.Stream m b))
+  , Char -> Char -> (e, m (SM.Stream m b))
+  , (e,m (SM.Stream m b)) -> (e, m (SM.Stream m b)) -> (e, m (SM.Stream m b))
   , SM.Stream m (e, m (SM.Stream m b)) -> m (SM.Stream m b)
   )
 
@@ -182,12 +197,14 @@ instance Show (Id [String]) where
   => Signature m e e
   -> Signature m b (SM.Stream m b)
   -> CombSignature m e b
-(<**) f s = (empty,pair,h) where
-  (emptyF,pairF,hF) = f
-  (emptyS,pairS,hS) = s
+(<**) f s = (empty,pair,chrchr,tbltbl,h) where
+  (emptyF,pairF,chrchrF,tbltblF,hF) = f
+  (emptyS,pairS,chrchrS,tbltblS,hS) = s
 
   empty e = let x = (emptyF e, return $ SM.singleton (emptyS e)) in x
   pair l (x,ys) r = (pairF l x r, ys >>= \ys' -> return $ SM.map (\y -> pairS l y r) ys')
+  chrchr l r = (chrchrF l r, return $ SM.singleton (chrchrS l r))
+  tbltbl (x,xs) (y,ys) = (tbltblF x y, error "tbltbl missing")
   h xs = do
     hfs <- hF $ SM.map fst xs
     let phfs = SM.concatMapM snd . SM.filter ((hfs==) . fst) $ xs
