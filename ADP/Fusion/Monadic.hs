@@ -11,7 +11,7 @@
 
 module ADP.Fusion.Monadic where
 
-import "PrimitiveArray" Data.Array.Repa.Index
+import Data.Array.Repa.Index
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
 import ADP.Fusion.Monadic.Internal

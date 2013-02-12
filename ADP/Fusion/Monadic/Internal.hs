@@ -32,8 +32,8 @@ import Control.Monad.ST
 import Data.List (intersperse)
 import Data.Primitive.Types
 import Data.Vector.Fusion.Stream.Size
-import "PrimitiveArray" Data.Array.Repa.Index
-import "PrimitiveArray" Data.Array.Repa.Shape
+import Data.Array.Repa.Index
+import Data.Array.Repa.Shape
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Unboxed as VU
 import Text.Printf

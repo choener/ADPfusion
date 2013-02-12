@@ -30,7 +30,7 @@ import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Unboxed as VU
 
 -- import Data.PrimitiveArray -- (PrimArrayOps(..), MPrimArrayOps(..))
-import "PrimitiveArray" Data.Array.Repa.Index
+import Data.Array.Repa.Index
 import qualified Data.PrimitiveArray as PA
 --import qualified Data.PrimitiveArray.Zero.Unboxed as ZU
 import qualified Data.PrimitiveArray.Zero as Z
