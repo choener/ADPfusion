@@ -146,36 +146,38 @@ library
     PrimitiveArray == 0.5.*
   exposed-modules:
     ADP.Fusion
-    ADP.Fusion.Monadic
-    ADP.Fusion.Monadic.Internal
-    ADP.Fusion.GAPlike
+    ADP.Fusion.Classes
+--    ADP.Fusion
+--    ADP.Fusion.Monadic
+--    ADP.Fusion.Monadic.Internal
+--    ADP.Fusion.GAPlike
 
   ghc-options:
     -O2 -funbox-strict-fields
 
-executable GAPcriterion
-  buildable:
-    False
-  if flag(devel)
-    buildable:
-      True
-    build-depends:
-      criterion  == 0.6.* ,
-      QuickCheck == 2.5
-  other-modules:
-    ADP.Fusion.GAPlike.DevelCommon
-    ADP.Fusion.GAPlike.Criterion
-    ADP.Fusion.GAPlike.QuickCheck
-  main-is:
-    Tests/GAPcriterion.hs
-  ghc-options:
-    -fllvm -O2 -funbox-strict-fields -optlo-O3 -optlo-std-compile-opts
-  if impl(GHC > 7.4)
-    ghc-options:
-      -fnew-codegen
---  if impl(GHC > 7.6.1)
+--executable GAPcriterion
+--  buildable:
+--    False
+--  if flag(devel)
+--    buildable:
+--      True
+--    build-depends:
+--      criterion  == 0.6.* ,
+--      QuickCheck == 2.5
+--  other-modules:
+--    ADP.Fusion.GAPlike.DevelCommon
+--    ADP.Fusion.GAPlike.Criterion
+--    ADP.Fusion.GAPlike.QuickCheck
+--  main-is:
+--    Tests/GAPcriterion.hs
+--  ghc-options:
+--    -fllvm -O2 -funbox-strict-fields -optlo-O3 -optlo-std-compile-opts
+--  if impl(GHC > 7.4)
 --    ghc-options:
---      -fllvm-tbaa
+--      -fnew-codegen
+----  if impl(GHC > 7.6.1)
+----    ghc-options:
+----      -fllvm-tbaa
 
 
 source-repository head
