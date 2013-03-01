@@ -115,6 +115,7 @@ testInner !k !xs !i !j = do
 
 class (Index i) => Next x i where
   suc :: x -> i -> Is i -> Is i
+  fin :: x -> i -> Is i -> Bool
 
 instance Next Z Z where
   suc Z Z Z = Z
@@ -128,12 +129,12 @@ instance Next (Z:.Region Int) (Z:.(Int,Int)) where
   {-# INLINE suc #-}
 -}
 
-class Index x where
-  type Is x :: *
-  toL :: x -> Is x
-  toR :: x -> Is x
-  from :: Is x -> Is x -> x
-  leftOfR :: Is x -> x -> Bool
+class Index i where
+  type Is i :: *
+  toL :: i -> Is i
+  toR :: i -> Is i
+  from :: Is i -> Is i -> i
+  leftOfR :: Is i -> i -> Bool
 
 
 instance Index z => Index (z:.Int) where
