@@ -41,13 +41,13 @@ class (Index i, Monad m) => MkS m x i where
 data None = None
 
 instance MkElm None i where
-  data Elm None i = Enone !(Is i)
+  newtype Elm None i = Enone (Is i)
   topIdx (Enone !k) = k
   {-# INLINE topIdx #-}
 
-instance (Index i, Monad m) => MkS m None i where
-  mkS _ idx = S.unfoldr step True where
-    step True  = let k = toL idx in Just (Enone k, False)
+instance (Index i, NFData i, NFData (Is i), Monad m) => MkS m None i where
+  mkS _ idx = idx `deepseq` S.unfoldr step True where
+    step True  = let k = toL idx in k `deepseq` Just (Enone k, False)
     step False = Nothing
   {-# INLINE mkS #-}
 
@@ -55,19 +55,37 @@ instance (Index i, Monad m) => MkS m None i where
 data Term ts = Term ts
 
 instance MkElm x i => MkElm (x:.Term ts) i where
-  data Elm (x:.Term ts) i = Eterm !(Elm x i) !(Is i) !ts
-  topIdx (Eterm _ !k _) = k
+  newtype Elm (x:.Term ts) i = Eterm (Elm x i, Is i, ts)
+  topIdx (Eterm (_,!k,_)) = k
   {-# INLINE topIdx #-}
 
-instance (Index i, Monad m, MkS m x i, MkElm x i, Next ts i) => MkS m (x:.Term ts) i where
-  mkS (x:.Term ts) idx = S.flatten mk step Unknown $ mkS x idx where
-    mk !y = return (y, topIdx y)
---    step :: (Elm x i, Is i) -> m (S.Step (Elm x i, Is i) (Elm (x:.Term ts) i))
-    step (!y,!k)
-      | leftOfR k idx = return $ S.Yield (Eterm y k ts) (y,suc ts idx k)
+instance NFData (Z:.Int) where
+  rnf (Z:.i) = rnf i
+  {-# INLINE rnf #-}
+
+instance NFData (Z:.Int:.Int) where
+  rnf (Z:.i:.j) = i `seq` rnf j
+  {-# INLINE rnf #-}
+
+instance NFData (Z:.(Int,Int)) where
+  rnf (Z:.(i,j)) = i `seq` rnf j
+  {-# INLINE rnf #-}
+
+instance NFData (Z:.(Int,Int):.(Int,Int)) where
+  rnf (Z:.(i,j):.(k,l)) = i `seq` j `seq` k `seq` rnf l
+  {-# INLINE rnf #-}
+
+instance (NFData (Is i), NFData i, Index i, Monad m, MkS m x i, MkElm x i, Next ts i) => MkS m (x:.Term ts) i where
+--  mkS (x:.Term ts) idx = S.map (\y -> Eterm y (topIdx y) ts) $ mkS x idx
+  mkS (x:.Term ts) idx = idx `deepseq` S.flatten mk step Unknown $ mkS x idx where
+    mk :: Elm x i -> m (Elm x i, Is i)
+    mk y = let k = topIdx y in k `deepseq` return (y, k)
+    step :: (Elm x i, Is i) -> m (S.Step (Elm x i, Is i) (Elm (x:.Term ts) i))
+    step (y,k)
+      | leftOfR k idx = return $ S.Yield (Eterm (y,k,ts)) (y,suc ts idx k)
       | otherwise = return $ S.Done
-    {- INLINE mk #-}
-    {- INLINE step #-}
+    {-# INLINE mk #-}
+    {-# INLINE step #-}
   {-# INLINE mkS #-}
 
 
@@ -87,7 +105,9 @@ test k =
 testInner :: Int -> VU.Vector Int -> Int -> Int -> IO Int
 testInner !k !xs !i !j = do
   x <- S.length $ S.take k $ mkS (None :. Term (Z:.Region xs)) (Z:.(i,j))
-  y <- S.length $ S.take k $ mkS (None :. Term (Z:.Region xs:.Region xs)) (Z:.(i,j):.(i,j))
+--  y <- S.length $ S.take k $ mkS (None :. Term (Z:.Region xs:.Region xs) :. Term (Z:.Region xs:.Region xs)) (Z:.(i,j):.(i,j))
+--  y <- S.length $ S.take k $ mkS (None :. Term (Z:.Region xs) :. Term (Z:.Region xs)) (Z:.(i,j))
+  y <- return 1
   return $ x+y
 {-# NOINLINE testInner #-}
 
