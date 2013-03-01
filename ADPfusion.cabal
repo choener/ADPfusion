@@ -140,9 +140,10 @@ library
   build-depends:
     base >= 4 && < 5,
     ghc-prim,
-    primitive      == 0.5.*   ,
-    repa           == 3.2.*   ,
-    vector         == 0.10.*  ,
+    deepseq        >= 1.3   ,
+    primitive      >= 0.5   ,
+    repa           >= 3.2   ,
+    vector         >= 0.10  ,
     PrimitiveArray == 0.5.*
   exposed-modules:
     ADP.Fusion
