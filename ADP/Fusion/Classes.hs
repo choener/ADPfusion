@@ -51,8 +51,8 @@ instance (Index i, NFData i, NFData (Is i), Monad m) => MkS m None i where
     step False = Nothing
   {-# INLINE mkS #-}
 
-
 data Term ts = Term ts
+data T = T
 
 instance MkElm x i => MkElm (x:.Term ts) i where
   newtype Elm (x:.Term ts) i = Eterm (Elm x i, Is i, ts)
@@ -88,8 +88,6 @@ instance (NFData (Is i), NFData i, Index i, Monad m, MkS m x i, MkElm x i, Next 
     {-# INLINE step #-}
   {-# INLINE mkS #-}
 
-
-
 data Region e = Region !(VU.Vector e)
 
 test :: Int -> IO Int
@@ -104,11 +102,12 @@ test k =
 
 testInner :: Int -> VU.Vector Int -> Int -> Int -> IO Int
 testInner !k !xs !i !j = do
-  x <- S.length $ S.take k $ mkS (None :. Term (Z:.Region xs)) (Z:.(i,j))
---  y <- S.length $ S.take k $ mkS (None :. Term (Z:.Region xs:.Region xs) :. Term (Z:.Region xs:.Region xs)) (Z:.(i,j):.(i,j))
---  y <- S.length $ S.take k $ mkS (None :. Term (Z:.Region xs) :. Term (Z:.Region xs)) (Z:.(i,j))
-  y <- return 1
-  return $ x+y
+--  x <- S.length $ S.take k $ mkS (None :. Term (T:.Region xs)) (Z:.(i,j))
+--  x <- S.length $ S.take k $ mkS (None :. Term (T:.Region xs) :. Term (T:.Region xs)) (Z:.(i,j))
+--  x <- S.length $ S.take k $ mkS (None :. Term (T:.Region xs) :. Term (T:.Region xs) :. Term (T:.Region xs)) (Z:.(i,j))
+  x <- S.length $ S.take k $ mkS (None :. Term (T:.Region xs) :. Term (T:.Region xs) :. Term (T:.Region xs) :. Term (T:.Region xs)) (Z:.(i,j))
+--  x <- S.length $ S.take k $ mkS (None :. Term (Z:.Region xs:.Region xs) :. Term (Z:.Region xs:.Region xs)) (Z:.(i,j):.(i,j))
+  return $ x
 {-# NOINLINE testInner #-}
 
 -- *
@@ -117,11 +116,13 @@ class (Index i) => Next x i where
   suc :: x -> i -> Is i -> Is i
   fin :: x -> i -> Is i -> Bool
 
-instance Next Z Z where
-  suc Z Z Z = Z
+instance Next T Z where
+  suc T Z Z = Z
+  {-# INLINE suc #-}
 
 instance Next x y => Next (x:.Region Int) (y:.(Int,Int)) where
   suc (x:.r) (ix:.(i,j)) (z:.k) = suc x ix z :. k+1
+  {-# INLINE suc #-}
 
 {-
 instance Next (Z:.Region Int) (Z:.(Int,Int)) where
@@ -161,10 +162,10 @@ instance Index z => Index (z:.(Int,Int)) where
 
 instance Index Z where
   type Is Z = Z
-  toL _ = Z
-  toR _ = Z
-  from _ _ = Z
-  leftOfR _ _ = True
+  toL Z = Z
+  toR Z = Z
+  from Z Z = Z
+  leftOfR Z Z = True
   {-# INLINE toL #-}
   {-# INLINE toR #-}
   {-# INLINE from #-}
