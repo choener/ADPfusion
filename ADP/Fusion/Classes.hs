@@ -25,6 +25,8 @@ import qualified Data.Vector.Unboxed as VU
 import Control.DeepSeq
 import GHC.TypeLits
 
+import Debug.Trace
+
 
 
 class MkElm x i where
@@ -72,20 +74,20 @@ instance (Index i, Monad m, MkS m x i, MkElm x i, Next ts i) => MkS m (x:.Term t
 
 data Region e = Region !(VU.Vector e)
 
-test :: IO Int
-test =
+test :: Int -> IO Int
+test k =
   let
     xs = VU.fromList [1 .. 10 :: Int]
     i = 0 :: Int
     j = 10 :: Int
   in do
-    (xs,i,j) `deepseq` testInner xs i j
+    (xs,i,j) `deepseq` testInner k xs i j
 {-# NOINLINE test #-}
 
-testInner :: VU.Vector Int -> Int -> Int -> IO Int
-testInner !xs !i !j = do
-  x <- S.length $ mkS (None :. Term (Z:.Region xs)) (Z:.(i,j))
-  y <- S.length $ mkS (None :. Term (Z:.Region xs:.Region xs)) (Z:.(i,j):.(i,j))
+testInner :: Int -> VU.Vector Int -> Int -> Int -> IO Int
+testInner !k !xs !i !j = do
+  x <- S.length $ S.take k $ mkS (None :. Term (Z:.Region xs)) (Z:.(i,j))
+  y <- S.length $ S.take k $ mkS (None :. Term (Z:.Region xs:.Region xs)) (Z:.(i,j):.(i,j))
   return $ x+y
 {-# NOINLINE testInner #-}
 

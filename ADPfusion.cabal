@@ -156,6 +156,16 @@ library
   ghc-options:
     -O2 -funbox-strict-fields
 
+executable Test
+  main-is:
+    Test.hs
+  ghc-options:
+    -fllvm -O2 -funbox-strict-fields -optlo-O3 -optlo-std-compile-opts
+    -funfolding-use-threshold100
+    -funfolding-keeness-factor100
+    -fnew-codegen
+    -fllvm-tbaa
+
 --executable GAPcriterion
 --  buildable:
 --    False
