@@ -40,7 +40,7 @@ class MkElm x i where
   topIdx :: Elm x i -> Is i
 
 class (Index i, Monad m) => MkS m x i where
-  mkS :: x -> i -> S.Stream m (Elm x i)
+  mkS :: x -> IsT i -> i -> S.Stream m (Elm x i)
 
 
 
@@ -53,7 +53,7 @@ instance MkElm None i where
   {-# INLINE topIdx #-}
 
 instance (NFData i, NFData (Is i), Index i, Monad m) => MkS m None i where
-  mkS None idx = let k = toL idx in (idx,k) `deepseq` S.singleton (Enone k)
+  mkS None _ idx = let k = toL idx in (idx,k) `deepseq` S.singleton (Enone k)
   {-
   mkS _ idx = S.unfoldr step True where
     step True  = let k = toL idx in k `deepseq` Just (Enone k, False)
@@ -86,8 +86,8 @@ class (Monad m) => TEE m x i where
   type TE x :: *
   data TI x i m :: *
   te :: x -> Is i -> Is i -> S.Stream m (TE x)
-  ti :: x -> Is i -> Is i -> m (TI x i m)
-  tisuc :: x -> Is i -> Is i -> TI x i m -> m (TI x i m)
+  ti :: x -> Is i -> Is i -> (TI x i m)
+  tisuc :: x -> Is i -> Is i -> TI x i m -> (TI x i m)
   tifin :: TI x i m -> Bool
   tiget :: x -> Is i -> Is i -> TI x i m -> m (TE x)
 
@@ -95,8 +95,8 @@ instance (Monad m) => TEE m T Z where
   type TE T = Z
   newtype TI T Z m = TIZ Bool
   te T _ _ = S.singleton Z
-  ti T _ _ = return $ TIZ False
-  tisuc _ _ _ _ = return $ TIZ True
+  ti T _ _ = TIZ False
+  tisuc _ _ _ _ = TIZ True
   tifin (TIZ tf) = tf
   tiget _ _ _ _ = return Z
   {-# INLINE te #-}
@@ -115,8 +115,8 @@ instance ( Index is
   type TE (ts:.Region e) = TE ts :. VU.Vector e
   newtype TI (ts:.Region e) (is:.(Int:.Int)) m = TIregion (TI ts is m)
   te (ts:.Region ve) (IsIntInt (is:.i)) (IsIntInt (js:.j)) = S.map (\z -> z:.VU.unsafeSlice i (j-i) ve) $ te ts is js
-  ti (ts:.Region ve) (IsIntInt (is:.i)) (IsIntInt (js:.j)) = ti ts is js >>= (return . TIregion)
-  tisuc (ts:.Region ve) (IsIntInt (is:.i)) (IsIntInt (js:.j)) (TIregion as) = tisuc ts is js as >>= (return . TIregion)
+  ti (ts:.Region ve) (IsIntInt (is:.i)) (IsIntInt (js:.j)) = TIregion $ ti ts is js
+  tisuc (ts:.Region ve) (IsIntInt (is:.i)) (IsIntInt (js:.j)) (TIregion as) = TIregion $ tisuc ts is js as
   tifin (TIregion as) = tifin as
   tiget (ts:.Region ve) (IsIntInt (is:.i)) (IsIntInt (js:.j)) (TIregion as) = tiget ts is js as >>= \z -> return (z:.VU.unsafeSlice i (j-i) ve)
   {-# INLINE te #-}
@@ -157,25 +157,34 @@ instance (NFData a, NFData s) => NFData (S.Step a s) where
   rnf (S.Skip s) = rnf s
   rnf (S.Yield a s) = rnf a `seq` rnf s
 
+instance NFData (TI T Z m) where
+  rnf (TIZ b) = rnf b
+
+instance (NFData (TI ts z m)) => NFData (TI (ts:.Region e) (z:.(Int:.Int)) m) where
+  rnf (TIregion ts) = rnf ts
+
+instance NFData (Term (T:. Region Int)) where
+
 instance ( NFData i, NFData (Elm x i), NFData (Is i)
 --          , Show ts, Show (Is i), Show i, Show (Elm x i)
           , TEE m ts i
           , NFData (TE ts)
+          , NFData (TI ts i m)
           , Index i, Monad m, MkS m x i, MkElm x i, Next ts i) => MkS m (x:.Term ts) i where
-  mkS (x:.Term ts) idx = S.flatten mkT stepT Unknown $ S.flatten mk step Unknown $ mkS x idx where
+  mkS (x:.Term ts) os idx = S.flatten mkT stepT Unknown $ S.flatten mk step Unknown $ mkS x (convT ts os) idx where
     mkT (Pterm (y:.k':.k)) = do
-      stp <- ti ts k' k
-      return (y:.k':.k:.stp)
+      let stp = ti ts k' k
+      stp `deepseq` return (y:.k':.k:.stp)
     stepT (y:.k':.k:.stp)
       | tifin stp = return $ S.Done
       | otherwise = do
-          stp' <- tisuc ts k' k stp
+          let stp' = tisuc ts k' k stp
           z <- tiget ts k' k stp
-          return $ S.Yield (Eterm (y:.k:.z)) (y:.k':.k:.stp')
+          (stp',z) `deepseq` return $ S.Yield (Eterm (y:.k:.z)) (y:.k':.k:.stp')
     mk y = let k = topIdx y in k `deepseq` return (y:.k:.k)
     step (y:.k':.k)
       | leftOfR k idx = let
-                          newk = suc ts idx k' k
+                          newk = suc ts os idx k' k
                         in newk `deepseq` {- traceShow {- (idx,y,k,ts) -} (k) $ -} return $ S.Yield (Pterm (y:.k':.k)) (y :. k' :. newk)
       | otherwise = return $ S.Done
     {-# INLINE mk #-}
@@ -198,33 +207,50 @@ test k =
 testInner :: Int -> VU.Vector Int -> VU.Vector Int -> Int -> Int -> IO Int
 testInner !k !xs !ys !i !j = do
 --  x <- return 1
---  x <- S.length $ mkS None (Z:.(i:.j))
+--  x <- S.length $ mkS None (IsTii (IsTz Z :. Outer)) (Z:.(i:.j))
 --  x <- S.length $ mkS (None :. Term (T:.Region xs)) (Z:.(i:.j))
-  x <- S.length $ mkS (None :. Term (T:.Region xs) :. Term (T:.Region ys)) (Z:.(i:.j))
---  x <- S.length $ mkS (None :. Term (T:.Region xs) :. Term (T:.Region xs) :. Term (T:.Region xs)) (Z:.(i,j))
+--  x <- S.length $ mkS (None :. Term (T:.Region xs) :. Term (T:.Region ys)) (IsTii (IsTz Z :. Outer)) (Z:.(i:.j))
+  x <- S.length $ mkS (None :. Term (T:.Region xs) :. Term (T:.Region xs) :. Term (T:.Region xs)) (IsTii (IsTz Z :. Outer)) (Z:.(i:.j))
 --  x <- S.length $ mkS (None :. Term (T:.Region xs) :. Term (T:.Region xs) :. Term (T:.Region xs) :. Term (T:.Region xs)) (Z:.(i,j))
---  x <- S.length $ mkS (None :. Term (T:.Region xs:.Region xs) :. Term (T:.Region xs:.Region xs)) (Z:.(i,j):.(i,j))
+--  x <- S.length $ mkS (None :. Term (T:.Region xs:.Region xs) :. Term (T:.Region xs:.Region xs)) (Z:.(i:.j):.(i:.j))
   return $ x
 {-# NOINLINE testInner #-}
 
 -- *
 
 class (Index i) => Next x i where
-  suc :: x -> i -> Is i -> Is i -> Is i
+  suc :: x -> IsT i -> i -> Is i -> Is i -> Is i
+  convT :: x -> IsT i -> IsT i
 
 instance Next T Z where
-  suc T Z (IsZ True)  !x = IsZ False
-  suc T Z (IsZ False) !x = IsZ False
+  suc T _ Z (IsZ _)  !x = IsZ False
+  convT _ (IsTz Z) = IsTz Z
   {-# INLINE suc #-}
+  {-# INLINE convT #-}
 
 instance Next x y => Next (x:.Region Int) (y:.(Int:.Int)) where
-  suc (x:.r) (ix:.(i:.j)) (IsIntInt (ks':.k')) (IsIntInt (z:.k))
+  suc (x:.r) (IsTii (os:.o)) (ix:.(i:.j)) (IsIntInt (ks':.k')) (IsIntInt (z:.k))
+    | o == Outer = let inner = suc x os ix ks' z
+                   in  if inner `leftOfR` ix
+                       then IsIntInt $ inner :. k
+                       else IsIntInt $ inner :. k'
     | k<j = IsIntInt $ z :. k+1
-    | otherwise = IsIntInt $ suc x ix ks' z :. k'
+    | otherwise = IsIntInt $ suc x os ix ks' z :. k'
+  convT (x:.r) (IsTii (t:.oir))
+--    | oir == Outer = IsTii (t:.Inner)
+    | otherwise    = IsTii (convT x t:.Inner)
   {-# INLINE suc #-}
+  {-# INLINE convT #-}
+
+data OIR
+  = Outer
+  | Inner
+  | Restricted
+  deriving (Eq)
 
 class Index i where
   data Is i :: *
+  data IsT i :: *
   toL :: i -> Is i
   toR :: i -> Is i
   from :: Is i -> Is i -> i
@@ -232,6 +258,7 @@ class Index i where
 
 instance Index z => Index (z:.Int) where
   newtype Is (z:.Int) = IsInt (Is z:.Int)
+  newtype IsT (z:.Int) = IsTint (IsT z :. OIR)
   toL (z:.i) = IsInt $ toL z :. i
   toR (z:.i) = IsInt $ toR z :. i
   from (IsInt (z:.i)) (IsInt (z':._)) = from z z' :. i
@@ -243,6 +270,7 @@ instance Index z => Index (z:.Int) where
 
 instance Index z => Index (z:.(Int:.Int)) where
   newtype Is (z:.(Int:.Int)) = IsIntInt (Is z:.Int)
+  newtype IsT (z:.(Int:.Int)) = IsTii (IsT z :. OIR)
   toL (z:.(i:.j)) = IsIntInt $ toL z:.i
   toR (z:.(i:.j)) = IsIntInt $ toR z:.j
   from (IsIntInt (z:.i)) (IsIntInt (z':.j)) = from z z' :.(i:.j)
@@ -259,6 +287,7 @@ deriving instance (Show (Is z)) => Show (Is (z:.(Int:.Int)))
 
 instance Index Z where
   newtype Is Z = IsZ Bool
+  newtype IsT Z = IsTz Z
   toL Z = IsZ True
   toR Z = IsZ True
   from _ _ = Z
