@@ -1,3 +1,5 @@
+{-# LANGUAGE PatternGuards #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE GADTs #-}
@@ -82,37 +84,51 @@ instance (TermElm ts, VU.Unbox e) => TermElm (ts:.Region e) where
 
 class (Monad m) => TEE m x i where
   type TE x :: *
-  type TEstepper x :: *
+  data TEstepper x i :: *
   te :: x -> Is i -> Is i -> S.Stream m (TE x)
-  te' :: x -> Is i -> Is i -> m (S.Step (TEstepper x) (TE x))
-  go' :: S.Step (TEstepper x) (TE x) -> S.Step (TEstepper x) (TE x)
+  te' :: x -> Is i -> Is i -> m (S.Step (TEstepper x i) (TE x))
+  go' :: x -> Is i -> Is i -> TEstepper x i -> m (S.Step (TEstepper x i) (TE x))
 
 instance (Monad m) => TEE m T Z where
   type TE T = Z
-  type TEstepper T = Z
+  newtype TEstepper T Z = TEstepperZ Z
   te T _ _ = S.singleton Z
-  te' T _ _ = return $ S.Yield Z Z
-  go' _ = S.Done
+  te' T _ _ = return $ S.Yield Z (TEstepperZ Z)
+  go' _ _ _ _ = return $ S.Done
   {-# INLINE te #-}
+  {-# INLINE te' #-}
+  {-# INLINE go' #-}
+
+instance NFData (TEstepper T Z) where
+  rnf (TEstepperZ z) = rnf z
+
+instance (NFData (TEstepper ts is)) => NFData (TEstepper (ts:.Region e) (is:.(Int:.Int))) where
+  rnf (TEstepperRegion (stp :. z)) = rnf stp `seq` rnf z
 
 instance ( Index is
          , Index (is:.(Int:.Int))
          , Monad m
          , TEE m ts is
-         , VU.Unbox e {-, ToPair i-}
+         , NFData (TE ts)
+         , NFData (TEstepper ts is)
+         , VU.Unbox e
          ) => TEE m (ts:.Region e) (is:.(Int:.Int)) where -- (is:.i) where
   type TE (ts:.Region e) = TE ts :. VU.Vector e
-  type TEstepper (ts:.Region e) = TEstepper ts :. Z
+  newtype TEstepper (ts:.Region e) (is:.(Int:.Int)) = TEstepperRegion (TEstepper ts is :. Z)
   te (ts:.Region ve) (IsIntInt (is:.i)) (IsIntInt (js:.j)) = S.map (\z -> z:.VU.unsafeSlice i (j-i) ve) $ te ts is js
   te' (ts:.Region ve) (IsIntInt (is:.i)) (IsIntInt (js:.j)) = do
     stp <- te' ts is js
     case stp of
       S.Done      -> return $ S.Done
-      S.Yield a s -> return $ S.Yield (a:.VU.unsafeSlice i (j-i) ve) (s:.Z)
-  go' stp = case stp of
-    S.Done -> S.Done
-    S.Yield a (ss:.s) -> undefined
+      S.Yield a s -> (a,s) `deepseq` return $ S.Yield (a:.VU.unsafeSlice i (j-i) ve) (TEstepperRegion (s:.Z))
+  go' (ts:.Region ve) (IsIntInt (is:.i)) (IsIntInt (js:.j)) (TEstepperRegion (ss :. s)) = do
+    stp <- go' ts is js ss
+    case stp of
+      S.Done -> return $ S.Done
+      S.Yield a s -> (a,s) `deepseq` return $ S.Yield (a:.VU.unsafeSlice i (j-i) ve) (TEstepperRegion (s:.Z))
   {-# INLINE te #-}
+  {-# INLINE te' #-}
+  {-# INLINE go' #-}
 
 instance MkElm x i => MkElm (x:.Term ts) i where
   newtype Plm (x:.Term ts) i = Pterm (Elm x i :. Is i :. Is i)
@@ -136,43 +152,38 @@ instance NFData Z where
 instance NFData (Is k) => NFData (Elm None k) where
   rnf (Enone k) = rnf k
 
+instance NFData None
+
+instance (NFData (Is is), NFData x, NFData (Elm x is), NFData (TE ts)) => NFData (Elm (x:.Term ts) is) where
+  rnf (Eterm (x:.is:.ts)) = rnf x `seq` rnf is `seq` rnf ts
+
+instance (NFData a, NFData s) => NFData (S.Step a s) where
+  rnf S.Done = ()
+  rnf (S.Skip s) = rnf s
+  rnf (S.Yield a s) = rnf a `seq` rnf s
+
 instance ( NFData i, NFData (Elm x i), NFData (Is i)
 --          , Show ts, Show (Is i), Show i, Show (Elm x i)
           , TEE m ts i
+          , NFData (TE ts)
+          , NFData (TEstepper ts i)
           , Index i, Monad m, MkS m x i, MkElm x i, Next ts i) => MkS m (x:.Term ts) i where
   mkS (x:.Term ts) idx = S.flatten mkT stepT Unknown $ S.flatten mk step Unknown $ mkS x idx where
     mkT (Pterm (y:.k':.k)) = do
                stp <- te' ts k' k
-               return (y:.k:.stp)
-    stepT (y:.k:.stp) = case stp of
+               stp `deepseq` return (y:.k':.k:.stp)
+    stepT (y:.k':.k:.stp) = case stp of
       S.Done      -> return $ S.Done
-      S.Yield a s -> return $ S.Yield (Eterm (y:.k:.a)) (y:.k:.undefined)
---      | otherwise = return $ S.Yield (Eterm (y:.k:.head xs)) (y:.k:.tail xs)
-  {- -- works but retains Yield/Skip/Done
-  mkS (x:.Term ts) idx = S.concatMap f $ S.flatten mk step Unknown $ mkS x idx where
-    f (Pterm (y:.k':.k)) = S.map (\t -> Eterm (y:.k:.t)) $ te ts k' k
-    {-# INLINE f #-}
-    -}
-  -- works but requires a list intermediate
-  {-
-  mkS (x:.Term ts) idx = S.flatten mkT stepT Unknown $ S.flatten mk step Unknown $ mkS x idx where
-    mkT (Pterm (y:.k':.k)) = do
-               xs <- S.toList $ te ts k' k
-               {-
-               stp <- case (te ts k' k) of
-                        (S.Stream f r _) -> f r -- this part doesn't work as 'forall' forbids us from examining the 'stp' (the seed 'r' is "forall r . ")
-                        -}
-               return (y:.k:.xs)
-    stepT (y:.k:.xs)
-      | null xs   = return $ S.Done
-      | otherwise = return $ S.Yield (Eterm (y:.k:.head xs)) (y:.k:.tail xs)
-      -}
+      S.Yield a s -> do stp' <- go' ts k' k s
+                        stp' `seq` return $ S.Yield (Eterm (y:.k:.a)) (y:.k':.k:.stp')
     mk y = let k = topIdx y in k `deepseq` return (y:.k:.k)
     step (y:.k':.k)
       | leftOfR k idx = let
                           newk = suc ts idx k' k
                         in newk `deepseq` {- traceShow {- (idx,y,k,ts) -} (k) $ -} return $ S.Yield (Pterm (y:.k':.k)) (y :. k' :. newk)
       | otherwise = return $ S.Done
+    {-# INLINE mkT #-}
+    {-# INLINE stepT #-}
     {-# INLINE mk #-}
     {-# INLINE step #-}
   {-# INLINE mkS #-}
@@ -194,8 +205,8 @@ testInner :: Int -> VU.Vector Int -> VU.Vector Int -> Int -> Int -> IO Int
 testInner !k !xs !ys !i !j = do
 --  x <- return 1
 --  x <- S.length $ mkS None (Z:.(i:.j))
-  x <- S.length $ mkS (None :. Term (T:.Region xs)) (Z:.(i:.j))
---  x <- S.length $ mkS (None :. Term (T:.Region xs) :. Term (T:.Region ys)) (Z:.(i,j))
+--  x <- S.length $ mkS (None :. Term (T:.Region xs)) (Z:.(i:.j))
+  x <- S.length $ mkS (None :. Term (T:.Region xs) :. Term (T:.Region ys)) (Z:.(i:.j))
 --  x <- S.length $ mkS (None :. Term (T:.Region xs) :. Term (T:.Region xs) :. Term (T:.Region xs)) (Z:.(i,j))
 --  x <- S.length $ mkS (None :. Term (T:.Region xs) :. Term (T:.Region xs) :. Term (T:.Region xs) :. Term (T:.Region xs)) (Z:.(i,j))
 --  x <- S.length $ mkS (None :. Term (T:.Region xs:.Region xs) :. Term (T:.Region xs:.Region xs)) (Z:.(i,j):.(i,j))
