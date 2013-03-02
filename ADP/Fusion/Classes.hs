@@ -13,6 +13,8 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
 
+{- OPTIONS_GHC -funbox-strict-fields #-}
+
 module ADP.Fusion.Classes where
 
 import Control.Monad.Primitive
@@ -30,6 +32,7 @@ import Debug.Trace
 
 
 class MkElm x i where
+  data Plm x i :: *
   data Elm x i :: *
   topIdx :: Elm x i -> Is i
 
@@ -41,48 +44,75 @@ class (Index i, Monad m) => MkS m x i where
 data None = None
 
 instance MkElm None i where
+  newtype Plm None i = Pnone (Is i)
   newtype Elm None i = Enone (Is i)
-  topIdx (Enone !k) = k
+  topIdx (Enone k) = k
   {-# INLINE topIdx #-}
 
-instance (Index i, NFData i, NFData (Is i), Monad m) => MkS m None i where
-  mkS _ idx = idx `deepseq` S.unfoldr step True where
+instance (NFData i, NFData (Is i), Index i, Monad m) => MkS m None i where
+  mkS None idx = let k = toL idx in (idx,k) `deepseq` S.singleton (Enone k)
+  {-
+  mkS _ idx = S.unfoldr step True where
     step True  = let k = toL idx in k `deepseq` Just (Enone k, False)
     step False = Nothing
+    {-# INLINE step #-}
+    -}
   {-# INLINE mkS #-}
 
 data Term ts = Term ts
 data T = T
 
+class (Index i) => TermElm x i where
+  type TermE x i :: *
+  extract :: (Monad m) => x -> Is i -> Is i -> S.Stream m (TermE x i)
+  plm2elm :: x -> Is i -> S.Stream m (Plm x i) -> S.Stream m (Elm x i)
+
+instance (Index i) => TermElm T i where
+  type TermE T i = Z
+  extract _ _ _ = S.singleton Z
+
+instance ( Index (is:.i), TermElm ts is, VU.Unbox e
+--         , Is (is:.i) ~ (is:.Int)
+         ) => TermElm (ts:.Region e) (is:.i) where
+  type TermE (ts:.Region e) (is:.i) = TermE ts is :. VU.Vector e
+--  extract (ts:.Region ve) (is:.i) (js:.j) = undefined $ extract ts is js -- S.map (\z -> z:.(VU.unsafeSlice i (j-i) ve)) $ extract ts is js
+
+{-
+instance (VU.Unbox e, Index (is:.i), Is (is:.i) ~ (t0:.Int), TermElm t is) => TermElm (t:.Region e) (is:.i) where
+  extract (ts:.Region ve) (is:.i) (js:.j) = S.map (\z -> z:.(VU.unsafeSlice i (j-i) ve)) $ extract ts is js
+-}
+
 instance MkElm x i => MkElm (x:.Term ts) i where
-  newtype Elm (x:.Term ts) i = Eterm (Elm x i, Is i, ts)
-  topIdx (Eterm (_,!k,_)) = k
+  newtype Plm (x:.Term ts) i = Pterm (Elm x i :. Is i)
+  newtype Elm (x:.Term ts) i = Eterm (Elm x i :. Is i :. TermE ts i)
+  topIdx (Eterm (_ :. k :. _)) = k
   {-# INLINE topIdx #-}
 
-instance NFData (Z:.Int) where
-  rnf (Z:.i) = rnf i
-  {-# INLINE rnf #-}
+deriving instance Show (Elm None (Z:.(Int:.Int)))
+--deriving instance Show (Elm (None :. Term (T :. Region Int)) (Z :. (Int:.Int)))
+deriving instance Show (Region Int)
+deriving instance Show T
+deriving instance Show (Elm None ((Z :. (Int:.Int)) :. (Int:.Int)))
+--deriving instance Show (Elm (None :. Term ((T :. Region Int) :. Region Int)) ((Z :. (Int:.Int)) :. (Int:.Int)))
 
-instance NFData (Z:.Int:.Int) where
-  rnf (Z:.i:.j) = i `seq` rnf j
-  {-# INLINE rnf #-}
+instance (NFData a, NFData b) => NFData (a:.b) where
+  rnf (a:.b) = rnf a `seq` rnf b `seq` ()
 
-instance NFData (Z:.(Int,Int)) where
-  rnf (Z:.(i,j)) = i `seq` rnf j
-  {-# INLINE rnf #-}
+instance NFData Z where
+  rnf Z = ()
 
-instance NFData (Z:.(Int,Int):.(Int,Int)) where
-  rnf (Z:.(i,j):.(k,l)) = i `seq` j `seq` k `seq` rnf l
-  {-# INLINE rnf #-}
+instance NFData (Is k) => NFData (Elm None k) where
+  rnf (Enone k) = rnf k
 
-instance (NFData (Is i), NFData i, Index i, Monad m, MkS m x i, MkElm x i, Next ts i) => MkS m (x:.Term ts) i where
---  mkS (x:.Term ts) idx = S.map (\y -> Eterm y (topIdx y) ts) $ mkS x idx
-  mkS (x:.Term ts) idx = idx `deepseq` S.flatten mk step Unknown $ mkS x idx where
-    mk :: Elm x i -> m (Elm x i, Is i)
-    mk y = let k = topIdx y in k `deepseq` return (y, k)
-    step :: (Elm x i, Is i) -> m (S.Step (Elm x i, Is i) (Elm (x:.Term ts) i))
-    step (y,k)
-      | leftOfR k idx = return $ S.Yield (Eterm (y,k,ts)) (y,suc ts idx k)
+instance ( NFData i, NFData (Elm x i), NFData (Is i)
+--          , Show ts, Show (Is i), Show i, Show (Elm x i)
+          , Index i, Monad m, MkS m x i, MkElm x i, Next ts i) => MkS m (x:.Term ts) i where
+  mkS (x:.Term ts) idx = S.map undefined $ S.flatten mk step Unknown $ mkS x idx where
+    mk y = let k = topIdx y in k `deepseq` return (y:.k:.k)
+    step (y:.k':.k)
+      | leftOfR k idx = let
+                          newk = suc ts idx k' k
+                        in newk `deepseq` {- traceShow {- (idx,y,k,ts) -} (k) $ -} return $ S.Yield (Pterm (y:.k)) (y :. k' :. newk)
       | otherwise = return $ S.Done
     {-# INLINE mk #-}
     {-# INLINE step #-}
@@ -93,42 +123,47 @@ data Region e = Region !(VU.Vector e)
 test :: Int -> IO Int
 test k =
   let
-    xs = VU.fromList [1 .. 10 :: Int]
+    xs = VU.fromList [0 .. 2 :: Int]
+    ys = VU.reverse xs
     i = 0 :: Int
-    j = 10 :: Int
+    j = k :: Int
   in do
-    (xs,i,j) `deepseq` testInner k xs i j
+    (xs,ys,i,j) `deepseq` testInner k xs ys i j
 {-# NOINLINE test #-}
 
-testInner :: Int -> VU.Vector Int -> Int -> Int -> IO Int
-testInner !k !xs !i !j = do
---  x <- S.length $ S.take k $ mkS (None :. Term (T:.Region xs)) (Z:.(i,j))
---  x <- S.length $ S.take k $ mkS (None :. Term (T:.Region xs) :. Term (T:.Region xs)) (Z:.(i,j))
---  x <- S.length $ S.take k $ mkS (None :. Term (T:.Region xs) :. Term (T:.Region xs) :. Term (T:.Region xs)) (Z:.(i,j))
-  x <- S.length $ S.take k $ mkS (None :. Term (T:.Region xs) :. Term (T:.Region xs) :. Term (T:.Region xs) :. Term (T:.Region xs)) (Z:.(i,j))
---  x <- S.length $ S.take k $ mkS (None :. Term (Z:.Region xs:.Region xs) :. Term (Z:.Region xs:.Region xs)) (Z:.(i,j):.(i,j))
+testInner :: Int -> VU.Vector Int -> VU.Vector Int -> Int -> Int -> IO Int
+testInner !k !xs !ys !i !j = do
+--  x <- return 1
+--  x <- S.length $ mkS None (Z:.(i:.j))
+  x <- S.length $ mkS (None :. Term (T:.Region xs)) (Z:.(i:.j))
+--  x <- S.length $ mkS (None :. Term (T:.Region xs) :. Term (T:.Region ys)) (Z:.(i,j))
+--  x <- S.length $ mkS (None :. Term (T:.Region xs) :. Term (T:.Region xs) :. Term (T:.Region xs)) (Z:.(i,j))
+--  x <- S.length $ mkS (None :. Term (T:.Region xs) :. Term (T:.Region xs) :. Term (T:.Region xs) :. Term (T:.Region xs)) (Z:.(i,j))
+--  x <- S.length $ mkS (None :. Term (T:.Region xs:.Region xs) :. Term (T:.Region xs:.Region xs)) (Z:.(i,j):.(i,j))
   return $ x
 {-# NOINLINE testInner #-}
 
 -- *
 
 class (Index i) => Next x i where
-  suc :: x -> i -> Is i -> Is i
-  fin :: x -> i -> Is i -> Bool
+  suc :: x -> i -> Is i -> Is i -> Is i
+--  fin :: x -> i -> Is i -> Bool
 
 instance Next T Z where
-  suc T Z Z = Z
+  suc T Z True  !x = False
+  suc T Z False !x = False
+--  fin T Z ft = not ft
   {-# INLINE suc #-}
+--  {-# INLINE fin #-}
 
-instance Next x y => Next (x:.Region Int) (y:.(Int,Int)) where
-  suc (x:.r) (ix:.(i,j)) (z:.k) = suc x ix z :. k+1
+instance Next x y => Next (x:.Region Int) (y:.(Int:.Int)) where
+  suc (x:.r) (ix:.(i:.j)) (ks':.k') (z:.k)
+--    | fin x ix z = z:.k+1
+    | k<j = z :. k+1
+    | otherwise = suc x ix ks' z :. k'
+--  fin (x:.r) (ix:.(i,j)) (z:.k) = {- k>=j && -} fin x ix z
   {-# INLINE suc #-}
-
-{-
-instance Next (Z:.Region Int) (Z:.(Int,Int)) where
-  suc !a !b !(Z:.k) = Z:.k+1
-  {-# INLINE suc #-}
--}
+--  {-# INLINE fin #-}
 
 class Index i where
   type Is i :: *
@@ -137,40 +172,38 @@ class Index i where
   from :: Is i -> Is i -> i
   leftOfR :: Is i -> i -> Bool
 
-
 instance Index z => Index (z:.Int) where
   type Is (z:.Int) = Is z:.Int
   toL (z:.i) = toL z :. i
   toR (z:.i) = toR z :. i
   from (z:.i) (z':._) = from z z' :. i
-  leftOfR (z:.i) (z':.j) = leftOfR z z' || i<=j
+  leftOfR (z:.i) (z':.j) = leftOfR z z' -- || i<=j
   {-# INLINE toL #-}
   {-# INLINE toR #-}
   {-# INLINE from #-}
   {-# INLINE leftOfR #-}
 
-instance Index z => Index (z:.(Int,Int)) where
-  type Is (z:.(Int,Int)) = Is z:.Int
-  toL (z:.(i,j)) = toL z:.i
-  toR (z:.(i,j)) = toR z:.j
-  from (z:.i) (z':.j) = from z z' :.(i,j)
-  leftOfR (z:.k) (z':.(i,j)) = leftOfR z z' || k<=j
+instance Index z => Index (z:.(Int:.Int)) where
+  type Is (z:.(Int:.Int)) = Is z:.Int
+  toL (z:.(i:.j)) = toL z:.i
+  toR (z:.(i:.j)) = toR z:.j
+  from (z:.i) (z':.j) = from z z' :.(i:.j)
+  leftOfR (z:.k) (z':.(i:.j)) = leftOfR z z' -- || k<=j
   {-# INLINE toL #-}
   {-# INLINE toR #-}
   {-# INLINE from #-}
   {-# INLINE leftOfR #-}
 
 instance Index Z where
-  type Is Z = Z
-  toL Z = Z
-  toR Z = Z
-  from Z Z = Z
-  leftOfR Z Z = True
+  type Is Z = Bool
+  toL Z = True
+  toR Z = True
+  from _ _ = Z
+  leftOfR ft Z = ft
   {-# INLINE toL #-}
   {-# INLINE toR #-}
   {-# INLINE from #-}
   {-# INLINE leftOfR #-}
-
 
 
 
