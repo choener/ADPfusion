@@ -84,51 +84,46 @@ instance (TermElm ts, VU.Unbox e) => TermElm (ts:.Region e) where
 
 class (Monad m) => TEE m x i where
   type TE x :: *
-  data TEstepper x i :: *
+  data TI x i m :: *
   te :: x -> Is i -> Is i -> S.Stream m (TE x)
-  te' :: x -> Is i -> Is i -> m (S.Step (TEstepper x i) (TE x))
-  go' :: x -> Is i -> Is i -> TEstepper x i -> m (S.Step (TEstepper x i) (TE x))
+  ti :: x -> Is i -> Is i -> m (TI x i m)
+  tisuc :: x -> Is i -> Is i -> TI x i m -> m (TI x i m)
+  tifin :: TI x i m -> Bool
+  tiget :: x -> Is i -> Is i -> TI x i m -> m (TE x)
 
 instance (Monad m) => TEE m T Z where
   type TE T = Z
-  newtype TEstepper T Z = TEstepperZ Z
+  newtype TI T Z m = TIZ Bool
   te T _ _ = S.singleton Z
-  te' T _ _ = return $ S.Yield Z (TEstepperZ Z)
-  go' _ _ _ _ = return $ S.Done
+  ti T _ _ = return $ TIZ False
+  tisuc _ _ _ _ = return $ TIZ True
+  tifin (TIZ tf) = tf
+  tiget _ _ _ _ = return Z
   {-# INLINE te #-}
-  {-# INLINE te' #-}
-  {-# INLINE go' #-}
-
-instance NFData (TEstepper T Z) where
-  rnf (TEstepperZ z) = rnf z
-
-instance (NFData (TEstepper ts is)) => NFData (TEstepper (ts:.Region e) (is:.(Int:.Int))) where
-  rnf (TEstepperRegion (stp :. z)) = rnf stp `seq` rnf z
+  {-# INLINE ti #-}
+  {-# INLINE tisuc #-}
+  {-# INLINE tifin #-}
+  {-# INLINE tiget #-}
 
 instance ( Index is
          , Index (is:.(Int:.Int))
          , Monad m
          , TEE m ts is
          , NFData (TE ts)
-         , NFData (TEstepper ts is)
          , VU.Unbox e
          ) => TEE m (ts:.Region e) (is:.(Int:.Int)) where -- (is:.i) where
   type TE (ts:.Region e) = TE ts :. VU.Vector e
-  newtype TEstepper (ts:.Region e) (is:.(Int:.Int)) = TEstepperRegion (TEstepper ts is :. Z)
+  newtype TI (ts:.Region e) (is:.(Int:.Int)) m = TIregion (TI ts is m)
   te (ts:.Region ve) (IsIntInt (is:.i)) (IsIntInt (js:.j)) = S.map (\z -> z:.VU.unsafeSlice i (j-i) ve) $ te ts is js
-  te' (ts:.Region ve) (IsIntInt (is:.i)) (IsIntInt (js:.j)) = do
-    stp <- te' ts is js
-    case stp of
-      S.Done      -> return $ S.Done
-      S.Yield a s -> (a,s) `deepseq` return $ S.Yield (a:.VU.unsafeSlice i (j-i) ve) (TEstepperRegion (s:.Z))
-  go' (ts:.Region ve) (IsIntInt (is:.i)) (IsIntInt (js:.j)) (TEstepperRegion (ss :. s)) = do
-    stp <- go' ts is js ss
-    case stp of
-      S.Done -> return $ S.Done
-      S.Yield a s -> (a,s) `deepseq` return $ S.Yield (a:.VU.unsafeSlice i (j-i) ve) (TEstepperRegion (s:.Z))
+  ti (ts:.Region ve) (IsIntInt (is:.i)) (IsIntInt (js:.j)) = ti ts is js >>= (return . TIregion)
+  tisuc (ts:.Region ve) (IsIntInt (is:.i)) (IsIntInt (js:.j)) (TIregion as) = tisuc ts is js as >>= (return . TIregion)
+  tifin (TIregion as) = tifin as
+  tiget (ts:.Region ve) (IsIntInt (is:.i)) (IsIntInt (js:.j)) (TIregion as) = tiget ts is js as >>= \z -> return (z:.VU.unsafeSlice i (j-i) ve)
   {-# INLINE te #-}
-  {-# INLINE te' #-}
-  {-# INLINE go' #-}
+  {-# INLINE ti #-}
+  {-# INLINE tisuc #-}
+  {-# INLINE tifin #-}
+  {-# INLINE tiget #-}
 
 instance MkElm x i => MkElm (x:.Term ts) i where
   newtype Plm (x:.Term ts) i = Pterm (Elm x i :. Is i :. Is i)
@@ -166,17 +161,23 @@ instance ( NFData i, NFData (Elm x i), NFData (Is i)
 --          , Show ts, Show (Is i), Show i, Show (Elm x i)
           , TEE m ts i
           , NFData (TE ts)
-          , NFData (TEstepper ts i)
           , Index i, Monad m, MkS m x i, MkElm x i, Next ts i) => MkS m (x:.Term ts) i where
-  mkS (x:.Term ts) idx = S.concatMap f $ S.flatten mk step Unknown $ mkS x idx where
-    f (Pterm (y:.k':.k)) = S.map (\ z -> (Eterm (y:.k:.z))) $ te ts k' k
+  mkS (x:.Term ts) idx = S.flatten mkT stepT Unknown $ S.flatten mk step Unknown $ mkS x idx where
+    mkT (Pterm (y:.k':.k)) = do
+      stp <- ti ts k' k
+      return (y:.k':.k:.stp)
+    stepT (y:.k':.k:.stp)
+      | tifin stp = return $ S.Done
+      | otherwise = do
+          stp' <- tisuc ts k' k stp
+          z <- tiget ts k' k stp
+          return $ S.Yield (Eterm (y:.k:.z)) (y:.k':.k:.stp')
     mk y = let k = topIdx y in k `deepseq` return (y:.k:.k)
     step (y:.k':.k)
       | leftOfR k idx = let
                           newk = suc ts idx k' k
                         in newk `deepseq` {- traceShow {- (idx,y,k,ts) -} (k) $ -} return $ S.Yield (Pterm (y:.k':.k)) (y :. k' :. newk)
       | otherwise = return $ S.Done
-    {-# INLINE f #-}
     {-# INLINE mk #-}
     {-# INLINE step #-}
   {-# INLINE mkS #-}
@@ -210,23 +211,17 @@ testInner !k !xs !ys !i !j = do
 
 class (Index i) => Next x i where
   suc :: x -> i -> Is i -> Is i -> Is i
---  fin :: x -> i -> Is i -> Bool
 
 instance Next T Z where
   suc T Z (IsZ True)  !x = IsZ False
   suc T Z (IsZ False) !x = IsZ False
---  fin T Z ft = not ft
   {-# INLINE suc #-}
---  {-# INLINE fin #-}
 
 instance Next x y => Next (x:.Region Int) (y:.(Int:.Int)) where
   suc (x:.r) (ix:.(i:.j)) (IsIntInt (ks':.k')) (IsIntInt (z:.k))
---    | fin x ix z = z:.k+1
     | k<j = IsIntInt $ z :. k+1
     | otherwise = IsIntInt $ suc x ix ks' z :. k'
---  fin (x:.r) (ix:.(i,j)) (z:.k) = {- k>=j && -} fin x ix z
   {-# INLINE suc #-}
---  {-# INLINE fin #-}
 
 class Index i where
   data Is i :: *
@@ -278,107 +273,3 @@ instance NFData (Is Z) where
 
 deriving instance Show (Is Z)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-{-
-
--- *
-
-type family Depth d :: Nat
-type instance Depth Z = 0
-type instance Depth (t:.h) = Depth t + 1
-
--- *
-
-data IdxType
-  = IdxO
-
--- *
-
-class SElement x n where
-  data SElm x n :: *
-  getIs :: SElm x n -> Is n
-
-class (MkSC x) => MkS m x where
-  type MkSC x :: Constraint
-  type MkSC x = ()
-  mkStream :: (MkSC x, Index sh, Depth idxt ~ Depth sh) => x -> (idxt,sh) -> S.Stream m (SElm x sh)
-
--- *
-
-data None = None
-
-instance SElement None n where
-  data SElm None n = SeNone (Is n)
-  getIs (SeNone k) = k
-
-instance (Monad m) => MkS m None where
-  mkStream None (_,idx) = S.singleton $ SeNone (toL idx)
-
--- *
-
-data Region e = Region (VU.Vector e)
-
-type family Elem x :: *
-type instance Elem Z = Z
-type instance Elem (x:.Region e) = Elem x :. e
-
--- *
-
-
-
--- *
-
-data Term xs = Term xs
-
-class GetElem x where
-  getElem :: x -> x -> Elem x
-
-instance (SElement x n, Depth ts ~ Depth n) => SElement (x:.Term ts) n where
-  data SElm (x:.Term ts) n = SeTerm (SElm x n) (Is n) (Elem ts)
-  getIs (SeTerm _ k _) = k
-
-instance (Monad m, MkS m x, SElement (x:.Term ts) (Depth ts)) => MkS m (x:.Term ts) where
-  mkStream (x:.Term ts) (ixt,idx) = S.flatten mk step Unknown $ mkStream x (ixt,idx) where
-    mk x' = return (x', getIs x')
-    step (x', k)
---      | valid (getIs x') (toR idx) k = return $ S.Yield (SeTerm x' k (getElem ts k)) (x', nextIdx k)
-      | otherwise = return $ S.Done
-
--- *
-
-test = do
-  let v = VU.fromList [1 .. 10 :: Int]
-  xs <- S.toList $ mkStream (None :. Term (Z:.Region v)) (Z:.IdxO, Z:.(1::Int,10::Int))
-  print $ length xs
-{-# NOINLINE test #-}
-
-
--}
