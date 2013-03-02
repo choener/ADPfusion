@@ -62,20 +62,20 @@ instance (NFData i, NFData (Is i), Index i, Monad m) => MkS m None i where
 data Term ts = Term ts
 data T = T
 
-class (Index i) => TermElm x i where
-  type TermE x i :: *
-  extract :: (Monad m) => x -> Is i -> Is i -> S.Stream m (TermE x i)
-  plm2elm :: x -> Is i -> S.Stream m (Plm x i) -> S.Stream m (Elm x i)
+class TermElm x where
+  type TermE x :: *
+  type TermI x :: *
+  extract :: (Monad m) => x -> TermI x -> TermI x -> S.Stream m (TermE x)
 
-instance (Index i) => TermElm T i where
-  type TermE T i = Z
+instance TermElm T where
+  type TermE T = Z
+  type TermI T = Z
   extract _ _ _ = S.singleton Z
 
-instance ( Index (is:.i), TermElm ts is, VU.Unbox e
---         , Is (is:.i) ~ (is:.Int)
-         ) => TermElm (ts:.Region e) (is:.i) where
-  type TermE (ts:.Region e) (is:.i) = TermE ts is :. VU.Vector e
---  extract (ts:.Region ve) (is:.i) (js:.j) = undefined $ extract ts is js -- S.map (\z -> z:.(VU.unsafeSlice i (j-i) ve)) $ extract ts is js
+instance (TermElm ts, VU.Unbox e) => TermElm (ts:.Region e) where
+  type TermE (ts:.Region e) = TermE ts :. VU.Vector e
+  type TermI (ts:.Region e) = TermI ts :. Int
+  extract (ts:.Region ve) (is:.i) (js:.j) = S.map (\z -> z :. VU.unsafeSlice i (j-i) ve) $ extract ts is js
 
 {-
 instance (VU.Unbox e, Index (is:.i), Is (is:.i) ~ (t0:.Int), TermElm t is) => TermElm (t:.Region e) (is:.i) where
@@ -84,7 +84,7 @@ instance (VU.Unbox e, Index (is:.i), Is (is:.i) ~ (t0:.Int), TermElm t is) => Te
 
 instance MkElm x i => MkElm (x:.Term ts) i where
   newtype Plm (x:.Term ts) i = Pterm (Elm x i :. Is i)
-  newtype Elm (x:.Term ts) i = Eterm (Elm x i :. Is i :. TermE ts i)
+  newtype Elm (x:.Term ts) i = Eterm (Elm x i :. Is i :. TermE ts)
   topIdx (Eterm (_ :. k :. _)) = k
   {-# INLINE topIdx #-}
 
