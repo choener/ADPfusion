@@ -24,6 +24,7 @@ import Data.Vector.Fusion.Stream.Size
 import GHC.Prim (Constraint)
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Unboxed as VU
+import qualified Data.Vector as V
 import Control.DeepSeq
 import GHC.TypeLits
 
@@ -81,11 +82,18 @@ instance (TermElm ts, VU.Unbox e) => TermElm (ts:.Region e) where
 
 class (Monad m) => TEE m x i where
   type TE x :: *
+  type TEstepper x :: *
   te :: x -> Is i -> Is i -> S.Stream m (TE x)
+  te' :: x -> Is i -> Is i -> m (S.Step (TEstepper x) (TE x))
+  go' :: S.Step (TEstepper x) (TE x) -> S.Step (TEstepper x) (TE x)
 
 instance (Monad m) => TEE m T Z where
   type TE T = Z
+  type TEstepper T = Z
   te T _ _ = S.singleton Z
+  te' T _ _ = return $ S.Yield Z Z
+  go' _ = S.Done
+  {-# INLINE te #-}
 
 instance ( Index is
          , Index (is:.(Int:.Int))
@@ -94,21 +102,20 @@ instance ( Index is
          , VU.Unbox e {-, ToPair i-}
          ) => TEE m (ts:.Region e) (is:.(Int:.Int)) where -- (is:.i) where
   type TE (ts:.Region e) = TE ts :. VU.Vector e
+  type TEstepper (ts:.Region e) = TEstepper ts :. Z
   te (ts:.Region ve) (IsIntInt (is:.i)) (IsIntInt (js:.j)) = S.map (\z -> z:.VU.unsafeSlice i (j-i) ve) $ te ts is js
-
-class ToPair i where
-  toPair :: i -> (Int,Int)
-
-instance ToPair (Int:.Int) where
-  toPair (i:.j) = (i,j)
-
-{-
-instance (VU.Unbox e, Index (is:.i), Is (is:.i) ~ (t0:.Int), TermElm t is) => TermElm (t:.Region e) (is:.i) where
-  extract (ts:.Region ve) (is:.i) (js:.j) = S.map (\z -> z:.(VU.unsafeSlice i (j-i) ve)) $ extract ts is js
--}
+  te' (ts:.Region ve) (IsIntInt (is:.i)) (IsIntInt (js:.j)) = do
+    stp <- te' ts is js
+    case stp of
+      S.Done      -> return $ S.Done
+      S.Yield a s -> return $ S.Yield (a:.VU.unsafeSlice i (j-i) ve) (s:.Z)
+  go' stp = case stp of
+    S.Done -> S.Done
+    S.Yield a (ss:.s) -> undefined
+  {-# INLINE te #-}
 
 instance MkElm x i => MkElm (x:.Term ts) i where
-  newtype Plm (x:.Term ts) i = Pterm (Elm x i :. Is i)
+  newtype Plm (x:.Term ts) i = Pterm (Elm x i :. Is i :. Is i)
   newtype Elm (x:.Term ts) i = Eterm (Elm x i :. Is i :. TE ts)
   topIdx (Eterm (_ :. k :. _)) = k
   {-# INLINE topIdx #-}
@@ -131,14 +138,40 @@ instance NFData (Is k) => NFData (Elm None k) where
 
 instance ( NFData i, NFData (Elm x i), NFData (Is i)
 --          , Show ts, Show (Is i), Show i, Show (Elm x i)
---          , TEE m ts i
+          , TEE m ts i
           , Index i, Monad m, MkS m x i, MkElm x i, Next ts i) => MkS m (x:.Term ts) i where
-  mkS (x:.Term ts) idx = S.map undefined $ S.flatten mk step Unknown $ mkS x idx where
+  mkS (x:.Term ts) idx = S.flatten mkT stepT Unknown $ S.flatten mk step Unknown $ mkS x idx where
+    mkT (Pterm (y:.k':.k)) = do
+               stp <- te' ts k' k
+               return (y:.k:.stp)
+    stepT (y:.k:.stp) = case stp of
+      S.Done      -> return $ S.Done
+      S.Yield a s -> return $ S.Yield (Eterm (y:.k:.a)) (y:.k:.undefined)
+--      | otherwise = return $ S.Yield (Eterm (y:.k:.head xs)) (y:.k:.tail xs)
+  {- -- works but retains Yield/Skip/Done
+  mkS (x:.Term ts) idx = S.concatMap f $ S.flatten mk step Unknown $ mkS x idx where
+    f (Pterm (y:.k':.k)) = S.map (\t -> Eterm (y:.k:.t)) $ te ts k' k
+    {-# INLINE f #-}
+    -}
+  -- works but requires a list intermediate
+  {-
+  mkS (x:.Term ts) idx = S.flatten mkT stepT Unknown $ S.flatten mk step Unknown $ mkS x idx where
+    mkT (Pterm (y:.k':.k)) = do
+               xs <- S.toList $ te ts k' k
+               {-
+               stp <- case (te ts k' k) of
+                        (S.Stream f r _) -> f r -- this part doesn't work as 'forall' forbids us from examining the 'stp' (the seed 'r' is "forall r . ")
+                        -}
+               return (y:.k:.xs)
+    stepT (y:.k:.xs)
+      | null xs   = return $ S.Done
+      | otherwise = return $ S.Yield (Eterm (y:.k:.head xs)) (y:.k:.tail xs)
+      -}
     mk y = let k = topIdx y in k `deepseq` return (y:.k:.k)
     step (y:.k':.k)
       | leftOfR k idx = let
                           newk = suc ts idx k' k
-                        in newk `deepseq` {- traceShow {- (idx,y,k,ts) -} (k) $ -} return $ S.Yield (Pterm (y:.k)) (y :. k' :. newk)
+                        in newk `deepseq` {- traceShow {- (idx,y,k,ts) -} (k) $ -} return $ S.Yield (Pterm (y:.k':.k)) (y :. k' :. newk)
       | otherwise = return $ S.Done
     {-# INLINE mk #-}
     {-# INLINE step #-}
