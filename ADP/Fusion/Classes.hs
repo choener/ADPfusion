@@ -168,22 +168,15 @@ instance ( NFData i, NFData (Elm x i), NFData (Is i)
           , NFData (TE ts)
           , NFData (TEstepper ts i)
           , Index i, Monad m, MkS m x i, MkElm x i, Next ts i) => MkS m (x:.Term ts) i where
-  mkS (x:.Term ts) idx = S.flatten mkT stepT Unknown $ S.flatten mk step Unknown $ mkS x idx where
-    mkT (Pterm (y:.k':.k)) = do
-               stp <- te' ts k' k
-               stp `deepseq` return (y:.k':.k:.stp)
-    stepT (y:.k':.k:.stp) = case stp of
-      S.Done      -> return $ S.Done
-      S.Yield a s -> do stp' <- go' ts k' k s
-                        stp' `seq` return $ S.Yield (Eterm (y:.k:.a)) (y:.k':.k:.stp')
+  mkS (x:.Term ts) idx = S.concatMap f $ S.flatten mk step Unknown $ mkS x idx where
+    f (Pterm (y:.k':.k)) = S.map (\ z -> (Eterm (y:.k:.z))) $ te ts k' k
     mk y = let k = topIdx y in k `deepseq` return (y:.k:.k)
     step (y:.k':.k)
       | leftOfR k idx = let
                           newk = suc ts idx k' k
                         in newk `deepseq` {- traceShow {- (idx,y,k,ts) -} (k) $ -} return $ S.Yield (Pterm (y:.k':.k)) (y :. k' :. newk)
       | otherwise = return $ S.Done
-    {-# INLINE mkT #-}
-    {-# INLINE stepT #-}
+    {-# INLINE f #-}
     {-# INLINE mk #-}
     {-# INLINE step #-}
   {-# INLINE mkS #-}
