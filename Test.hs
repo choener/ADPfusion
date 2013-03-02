@@ -1,7 +1,7 @@
 
 module Main where
 
-import ADP.Fusion.Classes (test)
+import ADP.Fusion (test)
 
 main = do
   l <- getLine
