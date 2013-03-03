@@ -100,7 +100,7 @@ data OIR
   deriving (Eq,Show)
 
 instance NFData OIR where
-  rnf x = ()
+  rnf !x = ()
 
 -- | Access an element, given partial indices.
 

@@ -25,22 +25,31 @@ import Debug.Trace
 
 data Region e = Region !(VU.Vector e)
 
+instance NFData (Region e) where
+  rnf (Region ve) = rnf ve
+
 -- * Instances for 1-dimensional region terminal.
 
 -- |
 
 instance (Monad m, VU.Unbox e) => Element m (Region e) Subword where
   type E (Region e) = VU.Vector e
-  getE (Region ve) (IxPsubword l) (IxPsubword r) = assert (l<=r && l>=0 && VU.length ve > r) $ return $ VU.unsafeSlice l (r-l) ve
+  getE (Region ve) (IxPsubword l) (IxPsubword r) =
+    let
+      e = VU.unsafeSlice l (r-l) ve
+    in  (ve,l,r,e) `deepseq` assert (l<=r && l>=0 && VU.length ve > r) $ return e
   {-# INLINE getE #-}
 
 -- |
 
-instance StreamElm x i => StreamElm (x:.Region e) i where
+instance
+  ( StreamElm x i
+  , NFData (Arg x)
+  ) => StreamElm (x:.Region e) i where
   newtype Elm (x:.Region e) i  = ElmRegion (Elm x i :. IxP i :. E (Region e))
   type    Arg (x:.Region e)    = Arg x :. E (Region e)
   getIxP (ElmRegion (_:.k:._)) = k
-  getArg (ElmRegion (x:._:.t)) = getArg x :. t
+  getArg (ElmRegion (x:.k:.t)) = let a = getArg x in a `deepseq` a :. t
   {-# INLINE getIxP #-}
   {-# INLINE getArg #-}
 
@@ -48,21 +57,22 @@ instance StreamElm x i => StreamElm (x:.Region e) i where
 -- grammars with CYK-style parsing.
 
 instance
-  ( Monad m, NFData (IxP Subword), NFData (E (Region e)), VU.Unbox e
+  ( Monad m, NFData (IxP Subword), NFData (E (Region e)), VU.Unbox e, NFData (Elm ss Subword), NFData (Region e)
   , MkStream m ss Subword, StreamElm ss Subword
   , Next (Region e) Subword, Index Subword
 --  , Show (Elm ss Subword), Show e
   ) => MkStream m (ss:.Region e) Subword where
-  mkStream (ss:.reg) ox ix = S.flatten mk step Unknown $ mkStream ss (convT reg ox) ix where
+  mkStream (ss:.reg) ox ix = (reg,ox,ix,ox') `deepseq` S.flatten mk step Unknown $ mkStream ss ox' ix where
+    ox' = convT reg ox
     mk y
-      | (IxTsubword Outer) <- ox = (l,r) `deepseq` return (y:.l:.r)
-      | otherwise                = l `deepseq` return (y:.l:.l)
+      | (IxTsubword Outer) <- ox = (y,l,r) `deepseq` return (y:.l:.r)
+      | otherwise                = (y,l)   `deepseq` return (y:.l:.l)
       where l = getIxP y
             r = toR    ix
     step (y:.l:.r)
       | r `leftOfR` ix = do let r' = nextP reg ox ix l r
                             e <- getE reg l r
-                            (r',e) `deepseq` return $ S.Yield (ElmRegion (y:.r:.e)) (y:.l:.r')
+                            (y,l,r,r',e) `deepseq` return $ S.Yield (ElmRegion (y:.r:.e)) (y:.l:.r')
       | otherwise = return $ S.Done
     {-# INLINE mk #-}
     {-# INLINE step #-}
@@ -77,6 +87,11 @@ instance Next (Region e) Subword where
   {-# INLINE convT #-}
 
 deriving instance (Show (Elm x Subword), Show e,VU.Unbox e) => Show (Elm (x:.Region e) Subword)
+
+instance NFData x => NFData (x:.Region e) where
+  rnf (x:.Region ve) = rnf x `seq` rnf ve
+
+instance (NFData x, VU.Unbox e) => NFData (Elm (x:.Region e) Subword) where
 
 {-
 instance ( Monad m, Index i, NFData (Is i)

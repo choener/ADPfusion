@@ -19,7 +19,7 @@ import qualified Data.Vector.Unboxed as VU
 
 import Data.Array.Repa.Index.Subword
 
---import ADP.Fusion.Apply
+import ADP.Fusion.Apply
 --import ADP.Fusion.Chr
 import ADP.Fusion.Classes
 import ADP.Fusion.None
@@ -53,16 +53,17 @@ infixl 6 ...
 test :: Int -> IO Int
 test k =
   let
-    xs = VU.enumFromN (0::Int) (2 * k) -- fromList [0 .. 9999 :: Int]
---    ys = VU.empty  -- VU.fromList [ 0 .. 999 :: Int] -- VU.reverse xs
+    xs = VU.enumFromN (0::Int) (2 * k)
+    ys = VU.enumFromN (0::Int) (2 * k)
+    zs = VU.enumFromN (0::Int) (2 * k)
     i = 0 :: Int
     j = k :: Int
   in do
-    (xs,i,j) `deepseq` testInner k xs xs i j
+    (xs,ys,zs,i,j) `deepseq` testInner k xs ys zs i j
 {-# NOINLINE test #-}
 
-testInner :: Int -> VU.Vector Int -> VU.Vector Int -> Int -> Int -> IO Int
-testInner !k !xs !ys !i !j = do
+testInner :: Int -> VU.Vector Int -> VU.Vector Int -> VU.Vector Int -> Int -> Int -> IO Int
+testInner !k !xs !ys !zs !i !j = do
 --  x <- return 1
 --  x <- S.length $ mkS None (IsTii (IsTz Z :. Outer)) (Z:.(i:.j))
 --  x <- S.length $ mkS (None :. Term (T:.Region xs)) (IsTii (IsTz Z :. Outer)) (Z:.(i:.j))
@@ -72,10 +73,22 @@ testInner !k !xs !ys !i !j = do
 --  x <- S.length $ mkS (None :. Term (T:.Region xs:.Region xs) :. Term (T:.Region xs:.Region xs)) (IsTii (IsTii (IsTz Z:. Outer) :. Outer)) (Z:.(i:.j):.(i:.j))
 --  a <- S.length $ mkStream (None :. Region xs) (IxTsubword Outer) (Subword (i:.j))
 --  a `seq` print a
---  b <- S.length $ mkStream (None :. Region xs :. Region xs) (IxTsubword Outer) (Subword (i:.j))
+--  b <- S.foldl' (+) 0 $ S.map (apply p2 . getArg) $ mkStream (None :. Region xs :. Region xs) (IxTsubword Outer) (Subword (i:.j))
 --  b `seq` print b
-  c <- S.length $ mkStream (None :. Region xs :. Region xs :. Region xs :. Region xs) (IxTsubword Outer) (Subword (i:.j))
+  c <- S.foldl' (+) 0 $ S.map (\x -> x `deepseq` (apply p3 . getArg $ x)) $ mkStream (None :. Region xs :. Region ys :. Region zs) (IxTsubword Outer) (Subword (i:.j))
   c `seq` print (j,c)
+--  d <- S.length $ mkStream (None :. Region xs :. Region xs :. Region xs :. Region xs) (IxTsubword Outer) (Subword (i:.j))
+--  d `seq` print (j,c)
   return 0
 {-# NOINLINE testInner #-}
 
+instance NFData (Z)
+instance NFData (Z:.VU.Vector Int)
+instance NFData (Z:.VU.Vector Int:.VU.Vector Int) where
+  rnf (a:.b:.c) = rnf a `seq` rnf b `seq` rnf c
+
+p2 a b = (a,b) `deepseq` (VU.length a + VU.length b)
+{-# INLINE p2 #-}
+
+p3 a b c = (a,b,c) `deepseq` (VU.unsafeLast a + VU.unsafeLast b + VU.unsafeHead c)
+{-# INLINE p3 #-}

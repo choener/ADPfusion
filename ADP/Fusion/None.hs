@@ -1,3 +1,4 @@
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -17,17 +18,25 @@ import ADP.Fusion.Classes
 
 data None = None
 
-instance StreamElm None i where
+instance
+  ( NFData (IxP i)
+  ) => StreamElm None i where
   newtype Elm None i = ElmNone (IxP i)
   type Arg None = Z
   getIxP (ElmNone k) = k
-  getArg (ElmNone _) = Z
+  getArg (ElmNone i) = i `deepseq` Z
   {-# INLINE getIxP #-}
   {-# INLINE getArg #-}
 
-instance (NFData i, NFData (IxP i), Index i, Monad m) => MkStream m None i where
-  mkStream None _ ix = let k = toL ix in (ix,k) `deepseq` S.singleton (ElmNone k)
+instance (NFData i, NFData (IxP i), NFData (IxT i), Index i, Monad m) => MkStream m None i where
+  mkStream None ox ix = let k = toL ix in (ox,ix,k) `deepseq` S.singleton (ElmNone k)
   {-# INLINE mkStream #-}
+
+instance (NFData (IxP i)) => NFData (Elm None i) where
+  rnf (ElmNone i) = rnf i
+
+instance NFData None where
+  rnf None = ()
 
 deriving instance (Show (IxP i)) => Show (Elm None i)
 
