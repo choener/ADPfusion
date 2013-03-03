@@ -160,10 +160,13 @@ executable Test
   main-is:
     Test.hs
   ghc-options:
-    -fllvm -O2 -funbox-strict-fields -optlo-O3 -optlo-std-compile-opts
+    -O2
+    -funbox-strict-fields
     -funfolding-use-threshold100
     -funfolding-keeness-factor100
-    -fnew-codegen
+--    -fnew-codegen
+    -fllvm
+    -optlo-O3 -optlo-std-compile-opts
     -fllvm-tbaa
 
 --executable GAPcriterion

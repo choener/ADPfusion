@@ -75,7 +75,7 @@ testInner !k !xs !ys !i !j = do
 --  b <- S.length $ mkStream (None :. Region xs :. Region xs) (IxTsubword Outer) (Subword (i:.j))
 --  b `seq` print b
   c <- S.length $ mkStream (None :. Region xs :. Region xs :. Region xs :. Region xs) (IxTsubword Outer) (Subword (i:.j))
-  c `seq` print c
+  c `seq` print (j,c)
   return 0
 {-# NOINLINE testInner #-}
 
