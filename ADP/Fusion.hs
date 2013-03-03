@@ -3,7 +3,12 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeOperators #-}
 
--- | 
+-- | Generalized fusion system for grammars.
+--
+-- NOTE Symbols typically do not check bound data for consistency. If you, say,
+-- bind a terminal symbol to an input of length 0 and then run your grammar,
+-- you probably get errors, garbled data or random crashes. Such checks are
+-- done via asserts in non-production code.
 
 module ADP.Fusion where
 
@@ -58,8 +63,9 @@ testInner !k !xs !ys !i !j = do
 --  x <- S.length $ mkS (None :. Term (T:.Region xs)) (IsTii (IsTz Z :. Outer)) (Z:.(i:.j))
 --  x <- S.length $ mkS (None :. Term (T:.Region xs) :. Term (T:.Region ys)) (IsTii (IsTz Z :. Outer)) (Z:.(i:.j))
 --  x <- S.length $ mkS (None :. Term (T:.Region xs) :. Term (T:.Region xs) :. Term (T:.Region xs)) (IsTii (IsTz Z :. Outer)) (Z:.(i:.j))
-  x <- S.length $ mkS (None :. Term (T:.Region xs) :. Term (T:.Region xs) :. Term (T:.Region xs) :. Term (T:.Region xs)) (IsTii (IsTz Z :. Outer)) (Z:.(i:.j))
+--  x <- S.length $ mkS (None :. Term (T:.Region xs) :. Term (T:.Region xs) :. Term (T:.Region xs) :. Term (T:.Region xs)) (IsTii (IsTz Z :. Outer)) (Z:.(i:.j))
 --  x <- S.length $ mkS (None :. Term (T:.Region xs:.Region xs) :. Term (T:.Region xs:.Region xs)) (IsTii (IsTii (IsTz Z:. Outer) :. Outer)) (Z:.(i:.j):.(i:.j))
+  x <- S.length $ mkS (None :. Region xs :. Region xs :. Region xs :. Region xs) (IsTii (IsTz Z :. Outer)) (Z:.(i:.j))
   return $ x
 {-# NOINLINE testInner #-}
 

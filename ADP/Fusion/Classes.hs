@@ -46,6 +46,12 @@ class MkElm x i where
 class (Index i, Monad m) => MkS m x i where
   mkS :: x -> IsT i -> i -> S.Stream m (Elm x i)
 
+-- | Convert 'OIR' and calculate successor indices.
+--
+-- NOTE You need to implement this class for all symbols and all index types.
+-- Alternatively, implement just instances for 'Term' and use the k-dimensional
+-- abstraction.
+
 class (Index i) => Next x i where
   suc :: x -> IsT i -> i -> Is i -> Is i -> Is i
   convT :: x -> IsT i -> IsT i
@@ -66,6 +72,7 @@ class (Monad m) => TEE m x i where
   tisuc :: x -> Is i -> Is i -> TI x i m -> (TI x i m)
   tifin :: TI x i m -> Bool
   tiget :: x -> Is i -> Is i -> TI x i m -> m (TE x)
+  tiOne :: x -> Is i -> Is i -> m (TE x)
 
 data OIR
   = Outer
