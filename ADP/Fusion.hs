@@ -12,16 +12,18 @@
 
 module ADP.Fusion where
 
-import qualified Data.Vector.Fusion.Stream.Monadic as S
-import Data.Array.Repa.Index
-import qualified Data.Vector.Unboxed as VU
 import Control.DeepSeq
+import Data.Array.Repa.Index
+import qualified Data.Vector.Fusion.Stream.Monadic as S
+import qualified Data.Vector.Unboxed as VU
 
 import ADP.Fusion.Apply
+import ADP.Fusion.Chr
 import ADP.Fusion.Classes
 import ADP.Fusion.None
-import ADP.Fusion.Term
 import ADP.Fusion.Region
+import ADP.Fusion.Table
+import ADP.Fusion.Term
 
 
 
