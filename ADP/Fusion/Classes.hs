@@ -43,7 +43,7 @@ class MkElm x i where
   topIdx :: Elm x i -> Is i
   getArg :: Elm x i -> Arg x
 
-class (Index i, Monad m) => MkS m x i where
+class ({- Index i, -} Monad m) => MkS m x i where
   mkS :: x -> IsT i -> i -> S.Stream m (Elm x i)
 
 -- | Convert 'OIR' and calculate successor indices.
@@ -52,7 +52,7 @@ class (Index i, Monad m) => MkS m x i where
 -- Alternatively, implement just instances for 'Term' and use the k-dimensional
 -- abstraction.
 
-class (Index i) => Next x i where
+class {- (Index i) => -} Next x i where
   suc :: x -> IsT i -> i -> Is i -> Is i -> Is i
   convT :: x -> IsT i -> IsT i
 
@@ -132,45 +132,3 @@ instance NFData z => NFData (z:.(Int:.Int)) where
 instance NFData (Is z) => NFData (Is (z:.(Int:.Int))) where
   rnf (IsIntInt (z:.k)) = k `seq` rnf z
 
-{-
-
-
-
-
-deriving instance Show (Elm None (Z:.(Int:.Int)))
---deriving instance Show (Elm (None :. Term (T :. Region Int)) (Z :. (Int:.Int)))
-deriving instance Show (Region Int)
-deriving instance Show T
-deriving instance Show (Elm None ((Z :. (Int:.Int)) :. (Int:.Int)))
---deriving instance Show (Elm (None :. Term ((T :. Region Int) :. Region Int)) ((Z :. (Int:.Int)) :. (Int:.Int)))
-
-instance (NFData a, NFData b) => NFData (a:.b) where
-  rnf (a:.b) = rnf a `seq` rnf b `seq` ()
-
-instance NFData Z where
-  rnf Z = ()
-
-instance NFData (Is k) => NFData (Elm None k) where
-  rnf (Enone k) = rnf k
-
-instance NFData None
-
-instance (NFData (Is is), NFData x, NFData (Elm x is), NFData (TE ts)) => NFData (Elm (x:.Term ts) is) where
-  rnf (Eterm (x:.is:.ts)) = rnf x `seq` rnf is `seq` rnf ts
-
-instance (NFData a, NFData s) => NFData (S.Step a s) where
-  rnf S.Done = ()
-  rnf (S.Skip s) = rnf s
-  rnf (S.Yield a s) = rnf a `seq` rnf s
-
-
-
-
--- *
-
-deriving instance (Show (Is z)) => Show (Is (z:.(Int:.Int)))
-
-deriving instance Show (Is Z)
-
-
--}

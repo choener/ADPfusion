@@ -74,12 +74,13 @@ instance (Monad m, VU.Unbox e) => TEE m (Region e) (y:.(Int:.Int)) where
   tisuc = error "not implemented"
   tifin = error "not implemented"
   tiget = error "not implemented"
+  {-# INLINE tiOne #-}
 
 
 
 -- * Instances for k-dimensional region terminal
 
-instance Next x y => Next (x:.Region Int) (y:.(Int:.Int)) where
+instance (Index y, Next x y) => Next (x:.Region Int) (y:.(Int:.Int)) where
   suc (x:.r) (IsTii (os:.o)) (ix:.(i:.j)) (IsIntInt (ks':.k')) (IsIntInt (z:.k))
     | o == Outer = let inner = suc x os ix ks' z
                    in  if inner `leftOfR` ix
