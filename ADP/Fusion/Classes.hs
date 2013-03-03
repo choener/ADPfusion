@@ -15,36 +15,49 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
 
-{- OPTIONS_GHC -funbox-strict-fields #-}
+-- | Generalized ADPfusion.
+--
+-- Some useful rules:
+--
+-- - if you invent a new index type, always write it using a "newtype", never
+-- implement in terms of standard data constructors.
 
 module ADP.Fusion.Classes where
 
+import Control.DeepSeq
 import Control.Monad.Primitive
 import Data.Array.Repa.Index
 import Data.Primitive.Types (Prim(..))
+import Data.Vector.Fusion.Stream.Monadic (Stream(..))
 import Data.Vector.Fusion.Stream.Size
 import GHC.Prim (Constraint)
+import GHC.TypeLits
+import qualified Data.Vector as V
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Unboxed as VU
-import qualified Data.Vector as V
-import Control.DeepSeq
-import GHC.TypeLits
 
-import Debug.Trace
+import Data.Array.Repa.Index.Subword
 
 
 
 -- * Classes for generalized ADPfusion.
 
-class MkElm x i where
-  data Plm x i :: *
+-- | Individual elements of a fusionable stream.
+
+class StreamElm x i where
+  -- | an individual element (and index information)
   data Elm x i :: *
-  type Arg  x :: *
-  topIdx :: Elm x i -> Is i
+  -- | the argument stack for function application
+  type Arg x   :: *
+  -- | get the "right" index part of the element we are parsing
+  getIxP :: Elm x i -> IxP i
+  -- | get the arguments as an argument stack
   getArg :: Elm x i -> Arg x
 
-class ({- Index i, -} Monad m) => MkS m x i where
-  mkS :: x -> IsT i -> i -> S.Stream m (Elm x i)
+-- | Create a stream 
+
+class (Monad m) => MkStream m x i where
+  mkStream :: x -> IxT i -> i -> Stream m (Elm x i)
 
 -- | Convert 'OIR' and calculate successor indices.
 --
@@ -52,45 +65,100 @@ class ({- Index i, -} Monad m) => MkS m x i where
 -- Alternatively, implement just instances for 'Term' and use the k-dimensional
 -- abstraction.
 
-class {- (Index i) => -} Next x i where
-  suc :: x -> IsT i -> i -> Is i -> Is i -> Is i
-  convT :: x -> IsT i -> IsT i
+class Next x i where
+  nextP :: x -> IxT i -> i -> IxP i -> IxP i -> IxP i
+  convT :: x -> IxT i -> IxT i
+
+-- | index calculations.
+--
+-- For an index 'i', we have a partial index type 'IxP' which denotes the
+-- "borders" of an index. For a subword (i,j), the index part would we single
+-- Int, say, "j".
+--
+-- The index type 'IxT' constrains the index further. We want to wrap the 'OIR'
+-- data type to specialize 'mkStream' in certain cases like the right-most
+-- symbol in a production rule.
 
 class Index i where
-  data Is i :: *
-  data IsT i :: *
-  toL :: i -> Is i
-  toR :: i -> Is i
-  from :: Is i -> Is i -> i
-  leftOfR :: Is i -> i -> Bool
+  data IxP i :: *
+  data IxT i :: *
+  toL :: i -> IxP i
+  toR :: i -> IxP i
+  from :: IxP i -> IxP i -> i
+  leftOfR :: IxP i -> i -> Bool
 
-class (Monad m) => TEE m x i where
-  type TE x :: *
-  data TI x i m :: *
-  te :: x -> Is i -> Is i -> S.Stream m (TE x)
-  ti :: x -> Is i -> Is i -> (TI x i m)
-  tisuc :: x -> Is i -> Is i -> TI x i m -> (TI x i m)
-  tifin :: TI x i m -> Bool
-  tiget :: x -> Is i -> Is i -> TI x i m -> m (TE x)
-  tiOne :: x -> Is i -> Is i -> m (TE x)
+-- | Standard cases on how 'mkStream' can be restricted. In the 'Outer' case,
+-- we perform a single step, then finish. The 'Inner' case behaves normally,
+-- while 'Restricted' is used for special symbols.
+--
+-- TODO implemented 'Restricted' correctly.
 
 data OIR
   = Outer
   | Inner
   | Restricted
-  deriving (Eq)
+  deriving (Eq,Show)
+
+instance NFData OIR where
+  rnf x = ()
+
+-- | Access an element, given partial indices.
+
+class (Monad m) => Element m x i where
+  type E x :: *
+  getE :: x -> IxP i -> IxP i -> m (E x)
+
+-- | A class handling terminal elements. In the multi-dimensional case,
+-- terminal symbols are much more complex as each individual element could be
+-- constrained, steps differently, or more.
+
+class (Monad m) => TermElement m x i where
+  type TermElm x :: *
+  data TermIx x i m :: *
+  te :: x -> IxP i -> IxP i -> S.Stream m (TermElm x)
+  ti :: x -> IxP i -> IxP i -> (TermIx x i m)
+  tisuc :: x -> IxP i -> IxP i -> TermIx x i m -> (TermIx x i m)
+  tifin :: TermIx x i m -> Bool
+  tiget :: x -> IxP i -> IxP i -> TermIx x i m -> m (TermElm x)
+  tiOne :: x -> IxP i -> IxP i -> m (TermElm x)
 
 
+
+instance Index Subword where
+  newtype IxP Subword = IxPsubword Int
+  newtype IxT Subword = IxTsubword OIR
+  toL (Subword (i:.j)) = IxPsubword i
+  toR (Subword (i:.j)) = IxPsubword j
+  from (IxPsubword i) (IxPsubword j) = Subword (i:.j)
+  leftOfR (IxPsubword k) (Subword (i:.j)) = k<=j
+  {-# INLINE toL #-}
+  {-# INLINE toR #-}
+  {-# INLINE from #-}
+  {-# INLINE leftOfR #-}
+
+instance NFData (IxP Subword) where
+  rnf (IxPsubword i) = rnf i
+
+instance NFData (IxT Subword) where
+  rnf (IxTsubword oir) = rnf oir
+
+deriving instance Show Subword
+
+deriving instance Show (IxP Subword)
+
+deriving instance Show (IxT Subword)
+
+{-
 
 -- * basic instances
 
 instance Index Z where
-  newtype Is Z = IsZ Bool
-  newtype IsT Z = IsTz Z
-  toL Z = IsZ True
-  toR Z = IsZ True
+  newtype IxP Z = IxPZ Bool
+  newtype IxPT Z = IxPTz Z
+  toL Z = IxPZ True
+  toR Z = IxPZ True
   from _ _ = Z
-  leftOfR (IsZ ft) Z = ft
+  leftOfR (IxPZ ft) Z = ft
   {-# INLINE toL #-}
   {-# INLINE toR #-}
   {-# INLINE from #-}
@@ -99,28 +167,28 @@ instance Index Z where
 instance NFData Z where
   rnf Z = ()
 
-instance NFData (Is Z) where
-  rnf (IsZ b) = rnf b
+instance NFData (IxP Z) where
+  rnf (IxPZ b) = rnf b
 
 instance Index z => Index (z:.Int) where
-  newtype Is (z:.Int) = IsInt (Is z:.Int)
-  newtype IsT (z:.Int) = IsTint (IsT z :. OIR)
-  toL (z:.i) = IsInt $ toL z :. i
-  toR (z:.i) = IsInt $ toR z :. i
-  from (IsInt (z:.i)) (IsInt (z':._)) = from z z' :. i
-  leftOfR (IsInt (z:.i)) (z':.j) = leftOfR z z' -- || i<=j
+  newtype IxP (z:.Int) = IxPInt (IxP z:.Int)
+  newtype IxPT (z:.Int) = IxPTint (IxPT z :. OIR)
+  toL (z:.i) = IxPInt $ toL z :. i
+  toR (z:.i) = IxPInt $ toR z :. i
+  from (IxPInt (z:.i)) (IxPInt (z':._)) = from z z' :. i
+  leftOfR (IxPInt (z:.i)) (z':.j) = leftOfR z z' -- || i<=j
   {-# INLINE toL #-}
   {-# INLINE toR #-}
   {-# INLINE from #-}
   {-# INLINE leftOfR #-}
 
 instance Index z => Index (z:.(Int:.Int)) where
-  newtype Is (z:.(Int:.Int)) = IsIntInt (Is z:.Int)
-  newtype IsT (z:.(Int:.Int)) = IsTii (IsT z :. OIR)
-  toL (z:.(i:.j)) = IsIntInt $ toL z:.i
-  toR (z:.(i:.j)) = IsIntInt $ toR z:.j
-  from (IsIntInt (z:.i)) (IsIntInt (z':.j)) = from z z' :.(i:.j)
-  leftOfR (IsIntInt (z:.k)) (z':.(i:.j)) = leftOfR z z'
+  newtype IxP (z:.(Int:.Int)) = IxPIntInt (IxP z:.Int)
+  newtype IxPT (z:.(Int:.Int)) = IxPTii (IxPT z :. OIR)
+  toL (z:.(i:.j)) = IxPIntInt $ toL z:.i
+  toR (z:.(i:.j)) = IxPIntInt $ toR z:.j
+  from (IxPIntInt (z:.i)) (IxPIntInt (z':.j)) = from z z' :.(i:.j)
+  leftOfR (IxPIntInt (z:.k)) (z':.(i:.j)) = leftOfR z z'
   {-# INLINE toL #-}
   {-# INLINE toR #-}
   {-# INLINE from #-}
@@ -129,6 +197,6 @@ instance Index z => Index (z:.(Int:.Int)) where
 instance NFData z => NFData (z:.(Int:.Int)) where
   rnf (z:.(i:.j)) = i `seq` j `seq` rnf z
 
-instance NFData (Is z) => NFData (Is (z:.(Int:.Int))) where
-  rnf (IsIntInt (z:.k)) = k `seq` rnf z
-
+instance NFData (IxP z) => NFData (IxP (z:.(Int:.Int))) where
+  rnf (IxPIntInt (z:.k)) = k `seq` rnf z
+-}

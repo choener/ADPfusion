@@ -1,3 +1,5 @@
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -6,32 +8,77 @@
 
 module ADP.Fusion.Region where
 
-import Data.Array.Repa.Index
-import qualified Data.Vector.Unboxed as VU
 import Control.DeepSeq
-import qualified Data.Vector.Fusion.Stream.Monadic as S
-import Data.Vector.Fusion.Stream.Size
 import Control.Exception (assert)
+import Data.Array.Repa.Index
+import Data.Vector.Fusion.Stream.Size
+import qualified Data.Vector.Fusion.Stream.Monadic as S
+import qualified Data.Vector.Unboxed as VU
+
+import Data.Array.Repa.Index.Subword
 
 import ADP.Fusion.Classes
+
+import Debug.Trace
 
 
 
 data Region e = Region !(VU.Vector e)
 
-
-
 -- * Instances for 1-dimensional region terminal.
 
-instance MkElm x i => MkElm (x:.Region e) i where
-  newtype Plm (x:.Region e) i = Pregion (Elm x i :. Is i :. Is i)
-  newtype Elm (x:.Region e) i = Eregion (Elm x i :. Is i :. VU.Vector e)
-  type    Arg (x:.Region e) = Arg x :. (VU.Vector e)
-  topIdx (Eregion (_ :. k :. _)) = k
-  getArg (Eregion (x :. _ :. t)) = getArg x :. t
-  {-# INLINE topIdx #-}
+-- |
+
+instance (Monad m, VU.Unbox e) => Element m (Region e) Subword where
+  type E (Region e) = VU.Vector e
+  getE (Region ve) (IxPsubword l) (IxPsubword r) = assert (l<=r && l>=0 && VU.length ve > r) $ return $ VU.unsafeSlice l (r-l) ve
+  {-# INLINE getE #-}
+
+-- |
+
+instance StreamElm x i => StreamElm (x:.Region e) i where
+  newtype Elm (x:.Region e) i  = ElmRegion (Elm x i :. IxP i :. E (Region e))
+  type    Arg (x:.Region e)    = Arg x :. E (Region e)
+  getIxP (ElmRegion (_:.k:._)) = k
+  getArg (ElmRegion (x:._:.t)) = getArg x :. t
+  {-# INLINE getIxP #-}
   {-# INLINE getArg #-}
 
+-- | The subword instance allows us to use 'Region's in typical context-free
+-- grammars with CYK-style parsing.
+
+instance
+  ( Monad m, NFData (IxP Subword), NFData (E (Region e)), VU.Unbox e
+  , MkStream m ss Subword, StreamElm ss Subword
+  , Next (Region e) Subword, Index Subword
+--  , Show (Elm ss Subword), Show e
+  ) => MkStream m (ss:.Region e) Subword where
+  mkStream (ss:.reg) ox ix = S.flatten mk step Unknown $ mkStream ss (convT reg ox) ix where
+    mk y
+      | (IxTsubword Outer) <- ox = (l,r) `deepseq` return (y:.l:.r)
+      | otherwise                = l `deepseq` return (y:.l:.l)
+      where l = getIxP y
+            r = toR    ix
+    step (y:.l:.r)
+      | r `leftOfR` ix = do let r' = nextP reg ox ix l r
+                            e <- getE reg l r
+                            (r',e) `deepseq` return $ S.Yield (ElmRegion (y:.r:.e)) (y:.l:.r')
+      | otherwise = return $ S.Done
+    {-# INLINE mk #-}
+    {-# INLINE step #-}
+  {-# INLINE mkStream #-}
+
+instance Next (Region e) Subword where
+  nextP _ (IxTsubword oir) (Subword (i:.j)) (IxPsubword k) (IxPsubword l)
+    | oir == Outer = IxPsubword $ j+1
+    | otherwise    = IxPsubword $ l+1
+  convT _ _ = IxTsubword Inner
+  {-# INLINE nextP #-}
+  {-# INLINE convT #-}
+
+deriving instance (Show (Elm x Subword), Show e,VU.Unbox e) => Show (Elm (x:.Region e) Subword)
+
+{-
 instance ( Monad m, Index i, NFData (Is i)
          , MkS m ss i, MkElm ss i
          , MkElm (ss:.Region e) i
@@ -99,4 +146,6 @@ instance (Index y, Next x y) => Next (x:.Region Int) (y:.(Int:.Int)) where
 -- * NFData instances
 
 instance NFData (Z:.VU.Vector e)
+
+-}
 

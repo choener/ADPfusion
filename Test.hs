@@ -1,10 +1,15 @@
 
 module Main where
 
+import Control.DeepSeq
+
 import ADP.Fusion (test)
 
 main = do
   l <- getLine
   print l
-  x <- test (read l * 1)
-  print x
+  let rl = read l :: Int
+  mapM_ test [0 .. rl]
+--  x <- (l,rl) `deepseq` test rl
+--  print x
+

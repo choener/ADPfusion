@@ -72,7 +72,7 @@ instance ( NFData i, NFData (Elm x i), NFData (Is i)
           , NFData (TI ts i m)
           , Index i, Monad m, MkS m x i, MkElm x i, Next ts i) => MkS m (x:.Term ts) i where
   mkS (x:.Term ts) os idx = S.flatten mkT stepT Unknown $ S.flatten mk step Unknown $ mkS x (convT ts os) idx where
-    mkT (Pterm (y:.k':.k)) = do
+    mkT (y:.k':.k) = do
       let stp = ti ts k' k
       stp `deepseq` return (y:.k':.k:.stp)
     stepT (y:.k':.k:.stp)
@@ -85,7 +85,7 @@ instance ( NFData i, NFData (Elm x i), NFData (Is i)
     step (y:.k':.k)
       | leftOfR k idx = let
                           newk = suc ts os idx k' k
-                        in newk `deepseq` {- traceShow {- (idx,y,k,ts) -} (k) $ -} return $ S.Yield (Pterm (y:.k':.k)) (y :. k' :. newk)
+                        in newk `deepseq` {- traceShow {- (idx,y,k,ts) -} (k) $ -} return $ S.Yield (y:.k':.k) (y :. k' :. newk)
       | otherwise = return $ S.Done
     {-# INLINE mk #-}
     {-# INLINE step #-}

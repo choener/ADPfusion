@@ -1,3 +1,4 @@
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -16,26 +17,28 @@ import ADP.Fusion.Classes
 
 data None = None
 
-instance MkElm None i where
-  newtype Plm None i = Pnone (Is i)
-  newtype Elm None i = Enone (Is i)
+instance StreamElm None i where
+  newtype Elm None i = ElmNone (IxP i)
   type Arg None = Z
-  topIdx (Enone k) = k
-  getArg (Enone _) = Z
-  {-# INLINE topIdx #-}
+  getIxP (ElmNone k) = k
+  getArg (ElmNone _) = Z
+  {-# INLINE getIxP #-}
   {-# INLINE getArg #-}
 
-instance (NFData i, NFData (Is i), Index i, Monad m) => MkS m None i where
-  mkS None _ idx = let k = toL idx in (idx,k) `deepseq` S.singleton (Enone k)
-  {-# INLINE mkS #-}
+instance (NFData i, NFData (IxP i), Index i, Monad m) => MkStream m None i where
+  mkStream None _ ix = let k = toL ix in (ix,k) `deepseq` S.singleton (ElmNone k)
+  {-# INLINE mkStream #-}
 
+deriving instance (Show (IxP i)) => Show (Elm None i)
 
 
 -- ** NFData instances
 
+{-
 instance NFData (Elm None (Z :. (Int :. Int))) where
   rnf (Enone i) = rnf i
 
 instance NFData (Elm None Z) where
   rnf (Enone i) = rnf i
+-}
 
