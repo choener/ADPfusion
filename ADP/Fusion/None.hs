@@ -21,7 +21,7 @@ data None = None
 instance
   ( NFData (IxP i)
   ) => StreamElm None i where
-  newtype Elm None i = ElmNone (IxP i)
+  data Elm None i = ElmNone (IxP i)
   type Arg None = Z
   getIxP (ElmNone k) = k
   getArg (ElmNone i) = i `deepseq` Z

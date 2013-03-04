@@ -71,14 +71,14 @@ testInner !k !xs !ys !zs !i !j = do
 --  x <- S.length $ mkS (None :. Term (T:.Region xs) :. Term (T:.Region xs) :. Term (T:.Region xs)) (IsTii (IsTz Z :. Outer)) (Z:.(i:.j))
 --  x <- S.length $ mkS (None :. Term (T:.Region xs) :. Term (T:.Region xs) :. Term (T:.Region xs) :. Term (T:.Region xs)) (IsTii (IsTz Z :. Outer)) (Z:.(i:.j))
 --  x <- S.length $ mkS (None :. Term (T:.Region xs:.Region xs) :. Term (T:.Region xs:.Region xs)) (IsTii (IsTii (IsTz Z:. Outer) :. Outer)) (Z:.(i:.j):.(i:.j))
---  a <- S.length $ mkStream (None :. Region xs) (IxTsubword Outer) (Subword (i:.j))
+--  a <- S.foldl' (+) 0 $ S.map (apply VU.unsafeLast . getArg) $ mkStream (None :. Region xs) (IxTsubword Outer) (Subword (i:.j))
 --  a `seq` print a
 --  b <- S.foldl' (+) 0 $ S.map (apply p2 . getArg) $ mkStream (None :. Region xs :. Region xs) (IxTsubword Outer) (Subword (i:.j))
 --  b `seq` print b
-  c <- S.foldl' (+) 0 $ S.map (\x -> x `deepseq` (apply p3 . getArg $ x)) $ mkStream (None :. Region xs :. Region ys :. Region zs) (IxTsubword Outer) (Subword (i:.j))
-  c `seq` print (j,c)
---  d <- S.length $ mkStream (None :. Region xs :. Region xs :. Region xs :. Region xs) (IxTsubword Outer) (Subword (i:.j))
---  d `seq` print (j,c)
+--  c <- S.foldl' (+) 0 $ S.map (\x -> x `deepseq` (apply p3 . getArg $ x)) $ mkStream (None :. Region xs :. Region ys :. Region zs) (IxTsubword Outer) (Subword (i:.j))
+--  c `seq` print (j,c)
+  d <- S.foldl' (+) 0 $ S.map (apply p4 . getArg) $ mkStream (None :. Region xs :. Region xs :. Region xs :. Region xs) (IxTsubword Outer) (Subword (i:.j))
+  d `seq` print (j,d)
   return 0
 {-# NOINLINE testInner #-}
 
@@ -86,9 +86,15 @@ instance NFData (Z)
 instance NFData (Z:.VU.Vector Int)
 instance NFData (Z:.VU.Vector Int:.VU.Vector Int) where
   rnf (a:.b:.c) = rnf a `seq` rnf b `seq` rnf c
+instance NFData (Z:.VU.Vector Int:.VU.Vector Int:.VU.Vector Int) where
+  rnf (a:.b:.c:.d) = rnf a `seq` rnf b `seq` rnf c `seq` rnf d
 
-p2 a b = (a,b) `deepseq` (VU.length a + VU.length b)
+p2 a b = (a,b) `deepseq` (VU.unsafeLast a + VU.unsafeHead b)
 {-# INLINE p2 #-}
 
 p3 a b c = (a,b,c) `deepseq` (VU.unsafeLast a + VU.unsafeLast b + VU.unsafeHead c)
 {-# INLINE p3 #-}
+
+p4 a b c d = (a,b,c,d) `deepseq` (VU.unsafeLast a + VU.unsafeLast b + VU.unsafeLast c + VU.unsafeHead d)
+{-# INLINE p4 #-}
+

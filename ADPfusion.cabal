@@ -160,7 +160,7 @@ executable Test
   main-is:
     Test.hs
   ghc-options:
-    -O2
+    -Odph
     -funbox-strict-fields
     -funfolding-use-threshold100
     -funfolding-keeness-factor100

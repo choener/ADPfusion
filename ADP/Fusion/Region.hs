@@ -46,7 +46,7 @@ instance
   ( StreamElm x i
   , NFData (Arg x)
   ) => StreamElm (x:.Region e) i where
-  newtype Elm (x:.Region e) i  = ElmRegion (Elm x i :. IxP i :. E (Region e))
+  data Elm (x:.Region e) i  = ElmRegion (Elm x i :. IxP i :. E (Region e))
   type    Arg (x:.Region e)    = Arg x :. E (Region e)
   getIxP (ElmRegion (_:.k:._)) = k
   getArg (ElmRegion (x:.k:.t)) = let a = getArg x in a `deepseq` a :. t
