@@ -8,4 +8,4 @@ module ADP.Fusion.Table where
 -- TODO Switch to an encoding using fully adaptive arrays. Cf. Manuel
 -- Chakravarty's work (implemented in dph).
 
-data MTable i e = MTable
+data MTable c es = MTable !es
