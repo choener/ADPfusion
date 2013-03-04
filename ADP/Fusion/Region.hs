@@ -47,7 +47,7 @@ instance
   , NFData (Arg x)
   ) => StreamElm (x:.Region e) i where
   data Elm (x:.Region e) i  = ElmRegion (Elm x i :. IxP i :. E (Region e))
-  type    Arg (x:.Region e)    = Arg x :. E (Region e)
+  type Arg (x:.Region e)    = Arg x :. E (Region e)
   getIxP (ElmRegion (_:.k:._)) = k
   getArg (ElmRegion (x:.k:.t)) = let a = getArg x in a `deepseq` a :. t
   {-# INLINE getIxP #-}
@@ -63,7 +63,7 @@ instance
 --  , Show (Elm ss Subword), Show e
   ) => MkStream m (ss:.Region e) Subword where
   mkStream (ss:.reg) ox ix = (reg,ox,ix,ox') `deepseq` S.flatten mk step Unknown $ mkStream ss ox' ix where
-    ox' = convT reg ox
+    (ox',_) = convT reg ox ix
     mk y
       | (IxTsubword Outer) <- ox = (y,l,r) `deepseq` return (y:.l:.r)
       | otherwise                = (y,l)   `deepseq` return (y:.l:.l)
@@ -82,7 +82,7 @@ instance Next (Region e) Subword where
   nextP _ (IxTsubword oir) (Subword (i:.j)) (IxPsubword k) (IxPsubword l)
     | oir == Outer = IxPsubword $ j+1
     | otherwise    = IxPsubword $ l+1
-  convT _ _ = IxTsubword Inner
+  convT _ _ ix = (IxTsubword Inner, ix)
   {-# INLINE nextP #-}
   {-# INLINE convT #-}
 

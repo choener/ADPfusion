@@ -67,7 +67,7 @@ class (Monad m) => MkStream m x i where
 
 class Next x i where
   nextP :: x -> IxT i -> i -> IxP i -> IxP i -> IxP i
-  convT :: x -> IxT i -> IxT i
+  convT :: x -> IxT i -> i -> (IxT i, i)
 
 -- | index calculations.
 --

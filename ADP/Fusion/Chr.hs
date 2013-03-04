@@ -13,6 +13,8 @@ import qualified Data.Vector.Fusion.Stream.Monadic as S
 import Data.Vector.Fusion.Stream.Size
 import Control.Exception (assert)
 
+import Data.Array.Repa.Index.Subword
+
 import ADP.Fusion.Classes
 
 
@@ -21,41 +23,67 @@ import ADP.Fusion.Classes
 
 data Chr e = Chr !(VU.Vector e)
 
+instance NFData (Chr e) where
+  rnf (Chr ve) = rnf ve
 
+instance
+  ( Monad m
+  , NFData e
+  , VU.Unbox e
+  ) => Element m (Chr e) Subword where
+  type E (Chr e) = e
+  getE (Chr ve) (IxPsubword l) (IxPsubword r) =
+    let e = VU.unsafeIndex ve l
+    in  (ve,l,r,e) `deepseq` assert (l<=r && l>=0 && VU.length ve > r) $ return e
+  {-# INLINE getE #-}
 
--- * Instances for dim=1.
-
-instance MkElm x i => MkElm (x:.Chr e) i where
-  newtype Plm (x:.Chr e) i = Pchr (Elm x i :. Is i :. Is i)
-  newtype Elm (x:.Chr e) i = Echr (Elm x i :. Is i :. e)
-  type    Arg (x:.Chr e)   = Arg x :. e
-  topIdx (Echr (_:.k:._)) = k
-  getArg (Echr (x:._:.t)) = getArg x :. t
-  {-# INLINE topIdx #-}
+instance
+  ( StreamElm x i
+  ) => StreamElm (x:.Chr e) i where
+  data Elm (x:.Chr e) i = ElmChr (Elm x i :. IxP i :. E (Chr e))
+  type Arg (x:.Chr e)   = Arg x :. E (Chr e)
+  getIxP (ElmChr (_:.k:._)) = k
+  getArg (ElmChr (x:.k:.t)) = getArg x :. t
+  {-# INLINE getIxP #-}
   {-# INLINE getArg #-}
 
--- | Return a single character. If we are "outer-most" than this should be "k"
--- with "k+1==j", otherwise any "k" is ok.
+-- |
+--
+-- TODO this instance is currently "dangerous". When standing alone in a
+-- production rule, it will always return a result. We should make this
+-- foolproof, maybe?
 
-instance ( Monad m, Index i, NFData (Is i), NFData e
-         , Next (Chr e) i
-         , MkElm ss i, MkS m ss i
-         , TEE m (Chr e) i
-         ) => MkS m (ss:.Chr e) i where
-  mkS (ss:.ch) ox ix = S.mapM step $ mkS ss (convT ch ox) ix where
-    step y = do let l = topIdx y
-                let r = toR ix
-                e <- tiOne ch l r
-                e `deepseq` return $ Echr (y:.r:.e)
+instance
+  ( VU.Unbox e, NFData e
+  , StreamElm ss Subword
+  , MkStream m ss Subword
+  ) => MkStream m (ss:.Chr e) Subword where
+  mkStream (ss:.c) ox ix = S.mapM step $ mkStream ss ox' ix' where
+    (ox',ix') = convT c ox ix
+    step y = do
+      let l = getIxP y
+      let r = case ox of
+                IxTsubword Outer -> toR ix
+                _                -> nextP c ox ix l l
+      e <- getE c l r
+      return $ ElmChr (y:.r:.e)
     {-# INLINE step #-}
-  {-# INLINE mkS #-}
+  {-# INLINE mkStream #-}
 
-instance (Monad m, VU.Unbox e) => TEE m (Chr e) (y:.(Int:.Int)) where
-  type TE (Chr e) = e
-  tiOne (Chr ve) (IsIntInt (_:.l)) (IsIntInt (_:.r)) = return $ VU.unsafeIndex ve l
-  te = error "not implemented"
-  ti = error "not implemented"
-  tisuc = error "not implemented"
-  tifin = error "not implemented"
-  tiget = error "not implemented"
-  {-# INLINE tiOne #-}
+instance Next (Chr e) Subword where
+  nextP _ (IxTsubword oir) (Subword (i:.j)) (IxPsubword k) (IxPsubword l)
+    | oir == Outer = IxPsubword $ j+1
+    | otherwise    = IxPsubword $ l+1
+  convT _ ox@(IxTsubword oir) ix@(Subword (i:.j))
+    | oir == Outer = (IxTsubword Outer, Subword (i:.j-1))
+    | otherwise    = (ox, ix)
+  {-# INLINE nextP #-}
+  {-# INLINE convT #-}
+
+instance NFData x => NFData (x:.Chr e) where
+  rnf (x:.Chr ve) = rnf x `seq` rnf ve
+
+instance (NFData x, VU.Unbox e) => NFData (Elm (x:.Chr e) Subword) where
+
+
+

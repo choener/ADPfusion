@@ -20,13 +20,14 @@ import qualified Data.Vector.Unboxed as VU
 import Data.Array.Repa.Index.Subword
 
 import ADP.Fusion.Apply
---import ADP.Fusion.Chr
+import ADP.Fusion.Chr
 import ADP.Fusion.Classes
 import ADP.Fusion.None
 import ADP.Fusion.Region
 --import ADP.Fusion.Table
 --import ADP.Fusion.Term
 
+import Debug.Trace
 
 {-
 
@@ -77,17 +78,25 @@ testInner !k !xs !ys !zs !i !j = do
 --  b `seq` print b
 --  c <- S.foldl' (+) 0 $ S.map (\x -> x `deepseq` (apply p3 . getArg $ x)) $ mkStream (None :. Region xs :. Region ys :. Region zs) (IxTsubword Outer) (Subword (i:.j))
 --  c `seq` print (j,c)
-  d <- S.foldl' (+) 0 $ S.map (apply p4 . getArg) $ mkStream (None :. Region xs :. Region xs :. Region xs :. Region xs) (IxTsubword Outer) (Subword (i:.j))
-  d `seq` print (j,d)
+--  d <- S.foldl' (+) 0 $ S.map (apply p4 . getArg) $ mkStream (None :. Region xs :. Region xs :. Region xs :. Region xs) (IxTsubword Outer) (Subword (i:.j))
+--  d `seq` print (j,d)
+--  e <- S.foldl' (+) 0 $ S.map (apply fc . getArg) $ mkStream (None :. Chr xs) (IxTsubword Outer) (Subword (i:.j))
+--  e `seq` print (j,e)
+  e <- S.foldl' (+) 0 $ S.map (apply fcrrc . getArg) $ mkStream (None :. Chr xs :. Region ys :. Region zs :. Chr xs) (IxTsubword Outer) (Subword (i:.j))
+  e `seq` print (j,e)
   return 0
 {-# NOINLINE testInner #-}
 
-instance NFData (Z)
-instance NFData (Z:.VU.Vector Int)
-instance NFData (Z:.VU.Vector Int:.VU.Vector Int) where
-  rnf (a:.b:.c) = rnf a `seq` rnf b `seq` rnf c
-instance NFData (Z:.VU.Vector Int:.VU.Vector Int:.VU.Vector Int) where
-  rnf (a:.b:.c:.d) = rnf a `seq` rnf b `seq` rnf c `seq` rnf d
+instance NFData Z
+instance NFData z => NFData (z:.VU.Vector e) where
+  rnf (z:.ve) = rnf z `seq` rnf ve
+
+instance NFData z => NFData (z:.Int) where
+  rnf (z:.i) = rnf z `seq` rnf i
+
+fcrrc a b c d = a + VU.unsafeLast b + VU.unsafeHead c + d
+
+fc a = a
 
 p2 a b = (a,b) `deepseq` (VU.unsafeLast a + VU.unsafeHead b)
 {-# INLINE p2 #-}
