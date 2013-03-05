@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -66,7 +67,7 @@ instance
   , MkStream m ss Subword
   , Show (PA.E arr)
   ) => MkStream m (ss:.MTable (PA.MutArr m arr)) Subword where
-  mkStream (ss:.mtbl) ox ix = S.flatten mk step Unknown $ mkStream ss ox' ix where
+  mkStream (ss:.mtbl) ox ix = (mtbl,ox,ix,ox') `deepseq` S.flatten mk step Unknown $ mkStream ss ox' ix where
     (ox',_) = convT mtbl ox ix
     mk y
       | (IxTsubword Outer) <- ox = return (y:.l:.r)
@@ -93,3 +94,5 @@ instance Next (MTable es) Subword where
 
 instance Build (MTable e)
 
+instance NFData (PA.MutArr m arr) where
+  rnf (!x) = ()
