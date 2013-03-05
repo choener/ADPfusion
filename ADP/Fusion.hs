@@ -72,6 +72,9 @@ testInner !k !xs !ys !zs !i !j = do
   (!mxs) :: (PA.MU IO (Z:.Subword) Int) <- PA.newWithM (Z:. Subword (0:.0)) (Z:. Subword (0:.k)) (1 :: Int)
   (!mys) :: (PA.MU IO (Z:.Subword) Int) <- PA.newWithM (Z:. Subword (0:.0)) (Z:. Subword (0:.k)) (2 :: Int)
   (!mzs) :: (PA.MU IO (Z:.Subword) Int) <- PA.newWithM (Z:. Subword (0:.0)) (Z:. Subword (0:.k)) (3 :: Int)
+  let region xs = Region Nothing Nothing xs
+      {-# INLINE region #-}
+  let mtable xs = MTable False xs
 --  mapM_ (\(i,j,x) -> x >>= \x' -> print (i,j,x')) $ [ (i,j,PA.readM mxs (Z:.Subword (i:.j))) | i <- [0..k], j <- [i..k]]
 --  x <- return 1
 --  x <- S.length $ mkS None (IsTii (IsTz Z :. Outer)) (Z:.(i:.j))
@@ -82,9 +85,9 @@ testInner !k !xs !ys !zs !i !j = do
 --  x <- S.length $ mkS (None :. Term (T:.Region xs:.Region xs) :. Term (T:.Region xs:.Region xs)) (IsTii (IsTii (IsTz Z:. Outer) :. Outer)) (Z:.(i:.j):.(i:.j))
 --  a <- S.foldl' (+) 0 $ S.map (apply VU.unsafeLast . getArg) $ mkStream (None :. Region xs) (IxTsubword Outer) (Subword (i:.j))
 --  a `seq` print a
-  b <- S.foldl' (+) 0 $ S.map (apply p2 . getArg) $ mkStream (None :. Region {- Nothing Nothing -} xs :. Region {- Nothing Nothing -} ys) (IxTsubword Outer) (Subword (i:.j))
-  b `seq` print b
---  c <- S.foldl' (+) 0 $ S.map (\x -> x `deepseq` (apply p3 . getArg $ x)) $ mkStream (None :. Region xs :. Region ys :. Region zs) (IxTsubword Outer) (Subword (i:.j))
+--  b <- S.foldl' (+) 0 $ S.map (apply p2 . getArg) $ mkStream (None :. Region Nothing Nothing xs :. Region Nothing Nothing ys) (IxTsubword Outer) (Subword (i:.j))
+--  b `seq` print b
+--  c <- S.foldl' (+) 0 $ S.map (\x -> x `deepseq` (apply p3 . getArg $ x)) $ mkStream (None :. region xs :. region ys :. region zs) (IxTsubword Outer) (Subword (i:.j))
 --  c `seq` print (j,c)
 --  d <- S.foldl' (+) 0 $ S.map (apply p4 . getArg) $ mkStream (None :. Region xs :. Region xs :. Region xs :. Region xs) (IxTsubword Outer) (Subword (i:.j))
 --  d `seq` print (j,d)
@@ -92,8 +95,8 @@ testInner !k !xs !ys !zs !i !j = do
 --  e `seq` print (j,e)
 --  e <- S.foldl' (+) 0 $ S.map (apply fcrrc . getArg) $ mkStream (None :. Chr xs :. Region ys :. Region zs :. Chr xs) (IxTsubword Outer) (Subword (i:.j))
 --  e `seq` print (j,e)
---  f <- S.foldl' (+) 0 $ S.map (apply (\a b c d -> a+b+c+d) . getArg) $ mkStream (None :. MTable mxs :. MTable mys :. MTable mzs :. MTable mxs) (IxTsubword Outer) (Subword (i:.j))
---  f `seq` print (j,f)
+  f <- S.foldl' (+) 0 $ S.map (apply (\a b c d -> a+b+c+d) . getArg) $ mkStream (None :. mtable mxs :. mtable mys :. mtable mzs :. mtable mxs) (IxTsubword Outer) (Subword (i:.j))
+  f `seq` print (j,f)
   return 0
 {-# NOINLINE testInner #-}
 

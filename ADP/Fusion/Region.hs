@@ -24,12 +24,12 @@ import Debug.Trace
 
 
 data Region e = Region
---  !(Maybe Int)      -- ^ minimal size
---  !(Maybe Int)      -- ^ maximal size
+  !(Maybe Int)      -- ^ minimal size
+  !(Maybe Int)      -- ^ maximal size
   !(VU.Vector e)    -- ^ actual  data
 
 instance NFData (Region e) where
-  rnf (Region {- a b -} ve) = {- rnf a `seq` rnf b `seq` -} rnf ve
+  rnf (Region a b ve) = {- rnf a `seq` rnf b `seq` -} rnf ve
 
 -- * Instances for 1-dimensional region terminal.
 
@@ -37,7 +37,7 @@ instance NFData (Region e) where
 
 instance (Monad m, VU.Unbox e) => Element m (Region e) Subword where
   type E (Region e) = VU.Vector e
-  getE (Region {- _ _ -} ve) (IxPsubword l) (IxPsubword r) =
+  getE (Region _ _ ve) (IxPsubword l) (IxPsubword r) =
     let
       e = VU.unsafeSlice l (r-l) ve
     in  {- (ve,l,r,e) `deepseq` -} assert (l<=r && l>=0 && VU.length ve > r) $ return e
@@ -93,7 +93,7 @@ instance Next (Region e) Subword where
 deriving instance (Show (Elm x Subword), Show e,VU.Unbox e) => Show (Elm (x:.Region e) Subword)
 
 instance NFData x => NFData (x:.Region e) where
-  rnf (x:.Region {- a b -} ve) = {- (a,b) `deepseq` -} rnf x `seq` rnf ve
+  rnf (x:.Region a b ve) = {- (a,b) `deepseq` -} rnf x `seq` rnf ve
 
 instance (NFData x, VU.Unbox e) => NFData (Elm (x:.Region e) Subword) where
 

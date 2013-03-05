@@ -33,25 +33,19 @@ import Debug.Trace
 --
 -- TODO empty / non-empty stuff !
 
-data MTable es = MTable !es
-
--- | empty subwords allowed
-
-data ENe
-
--- | only non-empty subwords
-
-data ENn
+data MTable es = MTable
+  !Bool   -- ^ allow empty table, that is return result for subword (i,i) ?
+  !es     -- ^ data
 
 instance (NFData es) => NFData (MTable es) where
-  rnf (MTable es) = rnf es
+  rnf (MTable b es) = b `seq` rnf es
 
 instance
   ( Monad m
   , PA.MPAO m arr, PA.Sh arr ~ (Z:.Subword), PA.MC arr
   ) => Element m (MTable (PA.MutArr m arr)) Subword where
   type E (MTable (PA.MutArr m arr)) = PA.E arr
-  getE (MTable es) (IxPsubword l) (IxPsubword r) = PA.readM es (Z:. Subword (l:.r)) 
+  getE (MTable _ es) (IxPsubword l) (IxPsubword r) = PA.readM es (Z:. Subword (l:.r)) 
   {-# INLINE getE #-}
 
 instance
