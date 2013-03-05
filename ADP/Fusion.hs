@@ -82,8 +82,8 @@ testInner !k !xs !ys !zs !i !j = do
 --  x <- S.length $ mkS (None :. Term (T:.Region xs:.Region xs) :. Term (T:.Region xs:.Region xs)) (IsTii (IsTii (IsTz Z:. Outer) :. Outer)) (Z:.(i:.j):.(i:.j))
 --  a <- S.foldl' (+) 0 $ S.map (apply VU.unsafeLast . getArg) $ mkStream (None :. Region xs) (IxTsubword Outer) (Subword (i:.j))
 --  a `seq` print a
---  b <- S.foldl' (+) 0 $ S.map (apply p2 . getArg) $ mkStream (None :. Region xs :. Region xs) (IxTsubword Outer) (Subword (i:.j))
---  b `seq` print b
+  b <- S.foldl' (+) 0 $ S.map (apply p2 . getArg) $ mkStream (None :. Region {- Nothing Nothing -} xs :. Region {- Nothing Nothing -} ys) (IxTsubword Outer) (Subword (i:.j))
+  b `seq` print b
 --  c <- S.foldl' (+) 0 $ S.map (\x -> x `deepseq` (apply p3 . getArg $ x)) $ mkStream (None :. Region xs :. Region ys :. Region zs) (IxTsubword Outer) (Subword (i:.j))
 --  c `seq` print (j,c)
 --  d <- S.foldl' (+) 0 $ S.map (apply p4 . getArg) $ mkStream (None :. Region xs :. Region xs :. Region xs :. Region xs) (IxTsubword Outer) (Subword (i:.j))
@@ -92,8 +92,8 @@ testInner !k !xs !ys !zs !i !j = do
 --  e `seq` print (j,e)
 --  e <- S.foldl' (+) 0 $ S.map (apply fcrrc . getArg) $ mkStream (None :. Chr xs :. Region ys :. Region zs :. Chr xs) (IxTsubword Outer) (Subword (i:.j))
 --  e `seq` print (j,e)
-  f <- S.foldl' (+) 0 $ S.map (apply (\a b c d -> a+b+c+d) . getArg) $ mkStream (None :. MTable mxs :. MTable mys :. MTable mzs :. MTable mxs) (IxTsubword Outer) (Subword (i:.j))
-  f `seq` print (j,f)
+--  f <- S.foldl' (+) 0 $ S.map (apply (\a b c d -> a+b+c+d) . getArg) $ mkStream (None :. MTable mxs :. MTable mys :. MTable mzs :. MTable mxs) (IxTsubword Outer) (Subword (i:.j))
+--  f `seq` print (j,f)
   return 0
 {-# NOINLINE testInner #-}
 

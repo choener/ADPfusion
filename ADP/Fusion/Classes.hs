@@ -119,13 +119,13 @@ class Index i where
 --
 -- TODO implemented 'Restricted' correctly.
 
-data OIR
+data OIR i
   = Outer
   | Inner
-  | Restricted
+  | Restrict -- !(Maybe i) !(Maybe i)
   deriving (Eq,Show)
 
-instance NFData OIR where
+instance NFData (OIR i) where
   rnf !x = ()
 
 -- | Access an element, given partial indices. Note that we return in a monad.
@@ -156,7 +156,7 @@ class (Monad m) => TermElement m x i where
 
 instance Index Subword where
   newtype IxP Subword = IxPsubword Int
-  newtype IxT Subword = IxTsubword OIR
+  newtype IxT Subword = IxTsubword (OIR (IxP Subword))
   toL (Subword (i:.j)) = IxPsubword i
   toR (Subword (i:.j)) = IxPsubword j
   from (IxPsubword i) (IxPsubword j) = Subword (i:.j)
@@ -172,9 +172,9 @@ instance NFData (IxP Subword) where
 instance NFData (IxT Subword) where
   rnf (IxTsubword oir) = rnf oir
 
-deriving instance Show Subword
-
 deriving instance Show (IxP Subword)
+
+deriving instance Eq (IxP Subword)
 
 deriving instance Show (IxT Subword)
 
