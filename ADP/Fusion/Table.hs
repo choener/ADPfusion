@@ -91,3 +91,5 @@ instance Next (MTable es) Subword where
   {-# INLINE nextP #-}
   {-# INLINE convT #-}
 
+instance Build (MTable e)
+

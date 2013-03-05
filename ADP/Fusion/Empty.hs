@@ -4,14 +4,13 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeOperators #-}
 
-module ADP.Fusion.Chr where
+module ADP.Fusion.Empty where
 
-import Data.Array.Repa.Index
-import qualified Data.Vector.Unboxed as VU
 import Control.DeepSeq
-import qualified Data.Vector.Fusion.Stream.Monadic as S
-import Data.Vector.Fusion.Stream.Size
 import Control.Exception (assert)
+import Data.Array.Repa.Index
+import Data.Vector.Fusion.Stream.Size
+import qualified Data.Vector.Fusion.Stream.Monadic as S
 
 import Data.Array.Repa.Index.Subword
 
@@ -19,31 +18,27 @@ import ADP.Fusion.Classes
 
 
 
--- | Terminal parser for a single character.
+-- | 
 
-data Chr e = Chr !(VU.Vector e)
+data Empty = Empty
 
-instance NFData (Chr e) where
-  rnf (Chr ve) = rnf ve
+instance NFData Empty where
+  rnf Empty = ()
 
 instance
   ( Monad m
-  , NFData e
-  , VU.Unbox e
-  ) => Element m (Chr e) Subword where
-  type E (Chr e) = e
-  getE (Chr ve) (IxPsubword l) (IxPsubword r) =
-    let e = VU.unsafeIndex ve l
-    in  (ve,l,r,e) `deepseq` assert (l<=r && l>=0 && VU.length ve > r) $ return e
+  ) => Element m Empty Subword where
+  type E Empty = ()
+  getE Empty (IxPsubword l) (IxPsubword r) = assert (l==r && l>=0) $ return ()
   {-# INLINE getE #-}
 
 instance
   ( StreamElm x i
-  ) => StreamElm (x:.Chr e) i where
-  data Elm (x:.Chr e) i = ElmChr (Elm x i :. IxP i :. E (Chr e))
-  type Arg (x:.Chr e)   = Arg x :. E (Chr e)
-  getIxP (ElmChr (_:.k:._)) = k
-  getArg (ElmChr (x:.k:.t)) = getArg x :. t
+  ) => StreamElm (x:.Empty) i where
+  data Elm (x:.Empty) i = ElmEmpty (Elm x i :. IxP i :. E Empty)
+  type Arg (x:.Empty)   = Arg x :. E Empty
+  getIxP (ElmEmpty (_:.k:._)) = k
+  getArg (ElmEmpty (x:.k:.t)) = getArg x :. t
   {-# INLINE getIxP #-}
   {-# INLINE getArg #-}
 
@@ -54,10 +49,9 @@ instance
 -- foolproof, maybe?
 
 instance
-  ( VU.Unbox e, NFData e
-  , StreamElm ss Subword
+  ( StreamElm ss Subword
   , MkStream m ss Subword
-  ) => MkStream m (ss:.Chr e) Subword where
+  ) => MkStream m (ss:.Empty) Subword where
   mkStream (ss:.c) ox ix = S.mapM step $ mkStream ss ox' ix' where
     (ox',ix') = convT c ox ix
     step y = do
@@ -66,11 +60,11 @@ instance
                 IxTsubword Outer -> toR ix
                 _                -> nextP c ox ix l l
       e <- getE c l r
-      return $ ElmChr (y:.r:.e)
+      return $ ElmEmpty (y:.r:.e)
     {-# INLINE step #-}
   {-# INLINE mkStream #-}
 
-instance Next (Chr e) Subword where
+instance Next Empty Subword where
   initP _ (IxTsubword oir) (Subword (i:.j)) (IxPsubword k)
     | otherwise = undefined
   nextP _ (IxTsubword oir) (Subword (i:.j)) (IxPsubword k) (IxPsubword l)
@@ -82,10 +76,13 @@ instance Next (Chr e) Subword where
   {-# INLINE nextP #-}
   {-# INLINE convT #-}
 
-instance NFData x => NFData (x:.Chr e) where
-  rnf (x:.Chr ve) = rnf x `seq` rnf ve
+instance NFData x => NFData (x:.Empty) where
+  rnf (x:.Empty) = rnf x
 
-instance (NFData x, VU.Unbox e) => NFData (Elm (x:.Chr e) Subword) where
+instance (NFData x) => NFData (Elm (x:.Empty) Subword) where
 
-instance Build (Chr e)
+instance Build Empty
+
+
+
 

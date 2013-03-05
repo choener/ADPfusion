@@ -150,6 +150,7 @@ library
     ADP.Fusion.Apply
     ADP.Fusion.Chr
     ADP.Fusion.Classes
+    ADP.Fusion.Empty
     ADP.Fusion.None
     ADP.Fusion.Region
     ADP.Fusion.Table
