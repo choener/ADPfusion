@@ -1,3 +1,4 @@
+{-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -72,7 +73,7 @@ class (Monad m) => MkStream m x i where
 class Next x i where
   -- | Create the initial index to start with. If we have, say, a non-empty
   -- table, it will advance the initial index by one.
-  initP :: x -> IxT i -> i -> IxP i -> ixP i
+  initP :: x -> IxT i -> i -> IxP i -> IxP i
   -- | Given the symbol 'x', the index type 'IxT i', the global index 'i', and
   -- the left and right constraints of our local subword 'IxP i', create the
   -- next step. This basically moves our index by one.
@@ -112,6 +113,8 @@ class Index i where
   --
   -- TODO maybe "leftOfR :: IxP i -> IxP i -> Bool" ?
   leftOfR :: IxP i -> i -> Bool
+  -- simplify IxT stuff by providing a default
+  initT :: IxT i
 
 -- | Standard cases on how 'mkStream' can be restricted. In the 'Outer' case,
 -- we perform a single step, then finish. The 'Inner' case behaves normally,
@@ -154,6 +157,7 @@ class (Monad m) => TermElement m x i where
 
 
 
+
 instance Index Subword where
   newtype IxP Subword = IxPsubword Int
   newtype IxT Subword = IxTsubword (OIR (IxP Subword))
@@ -161,10 +165,12 @@ instance Index Subword where
   toR (Subword (i:.j)) = IxPsubword j
   from (IxPsubword i) (IxPsubword j) = Subword (i:.j)
   leftOfR (IxPsubword k) (Subword (i:.j)) = k<=j
+  initT = IxTsubword Outer
   {-# INLINE toL #-}
   {-# INLINE toR #-}
   {-# INLINE from #-}
   {-# INLINE leftOfR #-}
+  {-# INLINE initT #-}
 
 instance NFData (IxP Subword) where
   rnf (IxPsubword i) = rnf i
@@ -230,3 +236,43 @@ instance NFData z => NFData (z:.(Int:.Int)) where
 instance NFData (IxP z) => NFData (IxP (z:.(Int:.Int))) where
   rnf (IxPIntInt (z:.k)) = k `seq` rnf z
 -}
+
+-- | Build the stack using (%)
+
+class Build x where
+  type Stack x :: *
+  type Stack x = None :. x
+  build :: x -> Stack x
+  default build :: (Stack x ~ (None :. x)) => x -> Stack x
+  build x = None :. x
+  {-# INLINE build #-}
+
+instance Build x => Build (x:.y) where
+  type Stack (x:.y) = Stack x :. y
+  build (x:.y) = build x :. y
+  {-# INLINE build #-}
+
+data None = None
+
+instance
+  ( NFData (IxP i)
+  ) => StreamElm None i where
+  data Elm None i = ElmNone (IxP i)
+  type Arg None = Z
+  getIxP (ElmNone k) = k
+  getArg (ElmNone i) = i `deepseq` Z
+  {-# INLINE getIxP #-}
+  {-# INLINE getArg #-}
+
+instance (NFData i, NFData (IxP i), NFData (IxT i), Index i, Monad m) => MkStream m None i where
+  mkStream None ox ix = let k = toL ix in (ox,ix,k) `deepseq` S.singleton (ElmNone k)
+  {-# INLINE mkStream #-}
+
+instance (NFData (IxP i)) => NFData (Elm None i) where
+  rnf (ElmNone i) = rnf i
+
+instance NFData None where
+  rnf None = ()
+
+deriving instance (Show (IxP i)) => Show (Elm None i)
+

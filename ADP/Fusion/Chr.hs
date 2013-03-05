@@ -71,6 +71,8 @@ instance
   {-# INLINE mkStream #-}
 
 instance Next (Chr e) Subword where
+  initP _ (IxTsubword oir) (Subword (i:.j)) (IxPsubword k)
+    | otherwise = undefined
   nextP _ (IxTsubword oir) (Subword (i:.j)) (IxPsubword k) (IxPsubword l)
     | oir == Outer = IxPsubword $ j+1
     | otherwise    = IxPsubword $ l+1

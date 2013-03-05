@@ -1,3 +1,6 @@
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE BangPatterns #-}
@@ -26,32 +29,42 @@ import qualified Data.PrimitiveArray.Zero as PA
 import ADP.Fusion.Apply
 import ADP.Fusion.Chr
 import ADP.Fusion.Classes
-import ADP.Fusion.None
+--import ADP.Fusion.None
 import ADP.Fusion.Region
 import ADP.Fusion.Table
 --import ADP.Fusion.Term
 
 import Debug.Trace
 
-{-
 
 infixl 8 <<<
+(<<<) f xs = S.map (apply f . getArg) . mkStream (build xs) initT
+{-# INLINE (<<<) #-}
+
+{-
 (<<<) :: (Monad m, MkElm x i, Apply (Arg x -> r))
       => Fun (Arg x -> r)
       -> S.Stream m (Elm x i)
       -> S.Stream m (Elm x i :. r)
-(<<<) f xs = S.map (\x -> (x :. (apply f $ getArg x))) xs
-{-# INLINE (<<<) #-}
-
-infixl 7 |||
-(|||) xs ys ij = xs ij S.++ ys ij
-{-# INLINE (|||) #-}
-
-infixl 6 ...
-(...) s h ij = h $ s ij
-{-# INLINE (...) #-}
 
 -}
+
+infixl 7 |||
+(|||) xs ys = \ij -> xs ij S.++ ys ij
+{-# INLINE (|||) #-}
+
+
+infixl 6 ...
+(...) s h = h . s
+{-# INLINE (...) #-}
+
+infixl 9 ~~
+(~~) = (:.)
+{-# INLINE (~~) #-}
+
+infixl 9 %
+(%) = (:.)
+{-# INLINE (%) #-}
 
 -- * testing
 
@@ -83,10 +96,8 @@ testInner !k !xs !ys !zs !i !j = do
 --  x <- S.length $ mkS (None :. Term (T:.Region xs) :. Term (T:.Region xs) :. Term (T:.Region xs)) (IsTii (IsTz Z :. Outer)) (Z:.(i:.j))
 --  x <- S.length $ mkS (None :. Term (T:.Region xs) :. Term (T:.Region xs) :. Term (T:.Region xs) :. Term (T:.Region xs)) (IsTii (IsTz Z :. Outer)) (Z:.(i:.j))
 --  x <- S.length $ mkS (None :. Term (T:.Region xs:.Region xs) :. Term (T:.Region xs:.Region xs)) (IsTii (IsTii (IsTz Z:. Outer) :. Outer)) (Z:.(i:.j):.(i:.j))
---  a <- S.foldl' (+) 0 $ S.map (apply VU.unsafeLast . getArg) $ mkStream (None :. Region xs) (IxTsubword Outer) (Subword (i:.j))
+--  a <- S.foldl' (+) 0 $ S.map (apply VU.unsafeLast . getArg) $ mkStream (None :. region xs) (IxTsubword Outer) (Subword (i:.j))
 --  a `seq` print a
---  b <- S.foldl' (+) 0 $ S.map (apply p2 . getArg) $ mkStream (None :. Region Nothing Nothing xs :. Region Nothing Nothing ys) (IxTsubword Outer) (Subword (i:.j))
---  b `seq` print b
 --  c <- S.foldl' (+) 0 $ S.map (\x -> x `deepseq` (apply p3 . getArg $ x)) $ mkStream (None :. region xs :. region ys :. region zs) (IxTsubword Outer) (Subword (i:.j))
 --  c `seq` print (j,c)
 --  d <- S.foldl' (+) 0 $ S.map (apply p4 . getArg) $ mkStream (None :. Region xs :. Region xs :. Region xs :. Region xs) (IxTsubword Outer) (Subword (i:.j))
@@ -95,8 +106,13 @@ testInner !k !xs !ys !zs !i !j = do
 --  e `seq` print (j,e)
 --  e <- S.foldl' (+) 0 $ S.map (apply fcrrc . getArg) $ mkStream (None :. Chr xs :. Region ys :. Region zs :. Chr xs) (IxTsubword Outer) (Subword (i:.j))
 --  e `seq` print (j,e)
-  f <- S.foldl' (+) 0 $ S.map (apply (\a b c d -> a+b+c+d) . getArg) $ mkStream (None :. mtable mxs :. mtable mys :. mtable mzs :. mtable mxs) (IxTsubword Outer) (Subword (i:.j))
-  f `seq` print (j,f)
+--  f <- S.foldl' (+) 0 $ S.map (apply (\a b c d -> a+b+c+d) . getArg) $ mkStream (None :. mtable mxs :. mtable mys :. mtable mzs :. mtable mxs) (IxTsubword Outer) (Subword (i:.j))
+--  f `seq` print (j,f)
+-- NEW NEW NEW
+--  a <- VU.unsafeLast <<< region xs ... S.foldl' (+) 0 $ subword i j
+--  a `seq` print a
+  b <- p2 <<< region xs % region ys ... S.foldl' (+) 0 $ subword i j
+  b `seq` print b
   return 0
 {-# NOINLINE testInner #-}
 

@@ -68,27 +68,39 @@ instance
   mkStream (ss:.reg) ox ix = (reg,ox,ix,ox') `deepseq` S.flatten mk step Unknown $ mkStream ss ox' ix where
     (ox',_) = convT reg ox ix
     mk y
-      | (IxTsubword Outer) <- ox = {- (y,l,r) `deepseq` -} return (y:.l:.r)
-      | otherwise                = {- (y,l)   `deepseq` -} return (y:.l:.l)
-      where l = getIxP y
-            r = toR    ix
+      | (IxTsubword Outer) <- ox = return (y:.l:.r)
+      | otherwise                = return (y:.l:.r)
+      where l = getIxP y -- this is the left boundary of the current symbol
+            r = initP reg ox ix (getIxP y) -- the right boundary depends on certain conditions checked in Next
     step (y:.l:.r)
       | r `leftOfR` ix = do let r' = nextP reg ox ix l r
                             e <- getE reg l r
-                            {- (y,l,r,r',e) `deepseq` -}
                             return $ S.Yield (ElmRegion (y:.r:.e)) (y:.l:.r')
       | otherwise = return $ S.Done
     {-# INLINE mk #-}
     {-# INLINE step #-}
   {-# INLINE mkStream #-}
 
+-- |
+--
+-- TODO interplay of 'oir' and non-empty regions
+
 instance Next (Region e) Subword where
-  nextP _ (IxTsubword oir) (Subword (i:.j)) (IxPsubword k) (IxPsubword l)
+  initP (Region mi _ _) (IxTsubword oir) (Subword (i:.j)) (IxPsubword k)
+    | oir == Outer = IxPsubword $ j
+    | Just z <- mi = IxPsubword $ k+z
+    | otherwise    = IxPsubword $ k
+  nextP (Region _ ma _) (IxTsubword oir) (Subword (i:.j)) (IxPsubword k) (IxPsubword l)
     | oir == Outer = IxPsubword $ j+1
+    | Just z <- ma
+    , l-k>z        = IxPsubword $ j+1
     | otherwise    = IxPsubword $ l+1
   convT _ _ ix = (IxTsubword Inner, ix)
+  {-# INLINE initP #-}
   {-# INLINE nextP #-}
   {-# INLINE convT #-}
+
+instance Build (Region e)
 
 deriving instance (Show (Elm x Subword), Show e,VU.Unbox e) => Show (Elm (x:.Region e) Subword)
 

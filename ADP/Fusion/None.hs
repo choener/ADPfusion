@@ -14,7 +14,7 @@ import qualified Data.Vector.Fusion.Stream.Monadic as S
 
 import ADP.Fusion.Classes
 
-
+{-
 
 data None = None
 
@@ -50,4 +50,4 @@ instance NFData (Elm None (Z :. (Int :. Int))) where
 instance NFData (Elm None Z) where
   rnf (Enone i) = rnf i
 -}
-
+-}
