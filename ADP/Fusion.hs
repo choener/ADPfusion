@@ -111,8 +111,10 @@ testInner !k !xs !ys !zs !i !j = do
 -- NEW NEW NEW
 --  a <- VU.unsafeLast <<< region xs ... S.foldl' (+) 0 $ subword i j
 --  a `seq` print a
-  b <- p2 <<< region xs % region ys ... S.foldl' (+) 0 $ subword i j
-  b `seq` print b
+--  b <- p2 <<< region xs % region ys ... S.foldl' (+) 0 $ subword i j
+--  b `seq` print b
+  f <- (\a b c d -> a+b+c+d) <<< mtable mxs % mtable mys % mtable mzs % mtable mxs ... S.foldl' (+) 0 $ subword i j
+  f `seq` print (j,f)
   return 0
 {-# NOINLINE testInner #-}
 
