@@ -49,7 +49,9 @@ class StreamElm x i where
   data Elm x i :: *
   -- | the argument stack for function application
   type Arg x   :: *
-  -- | get the "right" index part of the element we are parsing
+  -- | get the "right" index part of the element we have created. Typically
+  -- used in mkStream to get the right-most index of the left part of the
+  -- production we are in
   getIxP :: Elm x i -> IxP i
   -- | get the arguments as an argument stack
   getArg :: Elm x i -> Arg x
@@ -57,6 +59,8 @@ class StreamElm x i where
 -- | Create a stream 
 
 class (Monad m) => MkStream m x i where
+  -- | Create a stream from a symbol 'x', the type 'IxT i' of the index (outer
+  -- / inner / special), and the index 'i'.
   mkStream :: x -> IxT i -> i -> Stream m (Elm x i)
 
 -- | Convert 'OIR' and calculate successor indices.
@@ -66,7 +70,21 @@ class (Monad m) => MkStream m x i where
 -- abstraction.
 
 class Next x i where
+  -- | Create the initial index to start with. If we have, say, a non-empty
+  -- table, it will advance the initial index by one.
+  initP :: x -> IxT i -> i -> IxP i -> ixP i
+  -- | Given the symbol 'x', the index type 'IxT i', the global index 'i', and
+  -- the left and right constraints of our local subword 'IxP i', create the
+  -- next step. This basically moves our index by one.
   nextP :: x -> IxT i -> i -> IxP i -> IxP i -> IxP i
+  -- | More complicated stopping function. Stopping depends on symbol and
+  -- index.
+  --
+  -- TODO should replace 'leftOfR'
+  doneP :: x -> IxT i -> i -> IxP i -> Bool
+  -- | Convert the index type and maybe change the index itself. Used by, for
+  -- example, the single-character parser to reduce the right-most index in 'i'
+  -- by one.
   convT :: x -> IxT i -> i -> (IxT i, i)
 
 -- | index calculations.
@@ -80,11 +98,19 @@ class Next x i where
 -- symbol in a production rule.
 
 class Index i where
+  -- | Partial index. Is the left or right "border" of an index 'i'.
   data IxP i :: *
+  -- | The type of an index. Wraps 'OIR' for each dimension.
   data IxT i :: *
+  -- | Extracts the left border of an index.
   toL :: i -> IxP i
+  -- | Extracts the right border of an index.
   toR :: i -> IxP i
+  -- | Compose two partial indices into one complete one.
   from :: IxP i -> IxP i -> i
+  -- | Ask if a partial index is to the left of the right part of an index.
+  --
+  -- TODO maybe "leftOfR :: IxP i -> IxP i -> Bool" ?
   leftOfR :: IxP i -> i -> Bool
 
 -- | Standard cases on how 'mkStream' can be restricted. In the 'Outer' case,
@@ -102,15 +128,19 @@ data OIR
 instance NFData OIR where
   rnf !x = ()
 
--- | Access an element, given partial indices.
+-- | Access an element, given partial indices. Note that we return in a monad.
 
 class (Monad m) => Element m x i where
+  -- | The type of the element of 'x' that we return.
   type E x :: *
+  -- | Get the element given symbol, and two partial indices.
   getE :: x -> IxP i -> IxP i -> m (E x)
 
 -- | A class handling terminal elements. In the multi-dimensional case,
 -- terminal symbols are much more complex as each individual element could be
 -- constrained, steps differently, or more.
+--
+-- TODO requires overhaul!
 
 class (Monad m) => TermElement m x i where
   type TermElm x :: *
