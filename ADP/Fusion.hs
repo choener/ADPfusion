@@ -29,7 +29,6 @@ import qualified Data.PrimitiveArray.Zero as PA
 import ADP.Fusion.Apply
 import ADP.Fusion.Chr
 import ADP.Fusion.Classes
---import ADP.Fusion.None
 import ADP.Fusion.Region
 import ADP.Fusion.Table
 --import ADP.Fusion.Term
@@ -37,30 +36,39 @@ import ADP.Fusion.Table
 import Debug.Trace
 
 
+
+-- | Apply a function to symbols on the RHS of a production rule. Builds the
+-- stack of symbols from 'xs' using 'build', then hands this stack to
+-- 'mkStream' together with the initial 'iniT' telling 'mkStream' that we are
+-- in the "outer" position. Once the stream has been created, we 'S.map'
+-- 'getArg' to get just the arguments in the stack, and finally 'apply' the
+-- function 'f'.
+
 infixl 8 <<<
 (<<<) f xs = S.map (apply f . getArg) . mkStream (build xs) initT
 {-# INLINE (<<<) #-}
 
-{-
-(<<<) :: (Monad m, MkElm x i, Apply (Arg x -> r))
-      => Fun (Arg x -> r)
-      -> S.Stream m (Elm x i)
-      -> S.Stream m (Elm x i :. r)
-
--}
+-- | Combine two RHSs to give a choice between parses.
 
 infixl 7 |||
 (|||) xs ys = \ij -> xs ij S.++ ys ij
 {-# INLINE (|||) #-}
 
+-- | Applies the objective function 'h' to a stream 's'. The objective function
+-- reduces the stream to a single optimal value (or some vector of co-optimal
+-- things).
 
 infixl 6 ...
 (...) s h = h . s
 {-# INLINE (...) #-}
 
+-- | Separator between RHS symbols.
+
 infixl 9 ~~
 (~~) = (:.)
 {-# INLINE (~~) #-}
+
+-- | This separator looks much paper "on paper" and is not widely used otherwise.
 
 infixl 9 %
 (%) = (:.)

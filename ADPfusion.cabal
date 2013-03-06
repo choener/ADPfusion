@@ -144,7 +144,8 @@ library
     primitive      >= 0.5   ,
     repa           >= 3.2   ,
     vector         >= 0.10  ,
-    PrimitiveArray == 0.5.*
+    QuickCheck     >= 2.5
+--    PrimitiveArray == 0.5.*
   exposed-modules:
     ADP.Fusion
     ADP.Fusion.Apply
@@ -154,6 +155,7 @@ library
     ADP.Fusion.None
     ADP.Fusion.Region
     ADP.Fusion.Table
+    Tests.QuickCheck
 
   ghc-options:
     -O2 -funbox-strict-fields
