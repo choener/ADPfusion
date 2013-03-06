@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -5,17 +6,22 @@
 module Tests.QuickCheck where
 
 import Control.Applicative
-import Test.QuickCheck
-import Test.QuickCheck.All
-import qualified Data.Vector.Fusion.Stream as S
-import qualified Data.Vector.Unboxed as VU
 import Data.Array.Repa.Index
 import Data.Array.Repa.Shape
 import Debug.Trace
+import qualified Data.Vector.Fusion.Stream as S
+import qualified Data.Vector.Fusion.Stream.Monadic as SM
+import qualified Data.Vector.Unboxed as VU
+import Test.QuickCheck
+import Test.QuickCheck.All
+import Test.QuickCheck.Monadic
 
 import Data.Array.Repa.Index.Subword
+import qualified Data.PrimitiveArray as PA
+import qualified Data.PrimitiveArray.Zero as PA
 
 import ADP.Fusion
+import ADP.Fusion.Table
 import ADP.Fusion.Chr
 import ADP.Fusion.Classes
 import ADP.Fusion.Region
@@ -84,9 +90,48 @@ prop_CRCRC sw@(Subword (i:.j)) = zs == ls where
          , xs VU.! (j-1)
          ) | k <- [i+1 .. j-2] ]
 
+-- |
+
+prop_Mt sw@(Subword (i:.j)) = monadicIO $ do
+    mxs :: (PA.MU IO (Z:.Subword) Int) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
+    let mt = mtable mxs
+    zs <- run $ id <<< mt ... SM.toList $ sw
+    ls <- run $ sequence $ [(PA.readM mxs (Z:.sw)) | i<=j]
+    assert $ zs == ls
+
+prop_MtMt sw@(Subword (i:.j)) = monadicIO $ do
+    mxs :: (PA.MU IO (Z:.Subword) Int) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
+    let mt = mtable mxs
+    zs <- run $ (,) <<< mt % mt ... SM.toList $ sw
+    ls <- run $ sequence $ [(PA.readM mxs (Z:.subword i k)) >>= \a -> PA.readM mxs (Z:.subword k j) >>= \b -> return (a,b) | k <- [i..j]]
+    assert $ zs == ls
+
+prop_CMtCMtC sw@(Subword (i:.j)) = monadicIO $ do
+    mxs :: (PA.MU IO (Z:.Subword) Int) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
+    let mt = mtable mxs
+    zs <- run $ (,,,,) <<< Chr xs % mt % Chr xs % mt % Chr xs ... SM.toList $ sw
+    ls <- run $ sequence $ [ (PA.readM mxs (Z:.subword (i+1) k)) >>=
+                            \a -> PA.readM mxs (Z:.subword (k+1) (j-1)) >>=
+                            \b -> return ( xs VU.! i
+                                         , a
+                                         , xs VU.! k
+                                         , b
+                                         , xs VU.! (j-1)
+                                         )
+                           | k <- [i+1..j-2]]
+    assert $ zs == ls
+
+
+
+-- * helper functions and stuff
+
 -- | Helper function to create non-specialized regions
 
 region = Region Nothing Nothing
+
+-- |
+
+mtable xs = MTable False xs
 
 -- | data set. Can be made fixed as the maximal subword size is statically known!
 
