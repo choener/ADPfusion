@@ -68,7 +68,7 @@ instance
   mkStream (ss:.reg) ox ix = (reg,ox,ix,ox') `deepseq` S.flatten mk step Unknown $ mkStream ss ox' ix where
     (ox',_) = convT reg ox ix
     mk y
-      | (IxTsubword Outer) <- ox = return (y:.l:.r)
+--      | (IxTsubword Outer) <- ox = return (y:.l:.r)
       | otherwise                = return (y:.l:.r)
       where l = getIxP y -- this is the left boundary of the current symbol
             r = initP reg ox ix (getIxP y) -- the right boundary depends on certain conditions checked in Next
@@ -87,6 +87,7 @@ instance
 
 instance Next (Region e) Subword where
   initP (Region mi _ _) (IxTsubword oir) (Subword (i:.j)) (IxPsubword k)
+    | i>j          = IxPsubword $ j+1
     | oir == Outer = IxPsubword $ j
     | Just z <- mi = IxPsubword $ k+z
     | otherwise    = IxPsubword $ k

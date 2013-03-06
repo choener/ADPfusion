@@ -1,3 +1,4 @@
+{-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -58,6 +59,20 @@ instance
   , StreamElm ss Subword
   , MkStream m ss Subword
   ) => MkStream m (ss:.Chr e) Subword where
+  mkStream (ss:.c) ox ix = S.flatten mk step Unknown $ mkStream ss ox' ix' where
+    (ox',ix') = convT c ox ix
+    mk y = do let l = getIxP y
+              let r = initP c ox ix l
+              return (y:.l:.r)
+    step (y:.l:.r)
+      | r `leftOfR` ix = do let r' = nextP c ox ix l r
+                            e <- getE c l r
+                            return $ S.Yield (ElmChr (y:.r:.e)) (y:.l:.r')
+      | otherwise       = return $ S.Done
+    {-# INLINE mk #-}
+    {-# INLINE step #-}
+  {-# INLINE mkStream #-}
+  {-
   mkStream (ss:.c) ox ix = S.mapM step $ mkStream ss ox' ix' where
     (ox',ix') = convT c ox ix
     step y = do
@@ -69,16 +84,18 @@ instance
       return $ ElmChr (y:.r:.e)
     {-# INLINE step #-}
   {-# INLINE mkStream #-}
+-}
 
 instance Next (Chr e) Subword where
   initP _ (IxTsubword oir) (Subword (i:.j)) (IxPsubword k)
-    | otherwise = undefined
+    | oir == Outer && k+1 ==j = IxPsubword $ j    -- rightmost position, (i,i+1) parse
+    | oir == Outer            = IxPsubword $ j+1  -- wrong size of region
+    | otherwise = IxPsubword $ k+1                -- normal, inner behaviour
   nextP _ (IxTsubword oir) (Subword (i:.j)) (IxPsubword k) (IxPsubword l)
-    | oir == Outer = IxPsubword $ j+1
-    | otherwise    = IxPsubword $ l+1
+    | otherwise    = IxPsubword $ j+1
   convT _ ox@(IxTsubword oir) ix@(Subword (i:.j))
     | oir == Outer = (IxTsubword Outer, Subword (i:.j-1))
-    | otherwise    = (ox, ix)
+    | otherwise    = (ox, Subword (i:.j-1))
   {-# INLINE nextP #-}
   {-# INLINE convT #-}
 
