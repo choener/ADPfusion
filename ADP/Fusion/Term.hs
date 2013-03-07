@@ -16,11 +16,105 @@ import Data.Vector.Fusion.Stream.Size
 import ADP.Fusion.Classes
 import ADP.Fusion.Region
 import ADP.Fusion.None
+import ADP.Fusion.Chr
 
 
 
 data Term ts = Term ts
 data T = T
+
+instance (Monad m) => Element m (Term ts) i where
+  type E (Term ts) = TermElm ts
+
+instance
+  ( StreamElm x i
+  ) => StreamElm (x:.Term ts) i where
+  data Elm (x:.Term ts) i = ElmTerm (Elm x i :. IxP i :. E (Term ts))
+  type Arg (x:.Term ts)   = Arg x :. E (Term ts)
+  getIxP (ElmTerm (_:.k:._)) = k
+  getArg (ElmTerm (x:.k:.t)) = getArg x :. t
+  {-# INLINE getIxP #-}
+  {-# INLINE getArg #-}
+
+-- |
+--
+-- TODO 'MkStream' for multidimensional terms always uses the 'flatten' method
+-- for now. Doing the faster 'mapM' version is very complicated and requires
+-- specialized instances.
+
+instance
+  ( Monad m
+  , TermElement m ts i
+  , MkStream m ss i, Next (Term ts) i, StreamElm ss i
+  ) => MkStream m (ss:.Term ts) i where
+  mkStreamO (ss:.t@(Term ts)) ox ix = S.flatten mkT stepT Unknown $ S.mapM step $ mkStreamI ss ox' ix' where
+    (ox',ix') = convT t ox ix
+    mkT (y:.l:.r) = do k <- initTI ts l r
+                       return (y:.l:.r:.k)
+    stepT (y:.l:.r:.k)
+      | doneTI k = return $ S.Done -- TODO stepped through all term possibilities
+      | otherwise = do
+          k' <- nextTI ts l r k
+          e <- getTI ts l r k
+          return $ S.Yield (ElmTerm (y:.r:.e)) (y:.l:.r:.k')
+    step y = return (y:.l:.r) where
+      l = getIxP y
+      r = initP t ox ix (getIxP y)
+    {-# INLINE mkT #-}
+    {-# INLINE stepT #-}
+    {-# INLINE step #-}
+  {-
+    mk y = return (y:.l:.r) where
+      l = getIxP y
+      r = initP t ox ix (getIxP y)
+    step (y:.l:.r)
+      | r `leftOfR` ix = 
+    -}
+  {-# INLINE mkStreamO #-}
+  mkStreamI = mkStreamO
+  {-# INLINE mkStreamI #-}
+
+instance Build (Term ts)
+
+
+instance
+  ( Monad m
+  ) => TermElement m T Z where
+  type TermElm T = Z
+  data TermIx m T Z = TIxZ Bool
+  initTI T IxPz IxPz = return $ TIxZ True
+  doneTI (TIxZ b) = not b
+  getTI T IxPz IxPz _ = return Z
+  nextTI _ _ _ _ = return $ TIxZ False
+
+instance
+  ( Monad m
+  , TermElement m ts is
+  ) => TermElement m (ts:.Chr e) (is:.i) where
+  type TermElm (ts:.Chr e) = TermElm ts :. e
+
+instance Next (Term (ts:.t)) (is:.i) where
+
+instance Index (is:.i) where
+
+instance Index Z where
+  data IxP Z = IxPz
+  data IxT Z = IxTz
+  toL _ = IxPz
+
+instance Next (Term T) Z where
+  initP _ _ _ _ = IxPz
+--  suc T _ Z (IsZ _)  !x = IsZ False
+--  convT _ (IsTz Z) = IsTz Z
+--  {-# INLINE suc #-}
+--  {-# INLINE convT #-}
+
+instance NFData (IxP Z) where
+
+instance NFData (IxP (is:.i)) where
+
+
+{-
 
 instance (Monad m) => TEE m T Z where
   type TE T = Z
@@ -116,3 +210,5 @@ instance NFData (Elm ((None :. Term (T :. Region Int)) :. Term (T :. Region Int)
 instance NFData (Elm None ((Z :. (Int :. Int)) :. (Int :. Int))) where
 
 instance NFData ((Z :. VU.Vector Int) :. VU.Vector Int) where
+
+-}

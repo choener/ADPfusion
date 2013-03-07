@@ -31,7 +31,7 @@ import ADP.Fusion.Chr
 import ADP.Fusion.Classes
 import ADP.Fusion.Region
 import ADP.Fusion.Table
---import ADP.Fusion.Term
+import ADP.Fusion.Term
 
 import Debug.Trace
 

@@ -1,3 +1,4 @@
+{-# LANGUAGE OverlappingInstances #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -149,14 +150,19 @@ class (Monad m) => Element m x i where
 
 class (Monad m) => TermElement m x i where
   type TermElm x :: *
-  data TermIx x i m :: *
+  data TermIx m x i :: *
+  initTI :: x -> IxP i -> IxP i -> m (TermIx m x i)
+  doneTI :: TermIx m x i -> Bool
+  nextTI :: x -> IxP i -> IxP i -> TermIx m x i -> m (TermIx m x i)
+  getTI  :: x -> IxP i -> IxP i -> TermIx m x i -> m (TermElm x)
+  {-
   te :: x -> IxP i -> IxP i -> S.Stream m (TermElm x)
   ti :: x -> IxP i -> IxP i -> (TermIx x i m)
   tisuc :: x -> IxP i -> IxP i -> TermIx x i m -> (TermIx x i m)
   tifin :: TermIx x i m -> Bool
   tiget :: x -> IxP i -> IxP i -> TermIx x i m -> m (TermElm x)
   tiOne :: x -> IxP i -> IxP i -> m (TermElm x)
-
+  -}
 
 
 
@@ -201,7 +207,13 @@ instance Build x => Build (x:.y) where
   build (x:.y) = build x :. y
   {-# INLINE build #-}
 
+
+
+-- | invisible left-most object in production rules.
+
 data None = None
+
+
 
 instance
   ( NFData (IxP i)
@@ -212,6 +224,8 @@ instance
   getArg (ElmNone i) = Z -- i `deepseq` Z
   {-# INLINE getIxP #-}
   {-# INLINE getArg #-}
+
+-- ** Specialized 'MkStream' for 1-dim subwords indexing, or vanilla CFGs on one tape.
 
 instance (Monad m) => MkStream m None Subword where
   mkStreamO None ox ix@(Subword (i:.j)) = S.unfoldr step (i==j) where
@@ -226,6 +240,19 @@ instance (Monad m) => MkStream m None Subword where
       | otherwise = Nothing
     {-# INLINE step #-}
   {-# INLINE mkStreamI #-}
+
+-- ** General instance for high-dimensional grammars. (OverlappingInstances)
+
+instance (Monad m, Index i) => MkStream m None i where
+  mkStreamO = error "implement me O"
+  mkStreamI None ox ix = S.unfoldr step True where
+    step b
+      | b         = Just (ElmNone $ toL ix, False)
+      | otherwise = Nothing
+    {-# INLINE step #-}
+  {-# INLINE mkStreamI #-}
+
+-- ** NFData instances
 
 instance (NFData (IxP i)) => NFData (Elm None i) where
   rnf (ElmNone i) = rnf i

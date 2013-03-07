@@ -8,6 +8,7 @@ module Tests.QuickCheck where
 import Control.Applicative
 import Data.Array.Repa.Index
 import Data.Array.Repa.Shape
+import Data.Array.Repa.Arbitrary
 import Debug.Trace
 import qualified Data.Vector.Fusion.Stream as S
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
@@ -21,10 +22,11 @@ import qualified Data.PrimitiveArray as PA
 import qualified Data.PrimitiveArray.Zero as PA
 
 import ADP.Fusion
-import ADP.Fusion.Table as T
 import ADP.Fusion.Chr
 import ADP.Fusion.Classes
 import ADP.Fusion.Region
+import ADP.Fusion.Table
+import ADP.Fusion.Term
 
 -- | Check if a single region returns the correct result (namely a slice from
 -- the input).
@@ -159,7 +161,17 @@ prop_CMnCMnC sw@(Subword (i:.j)) = monadicIO $ do
                            | k <- [i+2..j-3]]
     assert $ zs == ls
 
+-- | Our first multi-tape terminal ":-)"
 
+prop_Tt ix@Z = zs == ls where
+  zs = id <<< Term T ... S.toList $ ix
+  ls = [ Z ]
+
+-- | Increase dimension by 1.
+
+prop_Tc ix@(Z:.Subword(i:.j)) = zs == ls where
+  zs = id <<< Term (T:.Chr xs) ... S.toList $ ix
+  ls = [ (Z:.xs VU.! i) | i+1==j ]
 
 -- * helper functions and stuff
 

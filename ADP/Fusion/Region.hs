@@ -40,7 +40,7 @@ instance (Monad m, VU.Unbox e) => Element m (Region e) Subword where
   getE (Region _ _ ve) (IxPsubword l) (IxPsubword r) =
     let
       e = VU.unsafeSlice l (r-l) ve
-    in  {- (ve,l,r,e) `deepseq` -} assert (l<=r && l>=0 && VU.length ve > r) $ return e
+    in  assert (l<=r && l>=0 && VU.length ve > r) $ return e
   {-# INLINE getE #-}
 
 -- |
@@ -52,7 +52,7 @@ instance
   data Elm (x:.Region e) i  = ElmRegion (Elm x i :. IxP i :. E (Region e))
   type Arg (x:.Region e)    = Arg x :. E (Region e)
   getIxP (ElmRegion (_:.k:._)) = k
-  getArg (ElmRegion (x:.k:.t)) = let a = getArg x in {- a `deepseq` -} a :. t
+  getArg (ElmRegion (x:.k:.t)) = getArg x :. t
   {-# INLINE getIxP #-}
   {-# INLINE getArg #-}
 
@@ -75,8 +75,7 @@ instance
   {-# INLINE mkStreamO #-}
   mkStreamI (ss:.reg) ox ix = S.flatten mk step Unknown $ mkStreamI ss ox' ix where
     (ox',_) = convT reg ox ix
-    mk y
-      | otherwise                = return (y:.l:.r)
+    mk y = return (y:.l:.r)
       where l = getIxP y -- this is the left boundary of the current symbol
             r = initP reg ox ix (getIxP y) -- the right boundary depends on certain conditions checked in Next
     step (y:.l:.r)
@@ -116,6 +115,14 @@ instance NFData x => NFData (x:.Region e) where
   rnf (x:.Region a b ve) = {- (a,b) `deepseq` -} rnf x `seq` rnf ve
 
 instance (NFData x, VU.Unbox e) => NFData (Elm (x:.Region e) Subword) where
+
+
+
+
+
+
+
+
 
 {-
 instance ( Monad m, Index i, NFData (Is i)
