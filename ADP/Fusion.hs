@@ -74,6 +74,8 @@ infixl 9 %
 (%) = (:.)
 {-# INLINE (%) #-}
 
+{-
+
 -- * testing
 
 test :: Int -> IO Int
@@ -126,12 +128,16 @@ testInner !k !xs !ys !zs !i !j = do
   return 0
 {-# NOINLINE testInner #-}
 
+-}
+
 instance NFData Z
 instance NFData z => NFData (z:.VU.Vector e) where
   rnf (z:.ve) = rnf z `seq` rnf ve
 
 instance NFData z => NFData (z:.Int) where
   rnf (z:.i) = rnf z `seq` rnf i
+
+{-
 
 fcrrc a b c d = a + VU.unsafeLast b + VU.unsafeHead c + d
 
@@ -145,4 +151,6 @@ p3 a b c = (a,b,c) `deepseq` (VU.unsafeLast a + VU.unsafeLast b + VU.unsafeHead 
 
 p4 a b c d = (a,b,c,d) `deepseq` (VU.unsafeLast a + VU.unsafeLast b + VU.unsafeLast c + VU.unsafeHead d)
 {-# INLINE p4 #-}
+
+-}
 

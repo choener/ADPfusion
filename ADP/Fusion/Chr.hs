@@ -35,7 +35,7 @@ instance
   type E (Chr e) = e
   getE (Chr ve) (IxPsubword l) (IxPsubword r) =
     let e = VU.unsafeIndex ve l
-    in  (ve,l,r,e) `deepseq` assert (l<=r && l>=0 && VU.length ve > r) $ return e
+    in  {- (ve,l,r,e) `deepseq` -} assert (l<=r && l>=0 && VU.length ve > r) $ return e
   {-# INLINE getE #-}
 
 instance
@@ -59,7 +59,7 @@ instance
   , StreamElm ss Subword
   , MkStream m ss Subword
   ) => MkStream m (ss:.Chr e) Subword where
-  mkStream (ss:.c) ox ix = S.flatten mk step Unknown $ mkStream ss ox' ix' where
+  mkStream (ss:.c) ox ix = {- (c,ox,ix,ox',ix') `deepseq` -} S.flatten mk step Unknown $ mkStream ss ox' ix' where
     (ox',ix') = convT c ox ix
     mk y = do let l = getIxP y
               let r = initP c ox ix l

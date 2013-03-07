@@ -264,8 +264,14 @@ instance
   {-# INLINE getIxP #-}
   {-# INLINE getArg #-}
 
-instance (NFData i, NFData (IxP i), NFData (IxT i), Index i, Monad m) => MkStream m None i where
-  mkStream None ox ix = let k = toL ix in (ox,ix,k) `deepseq` S.singleton (ElmNone k)
+instance (Monad m) => MkStream m None Subword where
+--  mkStream None ox ix = let k = toL ix in (ox,ix,k) `deepseq` S.singleton (ElmNone k)
+  mkStream None ox ix@(Subword (i:.j)) = (ox,ix,k) `deepseq` S.unfoldr step (i<=j) where
+    k = toL ix
+    step b
+      | b = Just (ElmNone k, False)
+      | otherwise = Nothing
+    {-# INLINE step #-}
   {-# INLINE mkStream #-}
 
 instance (NFData (IxP i)) => NFData (Elm None i) where

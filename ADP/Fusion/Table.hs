@@ -67,24 +67,42 @@ instance
 instance
   ( Monad m
   , PA.MPAO m arr, PA.Sh arr ~ (Z:.Subword), PA.MC arr
+  , NFData (PA.E arr), NFData (Elm ss Subword)
   , Next (MTable (PA.MutArr m arr)) Subword
   , StreamElm ss Subword
   , MkStream m ss Subword
   , Show (PA.E arr)
   ) => MkStream m (ss:.MTable (PA.MutArr m arr)) Subword where
+  mkStream (ss:.mtbl) ox@(IxTsubword Outer) ix = S.mapM step $ mkStream ss ox' ix' where
+    (ox',ix') = convT mtbl ox ix
+    step y = do
+      let l = getIxP y
+      let r = toR ix
+      e <- getE mtbl l r
+      (y,r,e) `deepseq` return (ElmMTable (y:.r:.e))
+    {-# INLINE step #-}
   mkStream (ss:.mtbl) ox ix = (mtbl,ox,ix,ox') `deepseq` S.flatten mk step Unknown $ mkStream ss ox' ix' where
     (ox',ix') = convT mtbl ox ix
-    mk y = do let l = getIxP y
-              let r = initP mtbl ox ix l
-              return (y:.l:.r)
-    step (y:.l:.r)
+    mk (!y) = do let l = getIxP y
+                 let r = initP mtbl ox ix l
+                 (y,l,r) `deepseq` return (y:.l:.r)
+    step ((!y):.(!l):.(!r))
       | r `leftOfR` ix = do let r' = nextP mtbl ox ix l r
                             e <- getE mtbl l r
-                            return $ S.Yield (ElmMTable (y:.r:.e)) (y:.l:.r')
+                            (y,l,r,r',e) `deepseq` return $ S.Yield (ElmMTable (y:.r:.e)) (y:.l:.r')
       | otherwise = return $ S.Done
     {-# INLINE mk #-}
     {-# INLINE step #-}
   {-# INLINE mkStream #-}
+
+instance (NFData (Elm x i), NFData (IxP i), NFData (PA.E arr)) => NFData (Elm (x:.MTable (PA.MutArr m arr)) i) where
+  rnf (ElmMTable (a:.b:.c)) = rnf a `seq` rnf b `seq` rnf c
+
+instance (NFData x, NFData arr) => NFData (x:.MTable arr) where
+  rnf (x:.MTable b arr) = rnf x `seq` rnf b `seq` rnf arr
+
+instance NFData TNE where
+  rnf (!x) = ()
 
 instance Next (MTable es) Subword where
   initP (MTable ne _) (IxTsubword oir) (Subword (i:.j)) (IxPsubword l)
@@ -93,11 +111,11 @@ instance Next (MTable es) Subword where
     | ne == Tsome  = IxPsubword $ l+1
     | otherwise    = IxPsubword $ l
   nextP (MTable ne _) (IxTsubword oir) (Subword (_:.j)) (IxPsubword l) (IxPsubword r)
-    | oir == Outer = IxPsubword $ j+1
     | otherwise    = IxPsubword $ r+1
   convT (MTable ne _) _ ix@(Subword (i:.j))
     | ne == Tmany = (IxTsubword Inner, ix)
     | otherwise   = (IxTsubword Inner, subword i (j-1))
+  {-# INLINE initP #-}
   {-# INLINE nextP #-}
   {-# INLINE convT #-}
 
@@ -105,3 +123,4 @@ instance Build (MTable e)
 
 instance NFData (PA.MutArr m arr) where
   rnf (!x) = ()
+

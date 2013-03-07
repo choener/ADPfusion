@@ -65,7 +65,7 @@ instance
   , Next (Region e) Subword, Index Subword
 --  , Show (Elm ss Subword), Show e
   ) => MkStream m (ss:.Region e) Subword where
-  mkStream (ss:.reg) ox ix = (reg,ox,ix,ox') `deepseq` S.flatten mk step Unknown $ mkStream ss ox' ix where
+  mkStream (ss:.reg) ox ix = {- (reg,ox,ix,ox') `deepseq` -} S.flatten mk step Unknown $ mkStream ss ox' ix where
     (ox',_) = convT reg ox ix
     mk y
 --      | (IxTsubword Outer) <- ox = return (y:.l:.r)
