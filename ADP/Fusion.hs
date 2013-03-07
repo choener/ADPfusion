@@ -95,7 +95,7 @@ testInner !k !xs !ys !zs !i !j = do
   (!mzs) :: (PA.MU IO (Z:.Subword) Int) <- PA.newWithM (Z:. Subword (0:.0)) (Z:. Subword (0:.k)) (3 :: Int)
   let region xs = Region Nothing Nothing xs
       {-# INLINE region #-}
-  let mtable xs = MTable False xs
+  let mtable xs = MTable Empty xs
 --  mapM_ (\(i,j,x) -> x >>= \x' -> print (i,j,x')) $ [ (i,j,PA.readM mxs (Z:.Subword (i:.j))) | i <- [0..k], j <- [i..k]]
 --  x <- return 1
 --  x <- S.length $ mkS None (IsTii (IsTz Z :. Outer)) (Z:.(i:.j))

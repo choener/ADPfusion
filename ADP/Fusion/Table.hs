@@ -35,8 +35,13 @@ import Debug.Trace
 -- TODO empty / non-empty stuff !
 
 data MTable es = MTable
-  !Bool   -- ^ allow empty table, that is return result for subword (i,i) ?
-  !es     -- ^ data
+  !NonEmpty   -- ^ allow empty table, that is return result for subword (i,i) ?
+  !es         -- ^ data
+
+data NonEmpty
+  = Empty
+  | NonEmpty
+  deriving (Eq,Ord,Show)
 
 instance (NFData es) => NFData (MTable es) where
   rnf (MTable b es) = b `seq` rnf es
@@ -67,17 +72,14 @@ instance
   , MkStream m ss Subword
   , Show (PA.E arr)
   ) => MkStream m (ss:.MTable (PA.MutArr m arr)) Subword where
-  mkStream (ss:.mtbl) ox ix = (mtbl,ox,ix,ox') `deepseq` S.flatten mk step Unknown $ mkStream ss ox' ix where
-    (ox',_) = convT mtbl ox ix
-    mk y
-      | (IxTsubword Outer) <- ox = return (y:.l:.r)
-      | otherwise                = return (y:.l:.l)
-      where l = getIxP y
-            r = toR    ix
+  mkStream (ss:.mtbl) ox ix = (mtbl,ox,ix,ox') `deepseq` S.flatten mk step Unknown $ mkStream ss ox' ix' where
+    (ox',ix') = convT mtbl ox ix
+    mk y = do let l = getIxP y
+              let r = initP mtbl ox ix l
+              return (y:.l:.r)
     step (y:.l:.r)
       | r `leftOfR` ix = do let r' = nextP mtbl ox ix l r
                             e <- getE mtbl l r
-                            {- traceShow (l,r,e) $ -}
                             return $ S.Yield (ElmMTable (y:.r:.e)) (y:.l:.r')
       | otherwise = return $ S.Done
     {-# INLINE mk #-}
@@ -85,10 +87,16 @@ instance
   {-# INLINE mkStream #-}
 
 instance Next (MTable es) Subword where
-  nextP _ (IxTsubword oir) (Subword (_:.j)) (IxPsubword _) (IxPsubword l)
+  initP (MTable ne _) (IxTsubword oir) (Subword (i:.j)) (IxPsubword l)
+    | oir == Outer   = IxPsubword $ j
+    | ne == NonEmpty = IxPsubword $ l+1
+    | otherwise      = IxPsubword $ l
+  nextP (MTable ne _) (IxTsubword oir) (Subword (_:.j)) (IxPsubword l) (IxPsubword r)
     | oir == Outer = IxPsubword $ j+1
-    | otherwise    = IxPsubword $ l+1
-  convT _ _ ix = (IxTsubword Inner, ix)
+    | otherwise    = IxPsubword $ r+1
+  convT (MTable ne _) _ ix@(Subword (i:.j))
+    | ne == Empty = (IxTsubword Inner, ix)
+    | otherwise   = (IxTsubword Inner, subword i (j-1))
   {-# INLINE nextP #-}
   {-# INLINE convT #-}
 

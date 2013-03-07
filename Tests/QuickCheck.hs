@@ -21,7 +21,7 @@ import qualified Data.PrimitiveArray as PA
 import qualified Data.PrimitiveArray.Zero as PA
 
 import ADP.Fusion
-import ADP.Fusion.Table
+import ADP.Fusion.Table as T
 import ADP.Fusion.Chr
 import ADP.Fusion.Classes
 import ADP.Fusion.Region
@@ -90,7 +90,7 @@ prop_CRCRC sw@(Subword (i:.j)) = zs == ls where
          , xs VU.! (j-1)
          ) | k <- [i+1 .. j-2] ]
 
--- |
+-- | A single mutable table should return one result.
 
 prop_Mt sw@(Subword (i:.j)) = monadicIO $ do
     mxs :: (PA.MU IO (Z:.Subword) Int) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
@@ -99,12 +99,16 @@ prop_Mt sw@(Subword (i:.j)) = monadicIO $ do
     ls <- run $ sequence $ [(PA.readM mxs (Z:.sw)) | i<=j]
     assert $ zs == ls
 
+-- | Two mutable tables. Basically like Region's.
+
 prop_MtMt sw@(Subword (i:.j)) = monadicIO $ do
     mxs :: (PA.MU IO (Z:.Subword) Int) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
     let mt = mtable mxs
     zs <- run $ (,) <<< mt % mt ... SM.toList $ sw
     ls <- run $ sequence $ [(PA.readM mxs (Z:.subword i k)) >>= \a -> PA.readM mxs (Z:.subword k j) >>= \b -> return (a,b) | k <- [i..j]]
     assert $ zs == ls
+
+-- | Just to make it more interesting, sprinkle in some 'Chr' symbols.
 
 prop_CMtCMtC sw@(Subword (i:.j)) = monadicIO $ do
     mxs :: (PA.MU IO (Z:.Subword) Int) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
@@ -121,6 +125,23 @@ prop_CMtCMtC sw@(Subword (i:.j)) = monadicIO $ do
                            | k <- [i+1..j-2]]
     assert $ zs == ls
 
+-- | And now with non-empty tables.
+
+prop_CMnCMnC sw@(Subword (i:.j)) = monadicIO $ do
+    mxs :: (PA.MU IO (Z:.Subword) Int) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
+    let mt = MTable T.NonEmpty mxs
+    zs <- run $ (,,,,) <<< Chr xs % mt % Chr xs % mt % Chr xs ... SM.toList $ sw
+    ls <- run $ sequence $ [ (PA.readM mxs (Z:.subword (i+1) k)) >>=
+                            \a -> PA.readM mxs (Z:.subword (k+1) (j-1)) >>=
+                            \b -> return ( xs VU.! i
+                                         , a
+                                         , xs VU.! k
+                                         , b
+                                         , xs VU.! (j-1)
+                                         )
+                           | k <- [i+2..j-3]]
+    assert $ zs == ls
+
 
 
 -- * helper functions and stuff
@@ -131,7 +152,7 @@ region = Region Nothing Nothing
 
 -- |
 
-mtable xs = MTable False xs
+mtable xs = MTable T.Empty xs
 
 -- | data set. Can be made fixed as the maximal subword size is statically known!
 

@@ -72,19 +72,6 @@ instance
     {-# INLINE mk #-}
     {-# INLINE step #-}
   {-# INLINE mkStream #-}
-  {-
-  mkStream (ss:.c) ox ix = S.mapM step $ mkStream ss ox' ix' where
-    (ox',ix') = convT c ox ix
-    step y = do
-      let l = getIxP y
-      let r = case ox of
-                IxTsubword Outer -> toR ix
-                _                -> nextP c ox ix l l
-      e <- getE c l r
-      return $ ElmChr (y:.r:.e)
-    {-# INLINE step #-}
-  {-# INLINE mkStream #-}
--}
 
 instance Next (Chr e) Subword where
   initP _ (IxTsubword oir) (Subword (i:.j)) (IxPsubword k)
