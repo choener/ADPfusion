@@ -67,7 +67,6 @@ prop_CRC sw@(Subword (i:.j)) = zs == ls
     zs = (,,) <<< Chr xs % region xs % Chr xs ... S.toList $ sw
     ls = [(xs VU.! i, VU.slice (i+1) (j-i-2) xs , xs VU.! (j-1)) |i+2<=j]
 
-
 -- | 2x Single-character parser bracketing regions.
 
 prop_CRRC sw@(Subword (i:.j)) = zs == ls
@@ -97,6 +96,24 @@ prop_Mt sw@(Subword (i:.j)) = monadicIO $ do
     let mt = mtable mxs
     zs <- run $ id <<< mt ... SM.toList $ sw
     ls <- run $ sequence $ [(PA.readM mxs (Z:.sw)) | i<=j]
+    assert $ zs == ls
+
+-- | table, then character.
+
+prop_MtC sw@(Subword (i:.j)) = monadicIO $ do
+    mxs :: (PA.MU IO (Z:.Subword) Int) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
+    let mt = mtable mxs
+    zs <- run $ (,) <<< mt % Chr xs ... SM.toList $ sw
+    ls <- run $ sequence $ [(PA.readM mxs (Z:.subword i (j-1))) >>= \a -> return (a,xs VU.! (j-1)) | i<j]
+    assert $ zs == ls
+
+-- | Character, then table.
+
+prop_CMt sw@(Subword (i:.j)) = monadicIO $ do
+    mxs :: (PA.MU IO (Z:.Subword) Int) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
+    let mt = mtable mxs
+    zs <- run $ (,) <<< Chr xs % mt ... SM.toList $ sw
+    ls <- run $ sequence $ [(PA.readM mxs (Z:.subword (i+1) j)) >>= \a -> return (xs VU.! i,a) | i<j]
     assert $ zs == ls
 
 -- | Two mutable tables. Basically like Region's.

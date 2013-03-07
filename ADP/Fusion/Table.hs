@@ -88,6 +88,7 @@ instance
 
 instance Next (MTable es) Subword where
   initP (MTable ne _) (IxTsubword oir) (Subword (i:.j)) (IxPsubword l)
+    | i>j          = IxPsubword $ j+1
     | oir == Outer = IxPsubword $ j
     | ne == Tsome  = IxPsubword $ l+1
     | otherwise    = IxPsubword $ l
