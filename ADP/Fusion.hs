@@ -45,7 +45,7 @@ import Debug.Trace
 -- function 'f'.
 
 infixl 8 <<<
-(<<<) f xs = S.map (apply f . getArg) . mkStream (build xs) initT
+(<<<) f xs = S.map (apply f . getArg) . mkStreamO (build xs) initT
 {-# INLINE (<<<) #-}
 
 -- | Combine two RHSs to give a choice between parses.

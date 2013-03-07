@@ -52,7 +52,17 @@ instance
   ( StreamElm ss Subword
   , MkStream m ss Subword
   ) => MkStream m (ss:.Empty) Subword where
-  mkStream (ss:.c) ox ix = S.mapM step $ mkStream ss ox' ix' where
+  mkStreamO (ss:.c) ox ix = S.mapM step $ mkStreamO ss ox' ix' where
+    (ox',ix') = convT c ox ix
+    step y = do
+      let l = getIxP y
+      let r = toR ix
+      e <- getE c l r
+      return (ElmEmpty (y:.r:.e))
+    {-# INLINE step #-}
+  {-# INLINE mkStreamO #-}
+  {-
+  mkStreamI (ss:.c) ox ix = S.mapM step $ mkStreamI ss ox' ix' where
     (ox',ix') = convT c ox ix
     step y = do
       let l = getIxP y
@@ -62,7 +72,8 @@ instance
       e <- getE c l r
       return $ ElmEmpty (y:.r:.e)
     {-# INLINE step #-}
-  {-# INLINE mkStream #-}
+  {-# INLINE mkStreamI #-}
+-}
 
 instance Next Empty Subword where
   initP _ (IxTsubword oir) (Subword (i:.j)) (IxPsubword k)
@@ -71,7 +82,7 @@ instance Next Empty Subword where
     | oir == Outer = IxPsubword $ j+1
     | otherwise    = IxPsubword $ l+1
   convT _ ox@(IxTsubword oir) ix@(Subword (i:.j))
-    | oir == Outer = (IxTsubword Outer, Subword (i:.j-1))
+    | oir == Outer = (IxTsubword Outer, Subword (i:.j))
     | otherwise    = (ox, ix)
   {-# INLINE nextP #-}
   {-# INLINE convT #-}

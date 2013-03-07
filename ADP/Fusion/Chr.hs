@@ -59,7 +59,16 @@ instance
   , StreamElm ss Subword
   , MkStream m ss Subword
   ) => MkStream m (ss:.Chr e) Subword where
-  mkStream (ss:.c) ox ix = {- (c,ox,ix,ox',ix') `deepseq` -} S.flatten mk step Unknown $ mkStream ss ox' ix' where
+  mkStreamO (ss:.c) ox@(IxTsubword Outer) ix = S.mapM step $ mkStreamO ss ox' ix' where
+    (ox',ix') = convT c ox ix
+    step y = do
+      let l = getIxP y
+      let r = toR ix
+      e <- getE c l r
+      return (ElmChr (y:.r:.e))
+    {-# INLINE step #-}
+  {-# INLINE mkStreamO #-}
+  mkStreamI (ss:.c) ox ix = S.flatten mk step Unknown $ mkStreamI ss ox' ix' where
     (ox',ix') = convT c ox ix
     mk y = do let l = getIxP y
               let r = initP c ox ix l
@@ -71,7 +80,7 @@ instance
       | otherwise       = return $ S.Done
     {-# INLINE mk #-}
     {-# INLINE step #-}
-  {-# INLINE mkStream #-}
+  {-# INLINE mkStreamI #-}
 
 instance Next (Chr e) Subword where
   initP _ (IxTsubword oir) (Subword (i:.j)) (IxPsubword k)

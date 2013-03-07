@@ -62,7 +62,9 @@ class StreamElm x i where
 class (Monad m) => MkStream m x i where
   -- | Create a stream from a symbol 'x', the type 'IxT i' of the index (outer
   -- / inner / special), and the index 'i'.
-  mkStream :: x -> IxT i -> i -> Stream m (Elm x i)
+  mkStreamI :: x -> IxT i -> i -> Stream m (Elm x i)
+  -- | 
+  mkStreamO :: x -> IxT i -> i -> Stream m (Elm x i)
 
 -- | Convert 'OIR' and calculate successor indices.
 --
@@ -184,59 +186,6 @@ deriving instance Eq (IxP Subword)
 
 deriving instance Show (IxT Subword)
 
-{-
-
--- * basic instances
-
-instance Index Z where
-  newtype IxP Z = IxPZ Bool
-  newtype IxPT Z = IxPTz Z
-  toL Z = IxPZ True
-  toR Z = IxPZ True
-  from _ _ = Z
-  leftOfR (IxPZ ft) Z = ft
-  {-# INLINE toL #-}
-  {-# INLINE toR #-}
-  {-# INLINE from #-}
-  {-# INLINE leftOfR #-}
-
-instance NFData Z where
-  rnf Z = ()
-
-instance NFData (IxP Z) where
-  rnf (IxPZ b) = rnf b
-
-instance Index z => Index (z:.Int) where
-  newtype IxP (z:.Int) = IxPInt (IxP z:.Int)
-  newtype IxPT (z:.Int) = IxPTint (IxPT z :. OIR)
-  toL (z:.i) = IxPInt $ toL z :. i
-  toR (z:.i) = IxPInt $ toR z :. i
-  from (IxPInt (z:.i)) (IxPInt (z':._)) = from z z' :. i
-  leftOfR (IxPInt (z:.i)) (z':.j) = leftOfR z z' -- || i<=j
-  {-# INLINE toL #-}
-  {-# INLINE toR #-}
-  {-# INLINE from #-}
-  {-# INLINE leftOfR #-}
-
-instance Index z => Index (z:.(Int:.Int)) where
-  newtype IxP (z:.(Int:.Int)) = IxPIntInt (IxP z:.Int)
-  newtype IxPT (z:.(Int:.Int)) = IxPTii (IxPT z :. OIR)
-  toL (z:.(i:.j)) = IxPIntInt $ toL z:.i
-  toR (z:.(i:.j)) = IxPIntInt $ toR z:.j
-  from (IxPIntInt (z:.i)) (IxPIntInt (z':.j)) = from z z' :.(i:.j)
-  leftOfR (IxPIntInt (z:.k)) (z':.(i:.j)) = leftOfR z z'
-  {-# INLINE toL #-}
-  {-# INLINE toR #-}
-  {-# INLINE from #-}
-  {-# INLINE leftOfR #-}
-
-instance NFData z => NFData (z:.(Int:.Int)) where
-  rnf (z:.(i:.j)) = i `seq` j `seq` rnf z
-
-instance NFData (IxP z) => NFData (IxP (z:.(Int:.Int))) where
-  rnf (IxPIntInt (z:.k)) = k `seq` rnf z
--}
-
 -- | Build the stack using (%)
 
 class Build x where
@@ -260,19 +209,23 @@ instance
   data Elm None i = ElmNone (IxP i)
   type Arg None = Z
   getIxP (ElmNone k) = k
-  getArg (ElmNone i) = i `deepseq` Z
+  getArg (ElmNone i) = Z -- i `deepseq` Z
   {-# INLINE getIxP #-}
   {-# INLINE getArg #-}
 
 instance (Monad m) => MkStream m None Subword where
---  mkStream None ox ix = let k = toL ix in (ox,ix,k) `deepseq` S.singleton (ElmNone k)
-  mkStream None ox ix@(Subword (i:.j)) = (ox,ix,k) `deepseq` S.unfoldr step (i<=j) where
-    k = toL ix
+  mkStreamO None ox ix@(Subword (i:.j)) = S.unfoldr step (i==j) where
     step b
-      | b = Just (ElmNone k, False)
+      | b         = Just (ElmNone $ toL ix, False)
       | otherwise = Nothing
     {-# INLINE step #-}
-  {-# INLINE mkStream #-}
+  {-# INLINE mkStreamO #-}
+  mkStreamI None ox ix@(Subword (i:.j)) = S.unfoldr step (i<=j) where
+    step b
+      | b         = Just (ElmNone $ toL ix, False)
+      | otherwise = Nothing
+    {-# INLINE step #-}
+  {-# INLINE mkStreamI #-}
 
 instance (NFData (IxP i)) => NFData (Elm None i) where
   rnf (ElmNone i) = rnf i

@@ -73,27 +73,28 @@ instance
   , MkStream m ss Subword
   , Show (PA.E arr)
   ) => MkStream m (ss:.MTable (PA.MutArr m arr)) Subword where
-  mkStream (ss:.mtbl) ox@(IxTsubword Outer) ix = S.mapM step $ mkStream ss ox' ix' where
+  mkStreamO (ss:.mtbl) ox@(IxTsubword Outer) ix = S.mapM step $ mkStreamI ss ox' ix' where
     (ox',ix') = convT mtbl ox ix
     step y = do
       let l = getIxP y
       let r = toR ix
       e <- getE mtbl l r
-      (y,r,e) `deepseq` return (ElmMTable (y:.r:.e))
+      return (ElmMTable (y:.r:.e))
     {-# INLINE step #-}
-  mkStream (ss:.mtbl) ox ix = (mtbl,ox,ix,ox') `deepseq` S.flatten mk step Unknown $ mkStream ss ox' ix' where
+  {-# INLINE mkStreamO #-}
+  mkStreamI (ss:.mtbl) ox ix = S.flatten mk step Unknown $ mkStreamI ss ox' ix' where
     (ox',ix') = convT mtbl ox ix
-    mk (!y) = do let l = getIxP y
-                 let r = initP mtbl ox ix l
-                 (y,l,r) `deepseq` return (y:.l:.r)
-    step ((!y):.(!l):.(!r))
+    mk y = do let l = getIxP y
+              let r = initP mtbl ox ix l
+              return (y:.l:.r)
+    step (y:.l:.r)
       | r `leftOfR` ix = do let r' = nextP mtbl ox ix l r
                             e <- getE mtbl l r
-                            (y,l,r,r',e) `deepseq` return $ S.Yield (ElmMTable (y:.r:.e)) (y:.l:.r')
+                            return $ S.Yield (ElmMTable (y:.r:.e)) (y:.l:.r')
       | otherwise = return $ S.Done
     {-# INLINE mk #-}
     {-# INLINE step #-}
-  {-# INLINE mkStream #-}
+  {-# INLINE mkStreamI #-}
 
 instance (NFData (Elm x i), NFData (IxP i), NFData (PA.E arr)) => NFData (Elm (x:.MTable (PA.MutArr m arr)) i) where
   rnf (ElmMTable (a:.b:.c)) = rnf a `seq` rnf b `seq` rnf c

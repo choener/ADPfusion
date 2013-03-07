@@ -63,12 +63,19 @@ instance
   ( Monad m, NFData (IxP Subword), NFData (E (Region e)), VU.Unbox e, NFData (Elm ss Subword), NFData (Region e)
   , MkStream m ss Subword, StreamElm ss Subword
   , Next (Region e) Subword, Index Subword
---  , Show (Elm ss Subword), Show e
   ) => MkStream m (ss:.Region e) Subword where
-  mkStream (ss:.reg) ox ix = {- (reg,ox,ix,ox') `deepseq` -} S.flatten mk step Unknown $ mkStream ss ox' ix where
+  mkStreamO (ss:.reg) ox ix = S.mapM step $ mkStreamI ss ox' ix where
+    (ox',_) = convT reg ox ix
+    step y = do
+      let l = getIxP y
+      let r = toR ix
+      e <- getE reg l r
+      return (ElmRegion (y:.r:.e))
+    {-# INLINE step #-}
+  {-# INLINE mkStreamO #-}
+  mkStreamI (ss:.reg) ox ix = S.flatten mk step Unknown $ mkStreamI ss ox' ix where
     (ox',_) = convT reg ox ix
     mk y
---      | (IxTsubword Outer) <- ox = return (y:.l:.r)
       | otherwise                = return (y:.l:.r)
       where l = getIxP y -- this is the left boundary of the current symbol
             r = initP reg ox ix (getIxP y) -- the right boundary depends on certain conditions checked in Next
@@ -79,7 +86,7 @@ instance
       | otherwise = return $ S.Done
     {-# INLINE mk #-}
     {-# INLINE step #-}
-  {-# INLINE mkStream #-}
+  {-# INLINE mkStreamI #-}
 
 -- |
 --
