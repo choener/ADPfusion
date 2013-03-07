@@ -129,7 +129,7 @@ prop_CMtCMtC sw@(Subword (i:.j)) = monadicIO $ do
 
 prop_CMnCMnC sw@(Subword (i:.j)) = monadicIO $ do
     mxs :: (PA.MU IO (Z:.Subword) Int) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
-    let mt = MTable T.NonEmpty mxs
+    let mt = MTable Tsome mxs
     zs <- run $ (,,,,) <<< Chr xs % mt % Chr xs % mt % Chr xs ... SM.toList $ sw
     ls <- run $ sequence $ [ (PA.readM mxs (Z:.subword (i+1) k)) >>=
                             \a -> PA.readM mxs (Z:.subword (k+1) (j-1)) >>=
@@ -152,7 +152,7 @@ region = Region Nothing Nothing
 
 -- |
 
-mtable xs = MTable T.Empty xs
+mtable xs = MTable Tmany xs
 
 -- | data set. Can be made fixed as the maximal subword size is statically known!
 

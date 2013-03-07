@@ -35,12 +35,12 @@ import Debug.Trace
 -- TODO empty / non-empty stuff !
 
 data MTable es = MTable
-  !NonEmpty   -- ^ allow empty table, that is return result for subword (i,i) ?
-  !es         -- ^ data
+  !TNE   -- ^ allow empty table, that is return result for subword (i,i) ?
+  !es    -- ^ data
 
-data NonEmpty
-  = Empty
-  | NonEmpty
+data TNE
+  = Tmany -- 0+
+  | Tsome -- 1+
   deriving (Eq,Ord,Show)
 
 instance (NFData es) => NFData (MTable es) where
@@ -88,14 +88,14 @@ instance
 
 instance Next (MTable es) Subword where
   initP (MTable ne _) (IxTsubword oir) (Subword (i:.j)) (IxPsubword l)
-    | oir == Outer   = IxPsubword $ j
-    | ne == NonEmpty = IxPsubword $ l+1
-    | otherwise      = IxPsubword $ l
+    | oir == Outer = IxPsubword $ j
+    | ne == Tsome  = IxPsubword $ l+1
+    | otherwise    = IxPsubword $ l
   nextP (MTable ne _) (IxTsubword oir) (Subword (_:.j)) (IxPsubword l) (IxPsubword r)
     | oir == Outer = IxPsubword $ j+1
     | otherwise    = IxPsubword $ r+1
   convT (MTable ne _) _ ix@(Subword (i:.j))
-    | ne == Empty = (IxTsubword Inner, ix)
+    | ne == Tmany = (IxTsubword Inner, ix)
     | otherwise   = (IxTsubword Inner, subword i (j-1))
   {-# INLINE nextP #-}
   {-# INLINE convT #-}
