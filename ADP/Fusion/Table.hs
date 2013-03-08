@@ -98,6 +98,43 @@ instance
   mkStream = mkStreamO
   {-# INLINE mkStream #-}
 
+instance
+  ( Monad m
+  , Next (MTable (PA.MutArr m arr)) (is:.i)
+  , StreamElm ss (is:.i)
+  , MkStream m ss (is:.i)
+  ) => MkStream m (ss:.MTable (PA.MutArr m arr)) (is:.i) where
+  mkStream (ss:.mtbl) ox ix = S.flatten mk step Unknown $ mkStream ss ox' ix' where
+    (ox',ix') = convT mtbl ox ix
+    mk y = do let l = getIxP y
+              let r = initP mtbl ox ix l
+              return (y:.l:.r)
+    step = error "step"
+
+instance (Next Fake is, Next Fake i) => Next (MTable es) (is:.i) where
+  -- TODO how does "Tmany" look like in higher-dimensional space?
+  convT (MTable ne _) (IxTmt (ts:.t)) (is:.i)
+    | ne == Tmany = let (as,bs) = convT (Fake ne) ts is
+                        (a,b)   = convT (Fake ne) t  i
+                    in (IxTmt $ as:.a, bs:.b)
+  initP = error "baustelle"
+
+data Fake = Fake TNE
+
+instance Next Fake Subword where
+  convT (Fake ne) _ ix@(Subword (i:.j))
+    | ne == Tmany = (IxTsubword Inner, ix)
+    | otherwise   = (IxTsubword Inner, subword i (j-1))
+
+instance Next Fake Z where
+  convT (Fake ne) _ Z = (IxTz,Z)
+
+instance (Next Fake is, Next Fake i) => Next Fake (is:.i) where
+  convT (Fake ne) (IxTmt (ts:.t)) (is:.i)
+    | ne == Tmany = let (as,bs) = convT (Fake ne) ts is
+                        (a,b)   = convT (Fake ne) t  i
+                    in (IxTmt $ as:.a, bs:.b)
+
 instance (NFData (Elm x i), NFData (IxP i), NFData (PA.E arr)) => NFData (Elm (x:.MTable (PA.MutArr m arr)) i) where
   rnf (ElmMTable (a:.b:.c)) = rnf a `seq` rnf b `seq` rnf c
 

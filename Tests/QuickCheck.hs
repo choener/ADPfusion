@@ -167,11 +167,27 @@ prop_Tt ix@Z = zs == ls where
   zs = id <<< Term T ... S.toList $ ix
   ls = [ Z ]
 
--- | Increase dimension by 1.
+-- | Increase dimension by 1. (1-tape grammars)
 
-prop_Tc ix@(Z:.Subword(i:.j)) = traceShow (zs,ls) $ zs == ls where
+prop_Tc ix@(Z:.Subword(i:.j)) = zs == ls where
   zs = id <<< Term (T:.Chr xs) ... S.toList $ ix
   ls = [ (Z:.xs VU.! i) | i+1==j ]
+
+prop_Mt_Tc ix@(Z:.Subword(i:.j)) = monadicIO $ do
+    mxs :: (PA.MU IO (Z:.Subword) Int) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ]
+    let mt = mtable mxs
+    zs <- run $ (,) <<< mt % Term (T:.Chr xs) ... SM.toList $ ix
+    ls <- run $ sequence $ [(PA.readM mxs (Z:.subword i (j-1))) >>= \a -> return (a,Z:.xs VU.! (j-1)) | i<j ]
+    assert $ zs == ls
+
+-- | and with 2-tape grammars
+
+prop_Tcc ix@(Z:.Subword(i:.j):.Subword(k:.l)) = zs == ls where
+  zs = id <<< Term (T:.Chr xs:.Chr xs) ... S.toList $ ix
+  ls = [ (  Z
+         :. xs VU.! i
+         :. xs VU.! k
+         ) | i+1==j, k+1==l ]
 
 -- * helper functions and stuff
 
