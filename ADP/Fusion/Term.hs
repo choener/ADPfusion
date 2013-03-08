@@ -92,14 +92,20 @@ instance (Next (Term ts) is, Next t i) => Next (Term (ts:.t)) (is:.i) where
   initP (Term (ts:.t)) (IxTmt (os:.o)) (is:.i) (IxPmt (ls:.l))
     = IxPmt $ initP (Term ts) os is ls :. initP t o i l
   doneP (Term (ts:.t)) (IxTmt (os:.o)) (is:.i) (IxPmt (rs:.r))
-    = doneP (Term ts) os is rs -- && doneP t o i r
+    = doneP (Term ts) os is rs || doneP t o i r
   convT (Term (ts:.t)) (IxTmt (os:.o)) (is:.i) =
     let (os',is') = convT (Term ts) os is
         (o' ,i' ) = convT t o i
     in  (IxTmt (os':.o'), is':.i')
   nextP (Term (ts:.t)) (IxTmt (os:.o)) (is:.i) (IxPmt (ls:.l)) (IxPmt (rs:.r))
+    -- next step gets us out of uppermost bounds, so advance next inner
+    | doneP t o i r' = IxPmt $ nextP (Term ts) os is ls rs :. initP t o i l
+    | otherwise      = IxPmt $ rs :. nextP t o i l r
+    {-
     | doneP t o i r = IxPmt $ nextP (Term ts) os is ls rs :. initP t o i l
     | otherwise     = IxPmt $ rs :. nextP t o i l r
+    -}
+    where r' = nextP t o i l r
 
 instance Next (Term T) Z where
   initP _ _ _ _ = IxPz True
