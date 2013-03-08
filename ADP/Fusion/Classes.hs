@@ -269,6 +269,7 @@ instance (Index is, Index i) => Index (is:.i) where
   data IxT (is:.i) = IxTmt (IxT is :. IxT i)
   initT = IxTmt (initT:.initT)
   toL (is:.i) = IxPmt $ toL is :. toL i
+  from (IxPmt (ls:.l)) (IxPmt (rs:.r)) = from ls rs :. from l r
 
 instance (Next None is, Next None i) => Next None (is:.i) where
   doneP None (IxTmt (ts:.t)) (is:.i) (IxPmt (rs:.r))
@@ -286,6 +287,7 @@ instance Index Z where
   data IxT Z = IxTz
   toL _ = IxPz True
   initT = IxTz
+  from _ _ = Z
 
 -- ** NFData instances
 

@@ -101,6 +101,7 @@ instance
 instance
   ( Monad m
   , Next (MTable (PA.MutArr m arr)) (is:.i)
+  , Element m (MTable (PA.MutArr m arr)) (is:.i)
   , StreamElm ss (is:.i)
   , MkStream m ss (is:.i)
   ) => MkStream m (ss:.MTable (PA.MutArr m arr)) (is:.i) where
@@ -109,15 +110,41 @@ instance
     mk y = do let l = getIxP y
               let r = initP mtbl ox ix l
               return (y:.l:.r)
-    step = error "step"
+    step (y:.l:.r)
+      | doneP mtbl ox ix r = return $ S.Done
+      | otherwise          = do let r' = nextP mtbl ox ix l r
+                                e <- getE mtbl l r
+                                return $ S.Yield (ElmMTable (y:.r:.e)) (y:.l:.r')
+
+instance
+  ( Monad m
+  , PA.Sh arr ~ (is:.i)
+  , PA.MC arr
+  , PA.MPAO m arr
+  , Shape (is:.i)
+  , Index is, Index i
+  ) => Element m (MTable (PA.MutArr m arr)) (is:.i) where
+  type E (MTable (PA.MutArr m arr)) = PA.E arr
+  getE (MTable _ es) l r = PA.readM es $ from l r  --(Z:. Subword (l:.r)) 
+  {-# INLINE getE #-}
 
 instance (Next Fake is, Next Fake i) => Next (MTable es) (is:.i) where
   -- TODO how does "Tmany" look like in higher-dimensional space?
   convT (MTable ne _) (IxTmt (ts:.t)) (is:.i)
-    | ne == Tmany = let (as,bs) = convT (Fake ne) ts is
-                        (a,b)   = convT (Fake ne) t  i
-                    in (IxTmt $ as:.a, bs:.b)
-  initP = error "baustelle"
+    = let (as,bs) = convT (Fake ne) ts is
+          (a,b)   = convT (Fake ne) t  i
+      in (IxTmt $ as:.a, bs:.b)
+  initP (MTable ne _) (IxTmt (ts:.t)) (is:.i) (IxPmt (ls:.l))
+    = let rs = initP (Fake ne) ts is ls
+          r  = initP (Fake ne) t  i  l
+      in  IxPmt $ rs:.r
+  doneP (MTable ne _) ts is rs -- (IxTmt (ts:.t)) (is:.i) (IxPmt (rs:.r))
+    = doneP (Fake ne) ts is rs
+  nextP (MTable ne _) (IxTmt (os:.o)) (is:.i) (IxPmt (ls:.l)) (IxPmt (rs:.r))
+    -- next step gets us out of uppermost bounds, so advance next inner
+    | doneP (Fake ne) o i r' = IxPmt $ nextP (Fake ne) os is ls rs :. initP (Fake ne) o i l
+    | otherwise              = IxPmt $ rs :. nextP (Fake ne) o i l r
+    where r' = nextP (Fake ne) o i l r
 
 data Fake = Fake TNE
 
@@ -125,15 +152,25 @@ instance Next Fake Subword where
   convT (Fake ne) _ ix@(Subword (i:.j))
     | ne == Tmany = (IxTsubword Inner, ix)
     | otherwise   = (IxTsubword Inner, subword i (j-1))
+  -- TODO fix initP !
+  initP (Fake ne) _ (Subword (i:.j)) (IxPsubword l) = IxPsubword l
+  doneP (Fake ne) (IxTsubword _) (Subword (i:.j)) (IxPsubword r) = r>j
+  nextP (Fake ne) (IxTsubword _) (Subword (i:.j)) (IxPsubword l) (IxPsubword r)
+    = IxPsubword $ r+1
 
 instance Next Fake Z where
   convT (Fake ne) _ Z = (IxTz,Z)
+  initP (Fake ne) _ Z (IxPz b) = IxPz b
+  doneP (Fake ne) IxTz Z (IxPz b) = not b
+  nextP (Fake ne) IxTz Z (IxPz l) (IxPz r) = IxPz False
 
 instance (Next Fake is, Next Fake i) => Next Fake (is:.i) where
   convT (Fake ne) (IxTmt (ts:.t)) (is:.i)
     | ne == Tmany = let (as,bs) = convT (Fake ne) ts is
                         (a,b)   = convT (Fake ne) t  i
                     in (IxTmt $ as:.a, bs:.b)
+  doneP (Fake ne) (IxTmt (ts:.t)) (is:.i) (IxPmt (rs:.r))
+    = doneP (Fake ne) ts is rs
 
 instance (NFData (Elm x i), NFData (IxP i), NFData (PA.E arr)) => NFData (Elm (x:.MTable (PA.MutArr m arr)) i) where
   rnf (ElmMTable (a:.b:.c)) = rnf a `seq` rnf b `seq` rnf c
