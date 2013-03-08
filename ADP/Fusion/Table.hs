@@ -57,7 +57,7 @@ instance
 instance
   ( StreamElm x i
   ) => StreamElm (x:.MTable (PA.MutArr m arr)) i where
-  data Elm (x:.MTable (PA.MutArr m arr)) i = ElmMTable (Elm x i :. IxP i :. E (MTable (PA.MutArr m arr)))
+  data Elm (x:.MTable (PA.MutArr m arr)) i = ElmMTable !(Elm x i :. IxP i :. E (MTable (PA.MutArr m arr)))
   type Arg (x:.MTable (PA.MutArr m arr))   = Arg x :. E (MTable (PA.MutArr m arr))
   getIxP (ElmMTable (_:.k:._)) = k
   getArg (ElmMTable (x:.k:.t)) = getArg x :. t
@@ -107,10 +107,10 @@ instance
   ) => MkStream m (ss:.MTable (PA.MutArr m arr)) (is:.i) where
   mkStream (ss:.mtbl) ox ix = S.flatten mk step Unknown $ mkStream ss ox' ix' where
     (ox',ix') = convT mtbl ox ix
-    mk y = do let l = getIxP y
-              let r = initP mtbl ox ix l
-              return (y:.l:.r)
-    step (y:.l:.r)
+    mk !y = do let l = getIxP y
+               let r = initP mtbl ox ix l
+               return (y:.l:.r)
+    step !(y:.l:.r)
       | doneP mtbl ox ix r = return $ S.Done
       | otherwise          = do let r' = nextP mtbl ox ix l r
                                 e <- getE mtbl l r

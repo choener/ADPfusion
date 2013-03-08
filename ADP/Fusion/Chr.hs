@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -15,6 +16,7 @@ import Data.Vector.Fusion.Stream.Size
 import Control.Exception (assert)
 
 import Data.Array.Repa.Index.Subword
+import Data.Array.Repa.Index.Point
 
 import ADP.Fusion.Classes
 
@@ -29,7 +31,6 @@ instance NFData (Chr e) where
 
 instance
   ( Monad m
-  , NFData e
   , VU.Unbox e
   ) => Element m (Chr e) Subword where
   type E (Chr e) = e
@@ -37,6 +38,13 @@ instance
     let e = VU.unsafeIndex ve l
     in  assert (l<=r && l>=0 && VU.length ve > r) $ return e
   {-# INLINE getE #-}
+
+instance
+  ( Monad m
+  , VU.Unbox e
+  ) => Element m (Chr e) Point where
+  type E (Chr e) = e
+  getE (Chr ve) (IxPpoint l) (IxPpoint r) = assert (l<=r && l>=0 && VU.length ve > r) $ return $ VU.unsafeIndex ve l
 
 instance
   ( StreamElm x i
@@ -90,12 +98,30 @@ instance Next (Chr e) Subword where
     | oir == Outer            = IxPsubword $ j+1  -- wrong size of region
     | otherwise = IxPsubword $ k+1                -- normal, inner behaviour
   nextP _ (IxTsubword oir) (Subword (i:.j)) (IxPsubword k) (IxPsubword l)
-    | otherwise    = IxPsubword $ j+1
-  convT _ ox@(IxTsubword oir) ix@(Subword (i:.j))
+    | otherwise    = IxPsubword $ j+1 -- TODO is this correct ?
+  convT _ ox@(IxTsubword oir) ix@(Subword (i:.j)) = (ox, Subword (i:.j-1))
+    {-
     | oir == Outer = (IxTsubword Outer, Subword (i:.j-1))
     | otherwise    = (ox, Subword (i:.j-1))
+    -}
   doneP (Chr e) (IxTsubword oir) (Subword (i:.j)) (IxPsubword r)
     = r>j
+  {-# INLINE initP #-}
+  {-# INLINE nextP #-}
+  {-# INLINE convT #-}
+  {-# INLINE doneP #-}
+
+instance Next (Chr e) Point where
+  initP _ (IxTpoint oir) (Point j) (IxPpoint l)
+    | oir == Outer && l+1 == j = IxPpoint $ l
+    | oir == Outer             = IxPpoint $ j+1
+    | otherwise                = IxPpoint $ l
+  nextP _ (IxTpoint oir) (Point j) (IxPpoint l) (IxPpoint r)
+    = IxPpoint $ j+1 -- TODO is this correct ?
+  convT _ ox (Point k) = (ox, Point $ k-1)
+  -- TODO check j<0 needed?
+  doneP _ _ (Point j) (IxPpoint r)
+    = r>j || j<0
   {-# INLINE initP #-}
   {-# INLINE nextP #-}
   {-# INLINE convT #-}

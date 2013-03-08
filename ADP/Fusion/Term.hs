@@ -35,7 +35,7 @@ instance Build (Term ts)
 instance
   ( StreamElm x i
   ) => StreamElm (x:.Term ts) i where
-  data Elm (x:.Term ts) i = ElmTerm (Elm x i :. IxP i :. E (Term ts))
+  data Elm (x:.Term ts) i = ElmTerm !(Elm x i :. IxP i :. E (Term ts))
   type Arg (x:.Term ts)   = Arg x :. E (Term ts)
   getIxP (ElmTerm (_:.k:._)) = k
   getArg (ElmTerm (x:.k:.t)) = getArg x :. t
@@ -74,10 +74,11 @@ instance
   ) => MkStream m (ss:.Term ts) i where
   mkStream (ss:.t@(Term ts)) ox ix = S.flatten mk step Unknown $ mkStream ss ox' ix' where
     (ox',ix') = convT t ox ix
-    mk y = do let l = getIxP y
-              let r = initP t ox ix l
-              return (y:.l:.r)
-    step (y:.l:.r)
+    mk !y = do
+      let l = getIxP y
+      let r = initP t ox ix l
+      return (y:.l:.r)
+    step !(y:.l:.r)
       | doneP t ox ix r = return $ S.Done
       | otherwise       = do let r' = nextP t ox ix l r
                              e <- getE t l r
@@ -115,3 +116,4 @@ instance Next (Term T) Z where
   {-# INLINE doneP #-}
   {-# INLINE nextP #-}
 
+instance NFData T

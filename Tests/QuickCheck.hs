@@ -19,6 +19,7 @@ import Test.QuickCheck.All
 import Test.QuickCheck.Monadic
 
 import Data.Array.Repa.Index.Subword
+import Data.Array.Repa.Index.Point
 import qualified Data.PrimitiveArray as PA
 import qualified Data.PrimitiveArray.Zero as PA
 
@@ -175,6 +176,10 @@ prop_Tc ix@(Z:.Subword(i:.j)) = zs == ls where
   zs = id <<< Term (T:.Chr xs) ... S.toList $ ix
   ls = [ (Z:.xs VU.! i) | i+1==j ]
 
+prop_P_Tt ix@(Z:.Point i) = zs == ls where
+  zs = id <<< Term (T:.Chr xs) ... S.toList $ ix
+  ls = [ (Z:.xs VU.! (i-1)) | i>0 ]
+
 prop_Mt_Tc ix@(Z:.Subword(i:.j)) = monadicIO $ do
     mxs :: (PA.MU IO (Z:.Subword) Int) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ]
     let mt = mtable mxs
@@ -199,16 +204,10 @@ prop_Mt_Tcc (Z:.TinySubword (i:.j):.TinySubword (k:.l)) = monadicIO $ do
     ls <- run $ sequence $ [ (PA.readM mxs (Z:.subword i (j-1):.subword k (l-1))) >>= \a -> return (a,Z:.xs VU.! (j-1):.xs VU.! (l-1)) | i<j,k<l ]
     assert $ zs == ls
 
+prop_P_Ttt ix@(Z:.Point i:.Point j) = traceShow (zs,ls) $ zs == ls where
+  zs = id <<< Term (T:.Chr xs:.Chr xs) ... S.toList $ ix
+  ls = [ (Z:.xs VU.! (i-1):.xs VU.! (j-1)) | i>0, j>0 ]
 
-{-
-gnargs (Z:.TinySubword (i:.j)) = do
-    let ix = Z :. subword i j
-    mxs :: (PA.MU IO (Z:.Subword) Int) <- PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ]
-    let mt = mtable mxs
-    zs <- (\x (Z:.a) -> x+a) <<< mt % Term (T:.Chr xs) ... SM.foldl' (+) 0 $ ix
-    ix `seq` mxs `seq` mt `seq` return zs
-{-# NOINLINE gnargs #-}
--}
 
 -- | and with 3-tape grammars
 

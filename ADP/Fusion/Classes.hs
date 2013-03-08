@@ -39,6 +39,7 @@ import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Unboxed as VU
 
 import Data.Array.Repa.Index.Subword
+import Data.Array.Repa.Index.Point
 
 
 
@@ -170,8 +171,8 @@ class (Monad m) => TermElement m x i where
 
 
 instance Index Subword where
-  newtype IxP Subword = IxPsubword Int
-  newtype IxT Subword = IxTsubword (OIR (IxP Subword))
+  data IxP Subword = IxPsubword !Int
+  data IxT Subword = IxTsubword !(OIR (IxP Subword))
   toL (Subword (i:.j)) = IxPsubword i
   toR (Subword (i:.j)) = IxPsubword j
   from (IxPsubword i) (IxPsubword j) = Subword (i:.j)
@@ -188,6 +189,23 @@ instance Next None Subword where
     = IxPsubword l
   doneP None (IxTsubword oir) (Subword (i:.j)) (IxPsubword r)
     = r>j
+  {-# INLINE initP #-}
+  {-# INLINE doneP #-}
+
+instance Index Point where
+  data IxP Point = IxPpoint !Int
+  data IxT Point = IxTpoint !(OIR (IxP Point))
+  initT = IxTpoint Outer
+  toL (Point k) = IxPpoint k
+  {-# INLINE toL #-}
+  {-# INLINE toR #-}
+  {-# INLINE from #-}
+  {-# INLINE leftOfR #-}
+  {-# INLINE initT #-}
+
+instance Next None Point where
+  initP _ _ _ (IxPpoint k) = IxPpoint k
+  doneP _ _ (Point j) (IxPpoint r) = r>j || r<0
   {-# INLINE initP #-}
   {-# INLINE doneP #-}
 
@@ -229,7 +247,7 @@ data None = None
 instance
   (
   ) => StreamElm None i where
-  data Elm None i = ElmNone (IxP i)
+  data Elm None i = ElmNone !(IxP i)
   type Arg None = Z
   getIxP (ElmNone k) = k
   getArg (ElmNone i) = Z -- i `deepseq` Z
@@ -267,8 +285,8 @@ instance (Monad m, Index i, Next None i) => MkStream m None i where
   {-# INLINE mkStream #-}
 
 instance (Index is, Index i) => Index (is:.i) where
-  data IxP (is:.i) = IxPmt (IxP is :. IxP i)
-  data IxT (is:.i) = IxTmt (IxT is :. IxT i)
+  data IxP (is:.i) = IxPmt !(IxP is :. IxP i)
+  data IxT (is:.i) = IxTmt !(IxT is :. IxT i)
   initT = IxTmt (initT:.initT)
   toL (is:.i) = IxPmt $ toL is :. toL i
   from (IxPmt (ls:.l)) (IxPmt (rs:.r)) = from ls rs :. from l r
@@ -291,7 +309,7 @@ instance Next None Z where
   {-# INLINE doneP #-}
 
 instance Index Z where
-  data IxP Z = IxPz Bool
+  data IxP Z = IxPz !Bool
   data IxT Z = IxTz
   toL _ = IxPz True
   initT = IxTz
