@@ -74,6 +74,8 @@ instance
     {-# INLINE step #-}
   {-# INLINE mkStreamI #-}
 -}
+  mkStream = mkStreamO
+  {-# INLINE mkStream #-}
 
 instance Next Empty Subword where
   initP _ (IxTsubword oir) (Subword (i:.j)) (IxPsubword k)

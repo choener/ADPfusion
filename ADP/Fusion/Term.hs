@@ -1,3 +1,4 @@
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -13,18 +14,23 @@ import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Unboxed as VU
 import Data.Vector.Fusion.Stream.Size
 
+import Data.Array.Repa.Index.Subword
+
 import ADP.Fusion.Classes
 import ADP.Fusion.Region
 import ADP.Fusion.None
 import ADP.Fusion.Chr
+
+import Debug.Trace
 
 
 
 data Term ts = Term ts
 data T = T
 
-instance (Monad m) => Element m (Term ts) i where
-  type E (Term ts) = TermElm ts
+
+
+instance Build (Term ts)
 
 instance
   ( StreamElm x i
@@ -36,17 +42,103 @@ instance
   {-# INLINE getIxP #-}
   {-# INLINE getArg #-}
 
+instance (Monad m, TermElement m ts i) => Element m (Term ts) i where
+  type E (Term ts) = TermElm ts
+  getE (Term ts) l r = getSimple ts l r
+
+instance
+  ( Monad m
+  ) => TermElement m T Z where
+  type TermElm T = Z
+  getSimple T (IxPz _) (IxPz _) = return Z
+
+instance
+  ( Monad m
+  , TermElement m ts is
+  , Element m (Chr e) i
+  ) => TermElement m (ts:.Chr e) (is:.i) where
+  type TermElm   (ts:.Chr e)         = TermElm ts :. e
+  getSimple (ts:.Chr e) (IxPmt (ls:.l)) (IxPmt (rs:.r))
+    = do es <- getSimple ts ls rs
+         e  <- getE (Chr e) l r
+         return $ es:.e
+
+instance
+  ( Monad m
+  , TermElement m ts i
+  , MkStream m ss i, Next (Term ts) i, StreamElm ss i
+  , Index i
+  ) => MkStream m (ss:.Term ts) i where
+  mkStream (ss:.t@(Term ts)) ox ix = S.flatten mk step Unknown $ mkStream ss ox' ix' where
+    (ox',ix') = convT t ox ix
+    mk y = do let l = getIxP y
+              let r = initP t ox ix l
+              return (y:.l:.r)
+    step (y:.l:.r)
+      | doneP t ox ix r = return $ S.Done
+      | otherwise       = do let r' = nextP t ox ix l r
+                             e <- getE t l r
+                             return $ S.Yield (ElmTerm (y:.r:.e)) (y:.l:.r')
+    {-
+    step (y:.l:.r)
+      | r `leftOfR` ix = do let r' = nextP t ox ix l r
+                            e <- getE t l r
+                            return $ S.Yield (ElmMTable (y:.r:.e)) (y:.l:.r')
+      | otherwise = return $ S.Done
+-}
+
+
+instance (Next (Term ts) is, Next t i) => Next (Term (ts:.t)) (is:.i) where
+  initP (Term (ts:.t)) (IxTmt (os:.o)) (is:.i) (IxPmt (ls:.l))
+    = IxPmt $ initP (Term ts) os is ls :. initP t o i l
+  doneP (Term (ts:.t)) (IxTmt (os:.o)) (is:.i) (IxPmt (rs:.r))
+    = doneP (Term ts) os is rs -- && doneP t o i r
+  convT (Term (ts:.t)) (IxTmt (os:.o)) (is:.i) =
+    let (os',is') = convT (Term ts) os is
+        (o' ,i' ) = convT t o i
+    in  (IxTmt (os':.o'), is':.i')
+  nextP (Term (ts:.t)) (IxTmt (os:.o)) (is:.i) (IxPmt (ls:.l)) (IxPmt (rs:.r))
+    | doneP t o i r = IxPmt $ nextP (Term ts) os is ls rs :. initP t o i l
+    | otherwise     = IxPmt $ rs :. nextP t o i l r
+
+instance Next (Term T) Z where
+  initP _ _ _ _ = IxPz True
+  doneP _ _ _ (IxPz b) = not b
+  convT _ _ ix  = (IxTz, ix)
+  nextP (Term T) IxTz Z (IxPz _) (IxPz _) = IxPz False
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{-
+
 -- |
 --
 -- TODO 'MkStream' for multidimensional terms always uses the 'flatten' method
 -- for now. Doing the faster 'mapM' version is very complicated and requires
 -- specialized instances.
 
-instance
-  ( Monad m
-  , TermElement m ts i
-  , MkStream m ss i, Next (Term ts) i, StreamElm ss i
-  ) => MkStream m (ss:.Term ts) i where
+  {-
+  mkStreamO (ss:.t@(Term ts)) ox ix = S.mapM step $ mkStreamI ss ox' ix' where
+    (ox',ix') = convT t ox ix
+    step y = do
+      let l = getIxP y
+      let r = initP t ox ix (getIxP y)
+      e <- getSimple ts l r
+      return (ElmTerm (y:.r:.e))
+    {-# INLINE step #-}
+    -}
+  {-
   mkStreamO (ss:.t@(Term ts)) ox ix = S.flatten mkT stepT Unknown $ S.mapM step $ mkStreamI ss ox' ix' where
     (ox',ix') = convT t ox ix
     mkT (y:.l:.r) = do k <- initTI ts l r
@@ -63,6 +155,7 @@ instance
     {-# INLINE mkT #-}
     {-# INLINE stepT #-}
     {-# INLINE step #-}
+    -}
   {-
     mk y = return (y:.l:.r) where
       l = getIxP y
@@ -74,38 +167,59 @@ instance
   mkStreamI = mkStreamO
   {-# INLINE mkStreamI #-}
 
-instance Build (Term ts)
 
-
-instance
-  ( Monad m
-  ) => TermElement m T Z where
-  type TermElm T = Z
+  getSimple _ _ _ = return Z
+  {-
   data TermIx m T Z = TIxZ Bool
   initTI T IxPz IxPz = return $ TIxZ True
   doneTI (TIxZ b) = not b
   getTI T IxPz IxPz _ = return Z
   nextTI _ _ _ _ = return $ TIxZ False
+  -}
 
+{-
+  getSimple (ts:.c) (IxPmt (ls:.l)) (IxPmt (rs:.r))
+    = do es <- getSimple ts ls rs
+         e  <- getE c l r
+         return (es:.e) -}
+  {-
+  data TermIx  m (ts:.Chr e) (is:.i) = TIxChr (TermIx m ts is)
+  initTI (ts:.Chr ve) (IxPmt (ls:.l)) (IxPmt (rs:.r))
+    = do xs <- initTI ts ls rs
+         return $ TIxChr xs
+  doneTI (TIxChr ks) = doneTI ks
+  getTI (ts:.c) (IxPmt (ls:.l)) (IxPmt (rs:.r)) (TIxChr ks)
+    = do es <- getTI ts ls rs ks
+         e <-  getE c l r
+         return (es:.e)
+  nextTI _ _ _ _ =
+  -}
+
+instance (Next (Term ts) is) => Next (Term (ts:.t)) (is:.Subword) where
+{-
+  convT (Term (ts:.t)) (IxTmt (os:.o)) (is:.i) =
+    let
+      (tsT,isI) = convT (Term ts) os is
+      (tT, iI ) = convT t o i
+    in (IxTmt (tsT:.tT), isI :. iI)
+  initP (Term (ts:.t)) (IxTmt (js:.j)) (is:.i) (IxPmt (ls:.l)) =
+    let
+      as = initP (Term ts) js is ls
+      a  = initP t j i l
+    in  IxPmt (as:.a)
+-}
+
+{-
 instance
-  ( Monad m
-  , TermElement m ts is
-  ) => TermElement m (ts:.Chr e) (is:.i) where
-  type TermElm (ts:.Chr e) = TermElm ts :. e
-
-instance Next (Term (ts:.t)) (is:.i) where
-
-instance Index (is:.i) where
-
-instance Index Z where
-  data IxP Z = IxPz
-  data IxT Z = IxTz
-  toL _ = IxPz
+  ( Index is, Index i
+  ) => Index (is:.i) where
+  data IxP (is:.i) = IxPmt (IxP is :. IxP i)
+  data IxT (is:.i) = IxTmt (IxT is :. IxT i)
+  toL (is:.i) = IxPmt (toL is :. toL i)
+  initT = IxTmt (initT :. initT)
+-}
 
 instance Next (Term T) Z where
-  initP _ _ _ _ = IxPz
---  suc T _ Z (IsZ _)  !x = IsZ False
---  convT _ (IsTz Z) = IsTz Z
 --  {-# INLINE suc #-}
 --  {-# INLINE convT #-}
 
@@ -113,102 +227,5 @@ instance NFData (IxP Z) where
 
 instance NFData (IxP (is:.i)) where
 
-
-{-
-
-instance (Monad m) => TEE m T Z where
-  type TE T = Z
-  newtype TI T Z m = TIZ Bool
-  te T _ _ = S.singleton Z
-  ti T _ _ = TIZ False
-  tisuc _ _ _ _ = TIZ True
-  tifin (TIZ tf) = tf
-  tiget _ _ _ _ = return Z
-  {-# INLINE te #-}
-  {-# INLINE ti #-}
-  {-# INLINE tisuc #-}
-  {-# INLINE tifin #-}
-  {-# INLINE tiget #-}
-
-instance ( Index is
-         , Index (is:.(Int:.Int))
-         , Monad m
-         , TEE m ts is
-         , NFData (TE ts)
-         , VU.Unbox e
-         ) => TEE m (ts:.Region e) (is:.(Int:.Int)) where -- (is:.i) where
-  type TE (ts:.Region e) = TE ts :. VU.Vector e
-  newtype TI (ts:.Region e) (is:.(Int:.Int)) m = TIregion (TI ts is m)
-  te (ts:.Region ve) (IsIntInt (is:.i)) (IsIntInt (js:.j)) = S.map (\z -> z:.VU.unsafeSlice i (j-i) ve) $ te ts is js
-  ti (ts:.Region ve) (IsIntInt (is:.i)) (IsIntInt (js:.j)) = TIregion $ ti ts is js
-  tisuc (ts:.Region ve) (IsIntInt (is:.i)) (IsIntInt (js:.j)) (TIregion as) = TIregion $ tisuc ts is js as
-  tifin (TIregion as) = tifin as
-  tiget (ts:.Region ve) (IsIntInt (is:.i)) (IsIntInt (js:.j)) (TIregion as) = tiget ts is js as >>= \z -> return (z:.VU.unsafeSlice i (j-i) ve)
-  {-# INLINE te #-}
-  {-# INLINE ti #-}
-  {-# INLINE tisuc #-}
-  {-# INLINE tifin #-}
-  {-# INLINE tiget #-}
-
-instance MkElm x i => MkElm (x:.Term ts) i where
-  newtype Plm (x:.Term ts) i = Pterm (Elm x i :. Is i :. Is i)
-  newtype Elm (x:.Term ts) i = Eterm (Elm x i :. Is i :. TE ts)
-  type    Arg (x:.Term ts) = Arg x :. TE ts
-  topIdx (Eterm (_ :. k :. _)) = k
-  getArg (Eterm (x :. _ :. t)) = getArg x :. t
-  {-# INLINE topIdx #-}
-  {-# INLINE getArg #-}
-
-instance ( NFData i, NFData (Elm x i), NFData (Is i)
---          , Show ts, Show (Is i), Show i, Show (Elm x i)
-          , TEE m ts i
-          , NFData (TE ts)
-          , NFData (TI ts i m)
-          , Index i, Monad m, MkS m x i, MkElm x i, Next ts i) => MkS m (x:.Term ts) i where
-  mkS (x:.Term ts) os idx = S.flatten mkT stepT Unknown $ S.flatten mk step Unknown $ mkS x (convT ts os) idx where
-    mkT (y:.k':.k) = do
-      let stp = ti ts k' k
-      stp `deepseq` return (y:.k':.k:.stp)
-    stepT (y:.k':.k:.stp)
-      | tifin stp = return $ S.Done
-      | otherwise = do
-          let stp' = tisuc ts k' k stp
-          z <- tiget ts k' k stp
-          (stp',z) `deepseq` return $ S.Yield (Eterm (y:.k:.z)) (y:.k':.k:.stp')
-    mk y = let k = topIdx y in k `deepseq` return (y:.k:.k)
-    step (y:.k':.k)
-      | leftOfR k idx = let
-                          newk = suc ts os idx k' k
-                        in newk `deepseq` {- traceShow {- (idx,y,k,ts) -} (k) $ -} return $ S.Yield (y:.k':.k) (y :. k' :. newk)
-      | otherwise = return $ S.Done
-    {-# INLINE mk #-}
-    {-# INLINE step #-}
-  {-# INLINE mkS #-}
-
-instance Next T Z where
-  suc T _ Z (IsZ _)  !x = IsZ False
-  convT _ (IsTz Z) = IsTz Z
-  {-# INLINE suc #-}
-  {-# INLINE convT #-}
-
-
-
--- ** NFData instances
-
-instance NFData (TI T Z m) where
-  rnf (TIZ b) = rnf b
-
-instance (NFData (TI ts z m)) => NFData (TI (ts:.Region e) (z:.(Int:.Int)) m) where
-  rnf (TIregion ts) = rnf ts
-
-instance NFData (Elm ts is) => NFData (Elm (ts :. Term (T :. Region Int)) (is :. (Int :. Int))) where
-
-instance (NFData (Elm (None :. Term (T :. Region Int)) Z)) where
-
-instance NFData (Elm ((None :. Term (T :. Region Int)) :. Term (T :. Region Int)) Z) where
-
-instance NFData (Elm None ((Z :. (Int :. Int)) :. (Int :. Int))) where
-
-instance NFData ((Z :. VU.Vector Int) :. VU.Vector Int) where
-
+deriving instance Show (IxT Z)
 -}

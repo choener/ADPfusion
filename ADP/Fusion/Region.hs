@@ -86,6 +86,8 @@ instance
     {-# INLINE mk #-}
     {-# INLINE step #-}
   {-# INLINE mkStreamI #-}
+  mkStream = mkStreamO
+  {-# INLINE mkStream #-}
 
 -- |
 --

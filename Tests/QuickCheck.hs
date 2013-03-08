@@ -169,7 +169,7 @@ prop_Tt ix@Z = zs == ls where
 
 -- | Increase dimension by 1.
 
-prop_Tc ix@(Z:.Subword(i:.j)) = zs == ls where
+prop_Tc ix@(Z:.Subword(i:.j)) = traceShow (zs,ls) $ zs == ls where
   zs = id <<< Term (T:.Chr xs) ... S.toList $ ix
   ls = [ (Z:.xs VU.! i) | i+1==j ]
 

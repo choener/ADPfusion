@@ -95,6 +95,8 @@ instance
     {-# INLINE mk #-}
     {-# INLINE step #-}
   {-# INLINE mkStreamI #-}
+  mkStream = mkStreamO
+  {-# INLINE mkStream #-}
 
 instance (NFData (Elm x i), NFData (IxP i), NFData (PA.E arr)) => NFData (Elm (x:.MTable (PA.MutArr m arr)) i) where
   rnf (ElmMTable (a:.b:.c)) = rnf a `seq` rnf b `seq` rnf c

@@ -45,7 +45,7 @@ import Debug.Trace
 -- function 'f'.
 
 infixl 8 <<<
-(<<<) f xs = S.map (apply f . getArg) . mkStreamO (build xs) initT
+(<<<) f xs = S.map (apply f . getArg) . mkStream (build xs) initT
 {-# INLINE (<<<) #-}
 
 -- | Combine two RHSs to give a choice between parses.
@@ -74,61 +74,6 @@ infixl 9 %
 (%) = (:.)
 {-# INLINE (%) #-}
 
-{-
-
--- * testing
-
-test :: Int -> IO Int
-test k =
-  let
-    xs = VU.enumFromN (0::Int) (2 * k)
-    ys = VU.enumFromN (0::Int) (2 * k)
-    zs = VU.enumFromN (0::Int) (2 * k)
-    i = 0 :: Int
-    j = k :: Int
-  in do
-    (xs,ys,zs,i,j) `deepseq` testInner k xs ys zs i j
-{-# NOINLINE test #-}
-
-testInner :: Int -> VU.Vector Int -> VU.Vector Int -> VU.Vector Int -> Int -> Int -> IO Int
-testInner !k !xs !ys !zs !i !j = do
-  (!mxs) :: (PA.MU IO (Z:.Subword) Int) <- PA.newWithM (Z:. Subword (0:.0)) (Z:. Subword (0:.k)) (1 :: Int)
-  (!mys) :: (PA.MU IO (Z:.Subword) Int) <- PA.newWithM (Z:. Subword (0:.0)) (Z:. Subword (0:.k)) (2 :: Int)
-  (!mzs) :: (PA.MU IO (Z:.Subword) Int) <- PA.newWithM (Z:. Subword (0:.0)) (Z:. Subword (0:.k)) (3 :: Int)
-  let region xs = Region Nothing Nothing xs
-      {-# INLINE region #-}
-  let mtable xs = MTable Tmany xs
---  mapM_ (\(i,j,x) -> x >>= \x' -> print (i,j,x')) $ [ (i,j,PA.readM mxs (Z:.Subword (i:.j))) | i <- [0..k], j <- [i..k]]
---  x <- return 1
---  x <- S.length $ mkS None (IsTii (IsTz Z :. Outer)) (Z:.(i:.j))
---  x <- S.length $ mkS (None :. Term (T:.Region xs)) (IsTii (IsTz Z :. Outer)) (Z:.(i:.j))
---  x <- S.length $ mkS (None :. Term (T:.Region xs) :. Term (T:.Region ys)) (IsTii (IsTz Z :. Outer)) (Z:.(i:.j))
---  x <- S.length $ mkS (None :. Term (T:.Region xs) :. Term (T:.Region xs) :. Term (T:.Region xs)) (IsTii (IsTz Z :. Outer)) (Z:.(i:.j))
---  x <- S.length $ mkS (None :. Term (T:.Region xs) :. Term (T:.Region xs) :. Term (T:.Region xs) :. Term (T:.Region xs)) (IsTii (IsTz Z :. Outer)) (Z:.(i:.j))
---  x <- S.length $ mkS (None :. Term (T:.Region xs:.Region xs) :. Term (T:.Region xs:.Region xs)) (IsTii (IsTii (IsTz Z:. Outer) :. Outer)) (Z:.(i:.j):.(i:.j))
---  a <- S.foldl' (+) 0 $ S.map (apply VU.unsafeLast . getArg) $ mkStream (None :. region xs) (IxTsubword Outer) (Subword (i:.j))
---  a `seq` print a
---  c <- S.foldl' (+) 0 $ S.map (\x -> x `deepseq` (apply p3 . getArg $ x)) $ mkStream (None :. region xs :. region ys :. region zs) (IxTsubword Outer) (Subword (i:.j))
---  c `seq` print (j,c)
---  d <- S.foldl' (+) 0 $ S.map (apply p4 . getArg) $ mkStream (None :. Region xs :. Region xs :. Region xs :. Region xs) (IxTsubword Outer) (Subword (i:.j))
---  d `seq` print (j,d)
---  e <- S.foldl' (+) 0 $ S.map (apply fc . getArg) $ mkStream (None :. Chr xs) (IxTsubword Outer) (Subword (i:.j))
---  e `seq` print (j,e)
---  e <- S.foldl' (+) 0 $ S.map (apply fcrrc . getArg) $ mkStream (None :. Chr xs :. Region ys :. Region zs :. Chr xs) (IxTsubword Outer) (Subword (i:.j))
---  e `seq` print (j,e)
---  f <- S.foldl' (+) 0 $ S.map (apply (\a b c d -> a+b+c+d) . getArg) $ mkStream (None :. mtable mxs :. mtable mys :. mtable mzs :. mtable mxs) (IxTsubword Outer) (Subword (i:.j))
---  f `seq` print (j,f)
--- NEW NEW NEW
---  a <- VU.unsafeLast <<< region xs ... S.foldl' (+) 0 $ subword i j
---  a `seq` print a
---  b <- p2 <<< region xs % region ys ... S.foldl' (+) 0 $ subword i j
---  b `seq` print b
-  f <- (\a b c d -> a+b+c+d) <<< mtable mxs % mtable mys % mtable mzs % mtable mxs ... S.foldl' (+) 0 $ subword i j
-  f `seq` print (j,f)
-  return 0
-{-# NOINLINE testInner #-}
-
--}
 
 instance NFData Z
 instance NFData z => NFData (z:.VU.Vector e) where
@@ -136,21 +81,4 @@ instance NFData z => NFData (z:.VU.Vector e) where
 
 instance NFData z => NFData (z:.Int) where
   rnf (z:.i) = rnf z `seq` rnf i
-
-{-
-
-fcrrc a b c d = a + VU.unsafeLast b + VU.unsafeHead c + d
-
-fc a = a
-
-p2 a b = (a,b) `deepseq` (VU.unsafeLast a + VU.unsafeHead b)
-{-# INLINE p2 #-}
-
-p3 a b c = (a,b,c) `deepseq` (VU.unsafeLast a + VU.unsafeLast b + VU.unsafeHead c)
-{-# INLINE p3 #-}
-
-p4 a b c d = (a,b,c,d) `deepseq` (VU.unsafeLast a + VU.unsafeLast b + VU.unsafeLast c + VU.unsafeHead d)
-{-# INLINE p4 #-}
-
--}
 

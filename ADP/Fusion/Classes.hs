@@ -66,6 +66,8 @@ class (Monad m) => MkStream m x i where
   mkStreamI :: x -> IxT i -> i -> Stream m (Elm x i)
   -- | 
   mkStreamO :: x -> IxT i -> i -> Stream m (Elm x i)
+  -- |
+  mkStream :: x -> IxT i -> i -> Stream m (Elm x i)
 
 -- | Convert 'OIR' and calculate successor indices.
 --
@@ -116,7 +118,7 @@ class Index i where
   --
   -- TODO maybe "leftOfR :: IxP i -> IxP i -> Bool" ?
   leftOfR :: IxP i -> i -> Bool
-  -- simplify IxT stuff by providing a default
+  -- | simplify IxT stuff by providing a default
   initT :: IxT i
 
 -- | Standard cases on how 'mkStream' can be restricted. In the 'Outer' case,
@@ -155,6 +157,7 @@ class (Monad m) => TermElement m x i where
   doneTI :: TermIx m x i -> Bool
   nextTI :: x -> IxP i -> IxP i -> TermIx m x i -> m (TermIx m x i)
   getTI  :: x -> IxP i -> IxP i -> TermIx m x i -> m (TermElm x)
+  getSimple :: x -> IxP i -> IxP i -> m (TermElm x)
   {-
   te :: x -> IxP i -> IxP i -> S.Stream m (TermElm x)
   ti :: x -> IxP i -> IxP i -> (TermIx x i m)
@@ -179,6 +182,12 @@ instance Index Subword where
   {-# INLINE from #-}
   {-# INLINE leftOfR #-}
   {-# INLINE initT #-}
+
+instance Next None Subword where
+  initP None (IxTsubword oir) (Subword (i:.j)) (IxPsubword l)
+    = IxPsubword l
+  doneP None (IxTsubword oir) (Subword (i:.j)) (IxPsubword r)
+    = r>j
 
 instance NFData (IxP Subword) where
   rnf (IxPsubword i) = rnf i
@@ -216,7 +225,7 @@ data None = None
 
 
 instance
-  ( NFData (IxP i)
+  (
   ) => StreamElm None i where
   data Elm None i = ElmNone (IxP i)
   type Arg None = Z
@@ -243,14 +252,40 @@ instance (Monad m) => MkStream m None Subword where
 
 -- ** General instance for high-dimensional grammars. (OverlappingInstances)
 
-instance (Monad m, Index i) => MkStream m None i where
-  mkStreamO = error "implement me O"
-  mkStreamI None ox ix = S.unfoldr step True where
-    step b
-      | b         = Just (ElmNone $ toL ix, False)
-      | otherwise = Nothing
-    {-# INLINE step #-}
-  {-# INLINE mkStreamI #-}
+-- | The multi-tape instance is implemented using the general 'mkStream'
+-- function. Inner/Outer specialization is done using 'ox'. We can't use the
+-- more specialed 'mkStreamO' and 'mkStreamI' as they only work for single-tape
+-- grammars.
+
+instance (Monad m, Index i, Next None i) => MkStream m None i where
+  mkStream None ox ix
+    = S.map ElmNone
+    $ S.filter (not . doneP None ox ix)
+    $ S.singleton (initP None ox ix (toL ix))
+  {-# INLINE mkStream #-}
+
+instance (Index is, Index i) => Index (is:.i) where
+  data IxP (is:.i) = IxPmt (IxP is :. IxP i)
+  data IxT (is:.i) = IxTmt (IxT is :. IxT i)
+  initT = IxTmt (initT:.initT)
+  toL (is:.i) = IxPmt $ toL is :. toL i
+
+instance (Next None is, Next None i) => Next None (is:.i) where
+  doneP None (IxTmt (ts:.t)) (is:.i) (IxPmt (rs:.r))
+    = doneP None ts is rs || doneP None t i r
+  initP None (IxTmt (ts:.t)) (is:.i) (IxPmt (ls:.l))
+    = IxPmt $ initP None ts is ls :. initP None t i l
+
+instance Next None Z where
+  initP _ _ _ _ = IxPz True
+  doneP _ _ _ _ = False
+  {-# INLINE initP #-}
+
+instance Index Z where
+  data IxP Z = IxPz Bool
+  data IxT Z = IxTz
+  toL _ = IxPz True
+  initT = IxTz
 
 -- ** NFData instances
 

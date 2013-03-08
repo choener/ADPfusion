@@ -35,7 +35,7 @@ instance
   type E (Chr e) = e
   getE (Chr ve) (IxPsubword l) (IxPsubword r) =
     let e = VU.unsafeIndex ve l
-    in  {- (ve,l,r,e) `deepseq` -} assert (l<=r && l>=0 && VU.length ve > r) $ return e
+    in  assert (l<=r && l>=0 && VU.length ve > r) $ return e
   {-# INLINE getE #-}
 
 instance
@@ -81,6 +81,8 @@ instance
     {-# INLINE mk #-}
     {-# INLINE step #-}
   {-# INLINE mkStreamI #-}
+  mkStream = mkStreamO
+  {-# INLINE mkStream #-}
 
 instance Next (Chr e) Subword where
   initP _ (IxTsubword oir) (Subword (i:.j)) (IxPsubword k)
@@ -92,6 +94,8 @@ instance Next (Chr e) Subword where
   convT _ ox@(IxTsubword oir) ix@(Subword (i:.j))
     | oir == Outer = (IxTsubword Outer, Subword (i:.j-1))
     | otherwise    = (ox, Subword (i:.j-1))
+  doneP (Chr e) (IxTsubword oir) (Subword (i:.j)) (IxPsubword r)
+    = r>j
   {-# INLINE nextP #-}
   {-# INLINE convT #-}
 
