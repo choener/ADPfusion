@@ -281,7 +281,7 @@ instance (Monad m) => MkStream m None Subword where
 -- grammars.
 
 instance (Monad m, Index i, Next None i) => MkStream m None i where
-  mkStream None ox ix
+  mkStream None !ox !ix
     = S.map ElmNone
     $ S.filter (not . doneP None ox ix)
     $ S.singleton (initP None ox ix (toL ix))

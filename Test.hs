@@ -48,13 +48,13 @@ gnargs (Z:.Subword (i:.j)) = do
 {-# NOINLINE gnargs #-}
 -}
 
-gnargs (Z:.Point i:.Point j) = do
-    mxs :: (PA.MU IO (Z:.Point:.Point) Int) <- PA.fromListM (Z:.Point 0:.Point 0) (Z:.Point 100:.Point 100) [0 .. ]
+gnargs (Z:.Point i) = do
+    mxs :: (PA.MU IO (Z:.Point) Int) <- PA.fromListM (Z:.Point 0) (Z:.Point 100) [0 .. ]
     let mtable xs = MTable Eall xs
     let mt = mtable mxs
-    let ix = Z :. Point i :. Point j
+    let ix = Z :. Point i
     let xs = VU.fromList [0 .. 100 :: Int]
-    zs <- (,) <<< mt % Term (T:.Chr xs:.Chr xs) ... SM.toList $ ix
+    zs <- (,) <<< mt % Term (T:.Chr xs) ... SM.toList $ ix
     ix `seq` mxs `seq` mt `seq` return zs
 {-# NOINLINE gnargs #-}
 

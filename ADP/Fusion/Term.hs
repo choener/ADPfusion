@@ -72,7 +72,7 @@ instance
   , MkStream m ss i, Next (Term ts) i, StreamElm ss i
   , Index i
   ) => MkStream m (ss:.Term ts) i where
-  mkStream (ss:.t@(Term ts)) ox ix = S.flatten mk step Unknown $ mkStream ss ox' ix' where
+  mkStream !(ss:.t@(Term ts)) !ox !ix = S.flatten mk step Unknown $ mkStream ss ox' ix' where
     (ox',ix') = convT t ox ix
     mk !y = do
       let l = getIxP y

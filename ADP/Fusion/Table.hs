@@ -107,7 +107,7 @@ instance
   , StreamElm ss (is:.i)
   , MkStream m ss (is:.i)
   ) => MkStream m (ss:.MTable (PA.MutArr m arr)) (is:.i) where
-  mkStream (ss:.mtbl) ox ix = S.flatten mk step Unknown $ mkStream ss ox' ix' where
+  mkStream !(ss:.mtbl) !ox !ix = S.flatten mk step Unknown $ mkStream ss ox' ix' where
     (ox',ix') = convT mtbl ox ix
     mk !y = do let l = getIxP y
                let r = initP mtbl ox ix l
