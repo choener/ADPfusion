@@ -12,6 +12,7 @@ import qualified Data.Vector.Unboxed as VU
 import qualified Data.Vector.Unboxed.Mutable as VUM
 
 import Data.Array.Repa.Index.Subword
+import Data.Array.Repa.Index.Point
 import qualified Data.PrimitiveArray as PA
 import qualified Data.PrimitiveArray.Zero as PA
 
@@ -35,6 +36,7 @@ main = do
   return ()
 --  print x
 
+{-
 gnargs (Z:.Subword (i:.j)) = do
     let ix = Z :. subword i j
     let xs = VU.fromList [0 .. 100 :: Int]
@@ -42,6 +44,17 @@ gnargs (Z:.Subword (i:.j)) = do
     mxs :: (PA.MU IO (Z:.Subword) Int) <- PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ]
     let mt = mtable mxs
     zs <- (\x (Z:.a) -> x+a) <<< mt % Term (T:.Chr xs) ... SM.foldl' (+) 0 $ ix
+    ix `seq` mxs `seq` mt `seq` return zs
+{-# NOINLINE gnargs #-}
+-}
+
+gnargs (Z:.Point i:.Point j) = do
+    mxs :: (PA.MU IO (Z:.Point:.Point) Int) <- PA.fromListM (Z:.Point 0:.Point 0) (Z:.Point 100:.Point 100) [0 .. ]
+    let mtable xs = MTable Eall xs
+    let mt = mtable mxs
+    let ix = Z :. Point i :. Point j
+    let xs = VU.fromList [0 .. 100 :: Int]
+    zs <- (,) <<< mt % Term (T:.Chr xs:.Chr xs) ... SM.toList $ ix
     ix `seq` mxs `seq` mt `seq` return zs
 {-# NOINLINE gnargs #-}
 

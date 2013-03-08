@@ -197,6 +197,9 @@ instance Index Point where
   data IxT Point = IxTpoint !(OIR (IxP Point))
   initT = IxTpoint Outer
   toL (Point k) = IxPpoint k
+  from (IxPpoint l) (IxPpoint r)
+    | l==r = Point l
+    | otherwise = error $ show ("Index/Point",l,r)
   {-# INLINE toL #-}
   {-# INLINE toR #-}
   {-# INLINE from #-}

@@ -19,6 +19,7 @@ import qualified Data.Vector.Unboxed as VU
 import Data.Array.Repa.Shape
 
 import Data.Array.Repa.Index.Subword
+import Data.Array.Repa.Index.Point
 import qualified Data.PrimitiveArray as PA
 
 import ADP.Fusion.Classes
@@ -35,12 +36,13 @@ import Debug.Trace
 -- TODO empty / non-empty stuff !
 
 data MTable es = MTable
-  !TNE   -- ^ allow empty table, that is return result for subword (i,i) ?
+  !EmptyOk   -- ^ allow empty table, that is return result for subword (i,i) ?
   !es    -- ^ data
 
-data TNE
-  = Tmany -- 0+
-  | Tsome -- 1+
+data EmptyOk
+  = Enone -- all dimensions are to be non-empty
+  | Esome -- some, but not all, dimensions may be empty (you can /NOT/ select which one may be empty currently)
+  | Eall  -- all dimensions may be empty
   deriving (Eq,Ord,Show)
 
 instance (NFData es) => NFData (MTable es) where
@@ -155,12 +157,12 @@ instance
   {-# INLINE doneP #-}
   {-# INLINE nextP #-}
 
-newtype Fake = Fake TNE
+data Fake = Fake !EmptyOk
 
 instance Next Fake Subword where
-  convT (Fake ne) _ ix@(Subword (i:.j))
-    | ne == Tmany = (IxTsubword Inner, ix)
-    | otherwise   = (IxTsubword Inner, subword i (j-1))
+  convT (Fake eok) _ ix@(Subword (i:.j))
+    | eok == Eall  = (IxTsubword Inner, ix)
+    | eok == Enone = (IxTsubword Inner, subword i (j-1))
   -- TODO fix initP !
   initP (Fake ne) (IxTsubword oir) (Subword (i:.j)) (IxPsubword l)
     | oir == Outer = IxPsubword j
@@ -168,6 +170,22 @@ instance Next Fake Subword where
   doneP (Fake ne) (IxTsubword _) (Subword (i:.j)) (IxPsubword r) = r>j
   nextP (Fake ne) (IxTsubword oir) (Subword (i:.j)) (IxPsubword l) (IxPsubword r)
     = IxPsubword $ r+1
+  {-# INLINE convT #-}
+  {-# INLINE initP #-}
+  {-# INLINE doneP #-}
+  {-# INLINE nextP #-}
+
+instance Next Fake Point where
+  convT (Fake eok) _ (Point j)
+    | eok == Eall  = (IxTpoint Inner, Point j)
+    | eok == Enone = (IxTpoint Inner, Point $ j-1)
+  initP (Fake eok) (IxTpoint oir) (Point j) (IxPpoint l)
+    | oir == Outer = IxPpoint j
+    | otherwise    = IxPpoint l
+  doneP (Fake eok) (IxTpoint _) (Point j) (IxPpoint r) = r>j || j<0 || r<0
+  nextP (Fake eok) (IxTpoint _) (Point j) (IxPpoint l) (IxPpoint r)
+    = IxPpoint $ r+1
+--  nextP (Fake ne) IxTz Z (IxPz l) (IxPz r) = IxPz False
   {-# INLINE convT #-}
   {-# INLINE initP #-}
   {-# INLINE doneP #-}
@@ -185,9 +203,9 @@ instance Next Fake Z where
 
 instance (Next Fake is, Next Fake i) => Next Fake (is:.i) where
   convT (Fake ne) (IxTmt (ts:.t)) (is:.i)
-    | ne == Tmany = let (as,bs) = convT (Fake ne) ts is
-                        (a,b)   = convT (Fake ne) t  i
-                    in (IxTmt $ as:.a, bs:.b)
+    | True = let (as,bs) = convT (Fake ne) ts is
+                 (a,b)   = convT (Fake ne) t  i
+             in (IxTmt $ as:.a, bs:.b)
   doneP (Fake ne) (IxTmt (ts:.t)) (is:.i) (IxPmt (rs:.r))
     = doneP (Fake ne) ts is rs
   initP (Fake ne) (IxTmt (ts:.t)) (is:.i) (IxPmt (ls:.l))
@@ -210,19 +228,19 @@ instance (NFData (Elm x i), NFData (IxP i), NFData (PA.E arr)) => NFData (Elm (x
 instance (NFData x, NFData arr) => NFData (x:.MTable arr) where
   rnf (x:.MTable b arr) = rnf x `seq` rnf b `seq` rnf arr
 
-instance NFData TNE where
+instance NFData EmptyOk where
   rnf (!x) = ()
 
 instance Next (MTable es) Subword where
   initP (MTable ne _) (IxTsubword oir) (Subword (i:.j)) (IxPsubword l)
     | i>j          = IxPsubword $ j+1
     | oir == Outer = IxPsubword $ j
-    | ne == Tsome  = IxPsubword $ l+1
+    | ne == Enone  = IxPsubword $ l+1
     | otherwise    = IxPsubword $ l
   nextP (MTable ne _) (IxTsubword oir) (Subword (_:.j)) (IxPsubword l) (IxPsubword r)
     | otherwise    = IxPsubword $ r+1
   convT (MTable ne _) _ ix@(Subword (i:.j))
-    | ne == Tmany = (IxTsubword Inner, ix)
+    | ne == Eall  = (IxTsubword Inner, ix)
     | otherwise   = (IxTsubword Inner, subword i (j-1))
   {-# INLINE initP #-}
   {-# INLINE nextP #-}

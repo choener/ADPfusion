@@ -151,7 +151,7 @@ prop_CMtCMtC sw@(Subword (i:.j)) = monadicIO $ do
 
 prop_CMnCMnC sw@(Subword (i:.j)) = monadicIO $ do
     mxs :: (PA.MU IO (Z:.Subword) Int) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
-    let mt = MTable Tsome mxs
+    let mt = MTable Enone mxs
     zs <- run $ (,,,,) <<< Chr xs % mt % Chr xs % mt % Chr xs ... SM.toList $ sw
     ls <- run $ sequence $ [ (PA.readM mxs (Z:.subword (i+1) k)) >>=
                             \a -> PA.readM mxs (Z:.subword (k+1) (j-1)) >>=
@@ -187,6 +187,13 @@ prop_Mt_Tc ix@(Z:.Subword(i:.j)) = monadicIO $ do
     ls <- run $ sequence $ [(PA.readM mxs (Z:.subword i (j-1))) >>= \a -> return (a,Z:.xs VU.! (j-1)) | i<j ]
     assert $ zs == ls
 
+prop_P_Mt_Tt ix@(Z:.Point i) = monadicIO $ do
+    mxs :: (PA.MU IO (Z:.Point) Int) <- run $ PA.fromListM (Z:.Point 0) (Z:.Point 100) [0 .. ]
+    let mt = mtable mxs
+    zs <- run $ (,) <<< mt % Term (T:.Chr xs) ... SM.toList $ ix
+    ls <- run $ sequence $ [(PA.readM mxs (Z:.Point (i-1))) >>= \a -> return (a,Z:.xs VU.! (i-1)) | i>0 ]
+    assert $ zs == ls
+
 -- | and with 2-tape grammars
 
 prop_Tcc ix@(Z:.Subword(i:.j):.Subword(k:.l)) = zs == ls where
@@ -204,10 +211,16 @@ prop_Mt_Tcc (Z:.TinySubword (i:.j):.TinySubword (k:.l)) = monadicIO $ do
     ls <- run $ sequence $ [ (PA.readM mxs (Z:.subword i (j-1):.subword k (l-1))) >>= \a -> return (a,Z:.xs VU.! (j-1):.xs VU.! (l-1)) | i<j,k<l ]
     assert $ zs == ls
 
-prop_P_Ttt ix@(Z:.Point i:.Point j) = traceShow (zs,ls) $ zs == ls where
+prop_P_Ttt ix@(Z:.Point i:.Point j) = zs == ls where
   zs = id <<< Term (T:.Chr xs:.Chr xs) ... S.toList $ ix
   ls = [ (Z:.xs VU.! (i-1):.xs VU.! (j-1)) | i>0, j>0 ]
 
+prop_P_Mt_Ttt ix@(Z:.Point i:.Point j) = monadicIO $ do
+    mxs :: (PA.MU IO (Z:.Point:.Point) Int) <- run $ PA.fromListM (Z:.Point 0:.Point 0) (Z:.Point 100:.Point 100) [0 .. ]
+    let mt = mtable mxs
+    zs <- run $ (,) <<< mt % Term (T:.Chr xs:.Chr xs) ... SM.toList $ ix
+    ls <- run $ sequence $ [(PA.readM mxs (Z:.Point (i-1):.Point (j-1))) >>= \a -> return (a,Z:.xs VU.! (i-1):.xs VU.! (j-1)) | i>0,j>0 ]
+    assert $ zs == ls
 
 -- | and with 3-tape grammars
 
@@ -227,7 +240,7 @@ region = Region Nothing Nothing
 
 -- |
 
-mtable xs = MTable Tmany xs
+mtable xs = MTable Eall xs
 
 -- | data set. Can be made fixed as the maximal subword size is statically known!
 
