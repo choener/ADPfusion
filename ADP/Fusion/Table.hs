@@ -60,7 +60,7 @@ instance
   data Elm (x:.MTable (PA.MutArr m arr)) i = ElmMTable (Elm x i :. IxP i :. E (MTable (PA.MutArr m arr)))
   type Arg (x:.MTable (PA.MutArr m arr))   = Arg x :. E (MTable (PA.MutArr m arr))
   getIxP (ElmMTable (_:.k:._)) = k
-  getArg (ElmMTable (x:.k:.t)) = let a = getArg x in a:.t
+  getArg (ElmMTable (x:.k:.t)) = getArg x :. t
   {-# INLINE getIxP #-}
   {-# INLINE getArg #-}
 

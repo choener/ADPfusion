@@ -96,8 +96,10 @@ instance Next (Chr e) Subword where
     | otherwise    = (ox, Subword (i:.j-1))
   doneP (Chr e) (IxTsubword oir) (Subword (i:.j)) (IxPsubword r)
     = r>j
+  {-# INLINE initP #-}
   {-# INLINE nextP #-}
   {-# INLINE convT #-}
+  {-# INLINE doneP #-}
 
 instance NFData x => NFData (x:.Chr e) where
   rnf (x:.Chr ve) = rnf x `seq` rnf ve

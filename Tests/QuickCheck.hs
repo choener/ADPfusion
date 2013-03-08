@@ -29,7 +29,6 @@ import ADP.Fusion.Region
 import ADP.Fusion.Table
 import ADP.Fusion.Term
 
-{-
 
 -- | Check if a single region returns the correct result (namely a slice from
 -- the input).
@@ -200,15 +199,16 @@ prop_Mt_Tcc (Z:.TinySubword (i:.j):.TinySubword (k:.l)) = monadicIO $ do
     ls <- run $ sequence $ [ (PA.readM mxs (Z:.subword i (j-1):.subword k (l-1))) >>= \a -> return (a,Z:.xs VU.! (j-1):.xs VU.! (l-1)) | i<j,k<l ]
     assert $ zs == ls
 
--}
 
-gnargs (Z:.TinySubword (i:.j):.TinySubword (k:.l)) = do
-    let ix = Z :. subword i j :. subword k l
-    mxs :: (PA.MU IO (Z:.Subword:.Subword) Int) <- PA.fromListM (Z:. Subword (0:.0):.Subword(0:.0)) (Z:. Subword (0:.100):.Subword (0:.100)) [0 .. ]
+{-
+gnargs (Z:.TinySubword (i:.j)) = do
+    let ix = Z :. subword i j
+    mxs :: (PA.MU IO (Z:.Subword) Int) <- PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ]
     let mt = mtable mxs
-    zs <- (\x (Z:.a:.b) -> x+a+b) <<< mt % Term (T:.Chr xs:.Chr xs) ... SM.foldl' (+) 0 $ ix
-    return zs
+    zs <- (\x (Z:.a) -> x+a) <<< mt % Term (T:.Chr xs) ... SM.foldl' (+) 0 $ ix
+    ix `seq` mxs `seq` mt `seq` return zs
 {-# NOINLINE gnargs #-}
+-}
 
 -- | and with 3-tape grammars
 

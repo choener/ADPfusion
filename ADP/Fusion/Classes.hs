@@ -188,6 +188,8 @@ instance Next None Subword where
     = IxPsubword l
   doneP None (IxTsubword oir) (Subword (i:.j)) (IxPsubword r)
     = r>j
+  {-# INLINE initP #-}
+  {-# INLINE doneP #-}
 
 instance NFData (IxP Subword) where
   rnf (IxPsubword i) = rnf i
@@ -270,17 +272,23 @@ instance (Index is, Index i) => Index (is:.i) where
   initT = IxTmt (initT:.initT)
   toL (is:.i) = IxPmt $ toL is :. toL i
   from (IxPmt (ls:.l)) (IxPmt (rs:.r)) = from ls rs :. from l r
+  {-# INLINE initT #-}
+  {-# INLINE toL #-}
+  {-# INLINE from #-}
 
 instance (Next None is, Next None i) => Next None (is:.i) where
   doneP None (IxTmt (ts:.t)) (is:.i) (IxPmt (rs:.r))
     = doneP None ts is rs || doneP None t i r
   initP None (IxTmt (ts:.t)) (is:.i) (IxPmt (ls:.l))
     = IxPmt $ initP None ts is ls :. initP None t i l
+  {-# INLINE doneP #-}
+  {-# INLINE initP #-}
 
 instance Next None Z where
   initP _ _ _ _ = IxPz True
   doneP _ _ _ _ = False
   {-# INLINE initP #-}
+  {-# INLINE doneP #-}
 
 instance Index Z where
   data IxP Z = IxPz Bool
@@ -288,6 +296,9 @@ instance Index Z where
   toL _ = IxPz True
   initT = IxTz
   from _ _ = Z
+  {-# INLINE initT #-}
+  {-# INLINE toL #-}
+  {-# INLINE from #-}
 
 deriving instance (Show (IxP is), Show (IxP i)) => Show (IxP (is:.i))
 
