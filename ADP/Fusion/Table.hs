@@ -115,6 +115,9 @@ instance
       | otherwise          = do let r' = nextP mtbl ox ix l r
                                 e <- getE mtbl l r
                                 return $ S.Yield (ElmMTable (y:.r:.e)) (y:.l:.r')
+    {-# INLINE mk #-}
+    {-# INLINE step #-}
+  {-# INLINE mkStream #-}
 
 instance
   ( Monad m
@@ -128,7 +131,9 @@ instance
   getE (MTable _ es) l r = PA.readM es $ from l r  --(Z:. Subword (l:.r)) 
   {-# INLINE getE #-}
 
-instance (Next Fake is, Next Fake i) => Next (MTable es) (is:.i) where
+instance
+  (Next Fake is, Next Fake i
+  ) => Next (MTable es) (is:.i) where
   -- TODO how does "Tmany" look like in higher-dimensional space?
   convT (MTable ne _) (IxTmt (ts:.t)) (is:.i)
     = let (as,bs) = convT (Fake ne) ts is
@@ -145,24 +150,38 @@ instance (Next Fake is, Next Fake i) => Next (MTable es) (is:.i) where
     | doneP (Fake ne) o i r' = IxPmt $ nextP (Fake ne) os is ls rs :. initP (Fake ne) o i l
     | otherwise              = IxPmt $ rs :. nextP (Fake ne) o i l r
     where r' = nextP (Fake ne) o i l r
+  {-# INLINE convT #-}
+  {-# INLINE initP #-}
+  {-# INLINE doneP #-}
+  {-# INLINE nextP #-}
 
-data Fake = Fake TNE
+newtype Fake = Fake TNE
 
 instance Next Fake Subword where
   convT (Fake ne) _ ix@(Subword (i:.j))
     | ne == Tmany = (IxTsubword Inner, ix)
     | otherwise   = (IxTsubword Inner, subword i (j-1))
   -- TODO fix initP !
-  initP (Fake ne) _ (Subword (i:.j)) (IxPsubword l) = IxPsubword l
+  initP (Fake ne) (IxTsubword oir) (Subword (i:.j)) (IxPsubword l)
+    | oir == Outer = IxPsubword j
+    | otherwise    = IxPsubword l
   doneP (Fake ne) (IxTsubword _) (Subword (i:.j)) (IxPsubword r) = r>j
-  nextP (Fake ne) (IxTsubword _) (Subword (i:.j)) (IxPsubword l) (IxPsubword r)
+  nextP (Fake ne) (IxTsubword oir) (Subword (i:.j)) (IxPsubword l) (IxPsubword r)
     = IxPsubword $ r+1
+  {-# INLINE convT #-}
+  {-# INLINE initP #-}
+  {-# INLINE doneP #-}
+  {-# INLINE nextP #-}
 
 instance Next Fake Z where
   convT (Fake ne) _ Z = (IxTz,Z)
   initP (Fake ne) _ Z (IxPz b) = IxPz b
   doneP (Fake ne) IxTz Z (IxPz b) = not b
   nextP (Fake ne) IxTz Z (IxPz l) (IxPz r) = IxPz False
+  {-# INLINE convT #-}
+  {-# INLINE initP #-}
+  {-# INLINE doneP #-}
+  {-# INLINE nextP #-}
 
 instance (Next Fake is, Next Fake i) => Next Fake (is:.i) where
   convT (Fake ne) (IxTmt (ts:.t)) (is:.i)
@@ -180,6 +199,10 @@ instance (Next Fake is, Next Fake i) => Next Fake (is:.i) where
     | doneP (Fake ne) o i r' = IxPmt $ nextP (Fake ne) os is ls rs :. initP (Fake ne) o i l
     | otherwise              = IxPmt $ rs :. nextP (Fake ne) o i l r
     where r' = nextP (Fake ne) o i l r
+  {-# INLINE convT #-}
+  {-# INLINE initP #-}
+  {-# INLINE doneP #-}
+  {-# INLINE nextP #-}
 
 instance (NFData (Elm x i), NFData (IxP i), NFData (PA.E arr)) => NFData (Elm (x:.MTable (PA.MutArr m arr)) i) where
   rnf (ElmMTable (a:.b:.c)) = rnf a `seq` rnf b `seq` rnf c

@@ -45,12 +45,14 @@ instance
 instance (Monad m, TermElement m ts i) => Element m (Term ts) i where
   type E (Term ts) = TermElm ts
   getE (Term ts) l r = getSimple ts l r
+  {-# INLINE getE #-}
 
 instance
   ( Monad m
   ) => TermElement m T Z where
   type TermElm T = Z
   getSimple T (IxPz _) (IxPz _) = return Z
+  {-# INLINE getSimple #-}
 
 instance
   ( Monad m
@@ -62,6 +64,7 @@ instance
     = do es <- getSimple ts ls rs
          e  <- getE (Chr e) l r
          return $ es:.e
+  {-# INLINE getSimple #-}
 
 instance
   ( Monad m
@@ -79,14 +82,9 @@ instance
       | otherwise       = do let r' = nextP t ox ix l r
                              e <- getE t l r
                              return $ S.Yield (ElmTerm (y:.r:.e)) (y:.l:.r')
-    {-
-    step (y:.l:.r)
-      | r `leftOfR` ix = do let r' = nextP t ox ix l r
-                            e <- getE t l r
-                            return $ S.Yield (ElmMTable (y:.r:.e)) (y:.l:.r')
-      | otherwise = return $ S.Done
--}
-
+    {-# INLINE mk #-}
+    {-# INLINE step #-}
+  {-# INLINE mkStream #-}
 
 instance (Next (Term ts) is, Next t i) => Next (Term (ts:.t)) (is:.i) where
   initP (Term (ts:.t)) (IxTmt (os:.o)) (is:.i) (IxPmt (ls:.l))
@@ -101,17 +99,21 @@ instance (Next (Term ts) is, Next t i) => Next (Term (ts:.t)) (is:.i) where
     -- next step gets us out of uppermost bounds, so advance next inner
     | doneP t o i r' = IxPmt $ nextP (Term ts) os is ls rs :. initP t o i l
     | otherwise      = IxPmt $ rs :. nextP t o i l r
-    {-
-    | doneP t o i r = IxPmt $ nextP (Term ts) os is ls rs :. initP t o i l
-    | otherwise     = IxPmt $ rs :. nextP t o i l r
-    -}
     where r' = nextP t o i l r
+  {-# INLINE convT #-}
+  {-# INLINE initP #-}
+  {-# INLINE doneP #-}
+  {-# INLINE nextP #-}
 
 instance Next (Term T) Z where
   initP _ _ _ _ = IxPz True
   doneP _ _ _ (IxPz b) = not b
   convT _ _ ix  = (IxTz, ix)
   nextP (Term T) IxTz Z (IxPz _) (IxPz _) = IxPz False
+  {-# INLINE convT #-}
+  {-# INLINE initP #-}
+  {-# INLINE doneP #-}
+  {-# INLINE nextP #-}
 
 
 

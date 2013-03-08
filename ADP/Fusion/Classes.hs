@@ -289,6 +289,10 @@ instance Index Z where
   initT = IxTz
   from _ _ = Z
 
+deriving instance (Show (IxP is), Show (IxP i)) => Show (IxP (is:.i))
+
+deriving instance Show (IxP Z)
+
 -- ** NFData instances
 
 instance (NFData (IxP i)) => NFData (Elm None i) where
