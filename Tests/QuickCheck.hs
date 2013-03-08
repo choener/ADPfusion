@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -189,6 +190,25 @@ prop_Tcc ix@(Z:.Subword(i:.j):.Subword(k:.l)) = zs == ls where
          :. xs VU.! k
          ) | i+1==j, k+1==l ]
 
+prop_Mt_Tcc (Z:.TinySubword (i:.j):.TinySubword (k:.l)) = monadicIO $ do
+    let ix = Z :. subword i j :. subword k l
+    mxs :: (PA.MU IO (Z:.Subword:.Subword) Int) <- run $ PA.fromListM (Z:. Subword (0:.0):.Subword(0:.0)) (Z:. Subword (0:.100):.Subword (0:.100)) [0 .. ]
+    let mt = mtable mxs
+    zs <- run $ (,) <<< mt % Term (T:.Chr xs:.Chr xs) ... SM.toList $ ix
+    ls <- run $ sequence $ [ (PA.readM mxs (Z:.subword i (j-1):.subword k (l-1))) >>= \a -> return (a,Z:.xs VU.! (j-1):.xs VU.! (l-1)) | i<j,k<l ]
+    assert $ zs == ls
+
+
+-- | and with 3-tape grammars
+
+prop_Tccc ix@(Z:.Subword(i:.j):.Subword(k:.l):.Subword(a:.b)) = zs == ls where
+  zs = id <<< Term (T:.Chr xs:.Chr xs:.Chr xs) ... S.toList $ ix
+  ls = [ (  Z
+         :. xs VU.! i
+         :. xs VU.! k
+         :. xs VU.! a
+         ) | i+1==j, k+1==l, a+1==b ]
+
 -- * helper functions and stuff
 
 -- | Helper function to create non-specialized regions
@@ -229,4 +249,17 @@ newtype Small = Small Int
 instance Arbitrary Small where
   arbitrary = Small <$> choose (0,100)
   shrink (Small i) = Small <$> shrink i
+
+newtype TinySubword = TinySubword (Int:.Int)
+  deriving (Show)
+
+instance Arbitrary TinySubword where
+  arbitrary = do a <- choose (0,20)
+                 b <- choose (0,20)
+                 return $ TinySubword $ min a b :. max a b
+  shrink (TinySubword (a:.b)) = [TinySubword (a:.b-1) | a<b]
+
+instance Arbitrary z => Arbitrary (z:.TinySubword) where
+  arbitrary = (:.) <$> arbitrary <*> arbitrary
+  shrink (z:.s) = (:.) <$> shrink z <*> shrink s
 

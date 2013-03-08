@@ -171,6 +171,15 @@ instance (Next Fake is, Next Fake i) => Next Fake (is:.i) where
                     in (IxTmt $ as:.a, bs:.b)
   doneP (Fake ne) (IxTmt (ts:.t)) (is:.i) (IxPmt (rs:.r))
     = doneP (Fake ne) ts is rs
+  initP (Fake ne) (IxTmt (ts:.t)) (is:.i) (IxPmt (ls:.l))
+    = let rs = initP (Fake ne) ts is ls
+          r  = initP (Fake ne) t  i  l
+      in  IxPmt $ rs:.r
+  nextP (Fake ne) (IxTmt (os:.o)) (is:.i) (IxPmt (ls:.l)) (IxPmt (rs:.r))
+    -- next step gets us out of uppermost bounds, so advance next inner
+    | doneP (Fake ne) o i r' = IxPmt $ nextP (Fake ne) os is ls rs :. initP (Fake ne) o i l
+    | otherwise              = IxPmt $ rs :. nextP (Fake ne) o i l r
+    where r' = nextP (Fake ne) o i l r
 
 instance (NFData (Elm x i), NFData (IxP i), NFData (PA.E arr)) => NFData (Elm (x:.MTable (PA.MutArr m arr)) i) where
   rnf (ElmMTable (a:.b:.c)) = rnf a `seq` rnf b `seq` rnf c
