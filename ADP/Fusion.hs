@@ -32,6 +32,7 @@ import ADP.Fusion.Classes
 import ADP.Fusion.Region
 import ADP.Fusion.Table
 import ADP.Fusion.Term
+import ADP.Fusion.Peek
 
 import Debug.Trace
 

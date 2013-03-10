@@ -272,6 +272,8 @@ instance (Monad m) => MkStream m None Subword where
       | otherwise = Nothing
     {-# INLINE step #-}
   {-# INLINE mkStreamI #-}
+  mkStream = mkStreamO
+  {-# INLINE mkStream #-}
 
 -- ** General instance for high-dimensional grammars. (OverlappingInstances)
 

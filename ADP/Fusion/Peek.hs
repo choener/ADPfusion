@@ -6,7 +6,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeOperators #-}
 
-module ADP.Fusion.Chr where
+module ADP.Fusion.Peek where
 
 import Data.Array.Repa.Index
 import qualified Data.Vector.Unboxed as VU
@@ -22,46 +22,51 @@ import ADP.Fusion.Classes
 
 
 
--- | Terminal parser for a single character.
+-- | Works like the Chr, but will not advance the indices AND returns a default
+-- element in case the parser were to ask for an impossible element.
 
-data Chr e = Chr !(VU.Vector e)
+data Peek e = Peek !e !(VU.Vector e)
 
-instance NFData (Chr e) where
-  rnf (Chr ve) = rnf ve
+instance NFData (Peek e) where
+  rnf (Peek e ve) = e `seq` rnf ve
 
+{-
 instance
   ( Monad m
   , VU.Unbox e
-  ) => Element m (Chr e) Subword where
-  type E (Chr e) = e
-  getE (Chr ve) (IxPsubword l) (IxPsubword r) =
+  ) => Element m (Peek e) Subword where
+  type E (Peek e) = e
+  getE (Peek d ve) (IxPsubword l) (IxPsubword r) =
     let e = VU.unsafeIndex ve l
-    in  assert (l<=r && l>=0 && VU.length ve > r) $ return e
+    in  if (l<=r && l>=0 && VU.length ve > r)
+        then $ return e
+        else $ return d
   {-# INLINE getE #-}
+-}
 
 instance
   ( Monad m
   , VU.Unbox e
-  ) => Element m (Chr e) Point where
-  type E (Chr e) = e
-  getE (Chr ve) (IxPpoint l) (IxPpoint r) = assert (l<=r && l>=0 && VU.length ve > r) $ return $ VU.unsafeIndex ve l
+  ) => Element m (Peek e) Point where
+  type E (Peek e) = e
+  getE (Peek d ve) (IxPpoint l) (IxPpoint r) =
+    if (l<=r && l>=0 && VU.length ve > r)
+    then return $ VU.unsafeIndex ve l
+    else return $ d
 
 instance
   ( StreamElm x i
-  ) => StreamElm (x:.Chr e) i where
-  data Elm (x:.Chr e) i = ElmChr (Elm x i :. IxP i :. E (Chr e))
-  type Arg (x:.Chr e)   = Arg x :. E (Chr e)
-  getIxP (ElmChr (_:.k:._)) = k
-  getArg (ElmChr (x:.k:.t)) = getArg x :. t
+  ) => StreamElm (x:.Peek e) i where
+  data Elm (x:.Peek e) i = ElmPeek (Elm x i :. IxP i :. E (Peek e))
+  type Arg (x:.Peek e)   = Arg x :. E (Peek e)
+  getIxP (ElmPeek (_:.k:._)) = k
+  getArg (ElmPeek (x:.k:.t)) = getArg x :. t
   {-# INLINE getIxP #-}
   {-# INLINE getArg #-}
 
 -- |
---
--- TODO this instance is currently "dangerous". When standing alone in a
--- production rule, it will always return a result. We should make this
--- foolproof, maybe?
 
+{-
 instance
   ( VU.Unbox e, NFData e
   , StreamElm ss Subword
@@ -91,22 +96,26 @@ instance
   {-# INLINE mkStreamI #-}
   mkStream = mkStreamO
   {-# INLINE mkStream #-}
+-}
+
+-- | We can simplify the stream functions as we always return an element,
+-- though it sometimes is the default element.
 
 instance
-  ( VU.Unbox e, NFData e, StreamElm ss Point, MkStream m ss Point
-  ) => MkStream m (ss:.Chr e) Point where
-  mkStreamO (ss:.c) ox@(IxTpoint Outer) ix = S.mapM step $ mkStreamO ss ox' ix' where
-    (ox',ix') = convT c ox ix
+  ( VU.Unbox e, NFData e
+  , StreamElm ss Point
+  , MkStream m ss Point
+  ) => MkStream m (ss:.Peek e) Point where
+  mkStreamO (ss:.pk) ox@(IxTpoint Outer) ix = S.mapM step $ mkStreamO ss ox ix where
     step y = do
-      let l = getIxP y
-      let r = toR ix
-      e <- getE c l r
-      return (ElmChr (y:.r:.e))
+       let l = getIxP y
+       let r = toR ix
+       e <- getE pk l r
+       return (ElmPeek (y:.r:.e))
     {-# INLINE step #-}
   {-# INLINE mkStreamO #-}
-  mkStream = mkStreamO
-  {-# INLINE mkStream #-}
 
+{-
 instance Next (Chr e) Subword where
   initP _ (IxTsubword oir) (Subword (i:.j)) (IxPsubword k)
     | oir == Outer && k+1 ==j = IxPsubword $ j    -- rightmost position, (i,i+1) parse
@@ -125,8 +134,9 @@ instance Next (Chr e) Subword where
   {-# INLINE nextP #-}
   {-# INLINE convT #-}
   {-# INLINE doneP #-}
+-}
 
-instance Next (Chr e) Point where
+instance Next (Peek e) Point where
   initP _ (IxTpoint oir) (Point j) (IxPpoint l)
     | oir == Outer && l+1 == j = IxPpoint $ l
     | oir == Outer             = IxPpoint $ j+1
@@ -142,10 +152,12 @@ instance Next (Chr e) Point where
   {-# INLINE convT #-}
   {-# INLINE doneP #-}
 
-instance NFData x => NFData (x:.Chr e) where
-  rnf (x:.Chr ve) = rnf x `seq` rnf ve
+instance NFData x => NFData (x:.Peek e) where
+  rnf (x:.Peek d ve) = rnf x `seq` d `seq` rnf ve
 
-instance (NFData x, VU.Unbox e) => NFData (Elm (x:.Chr e) Subword) where
+{-
+instance (NFData x, VU.Unbox e) => NFData (Elm (x:.Peek e) Subword) where
+-}
 
-instance Build (Chr e)
+instance Build (Peek e)
 

@@ -20,6 +20,7 @@ import ADP.Fusion.Classes
 import ADP.Fusion.Region
 import ADP.Fusion.None
 import ADP.Fusion.Chr
+import ADP.Fusion.Peek
 
 import Debug.Trace
 
@@ -65,6 +66,17 @@ instance
          e  <- getE (Chr e) l r
          return $ es:.e
   {-# INLINE getSimple #-}
+
+instance
+  ( Monad m
+  , TermElement m ts is
+  , Element m (Peek e) i
+  ) => TermElement m (ts:.Peek e) (is:.i) where
+  type TermElm (ts:.Peek e) = TermElm ts :. e
+  getSimple (ts:.Peek d ve) (IxPmt (ls:.l)) (IxPmt (rs:.r))
+    = do es <- getSimple ts ls rs
+         e  <- getE (Peek d ve) l r
+         return $ es :. e
 
 instance
   ( Monad m

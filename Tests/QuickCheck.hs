@@ -29,6 +29,7 @@ import ADP.Fusion.Classes
 import ADP.Fusion.Region
 import ADP.Fusion.Table
 import ADP.Fusion.Term
+import ADP.Fusion.Peek
 
 
 -- | Check if a single region returns the correct result (namely a slice from
@@ -64,6 +65,15 @@ prop_C sw@(Subword (i:.j)) = zs == ls where
 prop_CC sw@(Subword (i:.j)) = zs == ls where
   zs = (,) <<< Chr xs % Chr xs ... S.toList $ sw
   ls = [(xs VU.! i, xs VU.! (i+1)) | i+2==j]
+
+-- | Single character plus peeking
+
+{-
+prop_P_PC p@(Point j) = zs == ls where
+  zs = (,) <<< Peek (-1) xs % Chr xs ... S.toList $ p
+  ls = [(f j, xs VU.! j)]
+  f j = if j>=0 then xs VU.! j else (-1)
+-}
 
 -- | 2x Single-character parser bracketing a single region.
 
@@ -179,6 +189,13 @@ prop_Tc ix@(Z:.Subword(i:.j)) = zs == ls where
 prop_P_Tt ix@(Z:.Point i) = zs == ls where
   zs = id <<< Term (T:.Chr xs) ... S.toList $ ix
   ls = [ (Z:.xs VU.! (i-1)) | i>0 ]
+
+-- | with peeking
+
+prop_TpTc ix@(Z:.Point i) = traceShow (zs,ls) $ zs == ls where
+  zs = (,) <<< Term (T:.Chr xs) % Term (T:.Chr xs) ... S.toList $ ix
+  ls = [ (Z:.f i, Z:.xs VU.! (i-1)) | i>0 ]
+  f i = if i>1 then xs VU.! (i-2) else (-1)
 
 prop_Mt_Tc ix@(Z:.Subword(i:.j)) = monadicIO $ do
     mxs :: (PA.MU IO (Z:.Subword) Int) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ]
