@@ -1,3 +1,4 @@
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
@@ -32,6 +33,7 @@ import ADP.Fusion.Term
 import ADP.Fusion.Peek
 
 
+{-
 -- | Check if a single region returns the correct result (namely a slice from
 -- the input).
 
@@ -189,26 +191,54 @@ prop_Tc ix@(Z:.Subword(i:.j)) = zs == ls where
 prop_P_Tt ix@(Z:.Point i) = zs == ls where
   zs = id <<< Term (T:.Chr xs) ... S.toList $ ix
   ls = [ (Z:.xs VU.! (i-1)) | i>0 ]
+-}
 
 -- | with peeking
 
-prop_TpTc ix@(Z:.Point i) = traceShow (zs,ls) $ zs == ls where
+{-
+prop_P_CC ix@(Z:.Point i) = traceShow (zs,ls) $ zs == ls where
+  zs = (,) <<< Chr xs % Chr xs ... S.toList $ ix
+  ls = [ (xs VU.! (i-2), xs VU.! (i-1)) | i>1 ]
+-}
+
+prop_TcTc ix@(Z:.Point i) = {- traceShow (zs,ls) $ -} zs == ls where
   zs = (,) <<< Term (T:.Chr xs) % Term (T:.Chr xs) ... S.toList $ ix
+  ls = [ (Z:.xs VU.! (i-2), Z:.xs VU.! (i-1)) | i>1 ]
+
+-- deriving instance Show (Elm (None :. Term (T :. Chr Int)) (Z :. Point))
+
+prop_TpTc ix@(Z:.Point i) = {- traceShow (zs,ls) $ -} zs == ls where
+  zs = (,) <<< Term (T:.Peek (-1) xs) % Term (T:.Chr xs) ... S.toList $ ix
   ls = [ (Z:.f i, Z:.xs VU.! (i-1)) | i>0 ]
   f i = if i>1 then xs VU.! (i-2) else (-1)
 
+prop_TcTpTc ix@(Z:.Point i) = {- traceShow (zs,ls) $ -} zs == ls where
+  zs = (,,) <<< Term (T:.Chr xs) % Term (T:.Peek (-1) xs) % Term (T:.Chr xs) ... S.toList $ ix
+  ls = [ (Z:.xs VU.! (i-2), Z:.f i, Z:.xs VU.! (i-1)) | i>1 ]
+  f i = if i>1 then xs VU.! (i-2) else (-1)
+
+{-
 prop_Mt_Tc ix@(Z:.Subword(i:.j)) = monadicIO $ do
     mxs :: (PA.MU IO (Z:.Subword) Int) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ]
     let mt = mtable mxs
     zs <- run $ (,) <<< mt % Term (T:.Chr xs) ... SM.toList $ ix
     ls <- run $ sequence $ [(PA.readM mxs (Z:.subword i (j-1))) >>= \a -> return (a,Z:.xs VU.! (j-1)) | i<j ]
     assert $ zs == ls
+-}
 
 prop_P_Mt_Tt ix@(Z:.Point i) = monadicIO $ do
     mxs :: (PA.MU IO (Z:.Point) Int) <- run $ PA.fromListM (Z:.Point 0) (Z:.Point 100) [0 .. ]
     let mt = mtable mxs
     zs <- run $ (,) <<< mt % Term (T:.Chr xs) ... SM.toList $ ix
     ls <- run $ sequence $ [(PA.readM mxs (Z:.Point (i-1))) >>= \a -> return (a,Z:.xs VU.! (i-1)) | i>0 ]
+    assert $ zs == ls
+
+prop_P_Mt_TpTc ix@(Z:.Point i) = monadicIO $ do
+    mxs :: (PA.MU IO (Z:.Point) Int) <- run $ PA.fromListM (Z:.Point 0) (Z:.Point 100) [0 .. ]
+    let mt = mtable mxs
+    let f i = if i>1 then xs VU.! (i-2) else (-1)
+    zs <- run $ (,,) <<< mt % Term (T:.Peek (-1) xs) % Term (T:.Chr xs) ... SM.toList $ ix
+    ls <- run $ sequence $ [(PA.readM mxs (Z:.Point (i-1))) >>= \a -> return (a,Z:.f i,Z:.xs VU.! (i-1)) | i>0 ]
     assert $ zs == ls
 
 -- | and with 2-tape grammars
@@ -237,6 +267,15 @@ prop_P_Mt_Ttt ix@(Z:.Point i:.Point j) = monadicIO $ do
     let mt = mtable mxs
     zs <- run $ (,) <<< mt % Term (T:.Chr xs:.Chr xs) ... SM.toList $ ix
     ls <- run $ sequence $ [(PA.readM mxs (Z:.Point (i-1):.Point (j-1))) >>= \a -> return (a,Z:.xs VU.! (i-1):.xs VU.! (j-1)) | i>0,j>0 ]
+    assert $ zs == ls
+
+prop_P_Mt_Tpp_Ttt ix@(Z:.Point i:.Point j) = monadicIO $ do
+    mxs :: (PA.MU IO (Z:.Point:.Point) Int) <- run $ PA.fromListM (Z:.Point 0:.Point 0) (Z:.Point 100:.Point 100) [0 .. ]
+    let mt = mtable mxs
+    let f i j = Z:. (if i>1 then xs VU.! (i-2) else (-1)) :. (if j>1 then xs VU.! (j-2) else (-1))
+    zs <- run $ (,,) <<< mt % Term (T:.Peek (-1) xs:.Peek (-1) xs) % Term (T:.Chr xs:.Chr xs) ... SM.toList $ ix
+    ls <- run $ sequence $ [(PA.readM mxs (Z:.Point (i-1):.Point (j-1))) >>= \a -> return (a,f i j,Z:.xs VU.! (i-1):.xs VU.! (j-1)) | i>0,j>0 ]
+    -- traceShow (zs,ls) $
     assert $ zs == ls
 
 -- | and with 3-tape grammars

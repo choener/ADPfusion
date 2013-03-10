@@ -41,6 +41,8 @@ import qualified Data.Vector.Unboxed as VU
 import Data.Array.Repa.Index.Subword
 import Data.Array.Repa.Index.Point
 
+import Debug.Trace
+
 
 
 -- * Classes for generalized ADPfusion.
@@ -208,7 +210,7 @@ instance Index Point where
 
 instance Next None Point where
   initP _ _ _ (IxPpoint k) = IxPpoint k
-  doneP _ _ (Point j) (IxPpoint r) = r>j || r<0
+  doneP _ _ (Point j) (IxPpoint r) = {- traceShow ("doneN",j,r,r>j || r<0) $ -} r>j || r<0
   {-# INLINE initP #-}
   {-# INLINE doneP #-}
 
@@ -223,6 +225,10 @@ deriving instance Show (IxP Subword)
 deriving instance Eq (IxP Subword)
 
 deriving instance Show (IxT Subword)
+
+deriving instance Show (IxP Point)
+
+deriving instance Show (IxT Point)
 
 -- | Build the stack using (%)
 
@@ -256,6 +262,7 @@ instance
   getArg (ElmNone i) = Z -- i `deepseq` Z
   {-# INLINE getIxP #-}
   {-# INLINE getArg #-}
+
 
 -- ** Specialized 'MkStream' for 1-dim subwords indexing, or vanilla CFGs on one tape.
 
@@ -325,7 +332,11 @@ instance Index Z where
 
 deriving instance (Show (IxP is), Show (IxP i)) => Show (IxP (is:.i))
 
+deriving instance (Show (IxT is), Show (IxT i)) => Show (IxT (is:.i))
+
 deriving instance Show (IxP Z)
+
+deriving instance Show (IxT Z)
 
 -- ** NFData instances
 

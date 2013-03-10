@@ -20,6 +20,8 @@ import Data.Array.Repa.Index.Point
 
 import ADP.Fusion.Classes
 
+import Debug.Trace
+
 
 
 -- | Terminal parser for a single character.
@@ -113,14 +115,14 @@ instance Next (Chr e) Subword where
     | oir == Outer            = IxPsubword $ j+1  -- wrong size of region
     | otherwise = IxPsubword $ k+1                -- normal, inner behaviour
   nextP _ (IxTsubword oir) (Subword (i:.j)) (IxPsubword k) (IxPsubword l)
-    | otherwise    = IxPsubword $ j+1 -- TODO is this correct ?
+    | otherwise    = {- traceShow ("next",i,j,k,l) $ -} IxPsubword $ j+1 -- TODO is this correct ?
   convT _ ox@(IxTsubword oir) ix@(Subword (i:.j)) = (ox, Subword (i:.j-1))
     {-
     | oir == Outer = (IxTsubword Outer, Subword (i:.j-1))
     | otherwise    = (ox, Subword (i:.j-1))
     -}
   doneP (Chr e) (IxTsubword oir) (Subword (i:.j)) (IxPsubword r)
-    = r>j
+    = {- traceShow ("done",oir,i,j,r) $ -} r>j
   {-# INLINE initP #-}
   {-# INLINE nextP #-}
   {-# INLINE convT #-}
@@ -128,7 +130,7 @@ instance Next (Chr e) Subword where
 
 instance Next (Chr e) Point where
   initP _ (IxTpoint oir) (Point j) (IxPpoint l)
-    | oir == Outer && l+1 == j = IxPpoint $ l
+    | oir == Outer && l+1 == j = IxPpoint $ j
     | oir == Outer             = IxPpoint $ j+1
     | otherwise                = IxPpoint $ l
   nextP _ (IxTpoint oir) (Point j) (IxPpoint l) (IxPpoint r)

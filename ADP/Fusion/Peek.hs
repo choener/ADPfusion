@@ -50,8 +50,8 @@ instance
   ) => Element m (Peek e) Point where
   type E (Peek e) = e
   getE (Peek d ve) (IxPpoint l) (IxPpoint r) =
-    if (l<=r && l>=0 && VU.length ve > r)
-    then return $ VU.unsafeIndex ve l
+    if (l<=r && l>0 && VU.length ve > r)
+    then return $ VU.unsafeIndex ve (l-1)
     else return $ d
 
 instance
@@ -138,12 +138,12 @@ instance Next (Chr e) Subword where
 
 instance Next (Peek e) Point where
   initP _ (IxTpoint oir) (Point j) (IxPpoint l)
-    | oir == Outer && l+1 == j = IxPpoint $ l
-    | oir == Outer             = IxPpoint $ j+1
+--    | oir == Outer && l+1 == j = IxPpoint $ j
+--    | oir == Outer             = IxPpoint $ j+1
     | otherwise                = IxPpoint $ l
   nextP _ (IxTpoint oir) (Point j) (IxPpoint l) (IxPpoint r)
     = IxPpoint $ j+1 -- TODO is this correct ?
-  convT _ ox (Point k) = (ox, Point $ k-1)
+  convT _ ox (Point k) = (ox, Point $ k)
   -- TODO check j<0 needed?
   doneP _ _ (Point j) (IxPpoint r)
     = r>j || j<0

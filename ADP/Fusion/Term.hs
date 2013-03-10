@@ -83,17 +83,20 @@ instance
   , TermElement m ts i
   , MkStream m ss i, Next (Term ts) i, StreamElm ss i
   , Index i
+--  , Show i, Show (IxP i), Show (IxT i), Show (Elm ss i)
   ) => MkStream m (ss:.Term ts) i where
   mkStream !(ss:.t@(Term ts)) !ox !ix = S.flatten mk step Unknown $ mkStream ss ox' ix' where
     (ox',ix') = convT t ox ix
     mk !y = do
       let l = getIxP y
       let r = initP t ox ix l
+      -- traceShow ("mk",ox,ix,l,r,y) $
       return (y:.l:.r)
     step !(y:.l:.r)
-      | doneP t ox ix r = return $ S.Done
+      | doneP t ox ix r = {- traceShow ("step-done ",ix,ox,l,r,y) $ -} return $ S.Done
       | otherwise       = do let r' = nextP t ox ix l r
                              e <- getE t l r
+                             -- traceShow ("step-yield",ix,ox,l,r,y) $
                              return $ S.Yield (ElmTerm (y:.r:.e)) (y:.l:.r')
     {-# INLINE mk #-}
     {-# INLINE step #-}
