@@ -148,30 +148,30 @@ library
 --    PrimitiveArray == 0.5.*
   exposed-modules:
     ADP.Fusion
-    ADP.Fusion.Apply
-    ADP.Fusion.Chr
-    ADP.Fusion.Classes
-    ADP.Fusion.Empty
-    ADP.Fusion.None
-    ADP.Fusion.Region
-    ADP.Fusion.Table
-    Tests.QuickCheck
+--    ADP.Fusion.Apply
+--    ADP.Fusion.Chr
+--    ADP.Fusion.Classes
+--    ADP.Fusion.Empty
+--    ADP.Fusion.None
+--    ADP.Fusion.Region
+--    ADP.Fusion.Table
+--    Tests.QuickCheck
 
   ghc-options:
     -O2 -funbox-strict-fields
 
-executable Test
-  main-is:
-    Test.hs
-  ghc-options:
-    -Odph
-    -funbox-strict-fields
-    -funfolding-use-threshold100
-    -funfolding-keeness-factor100
---    -fnew-codegen
-    -fllvm
-    -optlo-O3 -optlo-std-compile-opts
-    -fllvm-tbaa
+-- executable Test
+--   main-is:
+--     Test.hs
+--   ghc-options:
+--     -Odph
+--     -funbox-strict-fields
+--     -funfolding-use-threshold100
+--     -funfolding-keeness-factor100
+-- --    -fnew-codegen
+--     -fllvm
+--     -optlo-O3 -optlo-std-compile-opts
+--     -fllvm-tbaa
 
 --executable GAPcriterion
 --  buildable:
