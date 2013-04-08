@@ -56,6 +56,9 @@ class Index i where
 instance Index (Int:!:Int) where
   type InOut (Int:!:Int) = InnerOuter
 
+instance Index (is:.i) where
+  type InOut (is:.i) = InOut is :. InnerOuter
+
 class (Monad m) => MkStream m x i where
   mkStream :: x -> InOut i -> i -> S.Stream m (Elm x i)
 
@@ -160,34 +163,71 @@ data Term ts = Term !ts
 
 data T = T
 
+class TermIdx ix where
+  allOuter :: ix -> InOut ix -> Bool
+  anyOuter :: ix -> InOut ix -> Bool
+
+instance TermIdx Z where
+  allOuter Z _ = True
+  anyOuter Z _ = True
+  {-# INLINE allOuter #-}
+  {-# INLINE anyOuter #-}
+
+instance (TermIdx is) => TermIdx (is:.i) where
+  allOuter (is:._) (os:.o) = case o of
+    Inner -> False
+    Outer -> allOuter is os
+  anyOuter (is:._) (os:.o) = case o of
+    Outer -> True
+    Inner -> anyOuter is os
+  {-# INLINE allOuter #-}
+  {-# INLINE anyOuter #-}
+
+class TermElms ts ix where
+  data TermElm ts ix :: *
+--  data MaybeTermElm ts ix :: *
+  preAllTerm :: ts -> ix -> TermElm ts ix
+  preAnyTerm :: ts -> ix -> TermElm ts ix
+
+class TermIoIdx ts ix where
+  termIO :: ts -> InOut ix -> ix -> InOut ix
+  termIX :: ts -> InOut ix -> ix -> ix
+
 instance
   ( Monad m
-  , MkStream m ls i
-  , TermStream m ls i ts i
-  ) => MkStream m (ls:!:Term ts) i where
+  , TermIdx ix
+  , TermElms ts ix
+  , TermIoIdx ts ix
+  , MkStream m ls ix
+  ) => MkStream m (ls:!:Term ts) ix where
+  mkStream (ls:!:Term ts) io ix
+    | allOuter ix io = let pre = preAllTerm ts ix
+                           f p = return undefined
+                       in pre `seq` S.mapM (f pre) $ mkStream ls (termIO ts io ix) (termIX ts io ix)
+    | anyOuter ix io = let pre = preAnyTerm ts ix
+                           f p = return undefined
+                           mk  = undefined
+                           step = undefined
+                       in pre `seq` S.mapM (f pre) $ S.flatten mk step Unknown $ mkStream ls (termIO ts io ix) (termIX ts io ix)
+    | otherwise      = let mk = undefined
+                           step = undefined
+                       in S.flatten mk step Unknown $ mkStream ls (termIO ts io ix) (termIX ts io ix)
+  {-# INLINE mkStream #-}
 
-class TermElms ts i where
-  data TermElm x i :: *
+testMT :: Int -> Int -> Int
+testMT i j = Sp.foldl' (+) 0
+           $ S.map (apply mtp3 . getArg)
+           $ mkStream (Z :!: Term (T:.Chr testVs:.Chr testVs) :!: Tbl4 testAA :!: Term (T:.Chr testVs:.Chr testVs))
+                      (Z:.Outer:.Outer)
+                      (Z:.(i:!:j):!:(i:!:j))
 
-class
-  ( Monad m
-  ) => TermStream m ls i ts j where
-  termStream :: InOut j -> j -> S.Stream m (Elm ls i) -> S.Stream m (Elm ls i :!: TermElm ts j)
+data Tbl4 x = Tbl4 !(R.Array R.U DIM4 x)
 
-instance Index Z where
-  type InOut Z = Z
+testAA :: R.Array R.U DIM4 Int
+testAA = R.fromUnboxed (R.ix4 20 20 20 20) (VU.fromList [ 0 .. 20^4 ])
+{-# NOINLINE testAA #-}
 
-instance Index (is :. (Int:!:Int)) where
-  type InOut (is :. (Int:!:Int)) = InOut is :. InnerOuter
-
-instance
-  ( Monad m
-  ) => TermStream m ls i T Z where
-
-instance
-  ( Monad m
-  ) => TermStream m ls i (ts:.Chr c) (is :. (Int:!:Int)) where
-  termStream (io:.Outer) (js:.(i:!:j)) xs = undefined
+mtp3 (T:.a:.b) k (T:.c:.d) = a+b + k + c+d
 
 -- type level reverse
 
