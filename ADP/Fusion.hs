@@ -160,21 +160,47 @@ data Term ts = Term !ts
 
 data T = T
 
+instance
+  ( Monad m
+  , MkStream m ls i
+  , TermStream m ls i ts i
+  ) => MkStream m (ls:!:Term ts) i where
+
+class TermElms ts i where
+  data TermElm x i :: *
+
+class
+  ( Monad m
+  ) => TermStream m ls i ts j where
+  termStream :: InOut j -> j -> S.Stream m (Elm ls i) -> S.Stream m (Elm ls i :!: TermElm ts j)
+
+instance Index Z where
+  type InOut Z = Z
+
+instance Index (is :. (Int:!:Int)) where
+  type InOut (is :. (Int:!:Int)) = InOut is :. InnerOuter
+
+instance
+  ( Monad m
+  ) => TermStream m ls i T Z where
+
+instance
+  ( Monad m
+  ) => TermStream m ls i (ts:.Chr c) (is :. (Int:!:Int)) where
+  termStream (io:.Outer) (js:.(i:!:j)) xs = undefined
+
 -- type level reverse
 
-type family R l r :: *
-
-type instance R Z r = r
-
-type instance R (ts:.h) r = R ts (r:.h)
-
 class Rev l r where
+  type R l r :: *
   rev :: l -> r -> R l r
 
 instance Rev Z r where
+  type R Z r = r
   rev Z r = r
 
 instance (Rev ts (rs:.h)) => Rev (ts:.h) rs where
+  type R (ts:.h) rs = R ts (rs:.h)
   rev (ts:.h) rs = rev ts (rs:.h)
 
 
