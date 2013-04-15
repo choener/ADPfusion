@@ -1,3 +1,5 @@
+{-# LANGUAGE EmptyDataDecls #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -25,8 +27,10 @@ import qualified Data.Vector.Fusion.Stream as Sp
 import qualified Data.Vector.Unboxed as VU
 import qualified Data.Vector.Unboxed.Mutable as VUM
 import Data.Vector.Fusion.Stream.Size
+import GHC.Exts (inline)
 
 import Data.Array.Repa.Index.Subword
+import Data.Array.Repa.ExtShape
 import qualified Data.PrimitiveArray as PA
 import qualified Data.PrimitiveArray.Zero as PA
 
@@ -53,8 +57,13 @@ class Elms x i where
 class Index i where
   type InOut i :: *
 
+{-
 instance Index (Int:!:Int) where
   type InOut (Int:!:Int) = InnerOuter
+-}
+
+instance Index Subword where
+  type InOut Subword = InnerOuter
 
 instance Index (is:.i) where
   type InOut (is:.i) = InOut is :. InnerOuter
@@ -65,9 +74,9 @@ class (Monad m) => MkStream m x i where
 data Chr x = Chr !(VU.Vector x)
 
 instance
-  ( Elms ls (Int:!:Int)
-  ) => Elms (ls :!: Chr x) (Int :!: Int) where
-  data Elm (ls :!: Chr x) (Int :!: Int) = ElmChr !(Elm ls (Int :!: Int)) !x !(Int:!:Int)
+  ( Elms ls Subword
+  ) => Elms (ls :!: Chr x) Subword where
+  data Elm (ls :!: Chr x) Subword = ElmChr !(Elm ls Subword) !x !Subword
   type Arg (ls :!: Chr x) = Arg ls :. x
   getArg !(ElmChr ls x _) = getArg ls :. x
   getIdx !(ElmChr _ _ idx) = idx
@@ -82,18 +91,101 @@ instance
 instance
   ( Monad m
   , VU.Unbox x
-  , Elms ls (Int:!:Int)
-  , MkStream m ls (Int :!: Int)
-  ) => MkStream m (ls :!: Chr x) (Int :!: Int) where
-  mkStream !(ls :!: Chr xs) Outer !(i :!: j) = let dta = VU.unsafeIndex xs (j-1) in dta `seq` S.map (\s -> ElmChr s dta (j-1 :!: j)) $ mkStream ls Outer (i :!: j-1)
---  mkStream !(ls :!: Chr xs) Outer !(i :!: j) = S.map (\s -> ElmChr s (VU.unsafeIndex xs (j-1)) (j-1 :!: j)) $ mkStream ls Outer (i :!: j-1)
-  mkStream !(ls :!: Chr xs) Inner !(i :!: j) = S.map (\s -> let (k:!:l) = getIdx s in ElmChr s (VU.unsafeIndex xs l) (l:!:j)) $ mkStream ls Inner (i :!: j-1)
+  , Elms ls Subword
+  , MkStream m ls Subword
+  ) => MkStream m (ls :!: Chr x) Subword where
+  mkStream !(ls :!: Chr xs) Outer !ij@(Subword(i:.j)) =
+    let dta = VU.unsafeIndex xs (j-1)
+    in  dta `seq` S.map (\s -> ElmChr s dta (subword (j-1) j)) $ mkStream ls Outer (subword i $ j-1)
+  mkStream !(ls :!: Chr xs) Inner !ij@(Subword(i:.j)) =
+    S.map (\s -> let (Subword (k:.l)) = getIdx s
+                 in  ElmChr s (VU.unsafeIndex xs l) (subword l j)
+          ) $ mkStream ls Inner (subword i $ j-1)
   {-# INLINE mkStream #-}
+
+data GChr x e = GChr !(VU.Vector x)
+
+class GChrExtract x e where
+  type GChrRet x e :: *
+  gChrChk :: GChr x e -> Int -> Bool
+  gChrGet :: GChr x e -> Int -> GChrRet x e
+
+data GChrDef
+
+instance (VUM.Unbox x) => GChrExtract x GChrDef where
+  type GChrRet x GChrDef = x
+  gChrChk _ !k = True
+  gChrGet !(GChr xs) !k = VU.unsafeIndex xs k
+  {-# INLINE gChrChk #-}
+  {-# INLINE gChrGet #-}
+
+gchr :: VU.Unbox e => VU.Vector e -> GChr e GChrDef
+gchr !xs = GChr xs
+{-# INLINE gchr #-}
+
+data PeekL
+
+instance (VUM.Unbox x) => GChrExtract x PeekL where
+  type GChrRet x PeekL = (x :!: x)
+  gChrChk _ !k = k>0
+  gChrGet !(GChr xs) !k = (VU.unsafeIndex xs (k-1) :!: VU.unsafeIndex xs k)
+  {-# INLINE gChrChk #-}
+  {-# INLINE gChrGet #-}
+
+chrL :: VU.Unbox e => VU.Vector e -> GChr e PeekL
+chrL !xs = GChr xs
+{-# INLINE chrL #-}
+
+data PeekR
+
+instance (VUM.Unbox x) => GChrExtract x PeekR where
+  type GChrRet x PeekR = (x:!:x)
+  gChrChk !(GChr xs) !k = k+1 < VU.length xs
+  gChrGet !(GChr xs) !k = (VU.unsafeIndex xs k :!: VU.unsafeIndex xs (k+1))
+
+chrR :: VU.Unbox e => VU.Vector e -> GChr e PeekR
+chrR !xs = GChr xs
+{-# INLINE chrR #-}
+
+
+
+instance
+  ( Elms ls Subword
+  ) => Elms (ls :!: GChr e r) Subword where
+  data Elm (ls :!: GChr e r) Subword = ElmGChr !(Elm ls Subword) !(GChrRet e r) !Subword
+  type Arg (ls :!: GChr e r) = Arg ls :. (GChrRet e r)
+  getArg !(ElmGChr ls x _) = getArg ls :. x
+  getIdx !(ElmGChr _ _ i) = i
+  {-# INLINE getArg #-}
+  {-# INLINE getIdx #-}
+
+instance
+  ( Monad m
+  , VU.Unbox x
+  , GChrExtract x e
+  , Elms ls Subword
+  , MkStream m ls Subword
+  ) => MkStream m (ls :!: GChr x e) Subword where
+  mkStream !(ls :!: gchr) Outer !ij@(Subword(i:.j))
+    | gChrChk gchr (j-1) = let dta = gChrGet gchr $ j-1
+                           in  dta `seq` S.map (\s -> ElmGChr s dta (subword (j-1) j)) $ mkStream ls Outer (subword i $ j-1)
+    | otherwise = S.empty
+  mkStream !(ls :!: gchr) Inner !ij@(Subword(i:.j))
+    = S.map (\s -> let (Subword (k:.l)) = getIdx s
+                   in  ElmGChr s (gChrGet gchr $ l) (subword l j))
+    $ S.filter (\s -> let (Subword (k:.l)) = getIdx s
+                      in  gChrChk gchr $ l)
+    $ mkStream ls Inner (subword i $ j-1)
+  {-# INLINE mkStream #-}
+
+
+
+
 
 instance
   (
-  ) => Elms Z (Int:!:Int) where
-  data Elm Z (Int:!:Int) = ElmZ !(Int:!:Int)
+  ) => Elms Z Subword where
+  data Elm Z Subword = ElmZ !Subword
   type Arg Z = Z
   getArg !(ElmZ _) = Z
   getIdx !(ElmZ ij) = ij
@@ -102,23 +194,23 @@ instance
 
 instance
   ( Monad m
-  ) => MkStream m Z (Int:!:Int) where
-  mkStream Z Outer (i:!:j) = S.unfoldr step i where
-    step k
-      | k==j      = Just $ (ElmZ (i:!:i), j+1)
+  ) => MkStream m Z Subword where
+  mkStream Z Outer !(Subword (i:.j)) = S.unfoldr step i where
+    step !k
+      | k==j      = Just $ (ElmZ (subword i i), j+1)
       | otherwise = Nothing
-  mkStream Z Inner (i:!:j) = S.unfoldr step i where
-    step k
-      | k<=j      = Just $ (ElmZ (i:!:i), j+1)
+  mkStream Z Inner !(Subword (i:.j)) = S.unfoldr step i where
+    step !k
+      | k<=j      = Just $ (ElmZ (subword i i), j+1)
       | otherwise = Nothing
   {-# INLINE mkStream #-}
 
-data Tbl x = Tbl !(R.Array R.U DIM2 x)
+data Tbl x = Tbl !(PA.Unboxed (Z:.Subword) x)
 
 instance
-  ( Elms ls (Int:!:Int)
-  ) => Elms (ls :!: Tbl x) (Int:!:Int) where
-  data Elm (ls :!: Tbl x) (Int:!:Int) = ElmTbl !(Elm ls (Int:!:Int)) !x !(Int:!:Int)
+  ( Elms ls Subword
+  ) => Elms (ls :!: Tbl x) Subword where
+  data Elm (ls :!: Tbl x) Subword = ElmTbl !(Elm ls Subword) !x !Subword
   type Arg (ls :!: Tbl x) = Arg ls :. x
   getArg !(ElmTbl ls x _) = getArg ls :. x
   getIdx !(ElmTbl _ _ idx) = idx
@@ -128,23 +220,23 @@ instance
 instance
   ( Monad m
   , VU.Unbox x
-  , Elms ls (Int:!:Int)
-  , MkStream m ls (Int:!:Int)
-  ) => MkStream m (ls:!:Tbl x) (Int:!:Int) where
-  mkStream (ls:!:Tbl xs) Outer (i:!:j) = S.map (\s -> let (k:!:l) = getIdx s in ElmTbl s (R.unsafeIndex xs (R.ix2 i j)) (l:!:j)) $ mkStream ls Inner (i:!:j)
-  mkStream (ls:!:Tbl xs) Inner (i:!:j) = S.flatten mk step Unknown $ mkStream ls Inner (i:!:j) where
-    mk !s = let (k:!:l) = getIdx s in return (s :!: l)
+  , Elms ls Subword
+  , MkStream m ls Subword
+  ) => MkStream m (ls:!:Tbl x) Subword where
+  mkStream (ls:!:Tbl xs) Outer ij@(Subword (i:.j)) = S.map (\s -> let (Subword (k:.l)) = getIdx s in ElmTbl s (xs PA.! (Z:.subword l j)) (subword l j)) $ mkStream ls Inner ij
+  mkStream (ls:!:Tbl xs) Inner ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls Inner ij where
+    mk !s = let (Subword (k:.l)) = getIdx s in return (s :!: l)
     step !(s :!: k)
       | k > j = return S.Done
-      | otherwise = return $ S.Yield (ElmTbl s (R.unsafeIndex xs (R.ix2 k j)) (k:!:j)) (s :!: k+1)
+      | otherwise = return $ S.Yield (ElmTbl s (xs PA.! (Z:.subword k j)) (subword k j)) (s :!: k+1)
   {-# INLINE mkStream #-}
 
 testF :: Int -> Int -> Int
-testF i j = Sp.foldl' (+) 0 $ S.map (apply (p7) . getArg) $ mkStream (Z :!: Chr testVs :!: Chr testVs :!: Tbl testA :!: Tbl testA :!: Tbl testA :!: Chr testVs :!: Chr testVs) Outer (i:!:j)
+testF i j = Sp.foldl' (+) 0 $ S.map (apply (p7') . getArg) $ mkStream (Z :!: chrR testVs :!: chrL testVs :!: Tbl testA :!: Tbl testA :!: Tbl testA :!: chrR testVs :!: chrL testVs) Outer (Subword (i:.j))
 {-# NOINLINE testF #-}
 
-testA :: R.Array R.U DIM2 Int
-testA = R.fromUnboxed (R.ix2 100 100) testVs
+testA :: PA.Unboxed (Z:.Subword) Int -- R.Array R.U R.DIM2 Int
+testA = PA.fromAssocs (Z:.subword 0 0) (Z:.subword 0 50) 0 []  -- R.fromUnboxed (R.ix2 100 100) testVs
 {-# NOINLINE testA #-}
 
 testVs :: VU.Vector Int
@@ -156,9 +248,11 @@ p4 a b c d = a+b+c+d
 p5 a b c d e = a+b+c+d+e
 p6 a b c d e f = a+b+c+d+e+f
 p7 a b c d e f g = a+b+c+d+e+f+g
+p7' (a:!:a') (b:!:b') c d e (f:!:f') (g:!:g') = a+b+c+d+e+f+g + a'+b'+f'+g'
 
 -- multi-tape version
 
+{-
 data Term ts = Term !ts
 
 data T = T
@@ -228,6 +322,7 @@ testAA = R.fromUnboxed (R.ix4 20 20 20 20) (VU.fromList [ 0 .. 20^4 ])
 {-# NOINLINE testAA #-}
 
 mtp3 (T:.a:.b) k (T:.c:.d) = a+b + k + c+d
+-}
 
 -- type level reverse
 
