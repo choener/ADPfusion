@@ -230,21 +230,6 @@ deriving instance Show (IxP Point)
 
 deriving instance Show (IxT Point)
 
--- | Build the stack using (%)
-
-class Build x where
-  type Stack x :: *
-  type Stack x = None :. x
-  build :: x -> Stack x
-  default build :: (Stack x ~ (None :. x)) => x -> Stack x
-  build x = None :. x
-  {-# INLINE build #-}
-
-instance Build x => Build (x:.y) where
-  type Stack (x:.y) = Stack x :. y
-  build (x:.y) = build x :. y
-  {-# INLINE build #-}
-
 
 
 -- | invisible left-most object in production rules.

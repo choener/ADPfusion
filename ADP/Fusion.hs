@@ -1,3 +1,4 @@
+{-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE EmptyDataDecls #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -28,6 +29,11 @@ import qualified Data.Vector.Unboxed as VU
 import qualified Data.Vector.Unboxed.Mutable as VUM
 import Data.Vector.Fusion.Stream.Size
 import GHC.Exts (inline)
+import Data.Strict.Tuple
+import Data.Strict.Maybe
+import Prelude hiding (Maybe(..))
+import qualified Prelude as P
+import Control.Monad.Primitive
 
 import Data.Array.Repa.Index.Subword
 import Data.Array.Repa.ExtShape
@@ -40,13 +46,25 @@ import ADP.Fusion.Apply
 
 import Debug.Trace
 
-data InnerOuter
-  = Inner
-  | Outer
+-- | The Inner/Outer handler. We encode three states. We are in 'Outer' or
+-- right-most position, or 'Inner' position. The 'Inner' position encodes if
+-- loop conditional 'CNC' need to be performed.
+--
+-- In f <<< Z % table % table, the two tables already perform a conditional
+-- branch, so that Z/table does not have to check boundary conditions.
+--
+-- In f <<< Z % table % char, no check is performed in table/char, so Z/table
+-- needs to perform a boundary check.
+
+data CNC
+  = Check
+  | NoCheck
   deriving (Eq,Show)
 
-infixl 3 :!:
-data a :!: b = !a :!: !b
+data InnerOuter
+  = Inner !CNC
+  | Outer
+  deriving (Eq,Show)
 
 class Elms x i where
   data Elm x i :: *
@@ -73,6 +91,8 @@ class (Monad m) => MkStream m x i where
 
 data Chr x = Chr !(VU.Vector x)
 
+instance Build (Chr x)
+
 instance
   ( Elms ls Subword
   ) => Elms (ls :!: Chr x) Subword where
@@ -97,13 +117,16 @@ instance
   mkStream !(ls :!: Chr xs) Outer !ij@(Subword(i:.j)) =
     let dta = VU.unsafeIndex xs (j-1)
     in  dta `seq` S.map (\s -> ElmChr s dta (subword (j-1) j)) $ mkStream ls Outer (subword i $ j-1)
-  mkStream !(ls :!: Chr xs) Inner !ij@(Subword(i:.j)) =
-    S.map (\s -> let (Subword (k:.l)) = getIdx s
-                 in  ElmChr s (VU.unsafeIndex xs l) (subword l j)
-          ) $ mkStream ls Inner (subword i $ j-1)
+  mkStream !(ls :!: Chr xs) (Inner cnc) !ij@(Subword(i:.j))
+    = S.map (\s -> let (Subword (k:.l)) = getIdx s
+                   in  ElmChr s (VU.unsafeIndex xs l) (subword l $ l+1)
+            )
+    $ mkStream ls (Inner cnc) (subword i $ j-1)
   {-# INLINE mkStream #-}
 
 data GChr x e = GChr !(VU.Vector x)
+
+instance Build (GChr x e)
 
 class GChrExtract x e where
   type GChrRet x e :: *
@@ -170,16 +193,82 @@ instance
     | gChrChk gchr (j-1) = let dta = gChrGet gchr $ j-1
                            in  dta `seq` S.map (\s -> ElmGChr s dta (subword (j-1) j)) $ mkStream ls Outer (subword i $ j-1)
     | otherwise = S.empty
-  mkStream !(ls :!: gchr) Inner !ij@(Subword(i:.j))
+  mkStream !(ls :!: gchr) (Inner cnc) !ij@(Subword(i:.j))
     = S.map (\s -> let (Subword (k:.l)) = getIdx s
                    in  ElmGChr s (gChrGet gchr $ l) (subword l j))
     $ S.filter (\s -> let (Subword (k:.l)) = getIdx s
                       in  gChrChk gchr $ l)
-    $ mkStream ls Inner (subword i $ j-1)
+    $ mkStream ls (Inner cnc) (subword i $ j-1)
   {-# INLINE mkStream #-}
 
+data Region x = Region !(VU.Vector x)
+              | SRegion !Int !Int !(VU.Vector x)
 
+instance Build (Region x)
 
+instance
+  ( Elms ls Subword
+  ) => Elms (ls :!: Region x) Subword where
+  data Elm (ls :!: Region x) Subword = ElmRegion !(Elm ls Subword) !(VU.Vector x) !Subword
+  type Arg (ls :!: Region x)         = Arg ls :. VU.Vector x
+  getArg !(ElmRegion ls xs _) = getArg ls :. xs
+  getIdx !(ElmRegion _ _   i) = i
+  {-# INLINE getArg #-}
+  {-# INLINE getIdx #-}
+
+instance
+  ( Monad m
+  , VU.Unbox x
+  , Elms ls Subword
+  , MkStream m ls Subword
+  ) => MkStream m (ls:!:Region x) Subword where
+  --
+  -- 'Region's of unlimited size
+  --
+  mkStream !(ls:!:Region xs) Outer !ij@(Subword (i:.j))
+    = S.map (\s -> let (Subword (k:.l)) = getIdx s in ElmRegion s (VU.slice l (j-l) xs) (subword l j))
+    $ mkStream ls (Inner Check) ij
+  mkStream !(ls:!:Region xs) (Inner _) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck) ij where
+      mk !s = let (Subword (k:.l)) = getIdx s
+              in  return (s :!: l :!: l)
+      step !(s :!: k :!: l) | l > j
+        = return S.Done
+      step !(s :!: k :!: l)
+        = return $ S.Yield (ElmRegion s (VU.unsafeSlice k (j-k) xs) (subword k l)) (s :!: k :!: l+1) -- TODO the slice index positions are wrong ?!
+  --
+  -- Regions with size limitations
+  --
+  -- TODO this case seems to be rather inefficient. We should rather not do the
+  -- takeWhile/dropWhile dance modify the inner index to produce only those
+  -- values that are acceptable
+--  mkStream !(ls:!:Region lb ub xs) Outer !ij@(Subword (i:.j))
+--    = S.map       (\s -> let (Subword (k:.l)) = getIdx s in ElmRegion s (VU.unsafeSlice l (j-l) xs) (subword l j))
+--    $ S.takeWhile (\s -> case mlb of Nothing -> True
+--                                     Just lb -> let (Subword (k:.l)) = getIdx s in j-l >= lb)
+--    $ S.dropWhile (\s -> case mub of Nothing -> False
+--                                     Just ub -> let (Subword (k:.l)) = getIdx s in j-l >= ub)
+--    $ mkStream ls Inner ij
+  mkStream !(ls:!:SRegion lb ub xs) (Inner _) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck) ij where
+      mk !s = let (Subword (k:.l)) = getIdx s
+              in  return (s :!: l :!: l+lb)
+      step !(s :!: k :!: l) | l > j || l-k > ub
+        = return S.Done
+      step !(s :!: k :!: l)
+        = return $ S.Yield (ElmRegion s (VU.unsafeSlice k (j-k) xs) (subword k l)) (s :!: k :!: l+1) -- TODO the slice index positions are wrong ?!
+  {-# INLINE mkStream #-}
+
+region :: VU.Vector x -> Region x
+region = Region
+{-# INLINE region #-}
+
+-- |
+--
+-- NOTE If you only want a lower bound, set the upper bound to s.th. like "1
+-- Million".
+
+sregion :: Int -> Int -> VU.Vector x -> Region x
+sregion = SRegion
+{-# INLINE sregion #-}
 
 
 instance
@@ -192,20 +281,25 @@ instance
   {-# INLINE getArg #-}
   {-# INLINE getIdx #-}
 
+-- | The bottom of every stack of RHS arguments in a grammar.
+
 instance
   ( Monad m
   ) => MkStream m Z Subword where
   mkStream Z Outer !(Subword (i:.j)) = S.unfoldr step i where
     step !k
-      | k==j      = Just $ (ElmZ (subword i i), j+1)
-      | otherwise = Nothing
-  mkStream Z Inner !(Subword (i:.j)) = S.unfoldr step i where
+      | k==j      = P.Just $ (ElmZ (subword i i), j+1)
+      | otherwise = P.Nothing
+  mkStream Z (Inner NoCheck) !(Subword (i:.j)) = S.singleton $ ElmZ $ subword i i
+  mkStream Z (Inner Check)   !(Subword (i:.j)) = S.unfoldr step i where
     step !k
-      | k<=j      = Just $ (ElmZ (subword i i), j+1)
-      | otherwise = Nothing
+      | k<=j      = P.Just $ (ElmZ (subword i i), j+1)
+      | otherwise = P.Nothing
   {-# INLINE mkStream #-}
 
 data Tbl x = Tbl !(PA.Unboxed (Z:.Subword) x)
+
+instance Build (Tbl x)
 
 instance
   ( Elms ls Subword
@@ -223,20 +317,81 @@ instance
   , Elms ls Subword
   , MkStream m ls Subword
   ) => MkStream m (ls:!:Tbl x) Subword where
-  mkStream (ls:!:Tbl xs) Outer ij@(Subword (i:.j)) = S.map (\s -> let (Subword (k:.l)) = getIdx s in ElmTbl s (xs PA.! (Z:.subword l j)) (subword l j)) $ mkStream ls Inner ij
-  mkStream (ls:!:Tbl xs) Inner ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls Inner ij where
-    mk !s = let (Subword (k:.l)) = getIdx s in return (s :!: l)
-    step !(s :!: k)
-      | k > j = return S.Done
-      | otherwise = return $ S.Yield (ElmTbl s (xs PA.! (Z:.subword k j)) (subword k j)) (s :!: k+1)
+  mkStream !(ls:!:Tbl xs) Outer !ij@(Subword (i:.j)) = S.map (\s -> let (Subword (k:.l)) = getIdx s in ElmTbl s (xs PA.! (Z:.subword l j)) (subword l j)) $ mkStream ls (Inner Check) ij
+  mkStream !(ls:!:Tbl xs) (Inner _) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck) ij where
+    mk !s = let (Subword (k:.l)) = getIdx s in return (s :!: l :!: l)
+    step !(s :!: k :!: l)
+      | l > j = return S.Done
+      | otherwise = return $ S.Yield (ElmTbl s (xs PA.! (Z:.subword k l)) (subword k j)) (s :!: k :!: l+1)
   {-# INLINE mkStream #-}
 
+data MTbl xs = MTbl Bool !xs
+
+instance Build (MTbl xs)
+
+instance
+  ( Monad m
+  , Elms ls Subword
+  ) => Elms (ls :!: MTbl (PA.MutArr m (arr (Z:.Subword) x))) Subword where
+  data Elm (ls :!: MTbl (PA.MutArr m (arr (Z:.Subword) x))) Subword = ElmMTbl !(Elm ls Subword) !x !Subword
+  type Arg (ls :!: MTbl (PA.MutArr m (arr (Z:.Subword) x))) = Arg ls :. x
+  getArg !(ElmMTbl ls x _) = getArg ls :. x
+  getIdx !(ElmMTbl _ _ i) = i
+  {-# INLINE getArg #-}
+  {-# INLINE getIdx #-}
+
+instance
+  ( PrimMonad m
+  , PA.MPrimArrayOps arr (Z:.Subword) x
+  , Elms ls Subword
+  , MkStream m ls Subword
+  ) => MkStream m (ls:!:MTbl (PA.MutArr m (arr (Z:.Subword) x))) Subword where
+  mkStream !(ls:!:MTbl nonE tbl) Outer !ij@(Subword (i:.j))
+    = S.mapM (\s -> let (Subword (k:.l)) = getIdx s in PA.readM tbl (Z:.subword l j) >>= \z -> return $ ElmMTbl s z (subword l j))
+    $ mkStream ls (Inner Check) (if nonE then (subword i $ j-1) else ij)
+  mkStream !(ls:!:MTbl nonE tbl) (Inner _) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck) ij where
+    mk !s = let (Subword (k:.l)) = getIdx s in return (s :!: l :!: l + if nonE then 1 else 0)
+    step !(s :!: k :!: l)
+      | l > j = return S.Done
+      | otherwise = PA.readM tbl (Z:.subword k l) >>= \z -> return $ S.Yield (ElmMTbl s z (subword k l)) (s :!: k :!: l+1)
+  {-# INLINE mkStream #-}
+
+data Empty = Empty
+
+instance Build Empty
+
+instance
+  ( Elms ls Subword
+  ) => Elms (ls :!: Empty) Subword where
+  data Elm (ls :!: Empty) Subword = ElmEmpty !(Elm ls Subword) !() !Subword
+  type Arg (ls :!: Empty) = Arg ls :. ()
+  getArg !(ElmEmpty ls () _) = getArg ls :. ()
+  getIdx !(ElmEmpty _ _ i)   = i
+  {-# INLINE getArg #-}
+  {-# INLINE getIdx #-}
+
+instance
+  ( Monad m
+  , Elms ls Subword
+  , MkStream m ls Subword
+  ) => MkStream m (ls:!:Empty) Subword where
+  mkStream !(ls:!:Empty) Outer !ij@(Subword (i:.j))
+    = S.map (\s -> ElmEmpty s () (subword i j))
+    $ S.filter (\_ -> i==j)
+    $ mkStream ls Outer ij
+  {-# INLINE mkStream #-}
+
+
+
+
+
 testF :: Int -> Int -> Int
-testF i j = Sp.foldl' (+) 0 $ S.map (apply (p7') . getArg) $ mkStream (Z :!: chrR testVs :!: chrL testVs :!: Tbl testA :!: Tbl testA :!: Tbl testA :!: chrR testVs :!: chrL testVs) Outer (Subword (i:.j))
+testF i j =
+  p7' <<< chrR testVs % chrL testVs % Tbl testA % region testVs % Tbl testA % chrR testVs % chrL testVs ... (Sp.foldl' (+) 0) $ subword i j -- Outer (Subword (i:.j))
 {-# NOINLINE testF #-}
 
-testA :: PA.Unboxed (Z:.Subword) Int -- R.Array R.U R.DIM2 Int
-testA = PA.fromAssocs (Z:.subword 0 0) (Z:.subword 0 50) 0 []  -- R.fromUnboxed (R.ix2 100 100) testVs
+testA :: PA.Unboxed (Z:.Subword) Int
+testA = PA.fromAssocs (Z:.subword 0 0) (Z:.subword 0 50) 0 []
 {-# NOINLINE testA #-}
 
 testVs :: VU.Vector Int
@@ -248,7 +403,10 @@ p4 a b c d = a+b+c+d
 p5 a b c d e = a+b+c+d+e
 p6 a b c d e f = a+b+c+d+e+f
 p7 a b c d e f g = a+b+c+d+e+f+g
-p7' (a:!:a') (b:!:b') c d e (f:!:f') (g:!:g') = a+b+c+d+e+f+g + a'+b'+f'+g'
+p7' (a:!:a') (b:!:b') c ds e (f:!:f') (g:!:g') = a+b+c+ VU.length ds +e+f+g + a'+b'+f'+g'
+
+
+
 
 -- multi-tape version
 
@@ -339,43 +497,43 @@ instance (Rev ts (rs:.h)) => Rev (ts:.h) rs where
   rev (ts:.h) rs = rev ts (rs:.h)
 
 
--- -- | Apply a function to symbols on the RHS of a production rule. Builds the
--- -- stack of symbols from 'xs' using 'build', then hands this stack to
--- -- 'mkStream' together with the initial 'iniT' telling 'mkStream' that we are
--- -- in the "outer" position. Once the stream has been created, we 'S.map'
--- -- 'getArg' to get just the arguments in the stack, and finally 'apply' the
--- -- function 'f'.
--- 
--- infixl 8 <<<
--- (<<<) f xs = S.map (apply f . getArg) . mkStream (build xs) initT
--- {-# INLINE (<<<) #-}
--- 
--- -- | Combine two RHSs to give a choice between parses.
--- 
--- infixl 7 |||
--- (|||) xs ys = \ij -> xs ij S.++ ys ij
--- {-# INLINE (|||) #-}
--- 
--- -- | Applies the objective function 'h' to a stream 's'. The objective function
--- -- reduces the stream to a single optimal value (or some vector of co-optimal
--- -- things).
--- 
--- infixl 6 ...
--- (...) s h = h . s
--- {-# INLINE (...) #-}
--- 
--- -- | Separator between RHS symbols.
--- 
--- infixl 9 ~~
--- (~~) = (:.)
--- {-# INLINE (~~) #-}
--- 
--- -- | This separator looks much paper "on paper" and is not widely used otherwise.
--- 
--- infixl 9 %
--- (%) = (:.)
--- {-# INLINE (%) #-}
--- 
+-- | Apply a function to symbols on the RHS of a production rule. Builds the
+-- stack of symbols from 'xs' using 'build', then hands this stack to
+-- 'mkStream' together with the initial 'iniT' telling 'mkStream' that we are
+-- in the "outer" position. Once the stream has been created, we 'S.map'
+-- 'getArg' to get just the arguments in the stack, and finally 'apply' the
+-- function 'f'.
+
+infixl 8 <<<
+(<<<) f xs = S.map (apply f . getArg) . mkStream (build xs) Outer
+{-# INLINE (<<<) #-}
+
+-- | Combine two RHSs to give a choice between parses.
+
+infixl 7 |||
+(|||) xs ys = \ij -> xs ij S.++ ys ij
+{-# INLINE (|||) #-}
+
+-- | Applies the objective function 'h' to a stream 's'. The objective function
+-- reduces the stream to a single optimal value (or some vector of co-optimal
+-- things).
+
+infixl 6 ...
+(...) s h = h . s
+{-# INLINE (...) #-}
+
+-- | Separator between RHS symbols.
+
+infixl 9 ~~
+(~~) = (:!:)
+{-# INLINE (~~) #-}
+
+-- | This separator looks much paper "on paper" and is not widely used otherwise.
+
+infixl 9 %
+(%) = (:!:)
+{-# INLINE (%) #-}
+
 -- 
 -- instance NFData Z
 -- instance NFData z => NFData (z:.VU.Vector e) where
@@ -384,3 +542,20 @@ instance (Rev ts (rs:.h)) => Rev (ts:.h) rs where
 -- instance NFData z => NFData (z:.Int) where
 --   rnf (z:.i) = rnf z `seq` rnf i
 -- 
+
+
+-- | Build the stack using (%)
+
+class Build x where
+  type Stack x :: *
+  type Stack x = Z :!: x
+  build :: x -> Stack x
+  default build :: (Stack x ~ (Z :!: x)) => x -> Stack x
+  build x = Z :!: x
+  {-# INLINE build #-}
+
+instance Build x => Build (x:!:y) where
+  type Stack (x:!:y) = Stack x :!: y
+  build (x:!:y) = build x :!: y
+  {-# INLINE build #-}
+
