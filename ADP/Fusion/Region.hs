@@ -1,3 +1,4 @@
+{-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -22,8 +23,9 @@ import ADP.Fusion.Classes
 
 
 
+-- * Regions of unlimited size
+
 data Region x = Region !(VU.Vector x)
---              | SRegion !Int !Int !(VU.Vector x)
 
 instance Build (Region x)
 
@@ -63,45 +65,69 @@ instance
               in  return (s :!: l :!: l)
       step !(s :!: k :!: l)
         | l > j     =  return S.Done
-        | otherwise = return $ S.Yield (ElmRegion s (VU.unsafeSlice k (l-k) xs) (subword k l)) (s :!: k :!: l+1) -- TODO the slice index positions are wrong ?!
-  --
-  -- Regions with size limitations
-  --
-  -- TODO this case seems to be rather inefficient. We should rather not do the
-  -- takeWhile/dropWhile dance modify the inner index to produce only those
-  -- values that are acceptable
---  mkStream !(ls:!:Region lb ub xs) Outer !ij@(Subword (i:.j))
---    = S.map       (\s -> let (Subword (k:.l)) = getIdx s in ElmRegion s (VU.unsafeSlice l (j-l) xs) (subword l j))
---    $ S.takeWhile (\s -> case mlb of Nothing -> True
---                                     Just lb -> let (Subword (k:.l)) = getIdx s in j-l >= lb)
---    $ S.dropWhile (\s -> case mub of Nothing -> False
---                                     Just ub -> let (Subword (k:.l)) = getIdx s in j-l >= ub)
---    $ mkStream ls Inner ij
-{-
-  -- | TODO below is wrong for sregions!
-  mkStream !(ls:!:SRegion lb ub xs) Outer !ij@(Subword (i:.j))
-    = S.map (\s -> let (Subword (k:.l)) = getIdx s in ElmRegion s (VU.slice l (j-l) xs) (subword l j))
-    $ mkStream ls (Inner Check) ij
-  mkStream !(ls:!:SRegion lb ub xs) (Inner _) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck) ij where
-      mk !s = let (Subword (k:.l)) = getIdx s
-              in  return (s :!: l :!: l+lb)
-      step !(s :!: k :!: l) | l > j || l-k > ub
-        = return S.Done
-      step !(s :!: k :!: l)
-        = return $ S.Yield (ElmRegion s (VU.unsafeSlice k (l-k) xs) (subword k l)) (s :!: k :!: l+1) -- TODO the slice index positions are wrong ?!
--}
+        | otherwise = return $ S.Yield (ElmRegion s (VU.unsafeSlice k (l-k) xs) (subword k l)) (s :!: k :!: l+1)
   {-# INLINE mkStream #-}
 
 region :: VU.Vector x -> Region x
 region = Region
 {-# INLINE region #-}
 
+
+
+-- * Regions of unlimited size
+
+data SRegion x = SRegion !Int !Int !(VU.Vector x)
+
+instance Build (SRegion x)
+
+instance
+  ( VU.Unbox x
+  , StaticStack ls Subword
+  ) => StaticStack (ls :!: SRegion x) Subword where
+  staticStack   (ls :!: SRegion lb ub _) =
+    let (a:!:Subword(i:.j):!:b) = staticStack ls
+    in  (a:!:Subword(i:.j+lb):!:(max 0 $ b-lb))
+  staticExtends (ls :!: SRegion lb ub xs)
+    | Nothing <- se = Just $ subword 0 $ VU.length xs
+    | Just sw <- se = Just sw
+    where se = staticExtends ls
+  {-# INLINE staticStack #-}
+  {-# INLINE staticExtends #-}
+
+instance
+  ( Elms ls Subword
+  ) => Elms (ls :!: SRegion x) Subword where
+  data Elm (ls :!: SRegion x) Subword = ElmSRegion !(Elm ls Subword) !(VU.Vector x) !Subword
+  type Arg (ls :!: SRegion x)         = Arg ls :. VU.Vector x
+  getArg !(ElmSRegion ls xs _) = getArg ls :. xs
+  getIdx !(ElmSRegion _ _   i) = i
+  {-# INLINE getArg #-}
+  {-# INLINE getIdx #-}
+
 -- |
 --
--- NOTE If you only want a lower bound, set the upper bound to s.th. like "1
--- Million".
+-- TODO Need to extend (Inner Check) to (Inner Check SizeRequest); then femove filter in mkStream/Outer
 
---sregion :: Int -> Int -> VU.Vector x -> Region x
---sregion = SRegion
---{-# INLINE sregion #-}
+instance
+  ( Monad m
+  , VU.Unbox x
+  , Elms ls Subword
+  , MkStream m ls Subword
+  ) => MkStream m (ls:!:SRegion x) Subword where
+  mkStream !(ls:!:SRegion lb ub xs) Outer !ij@(Subword (i:.j))
+    = S.map (\s -> let (Subword (k:.l)) = getIdx s in ElmSRegion s (VU.unsafeSlice l (j-l) xs) (subword l j))
+    $ S.filter (\s -> let (Subword (k:.l)) = getIdx s in (j-l >= lb && j-l <= ub))
+    $ mkStream ls (Inner Check) ij
+  mkStream !(ls:!:SRegion lb ub xs) (Inner _) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck) ij where
+      mk !s = let (Subword (k:.l)) = getIdx s
+              in  return (s :!: l :!: l + lb)
+      step !(s :!: k :!: l)
+        | l>j || l-k>ub =  return S.Done
+        | otherwise     = return $ S.Yield (ElmSRegion s (VU.unsafeSlice k (l-k) xs) (subword k l)) (s :!: k :!: l+1) -- TODO the slice index positions are wrong ?!
+  {-# INLINE mkStream #-}
+
+-- |
+sregion :: Int -> Int -> VU.Vector x -> SRegion x
+sregion = SRegion
+{-# INLINE sregion #-}
 

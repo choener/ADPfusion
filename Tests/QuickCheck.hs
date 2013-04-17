@@ -49,6 +49,15 @@ prop_RRR sw@(Subword (i:.j)) = (j-i<=30) ==> zs == ls where
           , VU.slice l (j-l) xs
           ) | k <- [i..j], l <- [k..j]]
 
+-- | Three sized regions (with smaller subword sizes only)
+
+prop_SSS sw@(Subword (i:.j)) = (j-i<=40) ==> zs == ls where
+  zs = (,,) <<< sregion 3 10 xs % sregion 3 10 xs % sregion 3 10 xs ... S.toList $ sw
+  ls = [  ( VU.slice i (k-i) xs
+          , VU.slice k (l-k) xs
+          , VU.slice l (j-l) xs
+          ) | k <- [i..j], l <- [k..j], minimum [k-i,l-k,j-l] >=3, maximum [k-i,l-k,j-l] <= 10]
+
 -- | Single-character parser.
 
 prop_C sw@(Subword (i:.j)) = zs == ls where

@@ -38,6 +38,7 @@ module ADP.Fusion
   , peekR
   , empty
   , region
+  , sregion
   , Tbl (..)
   , BtTbl (..)
   , MTbl (..)
