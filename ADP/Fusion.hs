@@ -49,193 +49,12 @@ import qualified Data.PrimitiveArray.Zero as PA
 import qualified Data.Array.Repa as R
 
 import ADP.Fusion.Apply
+import ADP.Fusion.Classes
+import ADP.Fusion.Chr
 
 import Debug.Trace
 
--- | The Inner/Outer handler. We encode three states. We are in 'Outer' or
--- right-most position, or 'Inner' position. The 'Inner' position encodes if
--- loop conditional 'CNC' need to be performed.
---
--- In f <<< Z % table % table, the two tables already perform a conditional
--- branch, so that Z/table does not have to check boundary conditions.
---
--- In f <<< Z % table % char, no check is performed in table/char, so Z/table
--- needs to perform a boundary check.
 
-data CNC
-  = Check
-  | NoCheck
-  deriving (Eq,Show)
-
-data InnerOuter
-  = Inner !CNC
-  | Outer
-  deriving (Eq,Show)
-
-data ENE
-  = EmptyT
-  | NoEmptyT
-  deriving (Eq,Show)
-
-class TransENE t where
-  toEmpty :: t -> t
-  toNonEmpty :: t -> t
-
-class Elms x i where
-  data Elm x i :: *
-  type Arg x :: *
-  getArg :: Elm x i -> Arg x
-  getIdx :: Elm x i -> i
-
-class Index i where
-  type InOut i :: *
-
-{-
-instance Index (Int:!:Int) where
-  type InOut (Int:!:Int) = InnerOuter
--}
-
-instance Index Subword where
-  type InOut Subword = InnerOuter
-
-instance Index (is:.i) where
-  type InOut (is:.i) = InOut is :. InnerOuter
-
-class (Monad m) => MkStream m x i where
-  mkStream :: x -> InOut i -> i -> S.Stream m (Elm x i)
-
-data Chr x = Chr !(VU.Vector x)
-
-chr = Chr
-{-# INLINE chr #-}
-
-instance Build (Chr x)
-
-instance
-  ( Elms ls Subword
-  ) => Elms (ls :!: Chr x) Subword where
-  data Elm (ls :!: Chr x) Subword = ElmChr !(Elm ls Subword) !x !Subword
-  type Arg (ls :!: Chr x) = Arg ls :. x
-  getArg !(ElmChr ls x _) = getArg ls :. x
-  getIdx !(ElmChr _ _ idx) = idx
-  {-# INLINE getArg #-}
-  {-# INLINE getIdx #-}
-
--- |
---
--- For 'Outer' cases, we extract the data, 'seq' it and then stream. This moves
--- extraction out of the loop.
-
-instance
-  ( Monad m
-  , VU.Unbox x
-  , Elms ls Subword
-  , MkStream m ls Subword
-  ) => MkStream m (ls :!: Chr x) Subword where
-  mkStream !(ls :!: Chr xs) Outer !ij@(Subword(i:.j)) =
-    let dta = VU.unsafeIndex xs (j-1)
-    in  dta `seq` S.map (\s -> ElmChr s dta (subword (j-1) j)) $ mkStream ls Outer (subword i $ j-1)
-  mkStream !(ls :!: Chr xs) (Inner cnc) !ij@(Subword(i:.j))
-    = S.map (\s -> let (Subword (k:.l)) = getIdx s
-                   in  ElmChr s (VU.unsafeIndex xs l) (subword l $ l+1)
-            )
-    $ mkStream ls (Inner cnc) (subword i $ j-1)
-  {-# INLINE mkStream #-}
-
-data GChr x e = GChr !(VU.Vector x)
-
-instance Build (GChr x e)
-
-class GChrExtract x e where
-  type GChrRet x e :: *
-  gChrChk :: GChr x e -> Int -> Bool
-  gChrGet :: GChr x e -> Int -> GChrRet x e
-
-data GChrDef
-
-instance (VUM.Unbox x) => GChrExtract x GChrDef where
-  type GChrRet x GChrDef = x
-  gChrChk _ !k = True
-  gChrGet !(GChr xs) !k = VU.unsafeIndex xs k
-  {-# INLINE gChrChk #-}
-  {-# INLINE gChrGet #-}
-
-gchr :: VU.Unbox e => VU.Vector e -> GChr e GChrDef
-gchr !xs = GChr xs
-{-# INLINE gchr #-}
-
-data PeekL
-
-instance (VUM.Unbox x) => GChrExtract x PeekL where
-  type GChrRet x PeekL = (x :!: x)
-  gChrChk _ !k = k>0
-  gChrGet !(GChr xs) !k = (VU.unsafeIndex xs (k-1) :!: VU.unsafeIndex xs k)
-  {-# INLINE gChrChk #-}
-  {-# INLINE gChrGet #-}
-
-chrL :: VU.Unbox e => VU.Vector e -> GChr e PeekL
-chrL !xs = GChr xs
-{-# INLINE chrL #-}
-
-data PeekR
-
-instance (VUM.Unbox x) => GChrExtract x PeekR where
-  type GChrRet x PeekR = (x:!:x)
-  gChrChk !(GChr xs) !k = k+1 < VU.length xs
-  gChrGet !(GChr xs) !k = (VU.unsafeIndex xs k :!: VU.unsafeIndex xs (k+1))
-  {-# INLINE gChrChk #-}
-  {-# INLINE gChrGet #-}
-
-chrR :: VU.Unbox e => VU.Vector e -> GChr e PeekR
-chrR !xs = GChr xs
-{-# INLINE chrR #-}
-
-
-
-instance
-  ( Elms ls Subword
-  ) => Elms (ls :!: GChr e r) Subword where
-  data Elm (ls :!: GChr e r) Subword = ElmGChr !(Elm ls Subword) !(GChrRet e r) !Subword
-  type Arg (ls :!: GChr e r) = Arg ls :. (GChrRet e r)
-  getArg !(ElmGChr ls x _) = getArg ls :. x
-  getIdx !(ElmGChr _ _ i) = i
-  {-# INLINE getArg #-}
-  {-# INLINE getIdx #-}
-
--- | Currently using the 'outerCheck' function, need to test if this really works well! (benchmark!)
-
-instance
-  ( Monad m
-  , VU.Unbox x
-  , GChrExtract x e
-  , Elms ls Subword
-  , MkStream m ls Subword
-  ) => MkStream m (ls :!: GChr x e) Subword where
-  mkStream !(ls :!: gchr) Outer !ij@(Subword(i:.j))
-    = let dta = gChrGet gchr $ j-1
-      in  dta `seq` S.map (\s -> ElmGChr s dta (subword (j-1) j))
---                    $ S.filter (\s -> gChrChk gchr (j-1-942))           -- NOTE the actual leq check is performed outside of the loop, but branching still occurs in the loop
-                    $ outerCheck (gChrChk gchr (j-942))
-                    $ mkStream ls Outer (subword i $ j-1)
-  mkStream !(ls :!: gchr) (Inner cnc) !ij@(Subword(i:.j))
-    = S.map (\s -> let (Subword (k:.l)) = getIdx s
-                   in  ElmGChr s (gChrGet gchr $ l) (subword l $ l+1))
-    $ S.filter (\s -> let (Subword (k:.l)) = getIdx s
-                      in  gChrChk gchr $ l)
-    $ mkStream ls (Inner cnc) (subword i $ j-1)
-  {-# INLINE mkStream #-}
-
-outerCheck :: Monad m => Bool -> S.Stream m a -> S.Stream m a
-outerCheck b (S.Stream step sS n) = b `seq` S.Stream snew (Left (b,sS)) Unknown where
-  {-# INLINE [1] snew #-}
-  snew (Left  (False,s)) = return $ S.Done
-  snew (Left  (True ,s)) = return $ S.Skip (Right s)
-  snew (Right s        ) = do r <- step s
-                              case r of
-                                S.Yield x s' -> return $ S.Yield x (Right s')
-                                S.Skip    s' -> return $ S.Skip    (Right s')
-                                S.Done       -> return $ S.Done
-{-# INLINE outerCheck #-}
 
 data Region x = Region !(VU.Vector x)
 --              | SRegion !Int !Int !(VU.Vector x)
@@ -311,32 +130,6 @@ region = Region
 --sregion = SRegion
 --{-# INLINE sregion #-}
 
-
-instance
-  (
-  ) => Elms Z Subword where
-  data Elm Z Subword = ElmZ !Subword
-  type Arg Z = Z
-  getArg !(ElmZ _) = Z
-  getIdx !(ElmZ ij) = ij
-  {-# INLINE getArg #-}
-  {-# INLINE getIdx #-}
-
--- | The bottom of every stack of RHS arguments in a grammar.
-
-instance
-  ( Monad m
-  ) => MkStream m Z Subword where
-  mkStream Z Outer !(Subword (i:.j)) = S.unfoldr step i where
-    step !k
-      | k==j      = P.Just $ (ElmZ (subword i i), j+1)
-      | otherwise = P.Nothing
-  mkStream Z (Inner NoCheck) !(Subword (i:.j)) = S.singleton $ ElmZ $ subword i i
-  mkStream Z (Inner Check)   !(Subword (i:.j)) = S.unfoldr step i where
-    step !k
-      | k<=j      = P.Just $ (ElmZ (subword i i), j+1)
-      | otherwise = P.Nothing
-  {-# INLINE mkStream #-}
 
 data Tbl x = Tbl !(PA.Unboxed (Z:.Subword) x)
 
@@ -470,18 +263,21 @@ instance
 
 
 
-
+{-
 testF :: Int -> Int -> Int
 testF i j =
   p7' <<< chrR testVs % chrL testVs % Tbl testA % region testVs % Tbl testA % chrR testVs % chrL testVs |||
   p7' <<< chrR testVs % chrL testVs % Tbl testA % region testVs % Tbl testA % chrR testVs % chrL testVs ... (Sp.foldl' (+) 0) $ subword i j
 {-# NOINLINE testF #-}
+-}
 
+{-
 testG :: Int -> Int -> Int
 testG i j =
   p7 <<< chr testVs % chr testVs % Tbl testA % Tbl testA % Tbl testA % chr testVs % chr testVs |||
   p7 <<< chr testVs % chr testVs % Tbl testA % Tbl testA % Tbl testA % chr testVs % chr testVs ... (Sp.foldl' (+) 0) $ subword i j
 {-# NOINLINE testG #-}
+-}
 
 testA :: PA.Unboxed (Z:.Subword) Int
 testA = PA.fromAssocs (Z:.subword 0 0) (Z:.subword 0 50) 0 []
@@ -491,8 +287,10 @@ testVs :: VU.Vector Int
 testVs = VU.fromList [ 0 .. 9999 ]
 {-# NOINLINE testVs #-}
 
+{-
 --gugg :: Int -> Int -> [(Int,VU.Vector Int,Int)]
 gugg i j = (,,) <<< chrR testVs % region testVs % chrL testVs ... Sp.toList $ subword i j
+-}
 
 p3 a b c = a+b+c
 p4 a b c d = a+b+c+d
@@ -602,8 +400,20 @@ instance (Rev ts (rs:.h)) => Rev (ts:.h) rs where
 -- function 'f'.
 
 infixl 8 <<<
-(<<<) f xs = S.map (apply (inline f) . getArg) . mkStream (build xs) Outer
+(<<<) f xs = \ij -> outerCheck (staticCheck (build xs) ij) . S.map (apply (inline f) . getArg) . mkStream (build xs) Outer $ ij
 {-# INLINE (<<<) #-}
+
+outerCheck :: Monad m => Bool -> S.Stream m a -> S.Stream m a
+outerCheck b (S.Stream step sS n) = b `seq` S.Stream snew (Left (b,sS)) Unknown where
+  {-# INLINE [1] snew #-}
+  snew (Left  (False,s)) = return $ S.Done
+  snew (Left  (True ,s)) = return $ S.Skip (Right s)
+  snew (Right s        ) = do r <- step s
+                              case r of
+                                S.Yield x s' -> return $ S.Yield x (Right s')
+                                S.Skip    s' -> return $ S.Skip    (Right s')
+                                S.Done       -> return $ S.Done
+{-# INLINE outerCheck #-}
 
 -- | Combine two RHSs to give a choice between parses.
 
@@ -640,19 +450,4 @@ infixl 9 %
 --   rnf (z:.i) = rnf z `seq` rnf i
 -- 
 
-
--- | Build the stack using (%)
-
-class Build x where
-  type Stack x :: *
-  type Stack x = Z :!: x
-  build :: x -> Stack x
-  default build :: (Stack x ~ (Z :!: x)) => x -> Stack x
-  build x = Z :!: x
-  {-# INLINE build #-}
-
-instance Build x => Build (x:!:y) where
-  type Stack (x:!:y) = Stack x :!: y
-  build (x:!:y) = build x :!: y
-  {-# INLINE build #-}
 
