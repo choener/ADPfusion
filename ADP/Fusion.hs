@@ -18,6 +18,12 @@
 -- bind a terminal symbol to an input of length 0 and then run your grammar,
 -- you probably get errors, garbled data or random crashes. Such checks are
 -- done via asserts in non-production code.
+--
+-- TODO each combinator should come with a special outer check. Given some
+-- index (say (i,j), this can then check if i-const >= 0, or j+const<=n, or
+-- i+const<=j. That should speed up everything that uses GChr combinators.
+-- Separating out this check means that certain inner loops can run without any
+-- conditions and just jump.
 
 module ADP.Fusion where
 
@@ -100,6 +106,9 @@ class (Monad m) => MkStream m x i where
 
 data Chr x = Chr !(VU.Vector x)
 
+chr = Chr
+{-# INLINE chr #-}
+
 instance Build (Chr x)
 
 instance
@@ -174,6 +183,8 @@ instance (VUM.Unbox x) => GChrExtract x PeekR where
   type GChrRet x PeekR = (x:!:x)
   gChrChk !(GChr xs) !k = k+1 < VU.length xs
   gChrGet !(GChr xs) !k = (VU.unsafeIndex xs k :!: VU.unsafeIndex xs (k+1))
+  {-# INLINE gChrChk #-}
+  {-# INLINE gChrGet #-}
 
 chrR :: VU.Unbox e => VU.Vector e -> GChr e PeekR
 chrR !xs = GChr xs
@@ -191,6 +202,8 @@ instance
   {-# INLINE getArg #-}
   {-# INLINE getIdx #-}
 
+-- | Currently using the 'outerCheck' function, need to test if this really works well! (benchmark!)
+
 instance
   ( Monad m
   , VU.Unbox x
@@ -199,19 +212,33 @@ instance
   , MkStream m ls Subword
   ) => MkStream m (ls :!: GChr x e) Subword where
   mkStream !(ls :!: gchr) Outer !ij@(Subword(i:.j))
-    | gChrChk gchr (j-1) = let dta = gChrGet gchr $ j-1
-                           in  dta `seq` S.map (\s -> ElmGChr s dta (subword (j-1) j)) $ mkStream ls Outer (subword i $ j-1)
-    | otherwise = S.empty
+    = let dta = gChrGet gchr $ j-1
+      in  dta `seq` S.map (\s -> ElmGChr s dta (subword (j-1) j))
+--                    $ S.filter (\s -> gChrChk gchr (j-1-942))           -- NOTE the actual leq check is performed outside of the loop, but branching still occurs in the loop
+                    $ outerCheck (gChrChk gchr (j-942))
+                    $ mkStream ls Outer (subword i $ j-1)
   mkStream !(ls :!: gchr) (Inner cnc) !ij@(Subword(i:.j))
     = S.map (\s -> let (Subword (k:.l)) = getIdx s
-                   in  ElmGChr s (gChrGet gchr $ l) (subword l j))
+                   in  ElmGChr s (gChrGet gchr $ l) (subword l $ l+1))
     $ S.filter (\s -> let (Subword (k:.l)) = getIdx s
                       in  gChrChk gchr $ l)
     $ mkStream ls (Inner cnc) (subword i $ j-1)
   {-# INLINE mkStream #-}
 
+outerCheck :: Monad m => Bool -> S.Stream m a -> S.Stream m a
+outerCheck b (S.Stream step sS n) = b `seq` S.Stream snew (Left (b,sS)) Unknown where
+  {-# INLINE [1] snew #-}
+  snew (Left  (False,s)) = return $ S.Done
+  snew (Left  (True ,s)) = return $ S.Skip (Right s)
+  snew (Right s        ) = do r <- step s
+                              case r of
+                                S.Yield x s' -> return $ S.Yield x (Right s')
+                                S.Skip    s' -> return $ S.Skip    (Right s')
+                                S.Done       -> return $ S.Done
+{-# INLINE outerCheck #-}
+
 data Region x = Region !(VU.Vector x)
-              | SRegion !Int !Int !(VU.Vector x)
+--              | SRegion !Int !Int !(VU.Vector x)
 
 instance Build (Region x)
 
@@ -235,7 +262,7 @@ instance
   -- 'Region's of unlimited size
   --
   mkStream !(ls:!:Region xs) Outer !ij@(Subword (i:.j))
-    = S.map (\s -> let (Subword (k:.l)) = getIdx s in ElmRegion s (VU.slice l (j-l) xs) (subword l j))
+    = S.map (\s -> let (Subword (k:.l)) = getIdx s in ElmRegion s (VU.unsafeSlice l (j-l) xs) (subword l j))
     $ mkStream ls (Inner Check) ij
   mkStream !(ls:!:Region xs) (Inner _) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck) ij where
       mk !s = let (Subword (k:.l)) = getIdx s
@@ -256,6 +283,11 @@ instance
 --    $ S.dropWhile (\s -> case mub of Nothing -> False
 --                                     Just ub -> let (Subword (k:.l)) = getIdx s in j-l >= ub)
 --    $ mkStream ls Inner ij
+{-
+  -- | TODO below is wrong for sregions!
+  mkStream !(ls:!:SRegion lb ub xs) Outer !ij@(Subword (i:.j))
+    = S.map (\s -> let (Subword (k:.l)) = getIdx s in ElmRegion s (VU.slice l (j-l) xs) (subword l j))
+    $ mkStream ls (Inner Check) ij
   mkStream !(ls:!:SRegion lb ub xs) (Inner _) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck) ij where
       mk !s = let (Subword (k:.l)) = getIdx s
               in  return (s :!: l :!: l+lb)
@@ -263,6 +295,7 @@ instance
         = return S.Done
       step !(s :!: k :!: l)
         = return $ S.Yield (ElmRegion s (VU.unsafeSlice k (l-k) xs) (subword k l)) (s :!: k :!: l+1) -- TODO the slice index positions are wrong ?!
+-}
   {-# INLINE mkStream #-}
 
 region :: VU.Vector x -> Region x
@@ -274,9 +307,9 @@ region = Region
 -- NOTE If you only want a lower bound, set the upper bound to s.th. like "1
 -- Million".
 
-sregion :: Int -> Int -> VU.Vector x -> Region x
-sregion = SRegion
-{-# INLINE sregion #-}
+--sregion :: Int -> Int -> VU.Vector x -> Region x
+--sregion = SRegion
+--{-# INLINE sregion #-}
 
 
 instance
@@ -400,10 +433,10 @@ instance
   , MkStream m ls Subword
   ) => MkStream m (ls:!:MTbl (PA.MutArr m (arr (Z:.Subword) x))) Subword where
   mkStream !(ls:!:MTbl ene tbl) Outer !ij@(Subword (i:.j))
-    = S.mapM (\s -> let (Subword (k:.l)) = getIdx s in PA.readM tbl (Z:.subword l j) >>= \z -> return $ ElmMTbl s z (subword l j))
+    = S.mapM (\s -> let (Subword (_:.l)) = getIdx s in PA.readM tbl (Z:.subword l j) >>= \z -> return $ ElmMTbl s z (subword l j))
     $ mkStream ls (Inner Check) (subword i $ case ene of { EmptyT -> j ; NoEmptyT -> j-1 }) -- if nonE then (subword i $ j-1) else ij)
   mkStream !(ls:!:MTbl ene tbl) (Inner _) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck) ij where
-    mk !s = let (Subword (k:.l)) = getIdx s in return (s :!: l :!: l + case ene of { EmptyT -> 0 ; NoEmptyT -> 1 }) -- if nonE then 1 else 0)
+    mk !s = let (Subword (_:.l)) = getIdx s in return (s :!: l :!: l + case ene of { EmptyT -> 0 ; NoEmptyT -> 1 }) -- if nonE then 1 else 0)
     step !(s :!: k :!: l)
       | l > j = return S.Done
       | otherwise = PA.readM tbl (Z:.subword k l) >>= \z -> return $ S.Yield (ElmMTbl s z (subword k l)) (s :!: k :!: l+1)
@@ -440,8 +473,15 @@ instance
 
 testF :: Int -> Int -> Int
 testF i j =
-  p7' <<< chrR testVs % chrL testVs % Tbl testA % region testVs % Tbl testA % chrR testVs % chrL testVs ... (Sp.foldl' (+) 0) $ subword i j -- Outer (Subword (i:.j))
+  p7' <<< chrR testVs % chrL testVs % Tbl testA % region testVs % Tbl testA % chrR testVs % chrL testVs |||
+  p7' <<< chrR testVs % chrL testVs % Tbl testA % region testVs % Tbl testA % chrR testVs % chrL testVs ... (Sp.foldl' (+) 0) $ subword i j
 {-# NOINLINE testF #-}
+
+testG :: Int -> Int -> Int
+testG i j =
+  p7 <<< chr testVs % chr testVs % Tbl testA % Tbl testA % Tbl testA % chr testVs % chr testVs |||
+  p7 <<< chr testVs % chr testVs % Tbl testA % Tbl testA % Tbl testA % chr testVs % chr testVs ... (Sp.foldl' (+) 0) $ subword i j
+{-# NOINLINE testG #-}
 
 testA :: PA.Unboxed (Z:.Subword) Int
 testA = PA.fromAssocs (Z:.subword 0 0) (Z:.subword 0 50) 0 []
@@ -451,12 +491,16 @@ testVs :: VU.Vector Int
 testVs = VU.fromList [ 0 .. 9999 ]
 {-# NOINLINE testVs #-}
 
+--gugg :: Int -> Int -> [(Int,VU.Vector Int,Int)]
+gugg i j = (,,) <<< chrR testVs % region testVs % chrL testVs ... Sp.toList $ subword i j
+
 p3 a b c = a+b+c
 p4 a b c d = a+b+c+d
 p5 a b c d e = a+b+c+d+e
 p6 a b c d e f = a+b+c+d+e+f
 p7 a b c d e f g = a+b+c+d+e+f+g
 p7' (a:!:a') (b:!:b') c ds e (f:!:f') (g:!:g') = a+b+c+ VU.length ds +e+f+g + a'+b'+f'+g'
+p7'' (a:!:a') (b:!:b') c d e (f:!:f') (g:!:g') = a+b+c+ d +e+f+g + a'+b'+f'+g'
 
 
 
@@ -558,7 +602,7 @@ instance (Rev ts (rs:.h)) => Rev (ts:.h) rs where
 -- function 'f'.
 
 infixl 8 <<<
-(<<<) f xs = S.map (apply f . getArg) . mkStream (build xs) Outer
+(<<<) f xs = S.map (apply (inline f) . getArg) . mkStream (build xs) Outer
 {-# INLINE (<<<) #-}
 
 -- | Combine two RHSs to give a choice between parses.
