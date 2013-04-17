@@ -124,6 +124,20 @@ instance Build (MTbl xs)
 
 instance
   ( Monad m
+  , VU.Unbox x
+  , PA.MPrimArrayOps arr (Z:.Subword) x
+  , StaticStack ls Subword
+  ) => StaticStack (ls :!: MTbl (PA.MutArr m (arr (Z:.Subword) x))) Subword where
+  staticStack   (ls :!: _) = staticStack ls
+  staticExtends (ls :!: MTbl _ tbl)
+    | Nothing <- se = let (_,Z:.sw) = PA.boundsM tbl in Just sw
+    | Just sw <- se = Just sw
+    where se = staticExtends ls
+  {-# INLINE staticStack #-}
+  {-# INLINE staticExtends #-}
+
+instance
+  ( Monad m
   , Elms ls Subword
   ) => Elms (ls :!: MTbl (PA.MutArr m (arr (Z:.Subword) x))) Subword where
   data Elm (ls :!: MTbl (PA.MutArr m (arr (Z:.Subword) x))) Subword = ElmMTbl !(Elm ls Subword) !x !Subword

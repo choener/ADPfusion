@@ -105,31 +105,29 @@ prop_Mt sw@(Subword (i:.j)) = monadicIO $ do
     ls <- run $ sequence $ [(PA.readM mxs (Z:.sw)) | i<=j]
     assert $ zs == ls
 
-{-
-{-
 -- | table, then character.
 
 prop_MtC sw@(Subword (i:.j)) = monadicIO $ do
-    mxs :: (PA.MU IO (Z:.Subword) Int) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
-    let mt = mtable mxs
-    zs <- run $ (,) <<< mt % Chr xs ... SM.toList $ sw
+    mxs :: (PA.MutArr IO (PA.Unboxed (Z:.Subword) Int)) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
+    let mt = MTbl EmptyT mxs
+    zs <- run $ (,) <<< mt % chr xs ... SM.toList $ sw
     ls <- run $ sequence $ [(PA.readM mxs (Z:.subword i (j-1))) >>= \a -> return (a,xs VU.! (j-1)) | i<j]
     assert $ zs == ls
 
 -- | Character, then table.
 
 prop_CMt sw@(Subword (i:.j)) = monadicIO $ do
-    mxs :: (PA.MU IO (Z:.Subword) Int) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
-    let mt = mtable mxs
-    zs <- run $ (,) <<< Chr xs % mt ... SM.toList $ sw
+    mxs :: (PA.MutArr IO (PA.Unboxed (Z:.Subword) Int)) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
+    let mt = MTbl EmptyT mxs
+    zs <- run $ (,) <<< chr xs % mt ... SM.toList $ sw
     ls <- run $ sequence $ [(PA.readM mxs (Z:.subword (i+1) j)) >>= \a -> return (xs VU.! i,a) | i<j]
     assert $ zs == ls
 
 -- | Two mutable tables. Basically like Region's.
 
 prop_MtMt sw@(Subword (i:.j)) = monadicIO $ do
-    mxs :: (PA.MU IO (Z:.Subword) Int) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
-    let mt = mtable mxs
+    mxs :: (PA.MutArr IO (PA.Unboxed (Z:.Subword) Int)) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
+    let mt = MTbl EmptyT mxs
     zs <- run $ (,) <<< mt % mt ... SM.toList $ sw
     ls <- run $ sequence $ [(PA.readM mxs (Z:.subword i k)) >>= \a -> PA.readM mxs (Z:.subword k j) >>= \b -> return (a,b) | k <- [i..j]]
     assert $ zs == ls
@@ -137,9 +135,9 @@ prop_MtMt sw@(Subword (i:.j)) = monadicIO $ do
 -- | Just to make it more interesting, sprinkle in some 'Chr' symbols.
 
 prop_CMtCMtC sw@(Subword (i:.j)) = monadicIO $ do
-    mxs :: (PA.MU IO (Z:.Subword) Int) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
-    let mt = mtable mxs
-    zs <- run $ (,,,,) <<< Chr xs % mt % Chr xs % mt % Chr xs ... SM.toList $ sw
+    mxs :: (PA.MutArr IO (PA.Unboxed (Z:.Subword) Int)) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
+    let mt = MTbl EmptyT mxs
+    zs <- run $ (,,,,) <<< chr xs % mt % chr xs % mt % chr xs ... SM.toList $ sw
     ls <- run $ sequence $ [ (PA.readM mxs (Z:.subword (i+1) k)) >>=
                             \a -> PA.readM mxs (Z:.subword (k+1) (j-1)) >>=
                             \b -> return ( xs VU.! i
@@ -154,9 +152,9 @@ prop_CMtCMtC sw@(Subword (i:.j)) = monadicIO $ do
 -- | And now with non-empty tables.
 
 prop_CMnCMnC sw@(Subword (i:.j)) = monadicIO $ do
-    mxs :: (PA.MU IO (Z:.Subword) Int) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
-    let mt = MTable Enone mxs
-    zs <- run $ (,,,,) <<< Chr xs % mt % Chr xs % mt % Chr xs ... SM.toList $ sw
+    mxs :: (PA.MutArr IO (PA.Unboxed (Z:.Subword) Int)) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
+    let mt = MTbl NoEmptyT mxs
+    zs <- run $ (,,,,) <<< chr xs % mt % chr xs % mt % chr xs ... SM.toList $ sw
     ls <- run $ sequence $ [ (PA.readM mxs (Z:.subword (i+1) k)) >>=
                             \a -> PA.readM mxs (Z:.subword (k+1) (j-1)) >>=
                             \b -> return ( xs VU.! i
@@ -168,6 +166,8 @@ prop_CMnCMnC sw@(Subword (i:.j)) = monadicIO $ do
                            | k <- [i+2..j-3]]
     assert $ zs == ls
 
+{-
+{-
 -- | Our first multi-tape terminal ":-)"
 
 prop_Tt ix@Z = zs == ls where
