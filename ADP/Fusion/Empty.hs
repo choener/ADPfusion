@@ -20,6 +20,9 @@ import ADP.Fusion.Classes
 
 data Empty = Empty
 
+empty = Empty
+{-# INLINE empty #-}
+
 instance Build Empty
 
 instance

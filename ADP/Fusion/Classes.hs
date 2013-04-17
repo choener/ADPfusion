@@ -10,8 +10,9 @@
 module ADP.Fusion.Classes where
 
 import Data.Array.Repa.Index
-import Data.Strict.Tuple
 import Data.Strict.Maybe
+import Data.Strict.Tuple
+import Data.Vector.Fusion.Stream.Size
 import Prelude hiding (Maybe(..))
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Prelude as P
@@ -137,9 +138,21 @@ class StaticCheck i where
 instance StaticCheck Subword where
   staticCheck stack (Subword(i:.j))
     | Nothing <- se               = error "illegal stack!"
-    | Just (Subword (z:.n)) <- se = z+a<=i && l+b<=n && k+l<=j-i
+    | Just (Subword (z:.n)) <- se = z+a<=i && j+b<=n && k+l<=j-i
     where
       (a :!: Subword (k:.l) :!: b) = staticStack stack
       !se = staticExtends stack
   {-# INLINE staticCheck #-}
+
+outerCheck :: Monad m => Bool -> S.Stream m a -> S.Stream m a
+outerCheck b (S.Stream step sS n) = b `seq` S.Stream snew (Left (b,sS)) Unknown where
+  {-# INLINE [1] snew #-}
+  snew (Left  (False,s)) = return $ S.Done
+  snew (Left  (True ,s)) = return $ S.Skip (Right s)
+  snew (Right s        ) = do r <- step s
+                              case r of
+                                S.Yield x s' -> return $ S.Yield x (Right s')
+                                S.Skip    s' -> return $ S.Skip    (Right s')
+                                S.Done       -> return $ S.Done
+{-# INLINE outerCheck #-}
 

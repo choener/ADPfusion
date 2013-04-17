@@ -119,10 +119,61 @@ instance
   ) => MkStream m (ls :!: PeekL x) Subword where
   mkStream !(ls :!: PeekL xs) Outer !ij@(Subword(i:.j)) =
     let dta = VU.unsafeIndex xs (j-1)
-    in  dta `seq` S.map (\s -> ElmPeekL s dta (subword (j-1) j)) $ mkStream ls Outer ij
+    in  dta `seq` S.map (\s -> ElmPeekL s dta (subword j j)) $ mkStream ls Outer ij
   mkStream !(ls :!: PeekL xs) (Inner cnc) !ij@(Subword(i:.j))
     = S.map (\s -> let (Subword (k:.l)) = getIdx s
                    in  ElmPeekL s (VU.unsafeIndex xs l) (subword l l)
+            )
+    $ mkStream ls (Inner cnc) ij
+  {-# INLINE mkStream #-}
+
+
+
+-- * Peeking to the right
+
+data PeekR x = PeekR !(VU.Vector x)
+
+peekR = PeekR
+{-# INLINE peekR #-}
+
+instance Build (PeekR x)
+
+instance
+  ( VU.Unbox x
+  , StaticStack ls Subword
+  ) => StaticStack (ls :!: PeekR x) Subword where
+  staticStack (ls :!: _) =
+    let (a :!: ij :!: b  ) = staticStack ls
+    in  (a :!: ij :!: b+1)
+  staticExtends (ls :!: PeekR xs)
+    | Nothing <- se = Just $ subword 0 (VU.length xs)
+    | Just sw <- se = Just sw
+    where se = staticExtends ls
+  {-# INLINE staticStack #-}
+  {-# INLINE staticExtends #-}
+
+instance
+  ( Elms ls Subword
+  ) => Elms (ls :!: PeekR x) Subword where
+  data Elm (ls :!: PeekR x) Subword = ElmPeekR !(Elm ls Subword) !x !Subword
+  type Arg (ls :!: PeekR x) = Arg ls :. x
+  getArg !(ElmPeekR ls x _) = getArg ls :. x
+  getIdx !(ElmPeekR _ _ idx) = idx
+  {-# INLINE getArg #-}
+  {-# INLINE getIdx #-}
+
+instance
+  ( Monad m
+  , VU.Unbox x
+  , Elms ls Subword
+  , MkStream m ls Subword
+  ) => MkStream m (ls :!: PeekR x) Subword where
+  mkStream !(ls :!: PeekR xs) Outer !ij@(Subword(i:.j)) =
+    let dta = VU.unsafeIndex xs j
+    in  dta `seq` S.map (\s -> ElmPeekR s dta (subword j j)) $ mkStream ls Outer ij
+  mkStream !(ls :!: PeekR xs) (Inner cnc) !ij@(Subword(i:.j))
+    = S.map (\s -> let (Subword (k:.l)) = getIdx s
+                   in  ElmPeekR s (VU.unsafeIndex xs (l+1)) (subword l l)
             )
     $ mkStream ls (Inner cnc) ij
   {-# INLINE mkStream #-}

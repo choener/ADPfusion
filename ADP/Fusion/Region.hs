@@ -13,6 +13,8 @@ import Data.Strict.Tuple
 import Data.Vector.Fusion.Stream.Size
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Unboxed as VU
+import Data.Strict.Maybe
+import Prelude hiding (Maybe(..))
 
 import Data.Array.Repa.Index.Subword
 
@@ -24,6 +26,18 @@ data Region x = Region !(VU.Vector x)
 --              | SRegion !Int !Int !(VU.Vector x)
 
 instance Build (Region x)
+
+instance
+  ( VU.Unbox x
+  , StaticStack ls Subword
+  ) => StaticStack (ls :!: Region x) Subword where
+  staticStack   (ls :!: _) = staticStack ls
+  staticExtends (ls :!: Region xs)
+    | Nothing <- se = Just $ subword 0 $ VU.length xs
+    | Just sw <- se = Just sw
+    where se = staticExtends ls
+  {-# INLINE staticStack #-}
+  {-# INLINE staticExtends #-}
 
 instance
   ( Elms ls Subword

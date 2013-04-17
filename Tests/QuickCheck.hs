@@ -25,15 +25,8 @@ import qualified Data.PrimitiveArray as PA
 import qualified Data.PrimitiveArray.Zero as PA
 
 import ADP.Fusion
-import ADP.Fusion.Chr
-import ADP.Fusion.Classes
-import ADP.Fusion.Region
-import ADP.Fusion.Table
-import ADP.Fusion.Term
-import ADP.Fusion.Peek
 
 
-{-
 -- | Check if a single region returns the correct result (namely a slice from
 -- the input).
 
@@ -59,36 +52,33 @@ prop_RRR sw@(Subword (i:.j)) = (j-i<=30) ==> zs == ls where
 -- | Single-character parser.
 
 prop_C sw@(Subword (i:.j)) = zs == ls where
-  zs = id <<< Chr xs ... S.toList $ sw
+  zs = id <<< chr xs ... S.toList $ sw
   ls = [xs VU.! i | i+1==j]
 
 -- | 2x Single-character parser.
 
 prop_CC sw@(Subword (i:.j)) = zs == ls where
-  zs = (,) <<< Chr xs % Chr xs ... S.toList $ sw
+  zs = (,) <<< chr xs % chr xs ... S.toList $ sw
   ls = [(xs VU.! i, xs VU.! (i+1)) | i+2==j]
 
 -- | Single character plus peeking
 
-{-
-prop_P_PC p@(Point j) = zs == ls where
-  zs = (,) <<< Peek (-1) xs % Chr xs ... S.toList $ p
-  ls = [(f j, xs VU.! j)]
-  f j = if j>=0 then xs VU.! j else (-1)
--}
+prop_PC sw@(Subword (i:.j)) = zs == ls where
+  zs = (,) <<< peekL xs % chr xs ... S.toList $ sw
+  ls = [(xs VU.! (j-2), xs VU.! (j-1)) | j>1, i+1==j]
 
 -- | 2x Single-character parser bracketing a single region.
 
 prop_CRC sw@(Subword (i:.j)) = zs == ls
   where
-    zs = (,,) <<< Chr xs % region xs % Chr xs ... S.toList $ sw
+    zs = (,,) <<< chr xs % region xs % chr xs ... S.toList $ sw
     ls = [(xs VU.! i, VU.slice (i+1) (j-i-2) xs , xs VU.! (j-1)) |i+2<=j]
 
 -- | 2x Single-character parser bracketing regions.
 
 prop_CRRC sw@(Subword (i:.j)) = zs == ls
   where
-    zs = (,,,) <<< Chr xs % region xs % region xs % Chr xs ... S.toList $ sw
+    zs = (,,,) <<< chr xs % region xs % region xs % chr xs ... S.toList $ sw
     ls = [ ( xs VU.! i
            , VU.slice (i+1) (k-i-1) xs
            , VU.slice k (j-k-1) xs
@@ -98,7 +88,7 @@ prop_CRRC sw@(Subword (i:.j)) = zs == ls
 -- | complex behaviour with characters and regions
 
 prop_CRCRC sw@(Subword (i:.j)) = zs == ls where
-  zs = (,,,,) <<< Chr xs % region xs % Chr xs % region xs % Chr xs ... S.toList $ sw
+  zs = (,,,,) <<< chr xs % region xs % chr xs % region xs % chr xs ... S.toList $ sw
   ls = [ ( xs VU.! i
          , VU.slice (i+1) (k-i-1) xs
          , xs VU.! k
@@ -109,12 +99,14 @@ prop_CRCRC sw@(Subword (i:.j)) = zs == ls where
 -- | A single mutable table should return one result.
 
 prop_Mt sw@(Subword (i:.j)) = monadicIO $ do
-    mxs :: (PA.MU IO (Z:.Subword) Int) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
-    let mt = mtable mxs
+    mxs :: PA.MutArr IO (PA.Unboxed (Z:.Subword) Int) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
+    let mt = MTbl EmptyT mxs
     zs <- run $ id <<< mt ... SM.toList $ sw
     ls <- run $ sequence $ [(PA.readM mxs (Z:.sw)) | i<=j]
     assert $ zs == ls
 
+{-
+{-
 -- | table, then character.
 
 prop_MtC sw@(Subword (i:.j)) = monadicIO $ do
@@ -298,10 +290,6 @@ region = Region Nothing Nothing
 
 mtable xs = MTable Eall xs
 
--- | data set. Can be made fixed as the maximal subword size is statically known!
-
-xs = VU.fromList [0 .. 100 :: Int]
-
 {-
 -- | A subword (i,j) should always produce an index in the allowed range
 
@@ -310,6 +298,11 @@ prop_subwordIndex (Small n, Subword (i:.j)) = (n>j) ==> p where
   k = subwordIndex (subword 0 n) (subword i j)
 -}
 
+-}
+
+-- | data set. Can be made fixed as the maximal subword size is statically known!
+
+xs = VU.fromList [0 .. 100 :: Int]
 
 
 -- * general quickcheck stuff
@@ -341,4 +334,5 @@ instance Arbitrary TinySubword where
 instance Arbitrary z => Arbitrary (z:.TinySubword) where
   arbitrary = (:.) <$> arbitrary <*> arbitrary
   shrink (z:.s) = (:.) <$> shrink z <*> shrink s
+
 
