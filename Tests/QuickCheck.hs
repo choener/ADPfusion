@@ -162,6 +162,28 @@ prop_Interior4 sw@(Subword (i:.j)) = zs == ls where
            , j-l-1>=1, j-l-1<=5
        ]
 
+prop_Interior5 sw@(Subword (i:.j)) = zs == ls where
+  zs = (,,,,,,,,,,) <<< peekL xs % chr xs % peekR xs % sregion 1 5 xs % peekR xs % sregion 2 5 xs % peekL xs % sregion 1 5 xs % peekL xs % chr xs % peekR xs ... S.toList $ sw
+  ls = [ ( xs VU.! (i-1)
+         , xs VU.! i
+         , xs VU.! (i+1)
+         , VU.slice (i+1) (k-i-1) xs
+         , xs VU.! k
+         , VU.slice k (l-k) xs
+         , xs VU.! (l-1)
+         , VU.slice l (j-l-1) xs
+         , xs VU.! (j-2)
+         , xs VU.! (j-1)
+         , xs VU.! j
+         ) | k <- [i..j]
+           , l <- [k..j]
+           , i>0, j-1 < VU.length xs
+           , j-i>=6, j-i<=17
+           , k-i-1>=1, k-i-1<=5
+           , l-k>=2, l-k<=5
+           , j-l-1>=1, j-l-1<=5
+       ]
+
 -- | A single mutable table should return one result.
 
 prop_Mt sw@(Subword (i:.j)) = monadicIO $ do
