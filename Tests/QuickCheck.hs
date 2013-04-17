@@ -18,6 +18,7 @@ import qualified Data.Vector.Unboxed as VU
 import Test.QuickCheck
 import Test.QuickCheck.All
 import Test.QuickCheck.Monadic
+import Data.List ((\\))
 
 import Data.Array.Repa.Index.Subword
 import Data.Array.Repa.Index.Point
@@ -104,6 +105,62 @@ prop_CRCRC sw@(Subword (i:.j)) = zs == ls where
          , VU.slice (k+1) (j-k-2) xs
          , xs VU.! (j-1)
          ) | k <- [i+1 .. j-2] ]
+
+-- | Interior-loop like structures.
+
+prop_Interior1 sw@(Subword (i:.j)) = zs == ls where
+  zs = (,,) <<< chr xs % peekR xs % sregion 1 5 xs ... S.toList $ sw
+  ls = [ ( xs VU.! i
+         , xs VU.! (i+1)
+         , VU.slice (i+1) (j-i-1) xs
+         ) | j-i>=2, j-i<=6
+       ]
+
+prop_Interior2 sw@(Subword (i:.j)) = zs == ls where
+  zs = (,,,,) <<< chr xs % peekR xs % sregion 1 5 xs % peekR xs % sregion 2 5 xs ... S.toList $ sw
+  ls = [ ( xs VU.! i
+         , xs VU.! (i+1)
+         , VU.slice (i+1) (k-i-1) xs
+         , xs VU.! k
+         , VU.slice k (j-k) xs
+         ) | j-i>=4, j-i<=11, k <- [i+2 .. (min j $ i+6)], j-k>=2, j-k<=5
+       ]
+
+prop_Interior3 sw@(Subword (i:.j)) = zs == ls where
+  zs = (,,,,,,) <<< chr xs % peekR xs % sregion 1 5 xs % peekR xs % sregion 2 5 xs % peekL xs % sregion 1 5 xs ... S.toList $ sw
+  ls = [ ( xs VU.! i
+         , xs VU.! (i+1)
+         , VU.slice (i+1) (k-i-1) xs
+         , xs VU.! k
+         , VU.slice k (l-k) xs
+         , xs VU.! (l-1)
+         , VU.slice l (j-l) xs
+         ) | k <- [i..j]
+           , l <- [k..j]
+           , j-i>=5, j-i<=16
+           , k-i-1>=1, k-i-1<=5
+           , l-k>=2, l-k<=5
+           , j-l>=1, j-l<=5
+       ]
+
+prop_Interior4 sw@(Subword (i:.j)) = zs == ls where
+  zs = (,,,,,,,,) <<< chr xs % peekR xs % sregion 1 5 xs % peekR xs % sregion 2 5 xs % peekL xs % sregion 1 5 xs % peekL xs % chr xs ... S.toList $ sw
+  ls = [ ( xs VU.! i
+         , xs VU.! (i+1)
+         , VU.slice (i+1) (k-i-1) xs
+         , xs VU.! k
+         , VU.slice k (l-k) xs
+         , xs VU.! (l-1)
+         , VU.slice l (j-l-1) xs
+         , xs VU.! (j-2)
+         , xs VU.! (j-1)
+         ) | k <- [i..j]
+           , l <- [k..j]
+           , j-i>=6, j-i<=17
+           , k-i-1>=1, k-i-1<=5
+           , l-k>=2, l-k<=5
+           , j-l-1>=1, j-l-1<=5
+       ]
 
 -- | A single mutable table should return one result.
 

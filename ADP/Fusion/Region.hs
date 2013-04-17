@@ -123,7 +123,7 @@ instance
               in  return (s :!: l :!: l + lb)
       step !(s :!: k :!: l)
         | l>j || l-k>ub =  return S.Done
-        | otherwise     = return $ S.Yield (ElmSRegion s (VU.unsafeSlice k (l-k) xs) (subword k l)) (s :!: k :!: l+1) -- TODO the slice index positions are wrong ?!
+        | otherwise     = return $ S.Yield (ElmSRegion s (VU.unsafeSlice k (l-k) xs) (subword k l)) (s :!: k :!: l+1)
   {-# INLINE mkStream #-}
 
 -- |

@@ -92,8 +92,9 @@ instance
   , StaticStack ls Subword
   ) => StaticStack (ls :!: PeekL x) Subword where
   staticStack (ls :!: _) =
-    let (a   :!: ij :!: b) = staticStack ls
-    in  (a+1 :!: ij :!: b)
+    let (a   :!: Subword (i:.j) :!: b) = staticStack ls
+        a' = if j==0 then a+1 else a
+    in  (a' :!: subword i j :!: b)
   staticExtends (ls :!: PeekL xs)
     | Nothing <- se = Just $ subword 0 (VU.length xs)
     | Just sw <- se = Just sw
@@ -122,7 +123,7 @@ instance
     in  dta `seq` S.map (\s -> ElmPeekL s dta (subword j j)) $ mkStream ls Outer ij
   mkStream !(ls :!: PeekL xs) (Inner cnc) !ij@(Subword(i:.j))
     = S.map (\s -> let (Subword (k:.l)) = getIdx s
-                   in  ElmPeekL s (VU.unsafeIndex xs l) (subword l l)
+                   in  ElmPeekL s (VU.unsafeIndex xs $ l-1) (subword l l)
             )
     $ mkStream ls (Inner cnc) ij
   {-# INLINE mkStream #-}
@@ -173,7 +174,7 @@ instance
     in  dta `seq` S.map (\s -> ElmPeekR s dta (subword j j)) $ mkStream ls Outer ij
   mkStream !(ls :!: PeekR xs) (Inner cnc) !ij@(Subword(i:.j))
     = S.map (\s -> let (Subword (k:.l)) = getIdx s
-                   in  ElmPeekR s (VU.unsafeIndex xs (l+1)) (subword l l)
+                   in  ElmPeekR s (VU.unsafeIndex xs l) (subword l l)
             )
     $ mkStream ls (Inner cnc) ij
   {-# INLINE mkStream #-}
