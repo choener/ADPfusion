@@ -1,5 +1,5 @@
 name:           ADPfusion
-version:        0.1.1.0
+version:        0.2.0.0
 author:         Christian Hoener zu Siederdissen, 2011-2013
 copyright:      Christian Hoener zu Siederdissen, 2011-2013
 homepage:       http://www.tbi.univie.ac.at/~choener/adpfusion
@@ -127,8 +127,6 @@ description:
 
 Extra-Source-Files:
   README.md
---  ADP/Fusion/QuickCheck.hs
---  ADP/Fusion/QuickCheck/Arbitrary.hs
 
 
 Flag devel
@@ -145,18 +143,17 @@ library
     repa           >= 3.2   ,
     strict         >= 0.3.2 ,
     vector         >= 0.10  ,
-    QuickCheck     >= 2.5
---    PrimitiveArray == 0.5.*
+    QuickCheck     >= 2.5   ,
+    PrimitiveArray == 0.5.*
   exposed-modules:
     ADP.Fusion
---    ADP.Fusion.Apply
---    ADP.Fusion.Chr
---    ADP.Fusion.Classes
---    ADP.Fusion.Empty
---    ADP.Fusion.None
---    ADP.Fusion.Region
---    ADP.Fusion.Table
---    Tests.QuickCheck
+    ADP.Fusion.Apply
+    ADP.Fusion.Chr
+    ADP.Fusion.Classes
+    ADP.Fusion.Empty
+    ADP.Fusion.Region
+    ADP.Fusion.Table
+    Tests.QuickCheck
 
   ghc-options:
     -O2 -funbox-strict-fields
