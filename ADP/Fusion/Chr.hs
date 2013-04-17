@@ -1,3 +1,4 @@
+{-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -12,6 +13,8 @@ import Data.Array.Repa.Index
 import Data.Strict.Tuple
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Unboxed as VU
+import Data.Strict.Maybe
+import Prelude hiding (Maybe(..))
 
 import Data.Array.Repa.Index.Subword
 
@@ -19,12 +22,28 @@ import ADP.Fusion.Classes
 
 
 
+-- * Parse a single character.
+
 data Chr x = Chr !(VU.Vector x)
 
 chr = Chr
 {-# INLINE chr #-}
 
 instance Build (Chr x)
+
+instance
+  ( VU.Unbox x
+  , StaticStack ls Subword
+  ) => StaticStack (ls :!: Chr x) Subword where
+  staticStack   (ls :!: _) =
+    let (a :!: Subword (i:.j  ) :!: b            ) = staticStack ls
+    in  (a :!: Subword (i:.j+1) :!: (max 0 $ b-1))
+  staticExtends (ls :!: Chr xs)
+    | Nothing <- se = Just $ subword 0 (VU.length xs)
+    | Just sw <- se = Just sw
+    where se = staticExtends ls
+  {-# INLINE staticStack #-}
+  {-# INLINE staticExtends #-}
 
 instance
   ( Elms ls Subword
@@ -57,6 +76,56 @@ instance
     $ mkStream ls (Inner cnc) (subword i $ j-1)
   {-# INLINE mkStream #-}
 
+
+
+-- * Peeking to the left
+
+data PeekL x = PeekL !(VU.Vector x)
+
+peekL = PeekL
+{-# INLINE peekL #-}
+
+instance Build (PeekL x)
+
+instance
+  ( VU.Unbox x
+  , StaticStack ls Subword
+  ) => StaticStack (ls :!: PeekL x) Subword where
+  staticStack (ls :!: _) =
+    let (a   :!: ij :!: b) = staticStack ls
+    in  (a+1 :!: ij :!: b)
+  staticExtends (ls :!: PeekL xs)
+    | Nothing <- se = Just $ subword 0 (VU.length xs)
+    | Just sw <- se = Just sw
+    where se = staticExtends ls
+  {-# INLINE staticStack #-}
+  {-# INLINE staticExtends #-}
+
+instance
+  ( Elms ls Subword
+  ) => Elms (ls :!: PeekL x) Subword where
+  data Elm (ls :!: PeekL x) Subword = ElmPeekL !(Elm ls Subword) !x !Subword
+  type Arg (ls :!: PeekL x) = Arg ls :. x
+  getArg !(ElmPeekL ls x _) = getArg ls :. x
+  getIdx !(ElmPeekL _ _ idx) = idx
+  {-# INLINE getArg #-}
+  {-# INLINE getIdx #-}
+
+instance
+  ( Monad m
+  , VU.Unbox x
+  , Elms ls Subword
+  , MkStream m ls Subword
+  ) => MkStream m (ls :!: PeekL x) Subword where
+  mkStream !(ls :!: PeekL xs) Outer !ij@(Subword(i:.j)) =
+    let dta = VU.unsafeIndex xs (j-1)
+    in  dta `seq` S.map (\s -> ElmPeekL s dta (subword (j-1) j)) $ mkStream ls Outer ij
+  mkStream !(ls :!: PeekL xs) (Inner cnc) !ij@(Subword(i:.j))
+    = S.map (\s -> let (Subword (k:.l)) = getIdx s
+                   in  ElmPeekL s (VU.unsafeIndex xs l) (subword l l)
+            )
+    $ mkStream ls (Inner cnc) ij
+  {-# INLINE mkStream #-}
 
 
 -- | TODO replace with PeekL PeekR combinators

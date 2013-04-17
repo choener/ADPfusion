@@ -28,18 +28,18 @@
 module ADP.Fusion where
 
 import Control.DeepSeq
+import Control.Monad.Primitive
 import Data.Array.Repa.Index
-import qualified Data.Vector.Fusion.Stream.Monadic as S
-import qualified Data.Vector.Fusion.Stream as Sp
-import qualified Data.Vector.Unboxed as VU
-import qualified Data.Vector.Unboxed.Mutable as VUM
+import Data.Strict.Maybe
+import Data.Strict.Tuple
 import Data.Vector.Fusion.Stream.Size
 import GHC.Exts (inline)
-import Data.Strict.Tuple
-import Data.Strict.Maybe
 import Prelude hiding (Maybe(..))
+import qualified Data.Vector.Fusion.Stream as Sp
+import qualified Data.Vector.Fusion.Stream.Monadic as S
+import qualified Data.Vector.Unboxed as VU
+import qualified Data.Vector.Unboxed.Mutable as VUM
 import qualified Prelude as P
-import Control.Monad.Primitive
 
 import Data.Array.Repa.Index.Subword
 import Data.Array.Repa.ExtShape
@@ -49,216 +49,17 @@ import qualified Data.PrimitiveArray.Zero as PA
 import qualified Data.Array.Repa as R
 
 import ADP.Fusion.Apply
-import ADP.Fusion.Classes
 import ADP.Fusion.Chr
+import ADP.Fusion.Classes
+import ADP.Fusion.Empty
+import ADP.Fusion.Region
+import ADP.Fusion.Table
 
 import Debug.Trace
 
 
 
-data Region x = Region !(VU.Vector x)
---              | SRegion !Int !Int !(VU.Vector x)
 
-instance Build (Region x)
-
-instance
-  ( Elms ls Subword
-  ) => Elms (ls :!: Region x) Subword where
-  data Elm (ls :!: Region x) Subword = ElmRegion !(Elm ls Subword) !(VU.Vector x) !Subword
-  type Arg (ls :!: Region x)         = Arg ls :. VU.Vector x
-  getArg !(ElmRegion ls xs _) = getArg ls :. xs
-  getIdx !(ElmRegion _ _   i) = i
-  {-# INLINE getArg #-}
-  {-# INLINE getIdx #-}
-
-instance
-  ( Monad m
-  , VU.Unbox x
-  , Elms ls Subword
-  , MkStream m ls Subword
-  ) => MkStream m (ls:!:Region x) Subword where
-  --
-  -- 'Region's of unlimited size
-  --
-  mkStream !(ls:!:Region xs) Outer !ij@(Subword (i:.j))
-    = S.map (\s -> let (Subword (k:.l)) = getIdx s in ElmRegion s (VU.unsafeSlice l (j-l) xs) (subword l j))
-    $ mkStream ls (Inner Check) ij
-  mkStream !(ls:!:Region xs) (Inner _) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck) ij where
-      mk !s = let (Subword (k:.l)) = getIdx s
-              in  return (s :!: l :!: l)
-      step !(s :!: k :!: l)
-        | l > j     =  return S.Done
-        | otherwise = return $ S.Yield (ElmRegion s (VU.unsafeSlice k (l-k) xs) (subword k l)) (s :!: k :!: l+1) -- TODO the slice index positions are wrong ?!
-  --
-  -- Regions with size limitations
-  --
-  -- TODO this case seems to be rather inefficient. We should rather not do the
-  -- takeWhile/dropWhile dance modify the inner index to produce only those
-  -- values that are acceptable
---  mkStream !(ls:!:Region lb ub xs) Outer !ij@(Subword (i:.j))
---    = S.map       (\s -> let (Subword (k:.l)) = getIdx s in ElmRegion s (VU.unsafeSlice l (j-l) xs) (subword l j))
---    $ S.takeWhile (\s -> case mlb of Nothing -> True
---                                     Just lb -> let (Subword (k:.l)) = getIdx s in j-l >= lb)
---    $ S.dropWhile (\s -> case mub of Nothing -> False
---                                     Just ub -> let (Subword (k:.l)) = getIdx s in j-l >= ub)
---    $ mkStream ls Inner ij
-{-
-  -- | TODO below is wrong for sregions!
-  mkStream !(ls:!:SRegion lb ub xs) Outer !ij@(Subword (i:.j))
-    = S.map (\s -> let (Subword (k:.l)) = getIdx s in ElmRegion s (VU.slice l (j-l) xs) (subword l j))
-    $ mkStream ls (Inner Check) ij
-  mkStream !(ls:!:SRegion lb ub xs) (Inner _) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck) ij where
-      mk !s = let (Subword (k:.l)) = getIdx s
-              in  return (s :!: l :!: l+lb)
-      step !(s :!: k :!: l) | l > j || l-k > ub
-        = return S.Done
-      step !(s :!: k :!: l)
-        = return $ S.Yield (ElmRegion s (VU.unsafeSlice k (l-k) xs) (subword k l)) (s :!: k :!: l+1) -- TODO the slice index positions are wrong ?!
--}
-  {-# INLINE mkStream #-}
-
-region :: VU.Vector x -> Region x
-region = Region
-{-# INLINE region #-}
-
--- |
---
--- NOTE If you only want a lower bound, set the upper bound to s.th. like "1
--- Million".
-
---sregion :: Int -> Int -> VU.Vector x -> Region x
---sregion = SRegion
---{-# INLINE sregion #-}
-
-
-data Tbl x = Tbl !(PA.Unboxed (Z:.Subword) x)
-
-instance Build (Tbl x)
-
-instance
-  ( Elms ls Subword
-  ) => Elms (ls :!: Tbl x) Subword where
-  data Elm (ls :!: Tbl x) Subword = ElmTbl !(Elm ls Subword) !x !Subword
-  type Arg (ls :!: Tbl x) = Arg ls :. x
-  getArg !(ElmTbl ls x _) = getArg ls :. x
-  getIdx !(ElmTbl _ _ idx) = idx
-  {-# INLINE getArg #-}
-  {-# INLINE getIdx #-}
-
-instance
-  ( Monad m
-  , VU.Unbox x
-  , Elms ls Subword
-  , MkStream m ls Subword
-  ) => MkStream m (ls:!:Tbl x) Subword where
-  mkStream !(ls:!:Tbl xs) Outer !ij@(Subword (i:.j)) = S.map (\s -> let (Subword (k:.l)) = getIdx s in ElmTbl s (xs PA.! (Z:.subword l j)) (subword l j)) $ mkStream ls (Inner Check) ij
-  mkStream !(ls:!:Tbl xs) (Inner _) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck) ij where
-    mk !s = let (Subword (k:.l)) = getIdx s in return (s :!: l :!: l)
-    step !(s :!: k :!: l)
-      | l > j = return S.Done
-      | otherwise = return $ S.Yield (ElmTbl s (xs PA.! (Z:.subword k l)) (subword k l)) (s :!: k :!: l+1)
-  {-# INLINE mkStream #-}
-
-data BtTbl m x b = BtTbl ENE !(PA.Unboxed (Z:.Subword) x) !(Subword -> m (S.Stream m b))
-
-instance Build (BtTbl m x b)
-
-instance TransENE (BtTbl m x b) where
-  toEmpty (BtTbl _ xs f ) = BtTbl EmptyT xs f
-  toNonEmpty (BtTbl _ xs f) = BtTbl NoEmptyT xs f
-  {-# INLINE toEmpty #-}
-  {-# INLINE toNonEmpty #-}
-
-instance
-  ( Monad m
-  , Elms ls Subword
-  ) => Elms (ls :!: BtTbl m x b) Subword where
-  data Elm (ls :!: BtTbl m x b) Subword = ElmBtTbl !(Elm ls Subword) !x !(m (S.Stream m b)) !Subword
-  type Arg (ls :!: BtTbl m x b) = Arg ls :. (x,m (S.Stream m b))
-  getArg !(ElmBtTbl ls x b _) = getArg ls :. (x,b)
-  getIdx !(ElmBtTbl _  _ _ i) = i
-  {-# INLINE getArg #-}
-  {-# INLINE getIdx #-}
-
-instance
-  ( Monad m
-  , VU.Unbox x
-  , Elms ls Subword
-  , MkStream m ls Subword
-  ) => MkStream m (ls :!: BtTbl m x b) Subword where
-  mkStream !(ls:!:BtTbl ene xs f) Outer !ij@(Subword (i:.j))
-    = S.map (\s -> let (Subword (k:.l)) = getIdx s in ElmBtTbl s (xs PA.! (Z:.subword l j)) (f $ subword l j) (subword l j))
-    $ mkStream ls (Inner Check) (subword i $ case ene of { EmptyT -> j ; NoEmptyT -> j-1 })
-  mkStream !(ls:!:BtTbl ene xs f) (Inner _) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck) ij where
-    mk !s = let (Subword (k:.l)) = getIdx s in return (s:!:l:!: case ene of {EmptyT -> l; NoEmptyT -> l+1}) -- TODO we probably want l:!:l+1
-    step !(s:!:k:!:l)
-      | l > j     = return $ S.Done
-      | otherwise = return $ S.Yield (ElmBtTbl s (xs PA.! (Z:.subword k l)) (f $ subword k l) (subword k l)) (s:!:k:!:l+1)
-  {-# INLINE mkStream #-}
-
-
-
-data MTbl xs = MTbl ENE !xs
-
-instance TransENE (MTbl xs) where
-  toEmpty (MTbl _ xs) = MTbl EmptyT xs
-  toNonEmpty (MTbl _ xs) =MTbl NoEmptyT xs
-  {-# INLINE toEmpty #-}
-  {-# INLINE toNonEmpty #-}
-
-instance Build (MTbl xs)
-
-instance
-  ( Monad m
-  , Elms ls Subword
-  ) => Elms (ls :!: MTbl (PA.MutArr m (arr (Z:.Subword) x))) Subword where
-  data Elm (ls :!: MTbl (PA.MutArr m (arr (Z:.Subword) x))) Subword = ElmMTbl !(Elm ls Subword) !x !Subword
-  type Arg (ls :!: MTbl (PA.MutArr m (arr (Z:.Subword) x))) = Arg ls :. x
-  getArg !(ElmMTbl ls x _) = getArg ls :. x
-  getIdx !(ElmMTbl _ _ i) = i
-  {-# INLINE getArg #-}
-  {-# INLINE getIdx #-}
-
-instance
-  ( PrimMonad m
-  , PA.MPrimArrayOps arr (Z:.Subword) x
-  , Elms ls Subword
-  , MkStream m ls Subword
-  ) => MkStream m (ls:!:MTbl (PA.MutArr m (arr (Z:.Subword) x))) Subword where
-  mkStream !(ls:!:MTbl ene tbl) Outer !ij@(Subword (i:.j))
-    = S.mapM (\s -> let (Subword (_:.l)) = getIdx s in PA.readM tbl (Z:.subword l j) >>= \z -> return $ ElmMTbl s z (subword l j))
-    $ mkStream ls (Inner Check) (subword i $ case ene of { EmptyT -> j ; NoEmptyT -> j-1 }) -- if nonE then (subword i $ j-1) else ij)
-  mkStream !(ls:!:MTbl ene tbl) (Inner _) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck) ij where
-    mk !s = let (Subword (_:.l)) = getIdx s in return (s :!: l :!: l + case ene of { EmptyT -> 0 ; NoEmptyT -> 1 }) -- if nonE then 1 else 0)
-    step !(s :!: k :!: l)
-      | l > j = return S.Done
-      | otherwise = PA.readM tbl (Z:.subword k l) >>= \z -> return $ S.Yield (ElmMTbl s z (subword k l)) (s :!: k :!: l+1)
-  {-# INLINE mkStream #-}
-
-data Empty = Empty
-
-instance Build Empty
-
-instance
-  ( Elms ls Subword
-  ) => Elms (ls :!: Empty) Subword where
-  data Elm (ls :!: Empty) Subword = ElmEmpty !(Elm ls Subword) !() !Subword
-  type Arg (ls :!: Empty) = Arg ls :. ()
-  getArg !(ElmEmpty ls () _) = getArg ls :. ()
-  getIdx !(ElmEmpty _ _ i)   = i
-  {-# INLINE getArg #-}
-  {-# INLINE getIdx #-}
-
-instance
-  ( Monad m
-  , Elms ls Subword
-  , MkStream m ls Subword
-  ) => MkStream m (ls:!:Empty) Subword where
-  mkStream !(ls:!:Empty) Outer !ij@(Subword (i:.j))
-    = S.map (\s -> ElmEmpty s () (subword i j))
-    $ S.filter (\_ -> i==j)
-    $ mkStream ls Outer ij
-  {-# INLINE mkStream #-}
 
 
 
@@ -271,13 +72,11 @@ testF i j =
 {-# NOINLINE testF #-}
 -}
 
-{-
 testG :: Int -> Int -> Int
 testG i j =
   p7 <<< chr testVs % chr testVs % Tbl testA % Tbl testA % Tbl testA % chr testVs % chr testVs |||
   p7 <<< chr testVs % chr testVs % Tbl testA % Tbl testA % Tbl testA % chr testVs % chr testVs ... (Sp.foldl' (+) 0) $ subword i j
 {-# NOINLINE testG #-}
--}
 
 testA :: PA.Unboxed (Z:.Subword) Int
 testA = PA.fromAssocs (Z:.subword 0 0) (Z:.subword 0 50) 0 []
