@@ -75,6 +75,19 @@ data BtTbl m x b = BtTbl ENE !(PA.Unboxed (Z:.Subword) x) !(Subword -> m (S.Stre
 
 instance Build (BtTbl m x b)
 
+instance
+  ( Monad m
+  , VU.Unbox x
+  , StaticStack ls Subword
+  ) => StaticStack (ls :!: BtTbl m x b) Subword where
+  staticStack   (ls :!: _) = staticStack ls
+  staticExtends (ls :!: BtTbl _ tbl _)
+    | Nothing <- se = let (_,Z:.sw) = PA.bounds tbl in Just sw
+    | Just sw <- se = Just sw
+    where se = staticExtends ls
+  {-# INLINE staticStack #-}
+  {-# INLINE staticExtends #-}
+
 instance TransENE (BtTbl m x b) where
   toEmpty (BtTbl _ xs f ) = BtTbl EmptyT xs f
   toNonEmpty (BtTbl _ xs f) = BtTbl NoEmptyT xs f
