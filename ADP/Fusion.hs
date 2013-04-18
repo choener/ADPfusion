@@ -32,6 +32,8 @@ module ADP.Fusion
   , (...)
   , (~~)
   , (%)
+  -- filters
+  , check
   -- parsers
   , chr
   , peekL
@@ -79,9 +81,15 @@ infixl 7 |||
 -- reduces the stream to a single optimal value (or some vector of co-optimal
 -- things).
 
-infixl 6 ...
+infixl 5 ...
 (...) s h = h . s
 {-# INLINE (...) #-}
+
+-- | Additional outer check with user-given check function
+
+infixl 6 `check`
+check xs f = \ij -> let chk = f ij in chk `seq` outerCheck chk (xs ij)
+{-# INLINE check #-}
 
 -- | Separator between RHS symbols.
 
