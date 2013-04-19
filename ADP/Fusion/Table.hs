@@ -80,7 +80,10 @@ instance
   , VU.Unbox x
   , StaticStack ls Subword
   ) => StaticStack (ls :!: BtTbl m x b) Subword where
-  staticStack   (ls :!: _) = staticStack ls
+  staticStack   (ls :!: BtTbl ene _ _) =
+    let (a :!: Subword (i:.j)   :!: b) = staticStack ls
+        z = case ene of { EmptyT -> 0 ; NoEmptyT -> 1}
+    in  (a :!: Subword (i:.j+z) :!: (max 0 $ b-z))
   staticExtends (ls :!: BtTbl _ tbl _)
     | Nothing <- se = let (_,Z:.sw) = PA.bounds tbl in Just sw
     | Just sw <- se = Just sw
@@ -115,7 +118,7 @@ instance
     = S.map (\s -> let (Subword (k:.l)) = getIdx s in ElmBtTbl s (xs PA.! (Z:.subword l j)) (f $ subword l j) (subword l j))
     $ mkStream ls (Inner Check) (subword i $ case ene of { EmptyT -> j ; NoEmptyT -> j-1 })
   mkStream !(ls:!:BtTbl ene xs f) (Inner _) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck) ij where
-    mk !s = let (Subword (k:.l)) = getIdx s in return (s:!:l:!: case ene of {EmptyT -> l; NoEmptyT -> l+1}) -- TODO we probably want l:!:l+1
+    mk !s = let (Subword (k:.l)) = getIdx s in return (s:!:l:!: case ene of {EmptyT -> l; NoEmptyT -> l+1})
     step !(s:!:k:!:l)
       | l > j     = return $ S.Done
       | otherwise = return $ S.Yield (ElmBtTbl s (xs PA.! (Z:.subword k l)) (f $ subword k l) (subword k l)) (s:!:k:!:l+1)
@@ -141,7 +144,10 @@ instance
   , PA.MPrimArrayOps arr (Z:.Subword) x
   , StaticStack ls Subword
   ) => StaticStack (ls :!: MTbl (PA.MutArr m (arr (Z:.Subword) x))) Subword where
-  staticStack   (ls :!: _) = staticStack ls
+  staticStack   (ls :!: MTbl ene _) =
+    let (a :!: Subword (i:.j)   :!: b) = staticStack ls
+        z = case ene of { EmptyT -> 0 ; NoEmptyT -> 1}
+    in  (a :!: Subword (i:.j+z) :!: (max 0 $ b-z))
   staticExtends (ls :!: MTbl _ tbl)
     | Nothing <- se = let (_,Z:.sw) = PA.boundsM tbl in Just sw
     | Just sw <- se = Just sw
