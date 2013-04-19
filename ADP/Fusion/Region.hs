@@ -109,6 +109,18 @@ instance
 -- |
 --
 -- TODO Check that all inner / outer sized calculations are correct
+--
+-- NOTE mkStream/Inner gives a size hint of Nothing, as in purely inner cases,
+-- min/max boundaries are determined solely from the running rightmost index
+-- from the next inner component.
+--
+-- NOTE the filter in mkStream/Outer is still necessary to check for
+-- lowerbound>0 conditions. We /could/ send the lower bound down with another
+-- size hint, but this only makes sense if you have use cases, where the lower
+-- bound is a lot higher than "0". Otherwise the current code is simpler.
+--
+-- TODO remove mkStream/Outer : filter and test if one condition less gives
+-- much better runtimes.
 
 instance
   ( Monad m
@@ -118,9 +130,9 @@ instance
   ) => MkStream m (ls:!:SRegion x) Subword where
   mkStream !(ls:!:SRegion lb ub xs) Outer !ij@(Subword (i:.j))
     = S.map (\s -> let (Subword (k:.l)) = getIdx s in ElmSRegion s (VU.unsafeSlice l (j-l) xs) (subword l j))
-    $ S.filter (\s -> let (Subword (k:.l)) = getIdx s in (j-l >= lb && j-l <= ub))
+    $ S.filter (\s -> let (Subword (k:.l)) = getIdx s in (j-l >= lb)) -- && j-l <= ub))
     $ mkStream ls (Inner Check (Just ub)) ij
-  mkStream !(ls:!:SRegion lb ub xs) (Inner _ szd) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck (Just ub)) ij where
+  mkStream !(ls:!:SRegion lb ub xs) (Inner _ szd) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck Nothing) ij where
       mk !s = let (Subword (k:.l)) = getIdx s
                   l' = case szd of Nothing -> l+lb
                                    Just z  -> max (l+lb) (j-z)
