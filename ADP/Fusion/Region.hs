@@ -21,6 +21,8 @@ import Data.Array.Repa.Index.Subword
 
 import ADP.Fusion.Classes
 
+import Control.Exception (assert)
+
 
 
 -- * Regions of unlimited size
@@ -119,6 +121,8 @@ instance
 -- size hint, but this only makes sense if you have use cases, where the lower
 -- bound is a lot higher than "0". Otherwise the current code is simpler.
 --
+-- TODO use drop instead of filter: still condition, but large lower bounds are captured
+--
 -- TODO remove mkStream/Outer : filter and test if one condition less gives
 -- much better runtimes.
 
@@ -129,8 +133,8 @@ instance
   , MkStream m ls Subword
   ) => MkStream m (ls:!:SRegion x) Subword where
   mkStream !(ls:!:SRegion lb ub xs) Outer !ij@(Subword (i:.j))
-    = S.map (\s -> let (Subword (k:.l)) = getIdx s in ElmSRegion s (VU.unsafeSlice l (j-l) xs) (subword l j))
-    $ S.filter (\s -> let (Subword (k:.l)) = getIdx s in (j-l >= lb)) -- && j-l <= ub))
+    = S.map (\s -> let (Subword (k:.l)) = getIdx s in assert (l>=0 && j-i>=0) $ ElmSRegion s (VU.slice l (j-l) xs) (subword l j))
+    $ S.filter (\s -> let (Subword (k:.l)) = getIdx s in (j-l >= lb && j-l <= ub))
     $ mkStream ls (Inner Check (Just ub)) ij
   mkStream !(ls:!:SRegion lb ub xs) (Inner _ szd) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck Nothing) ij where
       mk !s = let (Subword (k:.l)) = getIdx s
@@ -139,7 +143,7 @@ instance
               in  return (s :!: l :!: l')
       step !(s :!: k :!: l)
         | l>j || l-k>ub =  return S.Done
-        | otherwise     = return $ S.Yield (ElmSRegion s (VU.unsafeSlice k (l-k) xs) (subword k l)) (s :!: k :!: l+1)
+        | otherwise     = return $ assert (k>=0 && l-k>=0) $ S.Yield (ElmSRegion s (VU.slice k (l-k) xs) (subword k l)) (s :!: k :!: l+1)
   {-# INLINE mkStream #-}
 
 -- |

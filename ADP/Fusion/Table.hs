@@ -64,7 +64,7 @@ instance
     mk !s = let (Subword (k:.l)) = getIdx s
                 le = l -- TODO need to add ENE here ! -- + case ene of { EmptyT -> 0 ; NoEmptyT -> 1}
                 l' = case szd of Nothing -> le
-                                 Just z  -> max le j-z
+                                 Just z  -> max le (j-z)
             in  return (s :!: l :!: l')
     step !(s :!: k :!: l)
       | l > j = return S.Done
@@ -125,7 +125,7 @@ instance
     mk !s = let (Subword (k:.l)) = getIdx s
                 le = l + case ene of { EmptyT -> 0 ; NoEmptyT -> 1}
                 l' = case szd of Nothing -> le
-                                 Just z  -> max le j-z
+                                 Just z  -> max le (j-z)
             in  return (s:!:l:!: l')
     step !(s:!:k:!:l)
       | l > j     = return $ S.Done
@@ -187,7 +187,7 @@ instance
     mk !s = let (Subword (_:.l)) = getIdx s
                 le = l + case ene of { EmptyT -> 0 ; NoEmptyT -> 1}
                 l' = case szd of Nothing -> le
-                                 Just z  -> max le j-z
+                                 Just z  -> max le (j-z)
             in return (s :!: l :!: l')
     step !(s :!: k :!: l)
       | l > j = return S.Done
