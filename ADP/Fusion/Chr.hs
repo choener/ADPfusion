@@ -69,11 +69,11 @@ instance
   mkStream !(ls :!: Chr xs) Outer !ij@(Subword(i:.j)) =
     let dta = VU.unsafeIndex xs (j-1)
     in  dta `seq` S.map (\s -> ElmChr s dta (subword (j-1) j)) $ mkStream ls Outer (subword i $ j-1)
-  mkStream !(ls :!: Chr xs) (Inner cnc) !ij@(Subword(i:.j))
+  mkStream !(ls :!: Chr xs) (Inner cnc szd) !ij@(Subword(i:.j))
     = S.map (\s -> let (Subword (k:.l)) = getIdx s
                    in  ElmChr s (VU.unsafeIndex xs l) (subword l $ l+1)
             )
-    $ mkStream ls (Inner cnc) (subword i $ j-1)
+    $ mkStream ls (Inner cnc szd) (subword i $ j-1)
   {-# INLINE mkStream #-}
 
 
@@ -121,11 +121,11 @@ instance
   mkStream !(ls :!: PeekL xs) Outer !ij@(Subword(i:.j)) =
     let dta = VU.unsafeIndex xs (j-1)
     in  dta `seq` S.map (\s -> ElmPeekL s dta (subword j j)) $ mkStream ls Outer ij
-  mkStream !(ls :!: PeekL xs) (Inner cnc) !ij@(Subword(i:.j))
+  mkStream !(ls :!: PeekL xs) (Inner cnc szd) !ij@(Subword(i:.j))
     = S.map (\s -> let (Subword (k:.l)) = getIdx s
                    in  ElmPeekL s (VU.unsafeIndex xs $ l-1) (subword l l)
             )
-    $ mkStream ls (Inner cnc) ij
+    $ mkStream ls (Inner cnc szd) ij
   {-# INLINE mkStream #-}
 
 
@@ -172,11 +172,11 @@ instance
   mkStream !(ls :!: PeekR xs) Outer !ij@(Subword(i:.j)) =
     let dta = VU.unsafeIndex xs j
     in  dta `seq` S.map (\s -> ElmPeekR s dta (subword j j)) $ mkStream ls Outer ij
-  mkStream !(ls :!: PeekR xs) (Inner cnc) !ij@(Subword(i:.j))
+  mkStream !(ls :!: PeekR xs) (Inner cnc szd) !ij@(Subword(i:.j))
     = S.map (\s -> let (Subword (k:.l)) = getIdx s
                    in  ElmPeekR s (VU.unsafeIndex xs l) (subword l l)
             )
-    $ mkStream ls (Inner cnc) ij
+    $ mkStream ls (Inner cnc szd) ij
   {-# INLINE mkStream #-}
 
 

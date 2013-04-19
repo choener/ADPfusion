@@ -59,10 +59,12 @@ instance
   ) => MkStream m (ls:!:Region x) Subword where
   mkStream !(ls:!:Region xs) Outer !ij@(Subword (i:.j))
     = S.map (\s -> let (Subword (k:.l)) = getIdx s in ElmRegion s (VU.unsafeSlice l (j-l) xs) (subword l j))
-    $ mkStream ls (Inner Check) ij
-  mkStream !(ls:!:Region xs) (Inner _) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck) ij where
+    $ mkStream ls (Inner Check Nothing) ij
+  mkStream !(ls:!:Region xs) (Inner _ szd) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck Nothing) ij where
       mk !s = let (Subword (k:.l)) = getIdx s
-              in  return (s :!: l :!: l)
+                  l' = case szd of Nothing -> l
+                                   Just z  -> max l (j-z)
+              in  return (s :!: l :!: l')
       step !(s :!: k :!: l)
         | l > j     =  return S.Done
         | otherwise = return $ S.Yield (ElmRegion s (VU.unsafeSlice k (l-k) xs) (subword k l)) (s :!: k :!: l+1)
@@ -106,7 +108,7 @@ instance
 
 -- |
 --
--- TODO Need to extend (Inner Check) to (Inner Check SizeRequest); then femove filter in mkStream/Outer
+-- TODO Check that all inner / outer sized calculations are correct
 
 instance
   ( Monad m
@@ -117,10 +119,12 @@ instance
   mkStream !(ls:!:SRegion lb ub xs) Outer !ij@(Subword (i:.j))
     = S.map (\s -> let (Subword (k:.l)) = getIdx s in ElmSRegion s (VU.unsafeSlice l (j-l) xs) (subword l j))
     $ S.filter (\s -> let (Subword (k:.l)) = getIdx s in (j-l >= lb && j-l <= ub))
-    $ mkStream ls (Inner Check) ij
-  mkStream !(ls:!:SRegion lb ub xs) (Inner _) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck) ij where
+    $ mkStream ls (Inner Check (Just ub)) ij
+  mkStream !(ls:!:SRegion lb ub xs) (Inner _ szd) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck (Just ub)) ij where
       mk !s = let (Subword (k:.l)) = getIdx s
-              in  return (s :!: l :!: l + lb)
+                  l' = case szd of Nothing -> l+lb
+                                   Just z  -> max (l+lb) (j-z)
+              in  return (s :!: l :!: l')
       step !(s :!: k :!: l)
         | l>j || l-k>ub =  return S.Done
         | otherwise     = return $ S.Yield (ElmSRegion s (VU.unsafeSlice k (l-k) xs) (subword k l)) (s :!: k :!: l+1)

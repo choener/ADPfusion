@@ -109,30 +109,4 @@ infixl 9 %
 
 
 
-{-
-testF :: Int -> Int -> Int
-testF i j =
-  p6 <<< peekL testVs % chr testVs % Tbl testA % Tbl testA % chr testVs % peekR testVs |||
-  p6 <<< peekR testVs % chr testVs % Tbl testA % Tbl testA % chr testVs % peekL testVs ... (Sp.foldl' (+) 0) $ subword i j
-{-# NOINLINE testF #-}
-
-testG :: Int -> Int -> Int
-testG i j =
-  p7 <<< chr testVs % chr testVs % Tbl testA % Tbl testA % Tbl testA % chr testVs % chr testVs |||
-  p7 <<< chr testVs % chr testVs % Tbl testA % Tbl testA % Tbl testA % chr testVs % chr testVs ... (Sp.foldl' (+) 0) $ subword i j
-{-# NOINLINE testG #-}
-
-testA :: PA.Unboxed (Z:.Subword) Int
-testA = PA.fromAssocs (Z:.subword 0 0) (Z:.subword 0 50) 0 []
-{-# NOINLINE testA #-}
-
-testVs :: VU.Vector Int
-testVs = VU.fromList [ 0 .. 9999 ]
-{-# NOINLINE testVs #-}
--}
-
-{-
---gugg :: Int -> Int -> [(Int,VU.Vector Int,Int)]
-gugg i j = (,,) <<< chrR testVs % region testVs % chrL testVs ... Sp.toList $ subword i j
--}
 

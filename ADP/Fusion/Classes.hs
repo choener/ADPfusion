@@ -37,7 +37,7 @@ data CNC
   deriving (Eq,Show)
 
 data InnerOuter
-  = Inner !CNC
+  = Inner !CNC !(Maybe Int)
   | Outer
   deriving (Eq,Show)
 
@@ -102,11 +102,19 @@ instance
     step !k
       | k==j      = P.Just $ (ElmZ (subword i i), j+1)
       | otherwise = P.Nothing
-  mkStream Z (Inner NoCheck) !(Subword (i:.j)) = S.singleton $ ElmZ $ subword i i
-  mkStream Z (Inner Check)   !(Subword (i:.j)) = S.unfoldr step i where
+  mkStream Z (Inner NoCheck Nothing)  !(Subword (i:.j)) = S.singleton $ ElmZ $ subword i i
+  mkStream Z (Inner NoCheck (Just z)) !(Subword (i:.j)) = S.unfoldr step i where
+    step !k
+      | k<=j && k+z>=j = P.Just $ (ElmZ (subword i i), j+1)
+      | otherwise      = P.Nothing
+  mkStream Z (Inner Check Nothing)   !(Subword (i:.j)) = S.unfoldr step i where
     step !k
       | k<=j      = P.Just $ (ElmZ (subword i i), j+1)
       | otherwise = P.Nothing
+  mkStream Z (Inner Check (Just z)) !(Subword (i:.j)) = S.unfoldr step i where
+    step !k
+      | k<=j && k+z>=j = P.Just $ (ElmZ (subword i i), j+1)
+      | otherwise      = P.Nothing
   {-# INLINE mkStream #-}
 
 -- Calculate the static extends of a RHS. With a bit of trickery, we can even

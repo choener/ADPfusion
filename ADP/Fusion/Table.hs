@@ -59,9 +59,13 @@ instance
   , Elms ls Subword
   , MkStream m ls Subword
   ) => MkStream m (ls:!:Tbl x) Subword where
-  mkStream !(ls:!:Tbl xs) Outer !ij@(Subword (i:.j)) = S.map (\s -> let (Subword (k:.l)) = getIdx s in ElmTbl s (xs PA.! (Z:.subword l j)) (subword l j)) $ mkStream ls (Inner Check) ij
-  mkStream !(ls:!:Tbl xs) (Inner _) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck) ij where
-    mk !s = let (Subword (k:.l)) = getIdx s in return (s :!: l :!: l)
+  mkStream !(ls:!:Tbl xs) Outer !ij@(Subword (i:.j)) = S.map (\s -> let (Subword (k:.l)) = getIdx s in ElmTbl s (xs PA.! (Z:.subword l j)) (subword l j)) $ mkStream ls (Inner Check Nothing) ij
+  mkStream !(ls:!:Tbl xs) (Inner _ szd) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck Nothing) ij where
+    mk !s = let (Subword (k:.l)) = getIdx s
+                le = l -- TODO need to add ENE here ! -- + case ene of { EmptyT -> 0 ; NoEmptyT -> 1}
+                l' = case szd of Nothing -> le
+                                 Just z  -> max le j-z
+            in  return (s :!: l :!: l')
     step !(s :!: k :!: l)
       | l > j = return S.Done
       | otherwise = return $ S.Yield (ElmTbl s (xs PA.! (Z:.subword k l)) (subword k l)) (s :!: k :!: l+1)
@@ -116,9 +120,13 @@ instance
   ) => MkStream m (ls :!: BtTbl m x b) Subword where
   mkStream !(ls:!:BtTbl ene xs f) Outer !ij@(Subword (i:.j))
     = S.map (\s -> let (Subword (k:.l)) = getIdx s in ElmBtTbl s (xs PA.! (Z:.subword l j)) (f $ subword l j) (subword l j))
-    $ mkStream ls (Inner Check) (subword i $ case ene of { EmptyT -> j ; NoEmptyT -> j-1 })
-  mkStream !(ls:!:BtTbl ene xs f) (Inner _) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck) ij where
-    mk !s = let (Subword (k:.l)) = getIdx s in return (s:!:l:!: case ene of {EmptyT -> l; NoEmptyT -> l+1})
+    $ mkStream ls (Inner Check Nothing) (subword i $ case ene of { EmptyT -> j ; NoEmptyT -> j-1 })
+  mkStream !(ls:!:BtTbl ene xs f) (Inner _ szd) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck Nothing) ij where
+    mk !s = let (Subword (k:.l)) = getIdx s
+                le = l + case ene of { EmptyT -> 0 ; NoEmptyT -> 1}
+                l' = case szd of Nothing -> le
+                                 Just z  -> max le j-z
+            in  return (s:!:l:!: l')
     step !(s:!:k:!:l)
       | l > j     = return $ S.Done
       | otherwise = return $ S.Yield (ElmBtTbl s (xs PA.! (Z:.subword k l)) (f $ subword k l) (subword k l)) (s:!:k:!:l+1)
@@ -174,9 +182,13 @@ instance
   ) => MkStream m (ls:!:MTbl (PA.MutArr m (arr (Z:.Subword) x))) Subword where
   mkStream !(ls:!:MTbl ene tbl) Outer !ij@(Subword (i:.j))
     = S.mapM (\s -> let (Subword (_:.l)) = getIdx s in PA.readM tbl (Z:.subword l j) >>= \z -> return $ ElmMTbl s z (subword l j))
-    $ mkStream ls (Inner Check) (subword i $ case ene of { EmptyT -> j ; NoEmptyT -> j-1 })
-  mkStream !(ls:!:MTbl ene tbl) (Inner _) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck) ij where
-    mk !s = let (Subword (_:.l)) = getIdx s in return (s :!: l :!: l + case ene of { EmptyT -> 0 ; NoEmptyT -> 1 })
+    $ mkStream ls (Inner Check Nothing) (subword i $ case ene of { EmptyT -> j ; NoEmptyT -> j-1 })
+  mkStream !(ls:!:MTbl ene tbl) (Inner _ szd) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck Nothing) ij where
+    mk !s = let (Subword (_:.l)) = getIdx s
+                le = l + case ene of { EmptyT -> 0 ; NoEmptyT -> 1}
+                l' = case szd of Nothing -> le
+                                 Just z  -> max le j-z
+            in return (s :!: l :!: l')
     step !(s :!: k :!: l)
       | l > j = return S.Done
       | otherwise = PA.readM tbl (Z:.subword k l) >>= \z -> return $ S.Yield (ElmMTbl s z (subword k l)) (s :!: k :!: l+1)
