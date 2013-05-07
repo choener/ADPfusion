@@ -9,7 +9,9 @@
 module ADP.Fusion.Empty where
 
 import Data.Array.Repa.Index
+import Data.Strict.Maybe
 import Data.Strict.Tuple
+import Prelude hiding (Maybe(..))
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
 import Data.Array.Repa.Index.Subword
@@ -24,6 +26,14 @@ empty = Empty
 {-# INLINE empty #-}
 
 instance Build Empty
+
+instance
+  ( StaticStack ls Subword
+  ) => StaticStack (ls :!: Empty) Subword where
+  staticStack   (ls :!: _) = (0 :!: subword 0 0 :!: 0)
+  staticExtends (ls :!: _) = Just $ subword 0 999999
+  {-# INLINE staticStack #-}
+  {-# INLINE staticExtends #-}
 
 instance
   ( Elms ls Subword

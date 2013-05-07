@@ -145,7 +145,7 @@ class StaticCheck i where
 
 instance StaticCheck Subword where
   staticCheck stack (Subword(i:.j))
-    | Nothing <- se               = error "illegal stack!"
+    | Nothing <- se               = error "StaticCheck:staticCheck: illegal stack!"
     | Just (Subword (z:.n)) <- se = z+a<=i && j+b<=n && k+l<=j-i
     where
       (a :!: Subword (k:.l) :!: b) = staticStack stack
