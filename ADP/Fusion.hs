@@ -28,6 +28,7 @@
 module ADP.Fusion
   -- basic combinators
   ( (<<<)
+  , (<<#)
   , (|||)
   , (...)
   , (~~)
@@ -70,6 +71,10 @@ import ADP.Fusion.Table
 infixl 8 <<<
 (<<<) f xs = \ij -> outerCheck (staticCheck (build xs) ij) . S.map (apply (inline f) . getArg) . mkStream (build xs) Outer $ ij
 {-# INLINE (<<<) #-}
+
+infixl 8 <<#
+(<<#) f xs = \ij -> outerCheck (staticCheck (build xs) ij) . S.mapM (apply (inline f) . getArg) . mkStream (build xs) Outer $ ij
+{-# INLINE (<<#) #-}
 
 -- | Combine two RHSs to give a choice between parses.
 

@@ -5,7 +5,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Tests.QuickCheck where
+module ADP.Fusion.QuickCheck where
 
 import Control.Applicative
 import Data.Array.Repa.Index

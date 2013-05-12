@@ -194,3 +194,7 @@ instance
       | otherwise = PA.readM tbl (Z:.subword k l) >>= \z -> return $ S.Yield (ElmMTbl s z (subword k l)) (s :!: k :!: l+1)
   {-# INLINE mkStream #-}
 
+
+
+-- * Adaptive Tables. These choose the correct internal representation based on
+-- the index and the elements stored in each cell.

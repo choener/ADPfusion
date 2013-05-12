@@ -78,10 +78,6 @@ Extra-Source-Files:
   README.md
 
 
---Flag devel
---  description: build criterion benchmarks and pull in QuickCheck
---  default: False
-
 
 library
   build-depends:
@@ -91,6 +87,7 @@ library
     primitive      >= 0.5     ,
     repa           >= 3.2     ,
     strict         >= 0.3.2   ,
+    transformers              ,
     vector         >= 0.10    ,
     QuickCheck     >= 2.5     ,
     PrimitiveArray == 0.5.1.*
@@ -102,7 +99,8 @@ library
     ADP.Fusion.Empty
     ADP.Fusion.Region
     ADP.Fusion.Table
-    Tests.QuickCheck
+    ADP.Fusion.QuickCheck
+    ADP.Fusion.Example
 
   ghc-options:
     -O2 -funbox-strict-fields
