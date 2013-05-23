@@ -31,19 +31,15 @@ data Region x = Region !(VU.Vector x)
 
 instance Build (Region x)
 
-{-
 instance
-  ( VU.Unbox x
-  , StaticStack ls Subword
-  ) => StaticStack (ls :!: Region x) Subword where
-  staticStack   (ls :!: _) = staticStack ls
-  staticExtends (ls :!: Region xs)
-    | Nothing <- se = Just $ subword 0 $ VU.length xs
-    | Just sw <- se = Just sw
-    where se = staticExtends ls
-  {-# INLINE staticStack #-}
-  {-# INLINE staticExtends #-}
--}
+  ( ValidIndex ls Subword
+  , VU.Unbox xs
+  ) => ValidIndex (ls :!: Region xs) Subword where
+  validIndex (ls :!: Region xs) abc@(a:!:b:!:c) ij@(Subword (i:.j)) =
+    i>=a && j<VU.length xs -c && i+b<=j && validIndex ls abc ij
+  {-# INLINE validIndex #-}
+  getParserRange (ls :!: Region xs) ix = let (a:!:b:!:c) = getParserRange ls ix in (a:!:b:!:c)
+  {-# INLINE getParserRange #-}
 
 instance
   ( Elms ls Subword
@@ -86,21 +82,15 @@ data SRegion x = SRegion !Int !Int !(VU.Vector x)
 
 instance Build (SRegion x)
 
-{-
 instance
-  ( VU.Unbox x
-  , StaticStack ls Subword
-  ) => StaticStack (ls :!: SRegion x) Subword where
-  staticStack   (ls :!: SRegion lb ub _) =
-    let (a:!:Subword(i:.j):!:b) = staticStack ls
-    in  (a:!:Subword(i:.j+lb):!:(max 0 $ b-lb))
-  staticExtends (ls :!: SRegion lb ub xs)
-    | Nothing <- se = Just $ subword 0 $ VU.length xs
-    | Just sw <- se = Just sw
-    where se = staticExtends ls
-  {-# INLINE staticStack #-}
-  {-# INLINE staticExtends #-}
--}
+  ( ValidIndex ls Subword
+  , VU.Unbox xs
+  ) => ValidIndex (ls :!: SRegion xs) Subword where
+  validIndex (ls :!: SRegion lb ub xs) abc@(a:!:b:!:c) ij@(Subword (i:.j)) =
+    i>=a && j<VU.length xs -c && i+b<=j && validIndex ls abc ij
+  {-# INLINE validIndex #-}
+  getParserRange (ls :!: SRegion lb ub xs) ix = let (a:!:b:!:c) = getParserRange ls ix in (a:!:b+lb:!:max 0 (c-lb))
+  {-# INLINE getParserRange #-}
 
 instance
   ( Elms ls Subword

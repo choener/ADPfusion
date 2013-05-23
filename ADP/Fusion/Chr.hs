@@ -145,6 +145,7 @@ instance
             )
     $ mkStream ls (Inner cnc szd) (subword i $ j-1)
   {-# INLINE mkStream #-}
+-}
 
 
 
@@ -157,22 +158,15 @@ peekL = PeekL
 
 instance Build (PeekL x)
 
-{-
 instance
-  ( VU.Unbox x
-  , StaticStack ls Subword
-  ) => StaticStack (ls :!: PeekL x) Subword where
-  staticStack (ls :!: _) =
-    let (a   :!: Subword (i:.j) :!: b) = staticStack ls
-        a' = if j==0 then a+1 else a
-    in  (a' :!: subword i j :!: b)
-  staticExtends (ls :!: PeekL xs)
-    | Nothing <- se = Just $ subword 0 (VU.length xs)
-    | Just sw <- se = Just sw
-    where se = staticExtends ls
-  {-# INLINE staticStack #-}
-  {-# INLINE staticExtends #-}
--}
+  ( ValidIndex ls Subword
+  , VU.Unbox x
+  ) => ValidIndex (ls :!: PeekL x) Subword where
+  validIndex (ls :!: PeekL xs) abc@(a:!:b:!:c) ij@(Subword (i:.j)) =
+    i>=a && j<VU.length xs -c && i+b<=j && validIndex ls abc ij
+  {-# INLINE validIndex #-}
+  getParserRange (ls :!: PeekL xs) ix = let (a:!:b:!:c) = getParserRange ls ix in (a+1:!:b:!:c)
+  {-# INLINE getParserRange #-}
 
 instance
   ( Elms ls Subword
@@ -211,21 +205,15 @@ peekR = PeekR
 
 instance Build (PeekR x)
 
-{-
 instance
-  ( VU.Unbox x
-  , StaticStack ls Subword
-  ) => StaticStack (ls :!: PeekR x) Subword where
-  staticStack (ls :!: _) =
-    let (a :!: ij :!: b  ) = staticStack ls
-    in  (a :!: ij :!: b+1)
-  staticExtends (ls :!: PeekR xs)
-    | Nothing <- se = Just $ subword 0 (VU.length xs)
-    | Just sw <- se = Just sw
-    where se = staticExtends ls
-  {-# INLINE staticStack #-}
-  {-# INLINE staticExtends #-}
--}
+  ( ValidIndex ls Subword
+  , VU.Unbox x
+  ) => ValidIndex (ls :!: PeekR x) Subword where
+  validIndex (ls :!: PeekR xs) abc@(a:!:b:!:c) ij@(Subword (i:.j)) =
+    i>=a && j<VU.length xs -c && i+b<=j && validIndex ls abc ij
+  {-# INLINE validIndex #-}
+  getParserRange (ls :!: PeekR xs) ix = let (a:!:b:!:c) = getParserRange ls ix in (a:!:b:!:c+1)
+  {-# INLINE getParserRange #-}
 
 instance
   ( Elms ls Subword
@@ -252,9 +240,4 @@ instance
             )
     $ mkStream ls (Inner cnc szd) ij
   {-# INLINE mkStream #-}
-
-
--- | TODO replace with PeekL PeekR combinators
-
--}
 

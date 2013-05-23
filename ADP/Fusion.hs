@@ -39,6 +39,8 @@ module ADP.Fusion
   , chr
   , chrLeft
   , chrRight
+  , peekL
+  , peekR
   , empty
   , region
   , sregion
