@@ -31,6 +31,7 @@ data Region x = Region !(VU.Vector x)
 
 instance Build (Region x)
 
+{-
 instance
   ( VU.Unbox x
   , StaticStack ls Subword
@@ -42,6 +43,7 @@ instance
     where se = staticExtends ls
   {-# INLINE staticStack #-}
   {-# INLINE staticExtends #-}
+-}
 
 instance
   ( Elms ls Subword
@@ -84,6 +86,7 @@ data SRegion x = SRegion !Int !Int !(VU.Vector x)
 
 instance Build (SRegion x)
 
+{-
 instance
   ( VU.Unbox x
   , StaticStack ls Subword
@@ -97,6 +100,7 @@ instance
     where se = staticExtends ls
   {-# INLINE staticStack #-}
   {-# INLINE staticExtends #-}
+-}
 
 instance
   ( Elms ls Subword

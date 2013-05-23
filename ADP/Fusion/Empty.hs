@@ -25,8 +25,15 @@ data Empty = Empty
 empty = Empty
 {-# INLINE empty #-}
 
+instance
+  ( ValidIndex ls Subword
+  ) => ValidIndex (ls :!: Empty) Subword where
+    validIndex (ls:!:Empty) abc ij@(Subword (i:.j)) = i==j && validIndex ls abc ij
+    {-# INLINE validIndex #-}
+
 instance Build Empty
 
+{-
 instance
   ( StaticStack ls Subword
   ) => StaticStack (ls :!: Empty) Subword where
@@ -34,6 +41,7 @@ instance
   staticExtends (ls :!: _) = Just $ subword 0 999999
   {-# INLINE staticStack #-}
   {-# INLINE staticExtends #-}
+-}
 
 instance
   ( Elms ls Subword

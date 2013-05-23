@@ -37,8 +37,8 @@ module ADP.Fusion
   , check
   -- parsers
   , chr
-  , peekL
-  , peekR
+  , chrLeft
+  , chrRight
   , empty
   , region
   , sregion
@@ -69,11 +69,11 @@ import ADP.Fusion.Table
 -- function 'f'.
 
 infixl 8 <<<
-(<<<) f xs = \ij -> outerCheck (staticCheck (build xs) ij) . S.map (apply (inline f) . getArg) . mkStream (build xs) Outer $ ij
+(<<<) f xs = \ij -> outerCheck (checkValidIndex (build xs) ij) . S.map (apply (inline f) . getArg) . mkStream (build xs) Outer $ ij
 {-# INLINE (<<<) #-}
 
 infixl 8 <<#
-(<<#) f xs = \ij -> outerCheck (staticCheck (build xs) ij) . S.mapM (apply (inline f) . getArg) . mkStream (build xs) Outer $ ij
+(<<#) f xs = \ij -> outerCheck (checkValidIndex (build xs) ij) . S.mapM (apply (inline f) . getArg) . mkStream (build xs) Outer $ ij
 {-# INLINE (<<#) #-}
 
 -- | Combine two RHSs to give a choice between parses.

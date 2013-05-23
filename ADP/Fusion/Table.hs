@@ -31,6 +31,7 @@ data Tbl x = Tbl !(PA.Unboxed (Z:.Subword) x)
 
 instance Build (Tbl x)
 
+{-
 instance
   ( VU.Unbox x
   , StaticStack ls Subword
@@ -42,6 +43,7 @@ instance
     where se = staticExtends ls
   {-# INLINE staticStack #-}
   {-# INLINE staticExtends #-}
+-}
 
 instance
   ( Elms ls Subword
@@ -79,6 +81,7 @@ data BtTbl m x b = BtTbl ENE !(PA.Unboxed (Z:.Subword) x) !(Subword -> m (S.Stre
 
 instance Build (BtTbl m x b)
 
+{-
 instance
   ( Monad m
   , VU.Unbox x
@@ -94,6 +97,7 @@ instance
     where se = staticExtends ls
   {-# INLINE staticStack #-}
   {-# INLINE staticExtends #-}
+-}
 
 instance TransENE (BtTbl m x b) where
   toEmpty (BtTbl _ xs f ) = BtTbl EmptyT xs f
@@ -138,6 +142,19 @@ instance
 
 data MTbl xs = MTbl ENE !xs
 
+instance
+  ( ValidIndex ls Subword
+  , Monad m
+  , PA.MPrimArrayOps arr (Z:.Subword) x
+  ) => ValidIndex (ls:!:MTbl (PA.MutArr m (arr (Z:.Subword) x))) Subword where
+  validIndex (ls :!: MTbl ene tbl) abc@(a:!:b:!:c) ij@(Subword (i:.j)) =
+    let (_,Z:.Subword (0:.n)) = PA.boundsM tbl
+        minsize = max b (if ene==EmptyT then 0 else 1)
+    in  i>=a && i+minsize<=j && j<=n-c && validIndex ls abc ij
+  {-# INLINE validIndex #-}
+  getParserRange (ls :!: MTbl ene _) ix = let (a:!:b:!:c) = getParserRange ls ix in if ene==EmptyT then (a:!:b:!:c) else (a:!:b+1:!:c)
+  {-# INLINE getParserRange #-}
+
 instance TransENE (MTbl xs) where
   toEmpty (MTbl _ xs) = MTbl EmptyT xs
   toNonEmpty (MTbl _ xs) =MTbl NoEmptyT xs
@@ -146,6 +163,7 @@ instance TransENE (MTbl xs) where
 
 instance Build (MTbl xs)
 
+{-
 instance
   ( Monad m
   , VU.Unbox x
@@ -162,6 +180,7 @@ instance
     where se = staticExtends ls
   {-# INLINE staticStack #-}
   {-# INLINE staticExtends #-}
+-}
 
 instance
   ( Monad m

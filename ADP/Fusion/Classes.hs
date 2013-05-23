@@ -23,7 +23,7 @@ import Data.Array.Repa.Index.Subword
 
 -- | The Inner/Outer handler. We encode three states. We are in 'Outer' or
 -- right-most position, or 'Inner' position. The 'Inner' position encodes if
--- loop conditional 'CNC' need to be performed.
+-- loop conditional 'CheckNoCheck' need to be performed.
 --
 -- In f <<< Z % table % table, the two tables already perform a conditional
 -- branch, so that Z/table does not have to check boundary conditions.
@@ -31,13 +31,13 @@ import Data.Array.Repa.Index.Subword
 -- In f <<< Z % table % char, no check is performed in table/char, so Z/table
 -- needs to perform a boundary check.
 
-data CNC
+data CheckNoCheck
   = Check
   | NoCheck
   deriving (Eq,Show)
 
 data InnerOuter
-  = Inner !CNC !(Maybe Int)
+  = Inner !CheckNoCheck !(Maybe Int)
   | Outer
   deriving (Eq,Show)
 
@@ -46,15 +46,21 @@ data ENE
   | NoEmptyT
   deriving (Eq,Show)
 
+
+
 class TransENE t where
   toEmpty :: t -> t
   toNonEmpty :: t -> t
+
+
 
 class Elms x i where
   data Elm x i :: *
   type Arg x :: *
   getArg :: Elm x i -> Arg x
   getIdx :: Elm x i -> i
+
+
 
 class Index i where
   type InOut i :: *
@@ -65,8 +71,12 @@ instance Index Subword where
 instance Index (is:.i) where
   type InOut (is:.i) = InOut is :. InnerOuter
 
+
+
 class (Monad m) => MkStream m x i where
   mkStream :: x -> InOut i -> i -> S.Stream m (Elm x i)
+
+
 
 -- | Build the stack using (%)
 
@@ -117,6 +127,32 @@ instance
       | otherwise      = P.Nothing
   {-# INLINE mkStream #-}
 
+
+
+-- | 'ValidIndex', via 'validIndex' statically checks if an index 'i' is valid
+-- for a stack of terminals and non-terminals 'x'. 'validIndex' is used to
+-- short-circuit streams via 'outerCheck'.
+
+class ValidIndex x i where
+  validIndex :: x -> ParserRange i -> i -> Bool
+  getParserRange :: x -> i -> ParserRange i
+
+-- | Correct wrapping of 'validIndex' and 'getParserRange'.
+
+checkValidIndex x i = validIndex x (getParserRange x i) i
+{-# INLINE checkValidIndex #-}
+
+type family ParserRange i :: *
+type instance ParserRange Subword = (Int :!: Int :!: Int)
+
+instance ValidIndex Z Subword where
+  {-# INLINE validIndex #-}
+  {-# INLINE getParserRange #-}
+  validIndex _ _ _ = True
+  getParserRange _ _ = (0 :!: 0 :!: 0)
+
+
+{-
 -- Calculate the static extends of a RHS. With a bit of trickery, we can even
 -- check that left-/righ-linear grammars are always legal.
 
@@ -140,6 +176,8 @@ instance StaticStack Z Subword where
   staticExtends Z = Nothing
   {-# INLINE staticStack #-}
 
+
+
 class StaticCheck i where
   staticCheck :: StaticStack x i => x -> i -> Bool
 
@@ -151,6 +189,11 @@ instance StaticCheck Subword where
       (a :!: Subword (k:.l) :!: b) = staticStack stack
       !se = staticExtends stack
   {-# INLINE staticCheck #-}
+-}
+
+
+-- | 'outerCheck' acts as a static filter. If 'b' is true, we keep all stream
+-- elements. If 'b' is false, we discard all stream elements.
 
 outerCheck :: Monad m => Bool -> S.Stream m a -> S.Stream m a
 outerCheck b (S.Stream step sS n) = b `seq` S.Stream snew (Left (b,sS)) Unknown where

@@ -100,7 +100,7 @@ library
     ADP.Fusion.Region
     ADP.Fusion.Table
     ADP.Fusion.QuickCheck
-    ADP.Fusion.Example
+    ADP.Fusion.Examples.Palindrome
 
   ghc-options:
     -O2 -funbox-strict-fields
