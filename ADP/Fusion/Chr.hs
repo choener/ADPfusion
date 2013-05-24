@@ -92,6 +92,48 @@ instance
 
 
 
+-- | Generalized peek.
+
+data GPeek r x = GPeek !(VU.Vector x -> Int -> r) !(VU.Vector x) !(Int:!:Int)
+
+instance Build (GPeek r x)
+
+instance
+  ( ValidIndex ls Subword
+  , VU.Unbox x
+  ) => ValidIndex (ls :!: GPeek r x) Subword where
+    validIndex (ls :!: GPeek _ xs _) abc@(a:!:b:!:c) ij@(Subword (i:.j)) =
+      i>=a && j<VU.length xs -c && i+b<=j && validIndex ls abc ij
+    {-# INLINE validIndex #-}
+    getParserRange (ls :!: GPeek _ _ (a':!:c')) ix =
+      let (a:!:b:!:c) = getParserRange ls ix in (a+a' :!: b :!: (c+c'))
+    {-# INLINE getParserRange #-}
+
+instance
+  ( Elms ls Subword
+  ) => Elms (ls :!: GPeek r x) Subword where
+    data Elm (ls :!: GPeek r x) Subword = ElmGPeek !(Elm ls Subword) !r !Subword
+    type Arg (ls :!: GPeek r x) = Arg ls :. r
+    getArg !(ElmGPeek ls x _) = getArg ls :. x
+    getIdx !(ElmGPeek _ _ idx) = idx
+    {-# INLINE getArg #-}
+    {-# INLINE getIdx #-}
+
+instance
+  ( Monad m
+  , VU.Unbox x
+  , Elms ls Subword
+  , MkStream m ls Subword
+  ) => MkStream m (ls :!: GPeek r x) Subword where
+  mkStream !(ls :!: GPeek f xs _) Outer !ij@(Subword (i:.j)) =
+    let dta = f xs (j-1)
+    in  dta `seq` S.map (\s -> ElmGPeek s dta (subword j j)) $ mkStream ls Outer ij
+  mkStream !(ls :!: GPeek f xs _) (Inner cnc szd) !ij@(Subword (i:.j))
+    = S.map (\s -> let (Subword (k:.l)) = getIdx s
+                   in  ElmGPeek s (f xs (l-1)) (subword l l)
+            )
+    $ mkStream ls (Inner cnc szd) ij
+  {-# INLINE mkStream #-}
 
 
 {-
