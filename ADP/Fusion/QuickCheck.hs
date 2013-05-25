@@ -26,6 +26,7 @@ import qualified Data.PrimitiveArray as PA
 import qualified Data.PrimitiveArray.Zero as PA
 
 import ADP.Fusion
+import ADP.Fusion.Multi
 
 
 -- | Check if a single region returns the correct result (namely a slice from
@@ -271,18 +272,22 @@ prop_CMnCMnC sw@(Subword (i:.j)) = monadicIO $ do
     assert $ zs == ls
 
 {-
+ - Currently not allowing 0-dim multi-tapes.
+
+prop_Tt ix@Z = zs == ls where
+  zs = id <<< T ... S.toList $ ix
+  ls = [ Z ]
+-}
+
+prop_Tc ix@(Z:.Subword(i:.j)) = zs == ls where
+  zs = id <<< (T:!chr xs) ... S.toList $ ix
+  ls = [ (Z:.xs VU.! i) | i>=0, j<= 100, i+1==j ]
+
+{-
 {-
 -- | Our first multi-tape terminal ":-)"
 
-prop_Tt ix@Z = zs == ls where
-  zs = id <<< Term T ... S.toList $ ix
-  ls = [ Z ]
-
 -- | Increase dimension by 1. (1-tape grammars)
-
-prop_Tc ix@(Z:.Subword(i:.j)) = zs == ls where
-  zs = id <<< Term (T:.Chr xs) ... S.toList $ ix
-  ls = [ (Z:.xs VU.! i) | i+1==j ]
 
 prop_P_Tt ix@(Z:.Point i) = zs == ls where
   zs = id <<< Term (T:.Chr xs) ... S.toList $ ix

@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DefaultSignatures #-}
@@ -64,13 +65,22 @@ class Elms x i where
 
 class Index i where
   type InOut i :: *
+  outer :: i -> InOut i
 
 instance Index Subword where
   type InOut Subword = InnerOuter
+  outer _ = Outer
+  {-# INLINE outer #-}
 
-instance Index (is:.i) where
+instance (Index is) => Index (is:.i) where
   type InOut (is:.i) = InOut is :. InnerOuter
+  outer (is:.i) = outer is :. Outer
+  {-# INLINE outer #-}
 
+instance Index Z where
+  type InOut Z = Z
+  outer Z = Z
+  {-# INLINE outer #-}
 
 
 class (Monad m) => MkStream m x i where
@@ -93,6 +103,7 @@ instance Build x => Build (x:!:y) where
   build (x:!:y) = build x :!: y
   {-# INLINE build #-}
 
+{-
 instance
   (
   ) => Elms Z Subword where
@@ -100,6 +111,17 @@ instance
   type Arg Z = Z
   getArg !(ElmZ _) = Z
   getIdx !(ElmZ ij) = ij
+  {-# INLINE getArg #-}
+  {-# INLINE getIdx #-}
+-}
+
+instance
+  (
+  ) => Elms Z ix where
+  data Elm Z ix = ElmZ !ix
+  type Arg Z = Z
+  getArg !(ElmZ _) = Z
+  getIdx !(ElmZ ix) = ix
   {-# INLINE getArg #-}
   {-# INLINE getIdx #-}
 
@@ -127,7 +149,25 @@ instance
       | otherwise      = P.Nothing
   {-# INLINE mkStream #-}
 
+instance Monad m => MkStream m Z Z where
+  mkStream _ _ _ = S.singleton (ElmZ Z)
+  {-# INLINE mkStream #-}
 
+instance
+  ( Monad m
+  , MkStream m Z is
+  ) => MkStream m Z (is:.Subword) where
+  mkStream Z (io:.Outer) (is:.Subword (i:.j))
+    = S.map (\(ElmZ jt) -> ElmZ (jt:.subword i i)) . S.filter (const $ i==j) $ mkStream Z io is
+  mkStream Z (io:.Inner NoCheck Nothing) (is:.Subword (i:.j))
+    = S.map (\(ElmZ jt) -> ElmZ (jt:.subword i i)) $ mkStream Z io is
+  mkStream Z (io:.Inner NoCheck (Just z)) (is:.Subword (i:.j))
+    = S.map (\(ElmZ jt) -> ElmZ (jt:.subword i i)) . S.filter (const $ i<=j && i+z>=j) $ mkStream Z io is
+  mkStream Z (io:.Inner Check Nothing) (is:.Subword (i:.j))
+    = S.map (\(ElmZ jt) -> ElmZ (jt:.subword i i)) . S.filter (const $ i<=j) $ mkStream Z io is
+  mkStream Z (io:.Inner Check (Just z)) (is:.Subword (i:.j))
+    = S.map (\(ElmZ jt) -> ElmZ (jt:.subword i i)) . S.filter (const $ i<=j && i+z>=j) $ mkStream Z io is
+  {-# INLINE mkStream #-}
 
 -- | 'ValidIndex', via 'validIndex' statically checks if an index 'i' is valid
 -- for a stack of terminals and non-terminals 'x'. 'validIndex' is used to
@@ -144,12 +184,28 @@ checkValidIndex x i = validIndex x (getParserRange x i) i
 
 type family ParserRange i :: *
 type instance ParserRange Subword = (Int :!: Int :!: Int)
+type instance ParserRange Z = Z
+type instance ParserRange (tail:.head) = ParserRange tail :. ParserRange head
+
 
 instance ValidIndex Z Subword where
   {-# INLINE validIndex #-}
   {-# INLINE getParserRange #-}
   validIndex _ _ _ = True
   getParserRange _ _ = (0 :!: 0 :!: 0)
+
+instance ValidIndex Z Z where
+  {-# INLINE validIndex #-}
+  {-# INLINE getParserRange #-}
+  validIndex _ _ _ = True
+  getParserRange _ _ = Z
+
+instance ValidIndex Z is => ValidIndex Z (is:.Subword) where
+  {-# INLINE validIndex #-}
+  {-# INLINE getParserRange #-}
+  validIndex _ _ _ = True
+  getParserRange Z (is:._) = getParserRange Z is :. (0 :!: 0 :!: 0)
+
 
 
 {-

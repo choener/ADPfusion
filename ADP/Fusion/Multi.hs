@@ -16,11 +16,14 @@ module ADP.Fusion.Multi where
 import Data.Array.Repa.Index
 import Data.Strict.Tuple
 import qualified Data.Vector.Fusion.Stream.Monadic as S
+import qualified Data.Vector.Unboxed as VU
 
 import Data.Array.Repa.Index.Subword
 
 import ADP.Fusion.Classes
 import ADP.Fusion.Chr (GChr (..))
+
+import Debug.Trace
 
 -- import Data.Array.Repa.Index.Subword
 
@@ -40,15 +43,15 @@ instance Build (Term a b)
 
 instance
   ( ValidIndex ls ix
+  , TermValidIndex (Term a b) ix
+  , Show ix
+  , Show (ParserRange ix)
   ) => ValidIndex (ls :!: Term a b) ix where
   validIndex (ls :!: t) abc ix =
-    allDimensionsValid t abc ix && validIndex ls abc ix
+    termDimensionsValid t abc ix && validIndex ls abc ix
   {-# INLINE validIndex #-}
-  getParserRange (ls :!: t) ix = updateRange t ix (getParserRange ls ix)
+  getParserRange (ls :!: t) ix = getTermParserRange t ix (getParserRange ls ix)
   {-# INLINE getParserRange #-}
-
-allDimensionsValid = undefined
-updateRange = undefined
 
 instance
   ( Elms ls ix
@@ -65,16 +68,14 @@ instance
   , Elms ls ix
   , MkStream m ls ix
   , TermElm m (Term a b) ix
+  , TermValidIndex (Term a b) ix
   ) => MkStream m (ls :!: Term a b) ix where
   mkStream !(ls :!: t) !io !ij
     = S.map (\(s:!:Z:!:zij:!:e) -> ElmTerm s e zij)
     $ termStream t io ij
     $ S.map (\s -> (s :!: Z :!: getIdx s))
-    $ mkStream ls (leftTermIO io) (leftTermIndex ij)
+    $ mkStream ls (termInnerOuter t ij io) (termLeftIndex t ij)
   {-# INLINE mkStream #-}
-
-leftTermIndex = id
-leftTermIO = id
 
 class
   ( Monad m
@@ -105,6 +106,34 @@ instance
   termStream T _ Z = S.map (\(zs:!:zix:!:Z) -> (zs:!:zix:!:Z:!:Z))
   {-# INLINE termStream #-}
 
-type instance ParserRange Z = Z
-type instance ParserRange (tail:.head) = ParserRange tail :. ParserRange head
+class TermValidIndex t i where
+  termDimensionsValid :: t -> ParserRange i -> i -> Bool
+  getTermParserRange  :: t -> i -> ParserRange i -> ParserRange i
+  termInnerOuter :: t -> i -> InOut i -> InOut i
+  termLeftIndex :: t -> i -> i
+
+instance TermValidIndex TermBase Z where
+  termDimensionsValid T Z Z = True
+  getTermParserRange  T Z Z = Z
+  termInnerOuter T Z Z = Z
+  termLeftIndex T Z = Z
+  {-# INLINE termDimensionsValid #-}
+  {-# INLINE getTermParserRange #-}
+  {-# INLINE termInnerOuter #-}
+  {-# INLINE termLeftIndex #-}
+
+instance
+  ( TermValidIndex ts is
+  , VU.Unbox xs
+  ) => TermValidIndex (Term ts (GChr r xs)) (is:.Subword) where
+  termDimensionsValid (ts:!GChr _ xs) (prs:.(a:!:b:!:c)) (is:.Subword(i:.j))
+    = i>=a && j<=VU.length xs -c && i+b<=j && termDimensionsValid ts prs is
+  getTermParserRange (ts:!GChr _ _) (is:._) (prs:.(a:!:b:!:c))
+    = getTermParserRange ts is prs :. (a:!:b+1:!:max 0 (c-1))
+  termInnerOuter (ts:!_) (is:._) (ios:.io) = termInnerOuter ts is ios :. io
+  termLeftIndex  (ts:!_) (is:.Subword (i:.j)) = termLeftIndex ts is :. subword i (j-1)
+  {-# INLINE termDimensionsValid #-}
+  {-# INLINE getTermParserRange #-}
+  {-# INLINE termInnerOuter #-}
+  {-# INLINE termLeftIndex #-}
 

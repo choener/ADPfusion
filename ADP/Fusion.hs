@@ -71,11 +71,11 @@ import ADP.Fusion.Table
 -- function 'f'.
 
 infixl 8 <<<
-(<<<) f xs = \ij -> outerCheck (checkValidIndex (build xs) ij) . S.map (apply (inline f) . getArg) . mkStream (build xs) Outer $ ij
+(<<<) f xs = \ij -> outerCheck (checkValidIndex (build xs) ij) . S.map (apply (inline f) . getArg) . mkStream (build xs) (outer ij) $ ij
 {-# INLINE (<<<) #-}
 
 infixl 8 <<#
-(<<#) f xs = \ij -> outerCheck (checkValidIndex (build xs) ij) . S.mapM (apply (inline f) . getArg) . mkStream (build xs) Outer $ ij
+(<<#) f xs = \ij -> outerCheck (checkValidIndex (build xs) ij) . S.mapM (apply (inline f) . getArg) . mkStream (build xs) (outer ij) $ ij
 {-# INLINE (<<#) #-}
 
 -- | Combine two RHSs to give a choice between parses.
