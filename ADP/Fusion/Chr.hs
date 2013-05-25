@@ -20,6 +20,8 @@ import Data.Array.Repa.Index.Subword
 
 import ADP.Fusion.Classes
 
+import Debug.Trace
+
 
 
 -- | Parses a single character.
@@ -59,7 +61,7 @@ instance
   , VU.Unbox x
   ) => ValidIndex (ls :!: GChr r x) Subword where
     validIndex (ls :!: GChr _ xs) abc@(a:!:b:!:c) ij@(Subword (i:.j)) =
-      i>=a && j<VU.length xs -c && i+b<=j && validIndex ls abc ij
+      i>=a && j<=VU.length xs -c && i+b<=j && validIndex ls abc ij
     {-# INLINE validIndex #-}
     getParserRange (ls :!: GChr _ _) ix = let (a:!:b:!:c) = getParserRange ls ix in (a:!:b+1:!:max 0 (c-1))
     {-# INLINE getParserRange #-}
@@ -205,9 +207,9 @@ instance
   , VU.Unbox x
   ) => ValidIndex (ls :!: PeekL x) Subword where
   validIndex (ls :!: PeekL xs) abc@(a:!:b:!:c) ij@(Subword (i:.j)) =
-    i>=a && j<VU.length xs -c && i+b<=j && validIndex ls abc ij
+    i>=a && j<=VU.length xs -c && i+b<=j && validIndex ls abc ij
   {-# INLINE validIndex #-}
-  getParserRange (ls :!: PeekL xs) ix = let (a:!:b:!:c) = getParserRange ls ix in (a+1:!:b:!:c)
+  getParserRange (ls :!: PeekL xs) ix = let (a:!:b:!:c) = getParserRange ls ix in if b==0 then (a+1:!:b:!:c) else (a:!:b:!:c)
   {-# INLINE getParserRange #-}
 
 instance
@@ -252,7 +254,7 @@ instance
   , VU.Unbox x
   ) => ValidIndex (ls :!: PeekR x) Subword where
   validIndex (ls :!: PeekR xs) abc@(a:!:b:!:c) ij@(Subword (i:.j)) =
-    i>=a && j<VU.length xs -c && i+b<=j && validIndex ls abc ij
+    i>=a && j<=VU.length xs -c && i+b<=j && validIndex ls abc ij
   {-# INLINE validIndex #-}
   getParserRange (ls :!: PeekR xs) ix = let (a:!:b:!:c) = getParserRange ls ix in (a:!:b:!:c+1)
   {-# INLINE getParserRange #-}

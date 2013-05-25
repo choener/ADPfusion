@@ -22,6 +22,7 @@ import Data.Array.Repa.Index.Subword
 import ADP.Fusion.Classes
 
 import Control.Exception (assert)
+import Debug.Trace
 
 
 
@@ -36,7 +37,7 @@ instance
   , VU.Unbox xs
   ) => ValidIndex (ls :!: Region xs) Subword where
   validIndex (ls :!: Region xs) abc@(a:!:b:!:c) ij@(Subword (i:.j)) =
-    i>=a && j<VU.length xs -c && i+b<=j && validIndex ls abc ij
+    i>=a && j<=VU.length xs -c && i+b<=j && validIndex ls abc ij
   {-# INLINE validIndex #-}
   getParserRange (ls :!: Region xs) ix = let (a:!:b:!:c) = getParserRange ls ix in (a:!:b:!:c)
   {-# INLINE getParserRange #-}
@@ -87,7 +88,7 @@ instance
   , VU.Unbox xs
   ) => ValidIndex (ls :!: SRegion xs) Subword where
   validIndex (ls :!: SRegion lb ub xs) abc@(a:!:b:!:c) ij@(Subword (i:.j)) =
-    i>=a && j<VU.length xs -c && i+b<=j && validIndex ls abc ij
+    i>=a && j<=VU.length xs -c && i+b<=j && validIndex ls abc ij
   {-# INLINE validIndex #-}
   getParserRange (ls :!: SRegion lb ub xs) ix = let (a:!:b:!:c) = getParserRange ls ix in (a:!:b+lb:!:max 0 (c-lb))
   {-# INLINE getParserRange #-}

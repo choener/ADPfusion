@@ -26,13 +26,15 @@ import ADP.Fusion.Chr (GChr (..))
 
 
 
---
---
--- TODO check if this is fused away
-
+{-
 data Term a b where
   T    :: Term a b
   (:!) :: !(Term a b) -> !c -> Term (Term a b) c
+-}
+
+data TermBase = T
+
+data Term a b = a :! b
 
 instance Build (Term a b)
 
@@ -90,8 +92,18 @@ instance
     in  dta `seq` S.map (\(zs :!: (zix:.kl) :!: zis :!: e) -> (zs :!: zix :!: (zis:.kl) :!: (e:.dta)))
         . termStream ts io is
         . S.map (\(zs :!: zix :!: (zis:.kl)) -> (zs :!: (zix:.kl) :!: zis))
+  termStream (ts :! GChr f xs) (io:.Inner _ _) (is:.ij)
+    = S.map (\(zs :!: (zix:.kl@(Subword(k:.l))) :!: zis :!: e) -> let dta = f xs l in dta `seq` (zs :!: zix :!: (zis:.kl) :!: (e:.dta)))
+    . termStream ts io is
+    . S.map (\(zs :!: zix :!: (zis:.kl)) -> (zs :!: (zix:.kl) :!: zis))
   {-# INLINE termStream #-}
 
+instance
+  ( Monad m
+  ) => TermElm m (TermBase) Z where
+  type TermOf TermBase = Z
+  termStream T _ Z = S.map (\(zs:!:zix:!:Z) -> (zs:!:zix:!:Z:!:Z))
+  {-# INLINE termStream #-}
 
 type instance ParserRange Z = Z
 type instance ParserRange (tail:.head) = ParserRange tail :. ParserRange head

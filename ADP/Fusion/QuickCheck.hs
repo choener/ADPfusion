@@ -33,7 +33,7 @@ import ADP.Fusion
 
 prop_R sw@(Subword (i:.j)) = zs == ls where
   zs = id <<< region xs ... S.toList $ sw
-  ls = [VU.slice i (j-i) xs]
+  ls = [VU.slice i (j-i) xs | i>=0, j<=100]
 
 -- | Two regions next to each other.
 
@@ -63,7 +63,7 @@ prop_SSS sw@(Subword (i:.j)) = zs == ls where
 
 prop_C sw@(Subword (i:.j)) = zs == ls where
   zs = id <<< chr xs ... S.toList $ sw
-  ls = [xs VU.! i | i+1==j]
+  ls = [xs VU.! i | i+1==j, i>=0, j<=100]
 
 -- | 2x Single-character parser.
 
@@ -71,11 +71,23 @@ prop_CC sw@(Subword (i:.j)) = zs == ls where
   zs = (,) <<< chr xs % chr xs ... S.toList $ sw
   ls = [(xs VU.! i, xs VU.! (i+1)) | i+2==j]
 
--- | Single character plus peeking
+-- ** Single character plus peeking
 
-prop_PC sw@(Subword (i:.j)) = zs == ls where
+prop_PlC sw@(Subword (i:.j)) = zs == ls where
   zs = (,) <<< peekL xs % chr xs ... S.toList $ sw
   ls = [(xs VU.! (j-2), xs VU.! (j-1)) | j>1, i+1==j]
+
+prop_PrC sw@(Subword (i:.j)) = zs == ls where
+  zs = (,) <<< peekR xs % chr xs ... S.toList $ sw
+  ls = [(xs VU.! (j-1), xs VU.! (j-1)) | i+1==j]
+
+prop_CPr sw@(Subword (i:.j)) = zs == ls where
+  zs = (,) <<< chr xs % peekR xs ... S.toList $ sw
+  ls = [(xs VU.! (j-1), xs VU.! j) | i+1==j]
+
+prop_CPl sw@(Subword (i:.j)) = zs == ls where
+  zs = (,) <<< chr xs % peekL xs ... S.toList $ sw
+  ls = [(xs VU.! (j-1), xs VU.! (j-1)) | i+1==j]
 
 -- | 2x Single-character parser bracketing a single region.
 
@@ -135,7 +147,9 @@ prop_Interior3 sw@(Subword (i:.j)) = zs == ls where
          , VU.slice k (l-k) xs
          , xs VU.! (l-1)
          , VU.slice l (j-l) xs
-         ) | k <- [i..j]
+         ) | i>= 0
+           , j<= 100
+           , k <- [i..j]
            , l <- [k..j]
            , j-i>=5, j-i<=16
            , k-i-1>=1, k-i-1<=5
@@ -175,7 +189,9 @@ prop_Interior5 sw@(Subword (i:.j)) = zs == ls where
          , xs VU.! (j-2)
          , xs VU.! (j-1)
          , xs VU.! j
-         ) | k <- [i..j]
+         ) | i>= 1
+           , j<= 99
+           , k <- [i..j]
            , l <- [k..j]
            , i>0, j-1 < VU.length xs
            , j-i>=6, j-i<=17
@@ -390,7 +406,7 @@ prop_subwordIndex (Small n, Subword (i:.j)) = (n>j) ==> p where
 
 -- | data set. Can be made fixed as the maximal subword size is statically known!
 
-xs = VU.fromList [0 .. 100 :: Int]
+xs = VU.fromList [0 .. 99 :: Int]
 
 
 -- * general quickcheck stuff
