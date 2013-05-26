@@ -45,9 +45,13 @@ data InnerOuter
 data ENE
   = EmptyT
   | NoEmptyT
+  | ZeroT
   deriving (Eq,Show)
 
-
+type family ENEdim ene :: *
+type instance ENEdim Z =  Z
+type instance ENEdim Subword = ENE
+type instance ENEdim (is:.i) = ENEdim is :. ENEdim i
 
 class TransENE t where
   toEmpty :: t -> t

@@ -94,7 +94,7 @@ palindromeFill :: VU.Vector Char -> IO (PA.Unboxed (Z:.Subword) Int)
 palindromeFill inp = do
   let n = VU.length inp
   !t' <- newWithM (Z:.subword 0 0) (Z:.subword 0 n) 0
-  let t= MTbl EmptyT t'
+  let t= MTbl (Z:.EmptyT) t'
   let b = chr inp
   let e = Empty
   fillTable $ gPalindrome aPair e b t

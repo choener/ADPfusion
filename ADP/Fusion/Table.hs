@@ -140,47 +140,33 @@ instance
 
 -- * Mutable tables for the forward phase.
 
-data MTbl xs = MTbl ENE !xs
+data MTbl xs = MTbl !(ENEdim xs) !xs
+
+type instance ENEdim (PA.MutArr m (arr ix x)) = ENEdim ix
+type instance ENEdim (PA.MutArr IO (arr (Z:.Subword) Int)) = Z:.ENE
 
 instance
   ( ValidIndex ls Subword
   , Monad m
   , PA.MPrimArrayOps arr (Z:.Subword) x
+  , ENEdim (PA.MutArr m (arr (Z:.Subword) x)) ~ (Z:.ENE)
   ) => ValidIndex (ls:!:MTbl (PA.MutArr m (arr (Z:.Subword) x))) Subword where
-  validIndex (ls :!: MTbl ene tbl) abc@(a:!:b:!:c) ij@(Subword (i:.j)) =
+  validIndex (_  :!: MTbl (Z:.ZeroT) _) _ _ = error "table with ZeroT found, there is no reason (actually: no implementation) for 1-dim ZeroT tables"
+  validIndex (ls :!: MTbl (Z:.ene) tbl) abc@(a:!:b:!:c) ij@(Subword (i:.j)) =
     let (_,Z:.Subword (0:.n)) = PA.boundsM tbl
         minsize = max b (if ene==EmptyT then 0 else 1)
     in  i>=a && i+minsize<=j && j<=n-c && validIndex ls abc ij
   {-# INLINE validIndex #-}
-  getParserRange (ls :!: MTbl ene _) ix = let (a:!:b:!:c) = getParserRange ls ix in if ene==EmptyT then (a:!:b:!:c) else (a:!:b+1:!:c)
+  getParserRange (ls :!: MTbl (Z:.ene) _) ix = let (a:!:b:!:c) = getParserRange ls ix in if ene==EmptyT then (a:!:b:!:c) else (a:!:b+1:!:c)
   {-# INLINE getParserRange #-}
 
 instance TransENE (MTbl xs) where
-  toEmpty (MTbl _ xs) = MTbl EmptyT xs
-  toNonEmpty (MTbl _ xs) =MTbl NoEmptyT xs
+  toEmpty (MTbl _ xs) = MTbl undefined {- EmptyT -} xs
+  toNonEmpty (MTbl _ xs) =MTbl undefined {- NoEmptyT -} xs
   {-# INLINE toEmpty #-}
   {-# INLINE toNonEmpty #-}
 
 instance Build (MTbl xs)
-
-{-
-instance
-  ( Monad m
-  , VU.Unbox x
-  , PA.MPrimArrayOps arr (Z:.Subword) x
-  , StaticStack ls Subword
-  ) => StaticStack (ls :!: MTbl (PA.MutArr m (arr (Z:.Subword) x))) Subword where
-  staticStack   (ls :!: MTbl ene _) =
-    let (a :!: Subword (i:.j)   :!: b) = staticStack ls
-        z = case ene of { EmptyT -> 0 ; NoEmptyT -> 1}
-    in  (a :!: Subword (i:.j+z) :!: (max 0 $ b-z))
-  staticExtends (ls :!: MTbl _ tbl)
-    | Nothing <- se = let (_,Z:.sw) = PA.boundsM tbl in Just sw
-    | Just sw <- se = Just sw
-    where se = staticExtends ls
-  {-# INLINE staticStack #-}
-  {-# INLINE staticExtends #-}
--}
 
 instance
   ( Monad m
@@ -201,10 +187,10 @@ instance
   ) => MkStream m (ls:!:MTbl (PA.MutArr m (arr (Z:.Subword) x))) Subword where
   mkStream !(ls:!:MTbl ene tbl) Outer !ij@(Subword (i:.j))
     = S.mapM (\s -> let (Subword (_:.l)) = getIdx s in PA.readM tbl (Z:.subword l j) >>= \z -> return $ ElmMTbl s z (subword l j))
-    $ mkStream ls (Inner Check Nothing) (subword i $ case ene of { EmptyT -> j ; NoEmptyT -> j-1 })
+    $ mkStream ls (Inner Check Nothing) (subword i $ case ene of { Z:.EmptyT -> j ; Z:.NoEmptyT -> j-1 })
   mkStream !(ls:!:MTbl ene tbl) (Inner _ szd) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck Nothing) ij where
     mk !s = let (Subword (_:.l)) = getIdx s
-                le = l + case ene of { EmptyT -> 0 ; NoEmptyT -> 1}
+                le = l + case ene of { Z:.EmptyT -> 0 ; Z:.NoEmptyT -> 1}
                 l' = case szd of Nothing -> le
                                  Just z  -> max le (j-z)
             in return (s :!: l :!: l')
@@ -214,6 +200,22 @@ instance
   {-# INLINE mkStream #-}
 
 
+-- ** multi-tape generalization
 
--- * Adaptive Tables. These choose the correct internal representation based on
--- the index and the elements stored in each cell.
+instance
+  ( ValidIndex ls (is:.i)
+  , Monad m
+  , PA.MPrimArrayOps arr (is:.i) x
+  ) => ValidIndex (ls :!: MTbl (PA.MutArr m (arr (is:.i) x))) (is:.i) where
+    validIndex (ls :!: MTbl ene tbl) (is:.i) =
+      let
+      in  undefined
+
+instance
+  ( Monad m
+  ) => Elms (ls :!: MTbl (PA.MutArr m (arr (is:.i) x))) (is:.i) where
+
+instance
+  ( Monad m
+  ) => MkStream m (ls:!: MTbl (PA.MutArr m (arr (is:.i) x))) (is:.i) where
+
