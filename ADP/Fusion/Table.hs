@@ -1,3 +1,4 @@
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE PatternGuards #-}
@@ -30,32 +31,72 @@ import ADP.Fusion.Classes
 
 -- * Mutable table with adaptive storage.
 
-data MTbl i x = forall m . (Monad m, PrimMonad m) => MTbl (ENZ i) (PA.MutArr m (Storage i x))
+data MTbl i xs = MTbl !(ENZ i) !xs -- (PA.MutArr m (arr i x))
 
--- | The adaptive storage system.
+-- | Generate the list of indices for use in table lookup.
+--
+-- Don't touch stuff in greek! ζ is the interior stack of arguments, α the
+-- stack of saved indices
 
-class AdaptiveStorage i x where
-  type Storage i x :: * -- specify boxed/unboxed stuff
-  type StorageElm i x :: * -- single element to return
-  fromStorage :: (Monad m, PrimMonad m) => x -> S.Stream m (z) -> S.Stream m (z:!:StorageElm i x)
+class TableIndices i where
+  tableIndices :: Monad m => InOut i -> ENZ i -> i -> S.Stream m (ζ:!:α:!:i) -> S.Stream m (ζ:!:α:!:i)
 
+instance TableIndices Z where
+  tableIndices Z Z Z = id
+  {-# INLINE tableIndices #-}
 
+{-
+instance TableIndices Subword where
+  -- | These actually don't make sense in 1-dim settings, we keep the code as a
+  -- reminder how things should look like: @tableIndices Outer ZeroT
+  -- (Subword(i:.j)) = S.map (:!:subword j j)@
+  tableIndices _ ZeroT _ = error "TableIndices Subword/ZeroT does not make sense"
+  tableIndices Outer _ (Subword(i:.j)) = S.map (\(x:!:kl@(Subword(_:.l))) -> (x:!:kl:!:subword l j))
+  tableIndices (Inner _ szd) ene (Subword(i:.j)) = S.flatten mk step Unknown where
+    mk !(s:!:kl@(Subword(k:.l))) =
+      let le = l + case ene of { EmptyT -> 0 ; NonEmptyT -> 1 }
+          l' = case szd of { Nothing -> le ; Just z -> max le (j-z) }
+      in  return (s:!:kl:!:l:!:l')
+    step !(s:!:t:!:k:!:l)
+      | i>j = return S.Done
+      | otherwise = return $ S.Yield (s:!:t:!:subword k l) (s:!:t:!:k:!:l+1)
+  {-# INLINE tableIndices #-}
+-}
+
+instance TableIndices is => TableIndices (is:.Subword) where
+  tableIndices (os:.Outer) (es:._) (is:.Subword(i:.j))
+    = S.map (\(ζ:!:(α:!:Subword(_:.l)):!:is) -> (ζ:!:α:!:(is:.subword l j))) -- extend index to the end
+    . tableIndices os es is -- extend the @is@ part
+    . S.map (\(ζ:!:α:!:(is:.i)) -> (ζ:!:(α:!:i):!:is)) -- move topmost index to α for safekeeping
+  -- tables annotated with zero-width have zero width @l--l@
+  -- This also reduces the number of "running indices"
+  tableIndices (os:.Inner _ szd) (es:.ZeroT) (is:.Subword(i:.j))
+    = S.map (\(ζ:!:(α:.Subword(k:.l)):!:is) -> (ζ:!:α:!:(is:.subword l l)))
+    . tableIndices os es is
+    . S.map (\(ζ:!:α:!:(is:.i)) -> (ζ:!:(α:.i):!:is))
+  -- the default case, where we need to create indices
+  tableIndices (os:.Inner _ szd) (es:.e) (is:.Subword(i:.j))
+    = S.flatten mk step Unknown
+    . tableIndices os es is
+    . S.map (\(ζ:!:α:!:(is:.i)) -> (ζ:!:(α:.i):!:is))
+    where mk (ζ:!:(α:.Subword (k:.l)):!:is) =
+            let le = l + case e of { EmptyT -> 0 ; NonEmptyT -> 1 }
+                l' = case szd of { Nothing -> le ; Just z -> max le (j-z) }
+            in  return (ζ:!:α:!:is:!:l:!:l')
+          step (ζ:!:α:!:is:!:k:!:l)
+            | l > j = return $ S.Done
+            | otherwise = return $ S.Yield (ζ:!:α:!:(is:.subword k l)) (ζ:!:α:!:is:!:k:!:l+1)
+  {-#  INLINE tableIndices #-}
 
 -- * Instances
-
-instance AdaptiveStorage i Int where
-  type Storage i Int = PA.Unboxed i Int
-  type StorageElm i Int = Int
-  fromStorage x = S.map (:!:x)
-  {-# INLINE fromStorage #-}
 
 instance Build (MTbl i x)
 
 instance
   ( Elms ls (is:.i)
-  ) => Elms (ls :!: MTbl (is:.i) x) (is:.i) where
-  data Elm (ls :!: MTbl (is:.i) x) (is:.i) = ElmMTbl !(Elm ls (is:.i)) !(StorageElm (is:.i) x) !(is:.i)
-  type Arg (ls :!: MTbl (is:.i) x) = Arg ls :. StorageElm (is:.i) x
+  ) => Elms (ls :!: MTbl (is:.i) (PA.MutArr m (arr (is:.i) x))) (is:.i) where
+  data Elm (ls :!: MTbl (is:.i) (PA.MutArr m (arr (is:.i) x))) (is:.i) = ElmMTbl !(Elm ls (is:.i)) !x !(is:.i)
+  type Arg (ls :!: MTbl (is:.i) (PA.MutArr m (arr (is:.i) x))) = Arg ls :. x
   getArg !(ElmMTbl ls x _) = getArg ls :. x
   getIdx !(ElmMTbl _ _  i) = i
   {-# INLINE getArg #-}
@@ -63,13 +104,17 @@ instance
 
 instance
   ( Monad m
+  , PrimMonad m
+  , PA.MPrimArrayOps arr (is:.i) x
   , Elms ls (is:.i)
+  , TableIndices (is:.i)
   , MkStream m ls (is:.i)
-  ) => MkStream m (ls:!:MTbl (is:.i) x) (is:.i) where
+  ) => MkStream m (ls:!:MTbl (is:.i) (PA.MutArr m (arr (is:.i) x))) (is:.i) where
   mkStream (ls :!: MTbl enz tbl) os is
-    = undefined
-    -- use os is and the current stream to generate indices
-    $ mkStream ls os is
+    = S.mapM (\(s:!:Z:!:β) -> PA.readM tbl β >>= \z -> return $ ElmMTbl s z β) -- extract data using β index
+    . tableIndices os enz is -- generate indices for multiple dimensions
+    . S.map (\s -> (s:!:Z:!:getIdx s)) -- extract the right-most current index
+    $ mkStream ls os is -- TODO fix os is!
   {-# INLINE mkStream #-}
 
 {-
