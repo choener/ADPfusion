@@ -33,6 +33,10 @@ import ADP.Fusion.Classes
 
 data MTbl i xs = MTbl !(ENZ i) !xs -- (PA.MutArr m (arr i x))
 
+mTblSw :: ENE -> PA.MutArr m (arr (Z:.Subword) x) -> MTbl Subword (PA.MutArr m (arr (Z:.Subword) x))
+mTblSw = MTbl
+{-# INLINE mTblSw #-}
+
 -- | Generate the list of indices for use in table lookup.
 --
 -- Don't touch stuff in greek! ζ is the interior stack of arguments, α the
@@ -41,27 +45,29 @@ data MTbl i xs = MTbl !(ENZ i) !xs -- (PA.MutArr m (arr i x))
 class TableIndices i where
   tableIndices :: Monad m => InOut i -> ENZ i -> i -> S.Stream m (ζ:!:α:!:i) -> S.Stream m (ζ:!:α:!:i)
 
+
+
+-- * Instances
+
 instance TableIndices Z where
   tableIndices Z Z Z = id
   {-# INLINE tableIndices #-}
 
-{-
 instance TableIndices Subword where
   -- | These actually don't make sense in 1-dim settings, we keep the code as a
   -- reminder how things should look like: @tableIndices Outer ZeroT
   -- (Subword(i:.j)) = S.map (:!:subword j j)@
   tableIndices _ ZeroT _ = error "TableIndices Subword/ZeroT does not make sense"
-  tableIndices Outer _ (Subword(i:.j)) = S.map (\(x:!:kl@(Subword(_:.l))) -> (x:!:kl:!:subword l j))
+  tableIndices Outer _ (Subword(i:.j)) = S.map (\(ζ:!:α:!:Subword(k:.l)) -> (ζ:!:α:!:subword l j))
   tableIndices (Inner _ szd) ene (Subword(i:.j)) = S.flatten mk step Unknown where
-    mk !(s:!:kl@(Subword(k:.l))) =
+    mk (ζ:!:α:!:kl@(Subword(k:.l))) =
       let le = l + case ene of { EmptyT -> 0 ; NonEmptyT -> 1 }
           l' = case szd of { Nothing -> le ; Just z -> max le (j-z) }
-      in  return (s:!:kl:!:l:!:l')
-    step !(s:!:t:!:k:!:l)
+      in  return (ζ:!:α:!:l:!:l')
+    step (ζ:!:α:!:k:!:l)
       | i>j = return S.Done
-      | otherwise = return $ S.Yield (s:!:t:!:subword k l) (s:!:t:!:k:!:l+1)
+      | otherwise = return $ S.Yield (ζ:!:α:!:subword k l) (ζ:!:α:!:k:!:l+1)
   {-# INLINE tableIndices #-}
--}
 
 instance TableIndices is => TableIndices (is:.Subword) where
   tableIndices (os:.Outer) (es:._) (is:.Subword(i:.j))
@@ -88,9 +94,56 @@ instance TableIndices is => TableIndices (is:.Subword) where
             | otherwise = return $ S.Yield (ζ:!:α:!:(is:.subword k l)) (ζ:!:α:!:is:!:k:!:l+1)
   {-#  INLINE tableIndices #-}
 
--- * Instances
-
 instance Build (MTbl i x)
+
+-- ** Subword
+
+instance
+  ( ValidIndex ls Subword
+  , Monad m
+  , PA.MPrimArrayOps arr (Z:.Subword) x
+  ) => ValidIndex (ls:!:MTbl Subword (PA.MutArr m (arr (Z:.Subword) x))) Subword where
+  validIndex (_  :!: MTbl ZeroT _) _ _ = error "table with ZeroT found, there is no reason (actually: no implementation) for 1-dim ZeroT tables"
+  validIndex (ls :!: MTbl ene tbl) abc@(a:!:b:!:c) ij@(Subword (i:.j)) =
+    let (_,Z:.Subword (0:.n)) = PA.boundsM tbl
+        minsize = max b (if ene==EmptyT then 0 else 1)
+    in  i>=a && i+minsize<=j && j<=n-c && validIndex ls abc ij
+  {-# INLINE validIndex #-}
+  getParserRange (ls :!: MTbl ene _) ix = let (a:!:b:!:c) = getParserRange ls ix in if ene==EmptyT then (a:!:b:!:c) else (a:!:b+1:!:c)
+  {-# INLINE getParserRange #-}
+
+instance
+  ( Elms ls Subword
+  ) => Elms (ls :!: MTbl Subword (PA.MutArr m (arr (Z:.Subword) x))) Subword where
+  data Elm (ls :!: MTbl Subword (PA.MutArr m (arr (Z:.Subword) x))) Subword = ElmMTblSw !(Elm ls Subword) !x !Subword -- ElmBtTbl !(Elm ls Subword) !x !(m (S.Stream m b)) !Subword
+  type Arg (ls :!: MTbl Subword (PA.MutArr m (arr (Z:.Subword) x))) = Arg ls :. x
+  getArg !(ElmMTblSw ls x _) = getArg ls :. x
+  getIdx !(ElmMTblSw _  _ i) = i
+  {-# INLINE getArg #-}
+  {-# INLINE getIdx #-}
+
+instance
+  ( Monad m
+  , PrimMonad m
+  , Elms ls Subword
+  , MkStream m ls Subword
+  , PA.MPrimArrayOps arr (Z:.Subword) x
+  ) => MkStream m (ls :!: MTbl Subword (PA.MutArr m (arr (Z:.Subword) x))) Subword where
+  mkStream !(ls:!:MTbl ene tbl) Outer !ij@(Subword (i:.j))
+    = S.mapM (\s -> let (Subword (_:.l)) = getIdx s in PA.readM tbl (Z:.subword l j) >>= \z -> return $ ElmMTblSw s z (subword l j))
+    $ mkStream ls (Inner Check Nothing) (subword i $ case ene of { EmptyT -> j ; NonEmptyT -> j-1 })
+  mkStream !(ls:!:MTbl ene tbl) (Inner _ szd) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck Nothing) ij where
+    mk !s = let (Subword (_:.l)) = getIdx s
+                le = l + case ene of { EmptyT -> 0 ; NonEmptyT -> 1}
+                l' = case szd of Nothing -> le
+                                 Just z  -> max le (j-z)
+            in return (s :!: l :!: l')
+    step !(s :!: k :!: l)
+      | l > j = return S.Done
+      | otherwise = PA.readM tbl (Z:.subword k l) >>= \z -> return $ S.Yield (ElmMTblSw s z (subword k l)) (s :!: k :!: l+1)
+  {-# INLINE mkStream #-}
+
+-- ** multi-dim indices
 
 instance
   ( Elms ls (is:.i)
@@ -116,6 +169,12 @@ instance
     . S.map (\s -> (s:!:Z:!:getIdx s)) -- extract the right-most current index
     $ mkStream ls os is -- TODO fix os is!
   {-# INLINE mkStream #-}
+
+instance
+  ( ValidIndex (is:.i) ls
+  ) => ValidIndex (is:.i) (ls :!: MTbl (is:.i) (PA.MutArr m (arr (is:.i) x))) where
+
+
 
 {-
 

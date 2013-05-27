@@ -44,10 +44,11 @@ module ADP.Fusion
   , empty
   , region
   , sregion
-  , Tbl (..)
-  , BtTbl (..)
+--  , Tbl (..)
+--  , BtTbl (..)
   , MTbl (..)
   , ENE (..)
+  , ENZ (..)
   ) where
 
 import Data.Strict.Tuple
