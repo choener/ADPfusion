@@ -205,7 +205,7 @@ prop_Interior5 sw@(Subword (i:.j)) = zs == ls where
 
 prop_Mt sw@(Subword (i:.j)) = monadicIO $ do
     mxs :: PA.MutArr IO (PA.Unboxed (Z:.Subword) Int) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
-    let mt = MTbl (Z:.EmptyT) mxs
+    let mt = MTbl EmptyT mxs
     zs <- run $ id <<< mt ... SM.toList $ sw
     ls <- run $ sequence $ [(PA.readM mxs (Z:.sw)) | i<=j]
     assert $ zs == ls
@@ -214,7 +214,7 @@ prop_Mt sw@(Subword (i:.j)) = monadicIO $ do
 
 prop_MtC sw@(Subword (i:.j)) = monadicIO $ do
     mxs :: (PA.MutArr IO (PA.Unboxed (Z:.Subword) Int)) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
-    let mt = MTbl (Z:.EmptyT) mxs
+    let mt = MTbl EmptyT mxs
     zs <- run $ (,) <<< mt % chr xs ... SM.toList $ sw
     ls <- run $ sequence $ [(PA.readM mxs (Z:.subword i (j-1))) >>= \a -> return (a,xs VU.! (j-1)) | i<j]
     assert $ zs == ls
@@ -223,7 +223,7 @@ prop_MtC sw@(Subword (i:.j)) = monadicIO $ do
 
 prop_CMt sw@(Subword (i:.j)) = monadicIO $ do
     mxs :: (PA.MutArr IO (PA.Unboxed (Z:.Subword) Int)) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
-    let mt = MTbl (Z:.EmptyT) mxs
+    let mt = MTbl EmptyT mxs
     zs <- run $ (,) <<< chr xs % mt ... SM.toList $ sw
     ls <- run $ sequence $ [(PA.readM mxs (Z:.subword (i+1) j)) >>= \a -> return (xs VU.! i,a) | i<j]
     assert $ zs == ls
@@ -232,7 +232,7 @@ prop_CMt sw@(Subword (i:.j)) = monadicIO $ do
 
 prop_MtMt sw@(Subword (i:.j)) = monadicIO $ do
     mxs :: (PA.MutArr IO (PA.Unboxed (Z:.Subword) Int)) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
-    let mt = MTbl (Z:.EmptyT) mxs
+    let mt = MTbl EmptyT mxs
     zs <- run $ (,) <<< mt % mt ... SM.toList $ sw
     ls <- run $ sequence $ [(PA.readM mxs (Z:.subword i k)) >>= \a -> PA.readM mxs (Z:.subword k j) >>= \b -> return (a,b) | k <- [i..j]]
     assert $ zs == ls
@@ -241,7 +241,7 @@ prop_MtMt sw@(Subword (i:.j)) = monadicIO $ do
 
 prop_CMtCMtC sw@(Subword (i:.j)) = monadicIO $ do
     mxs :: (PA.MutArr IO (PA.Unboxed (Z:.Subword) Int)) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
-    let mt = MTbl (Z:.EmptyT) mxs
+    let mt = MTbl EmptyT mxs
     zs <- run $ (,,,,) <<< chr xs % mt % chr xs % mt % chr xs ... SM.toList $ sw
     ls <- run $ sequence $ [ (PA.readM mxs (Z:.subword (i+1) k)) >>=
                             \a -> PA.readM mxs (Z:.subword (k+1) (j-1)) >>=
@@ -258,7 +258,7 @@ prop_CMtCMtC sw@(Subword (i:.j)) = monadicIO $ do
 
 prop_CMnCMnC sw@(Subword (i:.j)) = monadicIO $ do
     mxs :: (PA.MutArr IO (PA.Unboxed (Z:.Subword) Int)) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
-    let mt = MTbl (Z:.NoEmptyT) mxs
+    let mt = MTbl NoEmptyT mxs
     zs <- run $ (,,,,) <<< chr xs % mt % chr xs % mt % chr xs ... SM.toList $ sw
     ls <- run $ sequence $ [ (PA.readM mxs (Z:.subword (i+1) k)) >>=
                             \a -> PA.readM mxs (Z:.subword (k+1) (j-1)) >>=
@@ -303,7 +303,7 @@ prop_TccTcc ix@(Z:.Subword(i:.j):.Subword(k:.l)) = zs == ls where
 
 prop_TcMtTc ix@(Z:.Subword(i:.j)) = monadicIO $ do
   mxs :: PA.MutArr IO (PA.Unboxed (Z:.Subword) Int) <- run $ PA.fromListM (Z:.subword 0 0) (Z:.subword 0 100) [0 ..]
-  let mt = MTbl (Z:.EmptyT) mxs
+  let mt = MTbl EmptyT mxs
   zs <- run $ (,,) <<< (T:!chr xs) % mt % (T:!chr xs) ... SM.toList $ ix
   ls <- undefined -- run $ sequence $ [ (PA.readM mxs (Z:.subword (i+1) (j-1)) >>= \z -> return (Z:.xs VU.! i,z,Z:.xs VU.! (j-1))) | i>0, j<100, i+2<=j ]
   assert $ zs == ls

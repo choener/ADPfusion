@@ -1,3 +1,5 @@
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -25,25 +27,58 @@ import qualified Data.PrimitiveArray.Zero as PA
 import ADP.Fusion.Classes
 
 
+
+-- * Mutable table with adaptive storage.
+
+data MTbl i x = forall m . (Monad m, PrimMonad m) => MTbl (ENZ i) (PA.MutArr m (Storage i x))
+
+-- | The adaptive storage system.
+
+class AdaptiveStorage i x where
+  type Storage i x :: * -- specify boxed/unboxed stuff
+  type StorageElm i x :: * -- single element to return
+  fromStorage :: (Monad m, PrimMonad m) => x -> S.Stream m (z) -> S.Stream m (z:!:StorageElm i x)
+
+
+
+-- * Instances
+
+instance AdaptiveStorage i Int where
+  type Storage i Int = PA.Unboxed i Int
+  type StorageElm i Int = Int
+  fromStorage x = S.map (:!:x)
+  {-# INLINE fromStorage #-}
+
+instance Build (MTbl i x)
+
+instance
+  ( Elms ls (is:.i)
+  ) => Elms (ls :!: MTbl (is:.i) x) (is:.i) where
+  data Elm (ls :!: MTbl (is:.i) x) (is:.i) = ElmMTbl !(Elm ls (is:.i)) !(StorageElm (is:.i) x) !(is:.i)
+  type Arg (ls :!: MTbl (is:.i) x) = Arg ls :. StorageElm (is:.i) x
+  getArg !(ElmMTbl ls x _) = getArg ls :. x
+  getIdx !(ElmMTbl _ _  i) = i
+  {-# INLINE getArg #-}
+  {-# INLINE getIdx #-}
+
+instance
+  ( Monad m
+  , Elms ls (is:.i)
+  , MkStream m ls (is:.i)
+  ) => MkStream m (ls:!:MTbl (is:.i) x) (is:.i) where
+  mkStream (ls :!: MTbl enz tbl) os is
+    = undefined
+    -- use os is and the current stream to generate indices
+    $ mkStream ls os is
+  {-# INLINE mkStream #-}
+
+{-
+
 -- * Immutable tables.
 
 data Tbl x = Tbl !(PA.Unboxed (Z:.Subword) x)
 
 instance Build (Tbl x)
-
-{-
-instance
-  ( VU.Unbox x
-  , StaticStack ls Subword
-  ) => StaticStack (ls :!: Tbl x) Subword where
-  staticStack   (ls :!: _) = staticStack ls
-  staticExtends (ls :!: Tbl tbl)
-    | Nothing <- se = let (_,Z:.sw) = PA.bounds tbl in Just sw
-    | Just sw <- se = Just sw
-    where se = staticExtends ls
-  {-# INLINE staticStack #-}
-  {-# INLINE staticExtends #-}
--}
 
 instance
   ( Elms ls Subword
@@ -81,30 +116,6 @@ data BtTbl m x b = BtTbl ENE !(PA.Unboxed (Z:.Subword) x) !(Subword -> m (S.Stre
 
 instance Build (BtTbl m x b)
 
-{-
-instance
-  ( Monad m
-  , VU.Unbox x
-  , StaticStack ls Subword
-  ) => StaticStack (ls :!: BtTbl m x b) Subword where
-  staticStack   (ls :!: BtTbl ene _ _) =
-    let (a :!: Subword (i:.j)   :!: b) = staticStack ls
-        z = case ene of { EmptyT -> 0 ; NoEmptyT -> 1}
-    in  (a :!: Subword (i:.j+z) :!: (max 0 $ b-z))
-  staticExtends (ls :!: BtTbl _ tbl _)
-    | Nothing <- se = let (_,Z:.sw) = PA.bounds tbl in Just sw
-    | Just sw <- se = Just sw
-    where se = staticExtends ls
-  {-# INLINE staticStack #-}
-  {-# INLINE staticExtends #-}
--}
-
-instance TransENE (BtTbl m x b) where
-  toEmpty (BtTbl _ xs f ) = BtTbl EmptyT xs f
-  toNonEmpty (BtTbl _ xs f) = BtTbl NoEmptyT xs f
-  {-# INLINE toEmpty #-}
-  {-# INLINE toNonEmpty #-}
-
 instance
   ( Monad m
   , Elms ls Subword
@@ -138,33 +149,23 @@ instance
 
 
 
--- * Mutable tables for the forward phase.
+-- * Unboxed mutable table for the forward phase in one dimension.
 
-data MTbl xs = MTbl !(ENEdim xs) !xs
-
-type instance ENEdim (PA.MutArr m (arr ix x)) = ENEdim ix
-type instance ENEdim (PA.MutArr IO (arr (Z:.Subword) Int)) = Z:.ENE
+data MTbl xs = MTbl !ENE !xs
 
 instance
   ( ValidIndex ls Subword
   , Monad m
   , PA.MPrimArrayOps arr (Z:.Subword) x
-  , ENEdim (PA.MutArr m (arr (Z:.Subword) x)) ~ (Z:.ENE)
   ) => ValidIndex (ls:!:MTbl (PA.MutArr m (arr (Z:.Subword) x))) Subword where
-  validIndex (_  :!: MTbl (Z:.ZeroT) _) _ _ = error "table with ZeroT found, there is no reason (actually: no implementation) for 1-dim ZeroT tables"
-  validIndex (ls :!: MTbl (Z:.ene) tbl) abc@(a:!:b:!:c) ij@(Subword (i:.j)) =
+  validIndex (_  :!: MTbl ZeroT _) _ _ = error "table with ZeroT found, there is no reason (actually: no implementation) for 1-dim ZeroT tables"
+  validIndex (ls :!: MTbl ene tbl) abc@(a:!:b:!:c) ij@(Subword (i:.j)) =
     let (_,Z:.Subword (0:.n)) = PA.boundsM tbl
         minsize = max b (if ene==EmptyT then 0 else 1)
     in  i>=a && i+minsize<=j && j<=n-c && validIndex ls abc ij
   {-# INLINE validIndex #-}
-  getParserRange (ls :!: MTbl (Z:.ene) _) ix = let (a:!:b:!:c) = getParserRange ls ix in if ene==EmptyT then (a:!:b:!:c) else (a:!:b+1:!:c)
+  getParserRange (ls :!: MTbl ene _) ix = let (a:!:b:!:c) = getParserRange ls ix in if ene==EmptyT then (a:!:b:!:c) else (a:!:b+1:!:c)
   {-# INLINE getParserRange #-}
-
-instance TransENE (MTbl xs) where
-  toEmpty (MTbl _ xs) = MTbl undefined {- EmptyT -} xs
-  toNonEmpty (MTbl _ xs) =MTbl undefined {- NoEmptyT -} xs
-  {-# INLINE toEmpty #-}
-  {-# INLINE toNonEmpty #-}
 
 instance Build (MTbl xs)
 
@@ -187,10 +188,10 @@ instance
   ) => MkStream m (ls:!:MTbl (PA.MutArr m (arr (Z:.Subword) x))) Subword where
   mkStream !(ls:!:MTbl ene tbl) Outer !ij@(Subword (i:.j))
     = S.mapM (\s -> let (Subword (_:.l)) = getIdx s in PA.readM tbl (Z:.subword l j) >>= \z -> return $ ElmMTbl s z (subword l j))
-    $ mkStream ls (Inner Check Nothing) (subword i $ case ene of { Z:.EmptyT -> j ; Z:.NoEmptyT -> j-1 })
+    $ mkStream ls (Inner Check Nothing) (subword i $ case ene of { EmptyT -> j ; NoEmptyT -> j-1 })
   mkStream !(ls:!:MTbl ene tbl) (Inner _ szd) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck Nothing) ij where
     mk !s = let (Subword (_:.l)) = getIdx s
-                le = l + case ene of { Z:.EmptyT -> 0 ; Z:.NoEmptyT -> 1}
+                le = l + case ene of { EmptyT -> 0 ; NoEmptyT -> 1}
                 l' = case szd of Nothing -> le
                                  Just z  -> max le (j-z)
             in return (s :!: l :!: l')
@@ -200,7 +201,10 @@ instance
   {-# INLINE mkStream #-}
 
 
--- ** multi-tape generalization
+
+{-
+
+-- ** multi-tape generalization: empty / nonempty
 
 instance
   ( ValidIndex ls (is:.i)
@@ -218,4 +222,17 @@ instance
 instance
   ( Monad m
   ) => MkStream m (ls:!: MTbl (PA.MutArr m (arr (is:.i) x))) (is:.i) where
+  mkStream !(ls:!:MTbl ene tbl) io is
+    = undefined
+
+
+
+{-
+data GMtbl i x = forall m . GMtbl (ENEdim i) (PA.MutArr m (Storage i x))
+
+-}
+
+-}
+
+-}
 
