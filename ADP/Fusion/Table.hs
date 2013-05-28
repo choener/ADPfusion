@@ -166,6 +166,7 @@ instance
   , PrimMonad m
   , PA.MPrimArrayOps arr (is:.i) x
   , Elms ls (is:.i)
+  , NonTermValidIndex (is:.i)
   , TableIndices (is:.i)
   , MkStream m ls (is:.i)
   ) => MkStream m (ls:!:MTbl (is:.i) (PA.MutArr m (arr (is:.i) x))) (is:.i) where
@@ -173,7 +174,7 @@ instance
     = S.mapM (\(s:!:Z:!:β) -> PA.readM tbl β >>= \z -> return $ ElmMTbl s z β) -- extract data using β index
     . tableIndices os enz is -- generate indices for multiple dimensions
     . S.map (\s -> (s:!:Z:!:getIdx s)) -- extract the right-most current index
-    $ error "Table.hs 176, fix os is (need to calculate inner part)" -- mkStream ls os is -- TODO fix os is!
+    $ mkStream ls (nonTermInnerOuter is os) (nonTermLeftIndex is os enz) -- TODO fix os is!
   {-# INLINE mkStream #-}
 
 instance
@@ -191,12 +192,18 @@ instance
 class NonTermValidIndex i where
   nonTermValidIndex :: ENZ i -> i -> ParserRange i -> i -> Bool
   getNonTermParserRange :: ENZ i -> i -> ParserRange i -> ParserRange i
+  nonTermInnerOuter :: i -> InOut i -> InOut i
+  nonTermLeftIndex :: i -> InOut i -> ENZ i -> i
 
 instance NonTermValidIndex Z where
   nonTermValidIndex Z Z Z Z = True
   getNonTermParserRange Z Z Z = Z
+  nonTermInnerOuter Z Z = Z
+  nonTermLeftIndex Z Z Z = Z
   {-# INLINE nonTermValidIndex #-}
   {-# INLINE getNonTermParserRange #-}
+  {-# INLINE nonTermInnerOuter #-}
+  {-# INLINE nonTermLeftIndex #-}
 
 instance NonTermValidIndex is => NonTermValidIndex (is:.Subword) where
   nonTermValidIndex (es:.e) (ns:.Subword(_:.n)) (abc:.(a:!:b:!:c)) (is:.Subword(i:.j)) =
@@ -205,8 +212,15 @@ instance NonTermValidIndex is => NonTermValidIndex (is:.Subword) where
   getNonTermParserRange (es:.e) (is:._) (abc:.(a:!:b:!:c)) =
     let b' = b + if e==EmptyT then 0 else 1
     in  getNonTermParserRange es is abc :. (a:!:b':!:c)
+  nonTermInnerOuter (is:._) (os:.Outer) = nonTermInnerOuter is os :. Inner Check Nothing
+  nonTermInnerOuter (is:._) (os:.Inner _ _) = nonTermInnerOuter is os :. Inner NoCheck Nothing
+  nonTermLeftIndex (is:.Subword(i:.j)) (os:.o) (es:.e)
+    | o==Outer && e==NonEmptyT = nonTermLeftIndex is os es :. subword i (j-1)
+    | otherwise                = nonTermLeftIndex is os es :. subword i j
   {-# INLINE nonTermValidIndex #-}
   {-# INLINE getNonTermParserRange #-}
+  {-# INLINE nonTermInnerOuter #-}
+  {-# INLINE nonTermLeftIndex #-}
 
 {-
 

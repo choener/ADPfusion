@@ -7,6 +7,7 @@
 
 module ADP.Fusion.QuickCheck where
 
+import Control.Monad
 import Control.Applicative
 import Data.Array.Repa.Index
 import Data.Array.Repa.Shape
@@ -307,14 +308,28 @@ prop_Mt2 ix@(Z:.Subword(i:.j)) = monadicIO $ do
   let mt = mTbl (Z:.EmptyT) mxs -- :: MTbl (Z:.Subword) (PA.MutArr IO (PA.Unboxed (Z:.Subword) Int))
   zs <- run $ id <<< mt ... SM.toList $ ix
   ls <- run $ sequence $ [ (PA.readM mxs (Z:.subword i j)) | i>=0, j<=100, i<=j ]
-  assert $ traceShow (zs,ls) $ zs == ls
+  assert $ zs == ls
+
+prop_MtMt2 ix@(Z:.Subword(i:.j)) = monadicIO $ do
+  mxs :: PA.MutArr IO (PA.Unboxed (Z:.Subword) Int) <- run $ PA.fromListM (Z:.subword 0 0) (Z:.subword 0 100) [0 ..]
+  let mt = mTbl (Z:.EmptyT) mxs -- :: MTbl (Z:.Subword) (PA.MutArr IO (PA.Unboxed (Z:.Subword) Int))
+  zs <- run $ (,) <<< mt % mt ... SM.toList $ ix
+  ls <- run $ sequence $ [ liftM2 (,) (PA.readM mxs (Z:.subword i k)) (PA.readM mxs (Z:.subword k j)) | i>=0, j<=100, k<-[i..j] ]
+  assert $ zs == ls
+
+prop_MtMtMt2 ix@(Z:.Subword(i:.j)) = monadicIO $ do
+  mxs :: PA.MutArr IO (PA.Unboxed (Z:.Subword) Int) <- run $ PA.fromListM (Z:.subword 0 0) (Z:.subword 0 100) [0 ..]
+  let mt = mTbl (Z:.EmptyT) mxs -- :: MTbl (Z:.Subword) (PA.MutArr IO (PA.Unboxed (Z:.Subword) Int))
+  zs <- run $ (,,) <<< mt % mt % mt ... SM.toList $ ix
+  ls <- run $ sequence $ [ liftM3 (,,) (PA.readM mxs (Z:.subword i k)) (PA.readM mxs (Z:.subword k l)) (PA.readM mxs (Z:.subword l j)) | i>=0, j<=100, k<-[i..j], l<-[k..j] ]
+  assert $ zs == ls
 
 prop_TcMtTc ix@(Z:.Subword(i:.j)) = monadicIO $ do
   mxs :: PA.MutArr IO (PA.Unboxed (Z:.Subword) Int) <- run $ PA.fromListM (Z:.subword 0 0) (Z:.subword 0 100) [0 ..]
   let mt = mTbl (Z:.EmptyT) mxs :: MTbl (Z:.Subword) (PA.MutArr IO (PA.Unboxed (Z:.Subword) Int))
   zs <- run $ (,,) <<< (T:!chr xs) % mt % (T:!chr xs) ... SM.toList $ ix
-  ls <- run $ sequence $ [ (PA.readM mxs (Z:.subword (i+1) (j-1)) >>= \z -> return (Z:.xs VU.! i,z,Z:.xs VU.! (j-1))) | i>0, j<100, i+2<=j ]
-  assert $ traceShow (zs,ls) $ zs == ls
+  ls <- run $ sequence $ [ (PA.readM mxs (Z:.subword (i+1) (j-1)) >>= \z -> return (Z:.xs VU.! i,z,Z:.xs VU.! (j-1))) | i>=0, j<=100, i+2<=j ]
+  assert $ zs == ls
 
 {-
 {-

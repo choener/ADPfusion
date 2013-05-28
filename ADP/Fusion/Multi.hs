@@ -90,11 +90,11 @@ instance
   type TermOf (Term ts (GChr r xs)) = TermOf ts :. r
   termStream (ts :! GChr f xs) (io:.Outer) (is:.ij@(Subword(i:.j))) =
     let dta = f xs (j-1)
-    in  dta `seq` S.map (\(zs :!: (zix:.kl) :!: zis :!: e) -> (zs :!: zix :!: (zis:.kl) :!: (e:.dta)))
+    in  dta `seq` S.map (\(zs :!: (zix:.kl) :!: zis :!: e) -> (zs :!: zix :!: (zis:.subword (j-1) j) :!: (e:.dta)))
         . termStream ts io is
         . S.map (\(zs :!: zix :!: (zis:.kl)) -> (zs :!: (zix:.kl) :!: zis))
   termStream (ts :! GChr f xs) (io:.Inner _ _) (is:.ij)
-    = S.map (\(zs :!: (zix:.kl@(Subword(k:.l))) :!: zis :!: e) -> let dta = f xs l in dta `seq` (zs :!: zix :!: (zis:.kl) :!: (e:.dta)))
+    = S.map (\(zs :!: (zix:.kl@(Subword(k:.l))) :!: zis :!: e) -> let dta = f xs l in dta `seq` (zs :!: zix :!: (zis:.subword l (l+1)) :!: (e:.dta)))
     . termStream ts io is
     . S.map (\(zs :!: zix :!: (zis:.kl)) -> (zs :!: (zix:.kl) :!: zis))
   {-# INLINE termStream #-}
