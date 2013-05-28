@@ -20,6 +20,7 @@ import Test.QuickCheck
 import Test.QuickCheck.All
 import Test.QuickCheck.Monadic
 import Data.List ((\\))
+import System.IO.Unsafe
 
 import Data.Array.Repa.Index.Subword
 import Data.Array.Repa.Index.Point
@@ -332,14 +333,14 @@ prop_TcMtTc ix@(Z:.Subword(i:.j)) = monadicIO $ do
   assert $ zs == ls
 
 prop_2dim ix@(Z:.TinySubword(i:.j):.TinySubword(k:.l)) = monadicIO $ do
-  mxs :: PA.MutArr IO (PA.Unboxed (Z:.Subword:.Subword) Int) <- run $ PA.fromListM (Z:.subword 0 0:.subword 0 0) (Z:.subword 0 100:.subword 0 100) [0 ..]
+  mxs <- run $ pure $ mxsSwSw
   let mt = mTbl (Z:.EmptyT:.EmptyT) mxs
   zs <- run $ (,) <<< mt % mt ... SM.toList $ Z:.subword i j:.subword k l
   ls <- run $ sequence $ [ liftM2 (,) (PA.readM mxs (Z:.subword i a:.subword k b)) (PA.readM mxs (Z:.subword a j:.subword b l)) | i>=0, j<=100, k>=0, l<=100, a<-[i..j], b<-[k..l] ]
   assert $ zs==ls
 
 prop_2dimCMCMC ix@(Z:.TinySubword(i:.j):.TinySubword(k:.l)) = monadicIO $ do
-  mxs :: PA.MutArr IO (PA.Unboxed (Z:.Subword:.Subword) Int) <- run $ PA.fromListM (Z:.subword 0 0:.subword 0 0) (Z:.subword 0 100:.subword 0 100) [0 ..]
+  mxs <- run $ pure $ mxsSwSw -- :: PA.MutArr IO (PA.Unboxed (Z:.Subword:.Subword) Int) <- run $ PA.fromListM (Z:.subword 0 0:.subword 0 0) (Z:.subword 0 100:.subword 0 100) [0 ..]
   let mt = mTbl (Z:.EmptyT:.EmptyT) mxs
   zs <- run $ (,,,,) <<< (T:!chr xs:!chr xs) % mt % (T:!chr xs:!chr xs) % mt % (T:!chr xs:!chr xs) ... SM.toList $ Z:.subword i j:.subword k l
   ls <- run $ sequence $ [ liftM5 (,,,,) (pure $ Z:.xs VU.! i:.xs VU.! k)
@@ -480,6 +481,13 @@ prop_subwordIndex (Small n, Subword (i:.j)) = (n>j) ==> p where
 
 xs = VU.fromList [0 .. 99 :: Int]
 
+--
+--
+--TODO will break if PrimitiveArray assertions are active (need to fixe exact length of list)
+
+mxsSwSw = unsafePerformIO $ zzz where
+  zzz :: IO (PA.MutArr IO (PA.Unboxed (Z:.Subword:.Subword) Int))
+  zzz = PA.fromListM (Z:.subword 0 0:.subword 0 0) (Z:.subword 0 100:.subword 0 100) [0 ..]
 
 -- * general quickcheck stuff
 
