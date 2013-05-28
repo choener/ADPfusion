@@ -331,6 +331,13 @@ prop_TcMtTc ix@(Z:.Subword(i:.j)) = monadicIO $ do
   ls <- run $ sequence $ [ (PA.readM mxs (Z:.subword (i+1) (j-1)) >>= \z -> return (Z:.xs VU.! i,z,Z:.xs VU.! (j-1))) | i>=0, j<=100, i+2<=j ]
   assert $ zs == ls
 
+prop_2dim ix@(Z:.TinySubword(i:.j):.TinySubword(k:.l)) = monadicIO $ do
+  mxs :: PA.MutArr IO (PA.Unboxed (Z:.Subword:.Subword) Int) <- run $ PA.fromListM (Z:.subword 0 0:.subword 0 0) (Z:.subword 0 100:.subword 0 100) [0 ..]
+  let mt = mTbl (Z:.EmptyT:.EmptyT) mxs
+  zs <- run $ (,) <<< mt % mt ... SM.toList $ Z:.subword i j:.subword k l
+  ls <- run $ sequence $ [ liftM2 (,) (PA.readM mxs (Z:.subword i a:.subword k b)) (PA.readM mxs (Z:.subword a j:.subword b l)) | i>=0, j<=100, k>=0, l<=100, a<-[i..j], b<-[k..l] ]
+  assert $ zs==ls
+
 {-
 {-
 -- | Our first multi-tape terminal ":-)"
