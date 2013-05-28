@@ -27,6 +27,8 @@ import qualified Data.PrimitiveArray.Zero as PA
 
 import ADP.Fusion.Classes
 
+import Debug.Trace
+
 
 
 -- * Mutable table with adaptive storage.
@@ -36,6 +38,10 @@ data MTbl i xs = MTbl !(ENZ i) !xs -- (PA.MutArr m (arr i x))
 mTblSw :: ENE -> PA.MutArr m (arr (Z:.Subword) x) -> MTbl Subword (PA.MutArr m (arr (Z:.Subword) x))
 mTblSw = MTbl
 {-# INLINE mTblSw #-}
+
+mTbl :: ENZ i -> PA.MutArr m (arr i x) -> MTbl i (PA.MutArr m (arr i x))
+mTbl = MTbl
+{-# INLINE mTbl #-}
 
 -- | Generate the list of indices for use in table lookup.
 --
@@ -167,14 +173,40 @@ instance
     = S.mapM (\(s:!:Z:!:β) -> PA.readM tbl β >>= \z -> return $ ElmMTbl s z β) -- extract data using β index
     . tableIndices os enz is -- generate indices for multiple dimensions
     . S.map (\s -> (s:!:Z:!:getIdx s)) -- extract the right-most current index
-    $ mkStream ls os is -- TODO fix os is!
+    $ error "Table.hs 176, fix os is (need to calculate inner part)" -- mkStream ls os is -- TODO fix os is!
   {-# INLINE mkStream #-}
 
 instance
-  ( ValidIndex (is:.i) ls
-  ) => ValidIndex (is:.i) (ls :!: MTbl (is:.i) (PA.MutArr m (arr (is:.i) x))) where
+  ( ValidIndex ls (is:.i)
+  , PA.MPrimArrayOps arr (is:.i) x
+  , NonTermValidIndex (is:.i)
+  ) => ValidIndex (ls :!: MTbl (is:.i) (PA.MutArr m (arr (is:.i) x))) (is:.i) where
+  validIndex (ls :!: MTbl es tbl) abc isi =
+    let (_,rght) = PA.boundsM tbl
+    in  nonTermValidIndex es rght abc isi && validIndex ls abc isi
+  getParserRange (ls :!: MTbl es _) ix = getNonTermParserRange es ix $ getParserRange ls ix
+  {-# INLINE validIndex #-}
+  {-# INLINE getParserRange #-}
 
+class NonTermValidIndex i where
+  nonTermValidIndex :: ENZ i -> i -> ParserRange i -> i -> Bool
+  getNonTermParserRange :: ENZ i -> i -> ParserRange i -> ParserRange i
 
+instance NonTermValidIndex Z where
+  nonTermValidIndex Z Z Z Z = True
+  getNonTermParserRange Z Z Z = Z
+  {-# INLINE nonTermValidIndex #-}
+  {-# INLINE getNonTermParserRange #-}
+
+instance NonTermValidIndex is => NonTermValidIndex (is:.Subword) where
+  nonTermValidIndex (es:.e) (ns:.Subword(_:.n)) (abc:.(a:!:b:!:c)) (is:.Subword(i:.j)) =
+    let minsize = max b (if e==EmptyT then 0 else 1)
+    in  i>=a && i+minsize<=j && j<=n-c && nonTermValidIndex es ns abc is
+  getNonTermParserRange (es:.e) (is:._) (abc:.(a:!:b:!:c)) =
+    let b' = b + if e==EmptyT then 0 else 1
+    in  getNonTermParserRange es is abc :. (a:!:b':!:c)
+  {-# INLINE nonTermValidIndex #-}
+  {-# INLINE getNonTermParserRange #-}
 
 {-
 

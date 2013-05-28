@@ -302,14 +302,19 @@ prop_TccTcc ix@(Z:.Subword(i:.j):.Subword(k:.l)) = zs == ls where
 
 -- **
 
-{-
+prop_Mt2 ix@(Z:.Subword(i:.j)) = monadicIO $ do
+  mxs :: PA.MutArr IO (PA.Unboxed (Z:.Subword) Int) <- run $ PA.fromListM (Z:.subword 0 0) (Z:.subword 0 100) [0 ..]
+  let mt = mTbl (Z:.EmptyT) mxs -- :: MTbl (Z:.Subword) (PA.MutArr IO (PA.Unboxed (Z:.Subword) Int))
+  zs <- run $ id <<< mt ... SM.toList $ ix
+  ls <- run $ sequence $ [ (PA.readM mxs (Z:.subword i j)) | i>=0, j<=100, i<=j ]
+  assert $ traceShow (zs,ls) $ zs == ls
+
 prop_TcMtTc ix@(Z:.Subword(i:.j)) = monadicIO $ do
   mxs :: PA.MutArr IO (PA.Unboxed (Z:.Subword) Int) <- run $ PA.fromListM (Z:.subword 0 0) (Z:.subword 0 100) [0 ..]
-  let mt = MTbl (Z:.EmptyT) mxs :: MTbl (Z:.Subword) (PA.MutArr IO (PA.Unboxed (Z:.Subword) Int))
+  let mt = mTbl (Z:.EmptyT) mxs :: MTbl (Z:.Subword) (PA.MutArr IO (PA.Unboxed (Z:.Subword) Int))
   zs <- run $ (,,) <<< (T:!chr xs) % mt % (T:!chr xs) ... SM.toList $ ix
-  ls <- undefined -- run $ sequence $ [ (PA.readM mxs (Z:.subword (i+1) (j-1)) >>= \z -> return (Z:.xs VU.! i,z,Z:.xs VU.! (j-1))) | i>0, j<100, i+2<=j ]
-  assert $ zs == ls
--}
+  ls <- run $ sequence $ [ (PA.readM mxs (Z:.subword (i+1) (j-1)) >>= \z -> return (Z:.xs VU.! i,z,Z:.xs VU.! (j-1))) | i>0, j<100, i+2<=j ]
+  assert $ traceShow (zs,ls) $ zs == ls
 
 {-
 {-

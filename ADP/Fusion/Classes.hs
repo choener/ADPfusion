@@ -95,7 +95,7 @@ class Build x where
 -- for a stack of terminals and non-terminals 'x'. 'validIndex' is used to
 -- short-circuit streams via 'outerCheck'.
 
-class ValidIndex x i where
+class (Index i) => ValidIndex x i where
   validIndex :: x -> ParserRange i -> i -> Bool
   getParserRange :: x -> i -> ParserRange i
 
