@@ -351,17 +351,13 @@ prop_2dimCMCMC ix@(Z:.TinySubword(i:.j):.TinySubword(k:.l)) = monadicIO $ do
                          | j-i>=3, l-k>=3, i>=0, j<=100, k>=0, l<=100, a<-[i+1..j-2], b<-[k+1..l-2] ]
   assert $ zs==ls
 
-{-
-{-
--- | Our first multi-tape terminal ":-)"
-
 -- | Increase dimension by 1. (1-tape grammars)
 
 prop_P_Tt ix@(Z:.Point i) = zs == ls where
-  zs = id <<< Term (T:.Chr xs) ... S.toList $ ix
+  zs = id <<< (T:!chr xs) ... S.toList $ ix
   ls = [ (Z:.xs VU.! (i-1)) | i>0 ]
--}
 
+{-
 -- | with peeking
 
 {-

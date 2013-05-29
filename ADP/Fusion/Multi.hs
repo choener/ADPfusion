@@ -19,6 +19,7 @@ import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Unboxed as VU
 
 import Data.Array.Repa.Index.Subword
+import Data.Array.Repa.Index.Point
 
 import ADP.Fusion.Classes
 import ADP.Fusion.Chr (GChr (..))
@@ -80,14 +81,16 @@ instance
 class
   ( Monad m
   ) => TermElm m t ix where
-  type TermOf t :: *
   termStream :: t -> InOut ix -> ix -> S.Stream m (ze :!: zix :!: ix) -> S.Stream m (ze :!: zix :!: ix :!: TermOf t)
+
+type family TermOf t :: *
+
+type instance TermOf (Term ts (GChr r xs)) = TermOf ts :. r
 
 instance
   ( Monad m
   , TermElm m ts is
   ) => TermElm m (Term ts (GChr r xs)) (is:.Subword) where
-  type TermOf (Term ts (GChr r xs)) = TermOf ts :. r
   termStream (ts :! GChr f xs) (io:.Outer) (is:.ij@(Subword(i:.j))) =
     let dta = f xs (j-1)
     in  dta `seq` S.map (\(zs :!: (zix:.kl) :!: zis :!: e) -> (zs :!: zix :!: (zis:.subword (j-1) j) :!: (e:.dta)))
@@ -101,8 +104,26 @@ instance
 
 instance
   ( Monad m
+  , TermElm m ts is
+  ) => TermElm m (Term ts (GChr r xs)) (is:.Point) where
+  termStream (ts :! GChr f xs) (io:.Outer) (is:.Point j) =
+    let dta = f xs (j-1)
+    in  dta `seq` S.map (\(zs:!: (zix:._) :!: zis :!: e) -> (zs :!: zix :!: (zis:.Point (j-1)) :!: (e:.dta)))
+        . termStream ts io is
+        . S.map (\(zs :!: zix :!: (zis:.p)) -> (zs :!: (zix:.p) :!: zis))
+  {-
+  termStream (ts :! GChr f xs) (io:.Inner _ _) (is:.ij)
+    = S.map (\(zs :!: (zix:.kl@(Subword(k:.l))) :!: zis :!: e) -> let dta = f xs l in dta `seq` (zs :!: zix :!: (zis:.subword l (l+1)) :!: (e:.dta)))
+    . termStream ts io is
+    . S.map (\(zs :!: zix :!: (zis:.kl)) -> (zs :!: (zix:.kl) :!: zis))
+    -}
+  {-# INLINE termStream #-}
+
+type instance TermOf TermBase = Z
+
+instance
+  ( Monad m
   ) => TermElm m (TermBase) Z where
-  type TermOf TermBase = Z
   termStream T _ Z = S.map (\(zs:!:zix:!:Z) -> (zs:!:zix:!:Z:!:Z))
   {-# INLINE termStream #-}
 
@@ -136,4 +157,26 @@ instance
   {-# INLINE getTermParserRange #-}
   {-# INLINE termInnerOuter #-}
   {-# INLINE termLeftIndex #-}
+
+instance
+  ( TermValidIndex ts is
+  , VU.Unbox xs
+  ) => TermValidIndex (Term ts (GChr r xs)) (is:.Point) where
+  termDimensionsValid (ts:!GChr _ xs) (prs:.(a:!:b:!:c)) (is:.Point p)
+    = p>=a && p<=VU.length xs -c && {- i+b<=j && -} termDimensionsValid ts prs is
+  getTermParserRange (ts:!GChr _ _) (is:._) (prs:.(a:!:b:!:c))
+    = getTermParserRange ts is prs :. (a:!:b+1:!:max 0 (c-1))
+  termInnerOuter (ts:!_) (is:._) (ios:.io) = termInnerOuter ts is ios :. io
+  termLeftIndex  (ts:!_) (is:.Point p) = termLeftIndex ts is :. Point (p-1)
+  {-# INLINE termDimensionsValid #-}
+  {-# INLINE getTermParserRange #-}
+  {-# INLINE termInnerOuter #-}
+  {-# INLINE termLeftIndex #-}
+
+
+
+
+
+
+
 

@@ -19,6 +19,7 @@ import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Prelude as P
 
 import Data.Array.Repa.Index.Subword
+import Data.Array.Repa.Index.Point
 
 
 
@@ -127,6 +128,30 @@ outerCheck b (S.Stream step sS n) = b `seq` S.Stream snew (Left (b,sS)) Unknown 
 
 -- * Instances
 
+-- |
+--
+-- TODO check if this is really a good instance (maybe keep subwords internally ?)
+
+instance Index Point where
+  type InOut Point = InnerOuter
+  type ENZ   Point = ENE
+  type PartialIndex Point = Int
+  type ParserRange  Point = (Int:!:Int:!:Int)
+  outer _ = Outer
+  leftPartialIndex (Point i) = i
+  rightPartialIndex (Point j) = j
+  fromPartialIndices i j = Point i -- TODO require i==j ?!
+  toEmptyT _ ene  | ene==NonEmptyT = EmptyT
+                  | otherwise      = ene
+  toNonEmptyT _ ene | ene==EmptyT  = NonEmptyT
+                    | otherwise    = ene
+  {-# INLINE outer #-}
+  {-# INLINE leftPartialIndex #-}
+  {-# INLINE rightPartialIndex #-}
+  {-# INLINE fromPartialIndices #-}
+  {-# INLINE toEmptyT #-}
+  {-# INLINE toNonEmptyT #-}
+
 -- ** 'Subword'
 
 instance Index Subword where
@@ -214,6 +239,11 @@ instance
   mkStream Z (io:.Inner Check (Just z)) (is:.Subword (i:.j))
     = S.map (\(ElmZ jt) -> ElmZ (jt:.subword i i)) . S.filter (const $ i<=j && i+z>=j) $ mkStream Z io is
   {-# INLINE mkStream #-}
+
+instance
+  ( Monad m
+  , MkStream m Z is
+  ) => MkStream m Z (is:.Point) where
 
 instance (ValidIndex Z is, ValidIndex Z i) => ValidIndex Z (is:.i) where
   {-# INLINE validIndex #-}
