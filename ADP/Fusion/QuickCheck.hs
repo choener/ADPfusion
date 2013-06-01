@@ -24,6 +24,7 @@ import System.IO.Unsafe
 
 import Data.Array.Repa.Index.Subword
 import Data.Array.Repa.Index.Point
+import Data.Array.Repa.Index.Points
 import qualified Data.PrimitiveArray as PA
 import qualified Data.PrimitiveArray.Zero as PA
 
@@ -353,7 +354,7 @@ prop_2dimCMCMC ix@(Z:.TinySubword(i:.j):.TinySubword(k:.l)) = monadicIO $ do
 
 -- | Increase dimension by 1. (1-tape grammars)
 
-prop_P_Tt ix@(Z:.Point i) = zs == ls where
+prop_P_Tt ix@(Z:.PointL (i:.j)) = zs == ls where
   zs = id <<< (T:!chr xs) ... S.toList $ ix
   ls = [ (Z:.xs VU.! (i-1)) | i>0 ]
 
