@@ -352,21 +352,29 @@ prop_2dimCMCMC ix@(Z:.TinySubword(i:.j):.TinySubword(k:.l)) = monadicIO $ do
                          | j-i>=3, l-k>=3, i>=0, j<=100, k>=0, l<=100, a<-[i+1..j-2], b<-[k+1..l-2] ]
   assert $ zs==ls
 
--- | Increase dimension by 1. (1-tape grammars)
+-- * working on 'PointL's
 
 prop_P_Tt ix@(Z:.PointL (i:.j)) = zs == ls where
   zs = id <<< (T:!chr xs) ... S.toList $ ix
-  ls = [ (Z:.xs VU.! (i-1)) | i>0 ]
+  ls = [ (Z:.xs VU.! i) | i+1==j ]
+
+prop_P_CC ix@(Z:.PointL (i:.j)) = zs == ls where
+  zs = (,) <<< (T:!chr xs) % (T:!chr xs) ... S.toList $ ix
+  ls = [ (Z:.xs VU.! i, Z:.xs VU.! (i+1)) | i+2==j ]
+
+prop_P_2dimCMCMC ix@(Z:.PointL(i:.j):.PointL(k:.l)) = monadicIO $ do
+  mxs <- run $ pure $ mxsPP
+  let mt = mTbl (Z:.EmptyT:.EmptyT) mxs
+  zs <- run $ (,,,,) <<< (T:!chr xs:!chr xs) % mt % (T:!chr xs:!chr xs) % mt % (T:!chr xs:!chr xs) ... SM.toList $ ix
+  ls <- run $ sequence $ [ liftM5 (,,,,) (pure $ Z:.xs VU.! i:.xs VU.! k)
+                                         (PA.readM mxs (Z:.pointL (i+1) a:.pointL (k+1) b))
+                                         (pure $ Z:.xs VU.! a:.xs VU.! b)
+                                         (PA.readM mxs (Z:.pointL (a+1) (j-1):.pointL (b+1) (l-1)))
+                                         (pure $ Z:.xs VU.! (j-1):.xs VU.! (l-1))
+                         | j-i>=3, l-k>=3, i>=0, j<=100, k>=0, l<=100, a<-[i+1..j-2], b<-[k+1..l-2] ]
+  assert $ zs==ls
 
 {-
--- | with peeking
-
-{-
-prop_P_CC ix@(Z:.Point i) = traceShow (zs,ls) $ zs == ls where
-  zs = (,) <<< Chr xs % Chr xs ... S.toList $ ix
-  ls = [ (xs VU.! (i-2), xs VU.! (i-1)) | i>1 ]
--}
-
 prop_TcTc ix@(Z:.Point i) = {- traceShow (zs,ls) $ -} zs == ls where
   zs = (,) <<< Term (T:.Chr xs) % Term (T:.Chr xs) ... S.toList $ ix
   ls = [ (Z:.xs VU.! (i-2), Z:.xs VU.! (i-1)) | i>1 ]
@@ -485,6 +493,10 @@ xs = VU.fromList [0 .. 99 :: Int]
 mxsSwSw = unsafePerformIO $ zzz where
   zzz :: IO (PA.MutArr IO (PA.Unboxed (Z:.Subword:.Subword) Int))
   zzz = PA.fromListM (Z:.subword 0 0:.subword 0 0) (Z:.subword 0 100:.subword 0 100) [0 ..]
+
+mxsPP = unsafePerformIO $ zzz where
+  zzz :: IO (PA.MutArr IO (PA.Unboxed (Z:.PointL:.PointL) Int))
+  zzz = PA.fromListM (Z:.pointL 0 0:.pointL 0 0) (Z:.pointL 0 100:.pointL 0 100) [0 ..]
 
 -- * general quickcheck stuff
 
