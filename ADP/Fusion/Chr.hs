@@ -33,7 +33,7 @@ chr xs = GChr (VU.unsafeIndex) xs
 -- strict Maybe.
 
 chrLeft xs = GChr f xs where
-  f xs k = ( if k>=1 then (Just $ VU.unsafeIndex xs (k-1)) else Nothing
+  f xs k = ( xs VU.!? (k-1)
            , VU.unsafeIndex xs k
            )
   {-# INLINE f #-}
@@ -44,7 +44,7 @@ chrLeft xs = GChr f xs where
 
 chrRight xs = GChr f xs where
   f xs k = ( VU.unsafeIndex xs k
-           , if k+1<VU.length xs then (Just $ VU.unsafeIndex xs (k+1)) else Nothing
+           , xs VU.!? (k+1)
            )
   {-# INLINE f #-}
 {-# INLINE chrRight #-}
