@@ -6,7 +6,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module ADP.Fusion.Empty where
+module ADP.Fusion.None where
 
 import Data.Array.Repa.Index
 import Data.Strict.Maybe
@@ -20,26 +20,28 @@ import ADP.Fusion.Classes
 
 
 
-data Empty = Empty
+data None = None
 
-empty = Empty
-{-# INLINE empty #-}
+none = None
+{-# INLINE none #-}
+
+-- None is always valid
 
 instance
   ( ValidIndex ls Subword
-  ) => ValidIndex (ls :!: Empty) Subword where
-    validIndex (ls:!:Empty) abc ij@(Subword (i:.j)) = i==j && validIndex ls abc ij
+  ) => ValidIndex (ls :!: None) Subword where
+    validIndex (ls:!:None) abc ij@(Subword (i:.j)) = validIndex ls abc ij
     {-# INLINE validIndex #-}
 
-instance Build Empty
+instance Build None
 
 instance
   ( Elms ls Subword
-  ) => Elms (ls :!: Empty) Subword where
-  data Elm (ls :!: Empty) Subword = ElmEmpty !(Elm ls Subword) !() !Subword
-  type Arg (ls :!: Empty) = Arg ls :. ()
-  getArg !(ElmEmpty ls () _) = getArg ls :. ()
-  getIdx !(ElmEmpty _ _ i)   = i
+  ) => Elms (ls :!: None) Subword where
+  data Elm (ls :!: None) Subword = ElmNone !(Elm ls Subword) !() !Subword
+  type Arg (ls :!: None) = Arg ls :. ()
+  getArg !(ElmNone ls () _) = getArg ls :. ()
+  getIdx !(ElmNone _ _ i)   = i
   {-# INLINE getArg #-}
   {-# INLINE getIdx #-}
 
@@ -47,9 +49,9 @@ instance
   ( Monad m
   , Elms ls Subword
   , MkStream m ls Subword
-  ) => MkStream m (ls:!:Empty) Subword where
-  mkStream !(ls:!:Empty) Outer !ij@(Subword (i:.j))
-    = S.map (\s -> ElmEmpty s () (subword i j))
+  ) => MkStream m (ls:!:None) Subword where
+  mkStream !(ls:!:None) Outer !ij@(Subword (i:.j))
+    = S.map (\s -> ElmNone s () (subword i j))
     $ S.filter (\_ -> i==j)
     $ mkStream ls Outer ij
   {-# INLINE mkStream #-}

@@ -97,10 +97,12 @@ library
     ADP.Fusion.Chr
     ADP.Fusion.Classes
     ADP.Fusion.Empty
+    ADP.Fusion.Examples.Palindrome
+    ADP.Fusion.Multi
+    ADP.Fusion.None
+    ADP.Fusion.QuickCheck
     ADP.Fusion.Region
     ADP.Fusion.Table
-    ADP.Fusion.QuickCheck
-    ADP.Fusion.Examples.Palindrome
 
   ghc-options:
     -O2 -funbox-strict-fields

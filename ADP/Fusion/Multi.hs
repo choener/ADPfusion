@@ -24,6 +24,7 @@ import Data.Array.Repa.Index.Points
 
 import ADP.Fusion.Classes
 import ADP.Fusion.Chr (GChr (..))
+import ADP.Fusion.None
 
 import Debug.Trace
 
@@ -88,6 +89,8 @@ type family TermOf t :: *
 
 type instance TermOf (Term ts (GChr r xs)) = TermOf ts :. r
 
+type instance TermOf (Term ts None) = TermOf ts :. ()
+
 instance
   ( Monad m
   , TermElm m ts is
@@ -116,6 +119,20 @@ instance
         . S.map (\(zs :!: zix :!: (zis:.kl)) -> (zs :!: (zix:.kl) :!: zis))
   termStream (ts :! GChr f xs) (io:.Inner _ _) (is:.ij)
     = S.map (\(zs :!: (zix:.kl@(PointL(k:.l))) :!: zis :!: e) -> let dta = f xs l in dta `seq` (zs :!: zix :!: (zis:.pointL l (l+1)) :!: (e:.dta)))
+    . termStream ts io is
+    . S.map (\(zs :!: zix :!: (zis:.kl)) -> (zs :!: (zix:.kl) :!: zis))
+  {-# INLINE termStream #-}
+
+instance
+  ( Monad m
+  , TermElm m ts is
+  ) => TermElm m (Term ts None) (is:.PointL) where
+  termStream (ts :! None) (io:.Outer) (is:.ij@(PointL(i:.j))) =
+    S.map (\(zs :!: (zix:.kl) :!: zis :!: e) -> (zs :!: zix :!: (zis:.ij) :!: (e:.())))
+    . termStream ts io is
+    . S.map (\(zs :!: zix :!: (zis:.kl)) -> (zs :!: (zix:.kl) :!: zis))
+  termStream (ts :! None) (io:.Inner _ _) (is:.ij)
+    = S.map (\(zs :!: (zix:.kl) :!: zis :!: e) -> (zs :!: zix :!: (zis:.kl) :!: (e:.())))
     . termStream ts io is
     . S.map (\(zs :!: zix :!: (zis:.kl)) -> (zs :!: (zix:.kl) :!: zis))
   {-# INLINE termStream #-}
@@ -171,6 +188,22 @@ instance
     = getTermParserRange ts is prs :. (a:!:b+1:!:max 0 (c-1))
   termInnerOuter (ts:!_) (is:._) (ios:.io) = termInnerOuter ts is ios :. io
   termLeftIndex  (ts:!_) (is:.PointL (i:.j)) = termLeftIndex ts is :. pointL i (j-1)
+  {-# INLINE termDimensionsValid #-}
+  {-# INLINE getTermParserRange #-}
+  {-# INLINE termInnerOuter #-}
+  {-# INLINE termLeftIndex #-}
+
+-- TODO auto-gen'ed
+
+instance
+  ( TermValidIndex ts is
+  ) => TermValidIndex (Term ts None) (is:.PointL) where
+  termDimensionsValid (ts:!None) (prs:.(a:!:b:!:c)) (is:.PointL(i:.j))
+    = termDimensionsValid ts prs is
+  getTermParserRange (ts:!None) (is:._) (prs:.(a:!:b:!:c))
+    = getTermParserRange ts is prs :. (a:!:b:!:c)
+  termInnerOuter (ts:!_) (is:._) (ios:.io) = termInnerOuter ts is ios :. io
+  termLeftIndex  (ts:!_) (is:.ij) = termLeftIndex ts is :. ij
   {-# INLINE termDimensionsValid #-}
   {-# INLINE getTermParserRange #-}
   {-# INLINE termInnerOuter #-}
