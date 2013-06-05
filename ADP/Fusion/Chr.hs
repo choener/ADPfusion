@@ -92,6 +92,14 @@ instance
     $ mkStream ls (Inner cnc szd) (subword i $ j-1)
   {-# INLINE mkStream #-}
 
+-- | Wrapping a GChr to allow zero/one behaviour. Parses a character (or not)
+-- in a strict maybe.
+
+newtype ZeroOne r x = ZeroOne { unZeroOne :: GChr r x }
+
+zoLeft xs = ZeroOne $ chrLeft xs
+{-# INLINE zoLeft #-}
+
 
 
 -- | Generalized peek.

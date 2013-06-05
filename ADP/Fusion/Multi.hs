@@ -15,15 +15,18 @@ module ADP.Fusion.Multi where
 
 import Data.Array.Repa.Index
 import Data.Strict.Tuple
+import Data.Strict.Maybe
+import Data.Strict.Either
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Unboxed as VU
+import Prelude hiding (Either(..), Maybe(..))
 
 import Data.Array.Repa.Index.Subword
 import Data.Array.Repa.Index.Point
 import Data.Array.Repa.Index.Points
 
 import ADP.Fusion.Classes
-import ADP.Fusion.Chr (GChr (..))
+import ADP.Fusion.Chr (GChr(..), ZeroOne(..) )
 import ADP.Fusion.None
 
 import Debug.Trace
@@ -90,6 +93,8 @@ type family TermOf t :: *
 type instance TermOf (Term ts (GChr r xs)) = TermOf ts :. r
 
 type instance TermOf (Term ts None) = TermOf ts :. ()
+
+type instance TermOf (Term ts (ZeroOne r xs)) = TermOf ts :. Maybe r
 
 instance
   ( Monad m
@@ -212,8 +217,28 @@ instance
 
 
 
+-- The experimental zero/one wrapper
 
-
-
-
+instance
+  ( Monad m
+  , TermElm m ts is
+  ) => TermElm m (Term ts (ZeroOne r xs)) (is:.PointL) where
+  termStream (ts:!(ZeroOne (GChr f xs))) (io:.o) (is:.ij@(PointL(i:.j)))
+    = doubleStream
+    . termStream (ts:!GChr f xs) (io:.o) (is:.ij)
+    where
+      {-# INLINE doubleStream #-}
+      doubleStream (S.Stream step sS n) = S.Stream sNew (Left sS) (2*n) where
+        {-# INLINE [1] sNew #-}
+        sNew (Left s) = do r <- step s
+                           case r of
+                             S.Yield (abc:!:(es:.e)) s' -> return $ S.Yield (abc:!:(es:.Just e)) (Right s')
+                             S.Skip                  s' -> return $ S.Skip                       (Left  s')
+                             S.Done                     -> return $ S.Done
+        sNew (Right s) = do r <- step s
+                            case r of
+                              S.Yield (abc:!:(es:.e)) s' -> return $ S.Yield (abc:!:(es:.Nothing)) (Left s')
+--                              S.Skip                  s' -> return $ S.Skip                        (Left s')
+--                              S.Done                     -> return $ S.Done
+  {-# INLINE termStream #-}
 
