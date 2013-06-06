@@ -282,6 +282,8 @@ btTbl = BtTbl
 
 type DefBtTbl m isi x b = BtTbl isi (PA.Unboxed isi x) (isi -> m (S.Stream m b))
 
+instance Build (BtTbl i xs f)
+
 instance
   ( Elms ls (is:.i)
   ) => Elms (ls :!: DefBtTbl m (is:.i) x b) (is:.i) where
