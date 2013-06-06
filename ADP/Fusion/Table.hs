@@ -14,6 +14,7 @@ module ADP.Fusion.Table where
 
 import Control.Monad.Primitive
 import Data.Array.Repa.Index
+import Data.Array.Repa.Shape
 import Data.Strict.Tuple
 import Data.Vector.Fusion.Stream.Size
 import qualified Data.Vector.Fusion.Stream.Monadic as S
@@ -23,6 +24,7 @@ import Prelude hiding (Maybe(..))
 
 import Data.Array.Repa.Index.Subword
 import Data.Array.Repa.Index.Points
+import Data.Array.Repa.ExtShape
 import qualified Data.PrimitiveArray as PA
 import qualified Data.PrimitiveArray.Zero as PA
 
@@ -270,43 +272,58 @@ instance NonTermValidIndex is => NonTermValidIndex (is:.PointL) where
   {-# INLINE nonTermInnerOuter #-}
   {-# INLINE nonTermLeftIndex #-}
 
-{-
 
--- * Immutable tables.
 
-data Tbl x = Tbl !(PA.Unboxed (Z:.Subword) x)
+data BtTbl i xs f = BtTbl !(ENZ i) !xs !f -- (i -> m (S.Stream m b))
 
-instance Build (Tbl x)
+btTbl :: ENZ i -> xs -> f -> BtTbl i xs f --(i -> m (S.Stream m b)) -> BtTbl m i xs b
+btTbl = BtTbl
+{-# INLINE btTbl #-}
+
+type DefBtTbl m isi x b = BtTbl isi (PA.Unboxed isi x) (isi -> m (S.Stream m b))
 
 instance
-  ( Elms ls Subword
-  ) => Elms (ls :!: Tbl x) Subword where
-  data Elm (ls :!: Tbl x) Subword = ElmTbl !(Elm ls Subword) !x !Subword
-  type Arg (ls :!: Tbl x) = Arg ls :. x
-  getArg !(ElmTbl ls x _) = getArg ls :. x
-  getIdx !(ElmTbl _ _ idx) = idx
+  ( Elms ls (is:.i)
+  ) => Elms (ls :!: DefBtTbl m (is:.i) x b) (is:.i) where
+  data Elm (ls :!: DefBtTbl m (is:.i) x b) (is:.i) = ElmBtTbl !(Elm ls (is:.i)) !(x,m (S.Stream m b)) !(is:.i)
+  type Arg (ls :!: DefBtTbl m (is:.i) x b) = Arg ls :. (x,m (S.Stream m b))
+  getArg !(ElmBtTbl ls x _) = getArg ls :. x
+  getIdx !(ElmBtTbl _ _  i) = i
   {-# INLINE getArg #-}
   {-# INLINE getIdx #-}
 
 instance
   ( Monad m
+  , Elms ls (is:.i)
+  , ExtShape (is:.i)
+  , Shape (is:.i)
   , VU.Unbox x
-  , Elms ls Subword
-  , MkStream m ls Subword
-  ) => MkStream m (ls:!:Tbl x) Subword where
-  mkStream !(ls:!:Tbl xs) Outer !ij@(Subword (i:.j)) = S.map (\s -> let (Subword (k:.l)) = getIdx s in ElmTbl s (xs PA.! (Z:.subword l j)) (subword l j)) $ mkStream ls (Inner Check Nothing) ij
-  mkStream !(ls:!:Tbl xs) (Inner _ szd) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck Nothing) ij where
-    mk !s = let (Subword (k:.l)) = getIdx s
-                le = l -- TODO need to add ENE here ! -- + case ene of { EmptyT -> 0 ; NoEmptyT -> 1}
-                l' = case szd of Nothing -> le
-                                 Just z  -> max le (j-z)
-            in  return (s :!: l :!: l')
-    step !(s :!: k :!: l)
-      | l > j = return S.Done
-      | otherwise = return $ S.Yield (ElmTbl s (xs PA.! (Z:.subword k l)) (subword k l)) (s :!: k :!: l+1)
+  , NonTermValidIndex (is:.i)
+  , TableIndices (is:.i)
+  , MkStream m ls (is:.i)
+  ) => MkStream m (ls:!:DefBtTbl m (is:.i) x b) (is:.i) where
+  mkStream (ls :!: BtTbl enz tbl f) os is
+    = S.map (\(s:!:Z:!:β) -> ElmBtTbl s (tbl PA.! β,f β) β) -- extract data using β index
+    . tableIndices os enz is -- generate indices for multiple dimensions
+    . S.map (\s -> (s:!:Z:!:getIdx s)) -- extract the right-most current index
+    $ mkStream ls (nonTermInnerOuter is os) (nonTermLeftIndex is os enz) -- TODO fix os is!
   {-# INLINE mkStream #-}
 
+instance
+  ( ValidIndex ls (is:.i)
+  , Shape (is:.i)
+  , ExtShape (is:.i)
+  , VU.Unbox x
+  , NonTermValidIndex (is:.i)
+  ) => ValidIndex (ls :!: DefBtTbl m (is:.i) x b) (is:.i) where
+  validIndex (ls :!: BtTbl es tbl f) abc isi =
+    let (_,rght) = PA.bounds tbl
+    in  nonTermValidIndex es rght abc isi && validIndex ls abc isi
+  getParserRange (ls :!: BtTbl es _ _) ix = getNonTermParserRange es ix $ getParserRange ls ix
+  {-# INLINE validIndex #-}
+  {-# INLINE getParserRange #-}
 
+{-
 
 -- * Backtracking tables.
 
@@ -433,4 +450,45 @@ data GMtbl i x = forall m . GMtbl (ENEdim i) (PA.MutArr m (Storage i x))
 -}
 
 -}
+
+
+{-
+
+-- * Immutable tables.
+
+data Tbl x = Tbl !(PA.Unboxed (Z:.Subword) x)
+
+instance Build (Tbl x)
+
+instance
+  ( Elms ls Subword
+  ) => Elms (ls :!: Tbl x) Subword where
+  data Elm (ls :!: Tbl x) Subword = ElmTbl !(Elm ls Subword) !x !Subword
+  type Arg (ls :!: Tbl x) = Arg ls :. x
+  getArg !(ElmTbl ls x _) = getArg ls :. x
+  getIdx !(ElmTbl _ _ idx) = idx
+  {-# INLINE getArg #-}
+  {-# INLINE getIdx #-}
+
+instance
+  ( Monad m
+  , VU.Unbox x
+  , Elms ls Subword
+  , MkStream m ls Subword
+  ) => MkStream m (ls:!:Tbl x) Subword where
+  mkStream !(ls:!:Tbl xs) Outer !ij@(Subword (i:.j)) = S.map (\s -> let (Subword (k:.l)) = getIdx s in ElmTbl s (xs PA.! (Z:.subword l j)) (subword l j)) $ mkStream ls (Inner Check Nothing) ij
+  mkStream !(ls:!:Tbl xs) (Inner _ szd) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck Nothing) ij where
+    mk !s = let (Subword (k:.l)) = getIdx s
+                le = l -- TODO need to add ENE here ! -- + case ene of { EmptyT -> 0 ; NoEmptyT -> 1}
+                l' = case szd of Nothing -> le
+                                 Just z  -> max le (j-z)
+            in  return (s :!: l :!: l')
+    step !(s :!: k :!: l)
+      | l > j = return S.Done
+      | otherwise = return $ S.Yield (ElmTbl s (xs PA.! (Z:.subword k l)) (subword k l)) (s :!: k :!: l+1)
+  {-# INLINE mkStream #-}
+
+
+-}
+
 
