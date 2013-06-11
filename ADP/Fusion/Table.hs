@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
@@ -169,6 +170,19 @@ instance
   mkStream !(ls:!:MTbl ene tbl) Outer !ij@(Subword (i:.j))
     = S.mapM (\s -> let (Subword (_:.l)) = getIdx s in PA.readM tbl (Z:.subword l j) >>= \z -> return $ ElmMTblSw s z (subword l j))
     $ mkStream ls (Inner Check Nothing) (subword i $ case ene of { EmptyT -> j ; NonEmptyT -> j-1 })
+#ifdef HERMIT_CONCATMAP
+  mkStream !(ls:!:MTbl ene tbl) (Inner _ szd) !ij@(Subword (i:.j)) = S.concatMap step $ mkStream ls (Inner NoCheck Nothing) ij where
+    -- perform one step in inner stream
+    step s = let (Subword (_:.k)) = getIdx s
+             in S.mapM (\l -> PA.readM tbl (Z:.subword k l) >>= \z -> return $ ElmMTblSw s z (subword k l))
+                $ stepEnum s
+    -- return stream of required indices
+    stepEnum s = let (Subword (_:.l)) = getIdx s
+                     le = l + case ene of { EmptyT -> 0 ; NonEmptyT -> 1}
+                     l' = case szd of Nothing -> le
+                                      Just z  -> max le (j-z)
+                 in S.enumFromStepN l' 1 (j-l'+1)
+#else
   mkStream !(ls:!:MTbl ene tbl) (Inner _ szd) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck Nothing) ij where
     mk !s = let (Subword (_:.l)) = getIdx s
                 le = l + case ene of { EmptyT -> 0 ; NonEmptyT -> 1}
@@ -178,6 +192,7 @@ instance
     step !(s :!: k :!: l)
       | l > j = return S.Done
       | otherwise = PA.readM tbl (Z:.subword k l) >>= \z -> return $ S.Yield (ElmMTblSw s z (subword k l)) (s :!: k :!: l+1)
+#endif
   {-# INLINE mkStream #-}
 
 -- ** multi-dim indices

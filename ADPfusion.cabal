@@ -77,6 +77,10 @@ description:
 Extra-Source-Files:
   README.md
 
+Flag hermit
+  description: If True, we use concatMap instead of flatten and require the HERMIT plugin
+  default: False
+
 
 
 library
@@ -106,6 +110,8 @@ library
 
   ghc-options:
     -O2 -funbox-strict-fields
+  if flag(hermit)
+    cpp-options: -DHERMIT_CONCATMAP
 
 -- executable Test
 --   main-is:
