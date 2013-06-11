@@ -74,8 +74,10 @@ class Index i where
   leftPartialIndex  :: i -> PartialIndex i
   rightPartialIndex :: i -> PartialIndex i
   fromPartialIndices :: PartialIndex i -> PartialIndex i -> i
-  toEmptyT :: i -> ENZ i -> ENZ i
-  toNonEmptyT :: i -> ENZ i -> ENZ i
+
+class EmptyENZ enz where
+  toEmptyENZ    :: enz -> enz
+  toNonEmptyENZ :: enz -> enz
 
 -- |
 
@@ -139,16 +141,10 @@ instance Index PointL where
   leftPartialIndex (PointL (i:.j)) = i
   rightPartialIndex (PointL (i:.j)) = j
   fromPartialIndices i j = pointL i j
-  toEmptyT _ ene  | ene==NonEmptyT = EmptyT
-                  | otherwise      = ene
-  toNonEmptyT _ ene | ene==EmptyT  = NonEmptyT
-                    | otherwise    = ene
   {-# INLINE outer #-}
   {-# INLINE leftPartialIndex #-}
   {-# INLINE rightPartialIndex #-}
   {-# INLINE fromPartialIndices #-}
-  {-# INLINE toEmptyT #-}
-  {-# INLINE toNonEmptyT #-}
 
 -- ** 'Subword'
 
@@ -161,16 +157,18 @@ instance Index Subword where
   leftPartialIndex (Subword (i:.j)) = i
   rightPartialIndex (Subword (i:.j)) = j
   fromPartialIndices i j = subword i j
-  toEmptyT _ ene  | ene==NonEmptyT = EmptyT
-                  | otherwise      = ene
-  toNonEmptyT _ ene | ene==EmptyT  = NonEmptyT
-                    | otherwise    = ene
   {-# INLINE outer #-}
   {-# INLINE leftPartialIndex #-}
   {-# INLINE rightPartialIndex #-}
   {-# INLINE fromPartialIndices #-}
-  {-# INLINE toEmptyT #-}
-  {-# INLINE toNonEmptyT #-}
+
+instance EmptyENZ ENE where
+  toEmptyENZ ene  | ene==NonEmptyT = EmptyT
+                  | otherwise      = ene
+  toNonEmptyENZ ene | ene==EmptyT  = NonEmptyT
+                    | otherwise    = ene
+  {-# INLINE toEmptyENZ #-}
+  {-# INLINE toNonEmptyENZ #-}
 
 -- | The bottom of every stack of RHS arguments in a grammar.
 
@@ -219,14 +217,16 @@ instance (Index is, Index i) => Index (is:.i) where
   leftPartialIndex (is:.i) = leftPartialIndex is :. leftPartialIndex i
   rightPartialIndex (is:.i) = rightPartialIndex is :. rightPartialIndex i
   fromPartialIndices (is:.i) (js:.j) = fromPartialIndices is js :. fromPartialIndices i j
-  toEmptyT (is:.i) (es:.e) = toEmptyT is es :. toEmptyT i e
-  toNonEmptyT (is:.i) (es:.e) = toNonEmptyT is es :. toNonEmptyT i e
   {-# INLINE outer #-}
   {-# INLINE leftPartialIndex #-}
   {-# INLINE rightPartialIndex #-}
   {-# INLINE fromPartialIndices #-}
-  {-# INLINE toEmptyT #-}
-  {-# INLINE toNonEmptyT #-}
+
+instance (EmptyENZ es, EmptyENZ e) => EmptyENZ (es:.e) where
+  toEmptyENZ (es:.e) = toEmptyENZ es :. toEmptyENZ e
+  toNonEmptyENZ (es:.e) = toNonEmptyENZ es :. toNonEmptyENZ e
+  {-# INLINE toEmptyENZ #-}
+  {-# INLINE toNonEmptyENZ #-}
 
 instance
   ( Monad m
@@ -279,14 +279,16 @@ instance Index Z where
   leftPartialIndex Z = Z
   rightPartialIndex Z = Z
   fromPartialIndices Z Z = Z
-  toEmptyT _ _ = Z
-  toNonEmptyT _ _ = Z
   {-# INLINE outer #-}
   {-# INLINE leftPartialIndex #-}
   {-# INLINE rightPartialIndex #-}
   {-# INLINE fromPartialIndices #-}
-  {-# INLINE toEmptyT #-}
-  {-# INLINE toNonEmptyT #-}
+
+instance EmptyENZ Z where
+  toEmptyENZ _ = Z
+  toNonEmptyENZ _ = Z
+  {-# INLINE toEmptyENZ #-}
+  {-# INLINE toNonEmptyENZ #-}
 
 instance
   (

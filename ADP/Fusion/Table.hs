@@ -281,8 +281,52 @@ btTbl = BtTbl
 {-# INLINE btTbl #-}
 
 type DefBtTbl m isi x b = BtTbl isi (PA.Unboxed isi x) (isi -> m (S.Stream m b))
+type SwBtTbl m x b = BtTbl Subword (PA.Unboxed (Z:.Subword) x) (Subword -> m (S.Stream m b))
 
 instance Build (BtTbl i xs f)
+
+instance
+  ( Elms ls Subword
+  ) => Elms (ls :!: SwBtTbl m x b) Subword where
+  data Elm (ls :!: SwBtTbl m x b) Subword = ElmSwBtTbl !(Elm ls Subword) !(x,m (S.Stream m b)) !Subword
+  type Arg (ls :!: SwBtTbl m x b) = Arg ls :. (x,m (S.Stream m b))
+  getArg !(ElmSwBtTbl ls x _) = getArg ls :. x
+  getIdx !(ElmSwBtTbl _ _  i) = i
+  {-# INLINE getArg #-}
+  {-# INLINE getIdx #-}
+
+instance
+  ( Monad m
+  , Elms ls Subword
+  , VU.Unbox x
+  , MkStream m ls Subword
+  ) => MkStream m (ls :!: SwBtTbl m x b) Subword where
+  mkStream !(ls:!:BtTbl ene tbl f) Outer !ij@(Subword (i:.j))
+    = S.mapM (\s -> let (Subword (_:.l)) = getIdx s in return $ ElmSwBtTbl s (tbl PA.! (Z:.subword l j), f $ subword l j) (subword l j))
+    $ mkStream ls (Inner Check Nothing) (subword i $ case ene of { EmptyT -> j ; NonEmptyT -> j-1 })
+  mkStream !(ls:!:BtTbl ene tbl f) (Inner _ szd) !ij@(Subword (i:.j)) = S.flatten mk step Unknown $ mkStream ls (Inner NoCheck Nothing) ij where
+    mk !s = let (Subword (_:.l)) = getIdx s
+                le = l + case ene of { EmptyT -> 0 ; NonEmptyT -> 1}
+                l' = case szd of Nothing -> le
+                                 Just z  -> max le (j-z)
+            in return (s :!: l :!: l')
+    step !(s :!: k :!: l)
+      | l > j = return S.Done
+      | otherwise = return $ S.Yield (ElmSwBtTbl s (tbl PA.! (Z:.subword k l), f $ subword k l) (subword k l)) (s :!: k :!: l+1)
+  {-# INLINE mkStream #-}
+
+instance
+  ( ValidIndex ls Subword
+  , VU.Unbox x
+  ) => ValidIndex (ls :!: SwBtTbl m x b) Subword where
+  validIndex (_  :!: BtTbl ZeroT _ _) _ _ = error "table with ZeroT found, there is no reason (actually: no implementation) for 1-dim ZeroT tables"
+  validIndex (ls :!: BtTbl ene tbl _) abc@(a:!:b:!:c) ij@(Subword (i:.j)) =
+    let (_,Z:.Subword (0:.n)) = PA.bounds tbl
+        minsize = max b (if ene==EmptyT then 0 else 1)
+    in  i>=a && i+minsize<=j && j<=n-c && validIndex ls abc ij
+  {-# INLINE validIndex #-}
+  getParserRange (ls :!: BtTbl ene _ f) ix = let (a:!:b:!:c) = getParserRange ls ix in if ene==EmptyT then (a:!:b:!:c) else (a:!:b+1:!:c)
+  {-# INLINE getParserRange #-}
 
 instance
   ( Elms ls (is:.i)
@@ -324,6 +368,27 @@ instance
   getParserRange (ls :!: BtTbl es _ _) ix = getNonTermParserRange es ix $ getParserRange ls ix
   {-# INLINE validIndex #-}
   {-# INLINE getParserRange #-}
+
+
+
+class EmptyTable x where
+  toEmptyT :: x -> x
+  toNonEmptyT :: x -> x
+
+instance (EmptyENZ (ENZ i)) => EmptyTable (MTbl i xs) where
+  toEmptyT    (MTbl enz xs) = MTbl (toEmptyENZ    enz) xs
+  toNonEmptyT (MTbl enz xs) = MTbl (toNonEmptyENZ enz) xs
+  {-# INLINE toEmptyT #-}
+  {-# INLINE toNonEmptyT #-}
+
+instance (EmptyENZ (ENZ i)) => EmptyTable (BtTbl i xs f) where
+  toEmptyT    (BtTbl enz xs f) = BtTbl (toEmptyENZ    enz) xs f
+  toNonEmptyT (BtTbl enz xs f) = BtTbl (toNonEmptyENZ enz) xs f
+  {-# INLINE toEmptyT #-}
+  {-# INLINE toNonEmptyT #-}
+
+
+
 
 {-
 
