@@ -19,6 +19,7 @@ import Data.Strict.Tuple
 import Data.Strict.Either
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Unboxed as VU
+import qualified Data.Vector.Generic as VG
 import Prelude hiding (Either(..))
 
 import Data.Array.Repa.Index.Subword
@@ -169,10 +170,9 @@ instance TermValidIndex TermBase Z where
 
 instance
   ( TermValidIndex ts is
-  , VU.Unbox xs
   ) => TermValidIndex (Term ts (GChr r xs)) (is:.Subword) where
   termDimensionsValid (ts:!GChr _ xs) (prs:.(a:!:b:!:c)) (is:.Subword(i:.j))
-    = i>=a && j<=VU.length xs -c && i+b<=j && termDimensionsValid ts prs is
+    = i>=a && j<=VG.length xs -c && i+b<=j && termDimensionsValid ts prs is
   getTermParserRange (ts:!GChr _ _) (is:._) (prs:.(a:!:b:!:c))
     = getTermParserRange ts is prs :. (a:!:b+1:!:max 0 (c-1))
   termInnerOuter (ts:!_) (is:._) (ios:.io) = termInnerOuter ts is ios :. io
@@ -186,10 +186,9 @@ instance
 
 instance
   ( TermValidIndex ts is
-  , VU.Unbox xs
   ) => TermValidIndex (Term ts (GChr r xs)) (is:.PointL) where
   termDimensionsValid (ts:!GChr _ xs) (prs:.(a:!:b:!:c)) (is:.PointL(i:.j))
-    = i>=a && j<=VU.length xs -c && i+b<=j && termDimensionsValid ts prs is
+    = i>=a && j<=VG.length xs -c && i+b<=j && termDimensionsValid ts prs is
   getTermParserRange (ts:!GChr _ _) (is:._) (prs:.(a:!:b:!:c))
     = getTermParserRange ts is prs :. (a:!:b+1:!:max 0 (c-1))
   termInnerOuter (ts:!_) (is:._) (ios:.io) = termInnerOuter ts is ios :. io
@@ -201,7 +200,6 @@ instance
 
 instance
   ( TermValidIndex ts is
-  , VU.Unbox xs
   ) => TermValidIndex (Term ts (ZeroOne r xs)) (is:.PointL) where
   termDimensionsValid (ts:!ZeroOne (gchr)) = termDimensionsValid (ts:!gchr)
   {-

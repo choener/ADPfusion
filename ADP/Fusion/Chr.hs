@@ -1,3 +1,6 @@
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -13,6 +16,7 @@ import Data.Array.Repa.Index
 import Data.Strict.Tuple
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Unboxed as VU
+import qualified Data.Vector.Generic as VG
 import Data.Strict.Maybe
 import Prelude hiding (Maybe(..))
 
@@ -26,25 +30,34 @@ import Debug.Trace
 
 -- | Parses a single character.
 
-chr xs = GChr (VU.unsafeIndex) xs
+chr xs = GChr (VG.unsafeIndex) xs
 {-# INLINE chr #-}
 
 -- | Parses a single character and returns the character to the left in a
 -- strict Maybe.
 
 chrLeft xs = GChr f xs where
-  f xs k = ( xs VU.!? (k-1)
-           , VU.unsafeIndex xs k
+  f xs k = ( xs VG.!? (k-1)
+           , VG.unsafeIndex xs k
            )
   {-# INLINE f #-}
 {-# INLINE chrLeft #-}
+
+-- With default character
+
+chrLeftD d xs = GChr f xs where
+  f xs k = ( Prelude.maybe d id $ xs VG.!? (k-1)
+           , VG.unsafeIndex xs k
+           )
+  {-# INLINE f #-}
+{-# INLINE chrLeftD #-}
 
 -- | Parses a single character and returns the character to the right in a
 -- strict Maybe.
 
 chrRight xs = GChr f xs where
-  f xs k = ( VU.unsafeIndex xs k
-           , xs VU.!? (k+1)
+  f xs k = ( VG.unsafeIndex xs k
+           , xs VG.!? (k+1)
            )
   {-# INLINE f #-}
 {-# INLINE chrRight #-}
@@ -52,16 +65,16 @@ chrRight xs = GChr f xs where
 -- | A generic Character parser that reads a single character but allows
 -- passing additional information.
 
-data GChr r x = GChr !(VU.Vector x -> Int -> r) !(VU.Vector x)
+data GChr r x where -- = forall v . VG.Vector v x =>
+  GChr :: VG.Vector v x => !(v x -> Int -> r) -> !(v x) -> GChr r x
 
 instance Build (GChr r x)
 
 instance
   ( ValidIndex ls Subword
-  , VU.Unbox x
   ) => ValidIndex (ls :!: GChr r x) Subword where
     validIndex (ls :!: GChr _ xs) abc@(a:!:b:!:c) ij@(Subword (i:.j)) =
-      i>=a && j<=VU.length xs -c && i+b<=j && validIndex ls abc ij
+      i>=a && j<=VG.length xs -c && i+b<=j && validIndex ls abc ij
     {-# INLINE validIndex #-}
     getParserRange (ls :!: GChr _ _) ix = let (a:!:b:!:c) = getParserRange ls ix in (a:!:b+1:!:max 0 (c-1))
     {-# INLINE getParserRange #-}
@@ -78,7 +91,6 @@ instance
 
 instance
   ( Monad m
-  , VU.Unbox x
   , Elms ls Subword
   , MkStream m ls Subword
   ) => MkStream m (ls :!: GChr r x) Subword where
@@ -184,16 +196,15 @@ instance
 
 instance
   ( Monad m
-  , VU.Unbox x
   , Elms ls Subword
   , MkStream m ls Subword
   ) => MkStream m (ls :!: Chr x) Subword where
   mkStream !(ls :!: Chr xs) Outer !ij@(Subword(i:.j)) =
-    let dta = VU.unsafeIndex xs (j-1)
+    let dta = VG.unsafeIndex xs (j-1)
     in  dta `seq` S.map (\s -> ElmChr s dta (subword (j-1) j)) $ mkStream ls Outer (subword i $ j-1)
   mkStream !(ls :!: Chr xs) (Inner cnc szd) !ij@(Subword(i:.j))
     = S.map (\s -> let (Subword (k:.l)) = getIdx s
-                   in  ElmChr s (VU.unsafeIndex xs l) (subword l $ l+1)
+                   in  ElmChr s (VG.unsafeIndex xs l) (subword l $ l+1)
             )
     $ mkStream ls (Inner cnc szd) (subword i $ j-1)
   {-# INLINE mkStream #-}
