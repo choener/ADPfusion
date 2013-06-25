@@ -21,6 +21,7 @@ import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Unboxed as VU
 import qualified Data.Vector.Generic as VG
 import Prelude hiding (Either(..))
+import Data.Vector.Fusion.Stream.Size
 
 import Data.Array.Repa.Index.Subword
 import Data.Array.Repa.Index.Point
@@ -119,6 +120,16 @@ instance
   ( Monad m
   , TermElm m ts is
   ) => TermElm m (Term ts (GChr r xs)) (is:.PointL) where
+  termStream (ts :! _) (io:.Invalid) (is :. _) =
+    {-
+    const S.empty
+    -}
+    S.flatten (return . id) (const (return S.Done)) (Exact 0)
+  {-
+    S.flatten (return . id) (return S.Done) Unknown
+    . S.map (\(zs :!: (zix:.kl) :!: zis :!: e) -> (zs :!: zix :!: (zis:.pointL 0 0) :!: e))
+    . termStream ts io is
+    . S.map (\(zs :!: zix :!: (zis:.kl)) -> (zs :!: (zix:.kl) :!: zis)) -}
   termStream (ts :! GChr f xs) (io:.Outer) (is:.ij@(PointL(i:.j))) =
     let dta = f xs (j-1)
     in  dta `seq` S.map (\(zs :!: (zix:.kl) :!: zis :!: e) -> (zs :!: zix :!: (zis:.pointL (j-1) j) :!: (e:.dta)))
@@ -134,6 +145,7 @@ instance
   ( Monad m
   , TermElm m ts is
   ) => TermElm m (Term ts None) (is:.PointL) where
+  termStream (ts :! _) (io:.Invalid) (is :. _) = const S.empty
   termStream (ts :! None) (io:.Outer) (is:.ij@(PointL(i:.j))) =
     S.map (\(zs :!: (zix:.kl) :!: zis :!: e) -> (zs :!: zix :!: (zis:.kl) :!: (e:.())))
     . termStream ts io is
@@ -188,7 +200,7 @@ instance
   ( TermValidIndex ts is
   ) => TermValidIndex (Term ts (GChr r xs)) (is:.PointL) where
   termDimensionsValid (ts:!GChr _ xs) (prs:.(a:!:b:!:c)) (is:.PointL(i:.j))
-    = i>=a && j<=VG.length xs -c && i+b<=j && termDimensionsValid ts prs is
+    = i>=a && j>0 && j<=VG.length xs -c && i+b<=j && termDimensionsValid ts prs is
   getTermParserRange (ts:!GChr _ _) (is:._) (prs:.(a:!:b:!:c))
     = getTermParserRange ts is prs :. (a:!:b+1:!:max 0 (c-1))
   termInnerOuter (ts:!_) (is:._) (ios:.io) = termInnerOuter ts is ios :. io
