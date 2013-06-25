@@ -119,11 +119,10 @@ instance
   ( Monad m
   , TermElm m ts is
   ) => TermElm m (Term ts (GChr r xs)) (is:.PointL) where
-  termStream (ts :! GChr f xs) (io:.Outer) (is:.ij@(PointL(i:.j))) =
-    let dta = f xs (j-1)
-    in  dta `seq` S.map (\(zs :!: (zix:.kl) :!: zis :!: e) -> (zs :!: zix :!: (zis:.pointL (j-1) j) :!: (e:.dta)))
-        . termStream ts io is
-        . S.map (\(zs :!: zix :!: (zis:.kl)) -> (zs :!: (zix:.kl) :!: zis))
+  termStream (ts :! GChr f xs) (io:.Outer) (is:.ij@(PointL(i:.j)))
+    = S.map (\(zs :!: (zix:.kl) :!: zis :!: e) -> (zs :!: zix :!: (zis:.pointL (j-1) j) :!: (e:.(f xs $ j-1))))
+    . termStream ts io is
+    . S.map (\(zs :!: zix :!: (zis:.kl)) -> (zs :!: (zix:.kl) :!: zis))
   termStream (ts :! GChr f xs) (io:.Inner _ _) (is:.ij)
     = S.map (\(zs :!: (zix:.kl@(PointL(k:.l))) :!: zis :!: e) -> let dta = f xs l in dta `seq` (zs :!: zix :!: (zis:.pointL l (l+1)) :!: (e:.dta)))
     . termStream ts io is
