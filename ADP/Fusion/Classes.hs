@@ -17,12 +17,9 @@ import Data.Vector.Fusion.Stream.Size
 import Prelude hiding (Maybe(..))
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Prelude as P
-import Control.Parallel (pseq)
 
 import Data.Array.Repa.Index.Subword
 import Data.Array.Repa.Index.Points
-
-import Debug.Trace
 
 
 
@@ -46,7 +43,6 @@ data CheckNoCheck
 data InnerOuter
   = Inner !CheckNoCheck !(Maybe Int)
   | Outer
-  | Invalid
   deriving (Eq,Show)
 
 data ENE
@@ -74,7 +70,7 @@ class Index i where
   type ENZ    i :: *
   type PartialIndex i :: *
   type ParserRange i :: *
-  outer :: Bool -> i -> InOut i
+  outer :: i -> InOut i
   leftPartialIndex  :: i -> PartialIndex i
   rightPartialIndex :: i -> PartialIndex i
   fromPartialIndices :: PartialIndex i -> PartialIndex i -> i
@@ -119,10 +115,9 @@ checkValidIndex x i = validIndex x (getParserRange x i) i
 -- elements. If 'b' is false, we discard all stream elements.
 
 outerCheck :: Monad m => Bool -> S.Stream m a -> S.Stream m a
-outerCheck b (S.Stream step sS n) = b `pseq` S.Stream snew (Left (b,sS)) Unknown where
+outerCheck b (S.Stream step sS n) = b `seq` S.Stream snew (Left (b,sS)) Unknown where
   {-# INLINE [1] snew #-}
   snew (Left  (False,s)) = return $ S.Done
---  snew (Left  (True ,s)) = return $ S.Done
   snew (Left  (True ,s)) = return $ S.Skip (Right s)
   snew (Right s        ) = do r <- step s
                               case r of
@@ -142,8 +137,7 @@ instance Index PointL where
   type ENZ   PointL = ENE
   type PartialIndex PointL = Int
   type ParserRange  PointL = (Int:!:Int:!:Int)
-  outer False _ = Invalid
-  outer True  _ = Outer
+  outer _ = Outer
   leftPartialIndex (PointL (i:.j)) = i
   rightPartialIndex (PointL (i:.j)) = j
   fromPartialIndices i j = pointL i j
@@ -159,8 +153,7 @@ instance Index Subword where
   type ENZ   Subword = ENE
   type PartialIndex Subword = Int
   type ParserRange Subword = (Int :!: Int :!: Int)
-  outer False _ = Invalid
-  outer True  _ = Outer
+  outer _ = Outer
   leftPartialIndex (Subword (i:.j)) = i
   rightPartialIndex (Subword (i:.j)) = j
   fromPartialIndices i j = subword i j
@@ -220,7 +213,7 @@ instance (Index is, Index i) => Index (is:.i) where
   type ENZ   (is:.i) = ENZ   is :. ENZ i
   type PartialIndex (is:.i) = PartialIndex is :. PartialIndex i
   type ParserRange (is:.i) = ParserRange is :. ParserRange i
-  outer b (is:.i) = outer b is :. outer b i
+  outer (is:.i) = outer is :. outer i
   leftPartialIndex (is:.i) = leftPartialIndex is :. leftPartialIndex i
   rightPartialIndex (is:.i) = rightPartialIndex is :. rightPartialIndex i
   fromPartialIndices (is:.i) (js:.j) = fromPartialIndices is js :. fromPartialIndices i j
@@ -257,8 +250,6 @@ instance
   ( Monad m
   , MkStream m Z is
   ) => MkStream m Z (is:.PointL) where
-  mkStream Z (io:.Invalid) (is:._)
-    = S.flatten (return . id) (const $ return S.Done) (Exact 0) $ mkStream Z io is
   mkStream Z (io:.Outer) (is:.PointL (i:.j))
     = S.map (\(ElmZ jt) -> ElmZ (jt:.pointL i i)) . S.filter (const $ i==j) $ mkStream Z io is
   mkStream Z (io:.Inner NoCheck Nothing) (is:.PointL (i:.j))
@@ -284,7 +275,7 @@ instance Index Z where
   type ENZ   Z = Z
   type PartialIndex Z = Z
   type ParserRange Z = Z
-  outer _ Z = Z
+  outer Z = Z
   leftPartialIndex Z = Z
   rightPartialIndex Z = Z
   fromPartialIndices Z Z = Z

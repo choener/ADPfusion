@@ -109,8 +109,6 @@ instance TableIndices is => TableIndices (is:.Subword) where
   {-#  INLINE tableIndices #-}
 
 instance TableIndices is => TableIndices (is:.PointL) where
-  tableIndices (os:.Invalid) (es:._) (is:._)
-    = S.flatten (return . id) (const (return S.Done)) (Exact 0)
   tableIndices (os:.Outer) (es:._) (is:.PointL(i:.j))
     = S.map (\(ζ:!:(α:!:PointL(_:.l)):!:is) -> (ζ:!:α:!:(is:.pointL l j))) -- extend index to the end
     . tableIndices os es is -- extend the @is@ part
@@ -264,7 +262,6 @@ instance NonTermValidIndex is => NonTermValidIndex (is:.PointL) where
   getNonTermParserRange (es:.e) (is:._) (abc:.(a:!:b:!:c)) =
     let b' = b + if e==EmptyT then 0 else 1
     in  getNonTermParserRange es is abc :. (a:!:b':!:c)
-  nonTermInnerOuter (is:._) (os:.Invalid) = nonTermInnerOuter is os :. Invalid
   nonTermInnerOuter (is:._) (os:.Outer) = nonTermInnerOuter is os :. Inner Check Nothing
   nonTermInnerOuter (is:._) (os:.Inner _ _) = nonTermInnerOuter is os :. Inner NoCheck Nothing
   nonTermLeftIndex (is:.PointL(i:.j)) (os:.o) (es:.e)

@@ -30,13 +30,8 @@ import Debug.Trace
 
 -- | Parses a single character.
 
---chr xs = GChr (VG.unsafeIndex) xs
-chr xs = GChr f xs where
-  f x k = if k<0 then error (show (x,k)) else VG.unsafeIndex x k
+chr xs = GChr (VG.unsafeIndex) xs
 {-# INLINE chr #-}
-
-chr' xs y = GChr f xs where
-  f x k = if k<0 then traceShow "y" y else VG.unsafeIndex x k
 
 -- | Parses a single character and returns the character to the left in a
 -- strict Maybe.
