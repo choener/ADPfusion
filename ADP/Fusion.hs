@@ -49,6 +49,7 @@ module ADP.Fusion
   , MTbl (..)
   , ENE (..)
   , ENZ (..)
+  , None (..)
   ) where
 
 import Data.Strict.Tuple
@@ -61,6 +62,7 @@ import ADP.Fusion.Classes
 import ADP.Fusion.Empty
 import ADP.Fusion.Region
 import ADP.Fusion.Table
+import ADP.Fusion.None
 
 
 
