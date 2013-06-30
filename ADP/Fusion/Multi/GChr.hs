@@ -11,11 +11,11 @@ import Data.Strict.Tuple
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Generic as VG
 
-import Data.Array.Repa.Index.Subword
 import Data.Array.Repa.Index.Points
+import Data.Array.Repa.Index.Subword
 
-import ADP.Fusion.Classes
 import ADP.Fusion.Chr
+import ADP.Fusion.Classes
 import ADP.Fusion.Multi.Classes
 
 

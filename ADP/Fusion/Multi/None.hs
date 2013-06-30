@@ -13,8 +13,8 @@ import qualified Data.Vector.Fusion.Stream.Monadic as S
 import Data.Array.Repa.Index.Points
 
 import ADP.Fusion.Classes
-import ADP.Fusion.None
 import ADP.Fusion.Multi.Classes
+import ADP.Fusion.None
 
 
 

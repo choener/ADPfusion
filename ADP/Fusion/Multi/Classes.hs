@@ -8,9 +8,9 @@
 
 module ADP.Fusion.Multi.Classes where
 
+import Data.Array.Repa.Index
 import Data.Strict.Tuple
 import qualified Data.Vector.Fusion.Stream.Monadic as S
-import Data.Array.Repa.Index
 
 import ADP.Fusion.Classes
 

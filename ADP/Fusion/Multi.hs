@@ -18,27 +18,11 @@ module ADP.Fusion.Multi
   , module ADP.Fusion.Multi.None
   ) where
 
-import Data.Array.Repa.Index
-import Data.Strict.Tuple
-import Data.Strict.Either
-import qualified Data.Vector.Fusion.Stream.Monadic as S
-import qualified Data.Vector.Unboxed as VU
-import qualified Data.Vector.Generic as VG
-import Prelude hiding (Either(..))
-
-import Data.Array.Repa.Index.Subword
-import Data.Array.Repa.Index.Point
-import Data.Array.Repa.Index.Points
-
-import ADP.Fusion.Classes
-import ADP.Fusion.Chr (GChr(..), ZeroOne(..) )
-import ADP.Fusion.Empty
 import ADP.Fusion.Multi.Classes
 import ADP.Fusion.Multi.None
 import ADP.Fusion.Multi.GChr
 import ADP.Fusion.Multi.Empty
 
-import Debug.Trace
 
 
 {-
