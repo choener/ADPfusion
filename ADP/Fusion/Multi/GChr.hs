@@ -67,6 +67,7 @@ instance
   , TermElm m ts is
   ) => TermElm m (Term ts (GChr r xs)) (is:.PointL) where
   termStream (ts :! GChr f xs) (io:.Outer) (is:.ij@(PointL(i:.j)))
+    -- = let dta = (f xs $ max 0 $ j-1) in dta `seq` S.map (\(zs :!: (zix:.kl) :!: zis :!: e) -> (zs :!: zix :!: (zis:.pointL (j-1) j) :!: (e:.dta)))  --- NOTE this line is not correct and only used for testing
     = S.map (\(zs :!: (zix:.kl) :!: zis :!: e) -> (zs :!: zix :!: (zis:.pointL (j-1) j) :!: (e:.(f xs $ j-1))))
     . termStream ts io is
     . S.map (\(zs :!: zix :!: (zis:.kl)) -> (zs :!: (zix:.kl) :!: zis))
@@ -82,7 +83,7 @@ instance
   ( TermValidIndex ts is
   ) => TermValidIndex (Term ts (GChr r xs)) (is:.PointL) where
   termDimensionsValid (ts:!GChr _ xs) (prs:.(a:!:b:!:c)) (is:.PointL(i:.j))
-    = i>=a && j<=VG.length xs -c && i+b<=j && termDimensionsValid ts prs is
+    = {- i>=a && j<=VG.length xs -c && i+b<=j && -} termDimensionsValid ts prs is
   getTermParserRange (ts:!GChr _ _) (is:._) (prs:.(a:!:b:!:c))
     = getTermParserRange ts is prs :. (a:!:b+1:!:max 0 (c-1))
   termInnerOuter (ts:!_) (is:._) (ios:.io) = termInnerOuter ts is ios :. io

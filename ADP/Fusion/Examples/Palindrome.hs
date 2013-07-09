@@ -36,7 +36,7 @@ data SignatureT m x r = Signature
   , h     :: Stream m x -> m r
   }
 
-makeAlgebraProduct ''SignatureT
+-- makeAlgebraProduct ''SignatureT
 
 {-
 

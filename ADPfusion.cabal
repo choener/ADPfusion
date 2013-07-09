@@ -121,6 +121,19 @@ library
 --     -optlo-O3 -optlo-std-compile-opts
 --     -fllvm-tbaa
 
+executable NeedlemanWunsch
+  main-is:
+    ADP/Fusion/Examples/TwoDim.hs
+  ghc-options:
+    -Odph
+    -funbox-strict-fields
+    -funfolding-use-threshold1000
+    -funfolding-keeness-factor1000
+--    -fnew-codegen
+    -fllvm
+    -optlo-O3 -optlo-std-compile-opts
+    -fllvm-tbaa
+
 --executable GAPcriterion
 --  buildable:
 --    False
