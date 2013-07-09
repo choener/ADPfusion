@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeOperators #-}
@@ -25,14 +26,19 @@ import ADP.Fusion.Empty hiding (empty)
 import ADP.Fusion.Chr
 import ADP.Fusion.Table
 import Data.Array.Repa.Index.Subword
+import ADP.Fusion.TH
 
 
 
-data Signature m x r = Signature
+data SignatureT m x r = Signature
   { pair  :: Char -> x -> Char -> x
   , empty :: () -> x
   , h     :: Stream m x -> m r
   }
+
+makeAlgebraProduct ''SignatureT
+
+{-
 
 -- gPalindrome :: Signature m x -> Empty -> Char -> tbl -> (tbl, Subword -> m x)
 
@@ -107,3 +113,6 @@ fillTable (MTbl _ tbl, f) = do
   forM_ [n,n-1..0] $ \i -> forM_ [i..n] $ \j -> do
     (f $ subword i j) >>= writeM tbl (Z:.subword i j)
 {-# INLINE fillTable #-}
+
+-}
+

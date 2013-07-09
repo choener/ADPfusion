@@ -90,6 +90,7 @@ library
     transformers              ,
     vector         >= 0.10    ,
     QuickCheck     >= 2.5     ,
+    template-haskell ,
     PrimitiveArray == 0.5.1.*
   exposed-modules:
     ADP.Fusion
