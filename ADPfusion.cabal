@@ -35,7 +35,7 @@ description:
                 translates to three nested for loops (for C). In the figure,
                 four different approaches are compared using inputs with size
                 100 characters to 1000 characters in increments of 100
-                characters. "C" is an implementation ("./C/" directory) in "C"
+                characters. "C" is an implementation (@./C/@ directory) in "C"
                 using "gcc -O3". "ADP" is the original ADP approach (see link
                 above), while "GAPC" uses the "GAP" language
                 (<http://gapc.eu/>).
