@@ -175,9 +175,11 @@ instance
                 l' = case szd of Nothing -> le
                                  Just z  -> max le (j-z)
             in return (s :!: l :!: l')
+    {-# INLINE [0] mk #-}
     step !(s :!: k :!: l)
       | l > j = return S.Done
       | otherwise = PA.readM tbl (Z:.subword k l) >>= \z -> return $ S.Yield (ElmMTblSw s z (subword k l)) (s :!: k :!: l+1)
+    {-# INLINE [0] step #-}
   {-# INLINE mkStream #-}
 
 -- ** multi-dim indices

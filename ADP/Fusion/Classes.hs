@@ -19,6 +19,7 @@ import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Prelude as P
 
 import Data.Array.Repa.Index.Subword
+import Data.Array.Repa.Index.Outside
 import Data.Array.Repa.Index.Points
 
 
@@ -130,7 +131,21 @@ outerCheck b (S.Stream step sS n) = b `seq` S.Stream snew (Left (b,sS)) Unknown 
 
 -- * Instances
 
--- |
+
+
+-- ** Unsorted
+
+instance EmptyENZ ENE where
+  toEmptyENZ ene  | ene==NonEmptyT = EmptyT
+                  | otherwise      = ene
+  toNonEmptyENZ ene | ene==EmptyT  = NonEmptyT
+                    | otherwise    = ene
+  {-# INLINE toEmptyENZ #-}
+  {-# INLINE toNonEmptyENZ #-}
+
+
+
+-- ** PointL
 
 instance Index PointL where
   type InOut PointL = InnerOuter
@@ -145,6 +160,14 @@ instance Index PointL where
   {-# INLINE leftPartialIndex #-}
   {-# INLINE rightPartialIndex #-}
   {-# INLINE fromPartialIndices #-}
+
+instance ValidIndex Z PointL where
+  {-# INLINE validIndex #-}
+  {-# INLINE getParserRange #-}
+  validIndex _ _ _ = True
+  getParserRange _ _ = (0 :!: 0 :!: 0)
+
+
 
 -- ** 'Subword'
 
@@ -161,14 +184,6 @@ instance Index Subword where
   {-# INLINE leftPartialIndex #-}
   {-# INLINE rightPartialIndex #-}
   {-# INLINE fromPartialIndices #-}
-
-instance EmptyENZ ENE where
-  toEmptyENZ ene  | ene==NonEmptyT = EmptyT
-                  | otherwise      = ene
-  toNonEmptyENZ ene | ene==EmptyT  = NonEmptyT
-                    | otherwise    = ene
-  {-# INLINE toEmptyENZ #-}
-  {-# INLINE toNonEmptyENZ #-}
 
 -- | The bottom of every stack of RHS arguments in a grammar.
 
@@ -200,73 +215,57 @@ instance ValidIndex Z Subword where
   validIndex _ _ _ = True
   getParserRange _ _ = (0 :!: 0 :!: 0)
 
-instance ValidIndex Z PointL where
-  {-# INLINE validIndex #-}
-  {-# INLINE getParserRange #-}
-  validIndex _ _ _ = True
-  getParserRange _ _ = (0 :!: 0 :!: 0)
 
--- ** '(is:.i)'
 
-instance (Index is, Index i) => Index (is:.i) where
-  type InOut (is:.i) = InOut is :. InOut i
-  type ENZ   (is:.i) = ENZ   is :. ENZ i
-  type PartialIndex (is:.i) = PartialIndex is :. PartialIndex i
-  type ParserRange (is:.i) = ParserRange is :. ParserRange i
-  outer (is:.i) = outer is :. outer i
-  leftPartialIndex (is:.i) = leftPartialIndex is :. leftPartialIndex i
-  rightPartialIndex (is:.i) = rightPartialIndex is :. rightPartialIndex i
-  fromPartialIndices (is:.i) (js:.j) = fromPartialIndices is js :. fromPartialIndices i j
+-- ** Outside
+
+instance Index Outside where
+  type InOut Outside = InnerOuter
+  type ENZ   Outside = ENE
+  type PartialIndex Outside = Int
+  type ParserRange Outside = (Int :!: Int :!: Int)
+  outer _ = Outer
+  leftPartialIndex (Outside (i:.j)) = error "outside: not sure yet" -- i
+  rightPartialIndex (Outside (i:.j)) = error "outside: not sure yet" -- j
+  fromPartialIndices i j = error "outside: not sure yet" -- outside i j
   {-# INLINE outer #-}
   {-# INLINE leftPartialIndex #-}
   {-# INLINE rightPartialIndex #-}
   {-# INLINE fromPartialIndices #-}
 
-instance (EmptyENZ es, EmptyENZ e) => EmptyENZ (es:.e) where
-  toEmptyENZ (es:.e) = toEmptyENZ es :. toEmptyENZ e
-  toNonEmptyENZ (es:.e) = toNonEmptyENZ es :. toNonEmptyENZ e
-  {-# INLINE toEmptyENZ #-}
-  {-# INLINE toNonEmptyENZ #-}
+-- | The bottom of every stack of RHS arguments in a grammar.
 
 instance
   ( Monad m
-  , MkStream m Z is
-  ) => MkStream m Z (is:.Subword) where
-  mkStream Z (io:.Outer) (is:.Subword (i:.j))
-    = S.map (\(ElmZ jt) -> ElmZ (jt:.subword i i)) . S.filter (const $ i==j) $ mkStream Z io is
-  mkStream Z (io:.Inner NoCheck Nothing) (is:.Subword (i:.j))
-    = S.map (\(ElmZ jt) -> ElmZ (jt:.subword i i)) $ mkStream Z io is
-  mkStream Z (io:.Inner NoCheck (Just z)) (is:.Subword (i:.j))
-    = S.map (\(ElmZ jt) -> ElmZ (jt:.subword i i)) . S.filter (const $ i<=j && i+z>=j) $ mkStream Z io is
-  mkStream Z (io:.Inner Check Nothing) (is:.Subword (i:.j))
-    = S.map (\(ElmZ jt) -> ElmZ (jt:.subword i i)) . S.filter (const $ i<=j) $ mkStream Z io is
-  mkStream Z (io:.Inner Check (Just z)) (is:.Subword (i:.j))
-    = S.map (\(ElmZ jt) -> ElmZ (jt:.subword i i)) . S.filter (const $ i<=j && i+z>=j) $ mkStream Z io is
+  ) => MkStream m Z Outside where
+  {-
+  mkStream Z Outer !(Outside (i:.j)) = S.unfoldr step i where
+    step !k
+      | k==j      = P.Just $ (ElmZ (outside i i), j+1)
+      | otherwise = P.Nothing
+  mkStream Z (Inner NoCheck Nothing)  !(Outside (i:.j)) = S.singleton $ ElmZ $ outside i i
+  mkStream Z (Inner NoCheck (Just z)) !(Outside (i:.j)) = S.unfoldr step i where
+    step !k
+      | k<=j && k+z>=j = P.Just $ (ElmZ (outside i i), j+1)
+      | otherwise      = P.Nothing
+  mkStream Z (Inner Check Nothing)   !(Outside (i:.j)) = S.unfoldr step i where
+    step !k
+      | k<=j      = P.Just $ (ElmZ (outside i i), j+1)
+      | otherwise = P.Nothing
+  mkStream Z (Inner Check (Just z)) !(Outside (i:.j)) = S.unfoldr step i where
+    step !k
+      | k<=j && k+z>=j = P.Just $ (ElmZ (outside i i), j+1)
+      | otherwise      = P.Nothing
   {-# INLINE mkStream #-}
+  -}
 
--- TODO automatically created, check correctness
-
-instance
-  ( Monad m
-  , MkStream m Z is
-  ) => MkStream m Z (is:.PointL) where
-  mkStream Z (io:.Outer) (is:.PointL (i:.j))
-    = S.map (\(ElmZ jt) -> ElmZ (jt:.pointL i i)) . S.filter (const $ i==j) $ mkStream Z io is
-  mkStream Z (io:.Inner NoCheck Nothing) (is:.PointL (i:.j))
-    = S.map (\(ElmZ jt) -> ElmZ (jt:.pointL i i)) $ mkStream Z io is
-  mkStream Z (io:.Inner NoCheck (Just z)) (is:.PointL (i:.j))
-    = S.map (\(ElmZ jt) -> ElmZ (jt:.pointL i i)) . S.filter (const $ i<=j && i+z>=j) $ mkStream Z io is
-  mkStream Z (io:.Inner Check Nothing) (is:.PointL (i:.j))
-    = S.map (\(ElmZ jt) -> ElmZ (jt:.pointL i i)) . S.filter (const $ i<=j) $ mkStream Z io is
-  mkStream Z (io:.Inner Check (Just z)) (is:.PointL (i:.j))
-    = S.map (\(ElmZ jt) -> ElmZ (jt:.pointL i i)) . S.filter (const $ i<=j && i+z>=j) $ mkStream Z io is
-  {-# INLINE mkStream #-}
-
-instance (ValidIndex Z is, ValidIndex Z i) => ValidIndex Z (is:.i) where
+instance ValidIndex Z Outside where
   {-# INLINE validIndex #-}
   {-# INLINE getParserRange #-}
   validIndex _ _ _ = True
-  getParserRange Z (is:.i) = getParserRange Z is :. getParserRange Z i
+  getParserRange _ _ = (0 :!: 0 :!: 0)
+
+
 
 -- ** 'Z'
 
@@ -309,6 +308,82 @@ instance ValidIndex Z Z where
   {-# INLINE getParserRange #-}
   validIndex _ _ _ = True
   getParserRange _ _ = Z
+
+
+
+-- * Multi-dim instances
+
+-- ** '(is:.i)'
+
+instance (Index is, Index i) => Index (is:.i) where
+  type InOut (is:.i) = InOut is :. InOut i
+  type ENZ   (is:.i) = ENZ   is :. ENZ i
+  type PartialIndex (is:.i) = PartialIndex is :. PartialIndex i
+  type ParserRange (is:.i) = ParserRange is :. ParserRange i
+  outer (is:.i) = outer is :. outer i
+  leftPartialIndex (is:.i) = leftPartialIndex is :. leftPartialIndex i
+  rightPartialIndex (is:.i) = rightPartialIndex is :. rightPartialIndex i
+  fromPartialIndices (is:.i) (js:.j) = fromPartialIndices is js :. fromPartialIndices i j
+  {-# INLINE outer #-}
+  {-# INLINE leftPartialIndex #-}
+  {-# INLINE rightPartialIndex #-}
+  {-# INLINE fromPartialIndices #-}
+
+instance (EmptyENZ es, EmptyENZ e) => EmptyENZ (es:.e) where
+  toEmptyENZ (es:.e) = toEmptyENZ es :. toEmptyENZ e
+  toNonEmptyENZ (es:.e) = toNonEmptyENZ es :. toNonEmptyENZ e
+  {-# INLINE toEmptyENZ #-}
+  {-# INLINE toNonEmptyENZ #-}
+
+instance (ValidIndex Z is, ValidIndex Z i) => ValidIndex Z (is:.i) where
+  {-# INLINE validIndex #-}
+  {-# INLINE getParserRange #-}
+  validIndex _ _ _ = True
+  getParserRange Z (is:.i) = getParserRange Z is :. getParserRange Z i
+
+
+
+-- ** multi-dim with Subword
+
+instance
+  ( Monad m
+  , MkStream m Z is
+  ) => MkStream m Z (is:.Subword) where
+  mkStream Z (io:.Outer) (is:.Subword (i:.j))
+    = S.map (\(ElmZ jt) -> ElmZ (jt:.subword i i)) . S.filter (const $ i==j) $ mkStream Z io is
+  mkStream Z (io:.Inner NoCheck Nothing) (is:.Subword (i:.j))
+    = S.map (\(ElmZ jt) -> ElmZ (jt:.subword i i)) $ mkStream Z io is
+  mkStream Z (io:.Inner NoCheck (Just z)) (is:.Subword (i:.j))
+    = S.map (\(ElmZ jt) -> ElmZ (jt:.subword i i)) . S.filter (const $ i<=j && i+z>=j) $ mkStream Z io is
+  mkStream Z (io:.Inner Check Nothing) (is:.Subword (i:.j))
+    = S.map (\(ElmZ jt) -> ElmZ (jt:.subword i i)) . S.filter (const $ i<=j) $ mkStream Z io is
+  mkStream Z (io:.Inner Check (Just z)) (is:.Subword (i:.j))
+    = S.map (\(ElmZ jt) -> ElmZ (jt:.subword i i)) . S.filter (const $ i<=j && i+z>=j) $ mkStream Z io is
+  {-# INLINE mkStream #-}
+
+
+
+-- ** multi-dim with PointL
+
+-- TODO automatically created, check correctness
+
+instance
+  ( Monad m
+  , MkStream m Z is
+  ) => MkStream m Z (is:.PointL) where
+  mkStream Z (io:.Outer) (is:.PointL (i:.j))
+    = S.map (\(ElmZ jt) -> ElmZ (jt:.pointL i i)) . S.filter (const $ i==j) $ mkStream Z io is
+  mkStream Z (io:.Inner NoCheck Nothing) (is:.PointL (i:.j))
+    = S.map (\(ElmZ jt) -> ElmZ (jt:.pointL i i)) $ mkStream Z io is
+  mkStream Z (io:.Inner NoCheck (Just z)) (is:.PointL (i:.j))
+    = S.map (\(ElmZ jt) -> ElmZ (jt:.pointL i i)) . S.filter (const $ i<=j && i+z>=j) $ mkStream Z io is
+  mkStream Z (io:.Inner Check Nothing) (is:.PointL (i:.j))
+    = S.map (\(ElmZ jt) -> ElmZ (jt:.pointL i i)) . S.filter (const $ i<=j) $ mkStream Z io is
+  mkStream Z (io:.Inner Check (Just z)) (is:.PointL (i:.j))
+    = S.map (\(ElmZ jt) -> ElmZ (jt:.pointL i i)) . S.filter (const $ i<=j && i+z>=j) $ mkStream Z io is
+  {-# INLINE mkStream #-}
+
+
 
 
 
