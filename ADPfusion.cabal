@@ -100,6 +100,10 @@ library
     ADP.Fusion.Empty
     ADP.Fusion.Examples.Palindrome
     ADP.Fusion.Multi
+    ADP.Fusion.Multi.Classes
+    ADP.Fusion.Multi.Empty
+    ADP.Fusion.Multi.GChr
+    ADP.Fusion.Multi.None
     ADP.Fusion.None
     ADP.Fusion.QuickCheck
     ADP.Fusion.Region
