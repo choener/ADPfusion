@@ -1,5 +1,5 @@
 name:           ADPfusion
-version:        0.2.0.0
+version:        0.2.0.2
 author:         Christian Hoener zu Siederdissen, 2011-2013
 copyright:      Christian Hoener zu Siederdissen, 2011-2013
 homepage:       http://www.tbi.univie.ac.at/~choener/adpfusion
@@ -40,7 +40,8 @@ description:
                 above), while "GAPC" uses the "GAP" language
                 (<http://gapc.eu/>).
                 .
-                <<http://www.tbi.univie.ac.at/~choener/adpfusion/gaplike-nussinov-runtime.jpg>>
+                Performance comparison figure:
+                <http://www.tbi.univie.ac.at/~choener/adpfusion/gaplike-nussinov-runtime.jpg>
                 .
                 Please note that actual performance will depend much on table
                 layout and data structures accessed during calculations, but in
@@ -70,6 +71,7 @@ description:
 
 Extra-Source-Files:
   README.md
+  changelog
 
 
 
