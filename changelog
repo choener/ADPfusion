@@ -1,0 +1,4 @@
+0.2:
+      * Streamlined interface: access everything via ADP.Fusion
+
+      * /Multi-tape/ grammars can now be written and are fused
