@@ -11,7 +11,7 @@
 
 module ADP.Fusion.Monadic where
 
-import "PrimitiveArray" Data.Array.Repa.Index
+import Data.Array.Repa.Index
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
 import ADP.Fusion.Monadic.Internal
@@ -22,7 +22,7 @@ import ADP.Fusion.Monadic.Internal
 
 -- | A monadic version of the function application combinator. Applies 'f'
 -- which has a monadic effect.
-
+{-
 infixl 8 #<<
 (#<<) f t ij = S.mapM (\(_,_,c) -> apply f c) $ streamGen t ij
 {-# INLINE (#<<) #-}
@@ -33,7 +33,7 @@ infixl 8 #<<
 infixl 8 <<<
 (<<<) f t ij = S.map (\(_,_,c) -> apply f c) $ streamGen t ij
 {-# INLINE (<<<) #-}
-
+-}
 
 
 -- * Combine multiple right-hand sides of a non-terminal in a context-free

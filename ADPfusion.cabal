@@ -1,7 +1,7 @@
 name:           ADPfusion
-version:        0.1.0.0
-author:         Christian Hoener zu Siederdissen, 2011-2012
-copyright:      Christian Hoener zu Siederdissen, 2011-2012
+version:        0.2.0.0
+author:         Christian Hoener zu Siederdissen, 2011-2013
+copyright:      Christian Hoener zu Siederdissen, 2011-2013
 homepage:       http://www.tbi.univie.ac.at/~choener/adpfusion
 maintainer:     choener@tbi.univie.ac.at
 category:       Algorithms, Data Structures, Bioinformatics
@@ -39,7 +39,8 @@ description:
                 using "gcc -O3". "ADP" is the original ADP approach (see link
                 above), while "GAPC" uses the "GAP" language
                 (<http://gapc.eu/>).
-                <<https://raw.github.com/choener/ADPfusion/master/gaplike-performance.png>>
+                .
+                <<http://www.tbi.univie.ac.at/~choener/adpfusion/gaplike-nussinov-runtime.jpg>>
                 .
                 Please note that actual performance will depend much on table
                 layout and data structures accessed during calculations, but in
@@ -57,116 +58,65 @@ description:
                 that performs backtracking, or samples structures
                 stochastically, among others things.
                 .
-                This version is still highly experimental and makes use of
-                multiple recent improvements in GHC. This is particularly true
-                for the monadic interface.
                 .
-                .
-                .
-                Newley added are the ADP.Fusion.GAPlike modules. These allow
-                for writing grammars with only one (non)-terminal combinator.
-                The logic for index manipulation is now moved into data types
-                for terminals and non-terminals.
-                .
-                While this change leads to slightly more complicated instances
-                for each new terminal or non-terminal, the overall code
-                complexity is significantly lower. In addition, Constraint
-                Kinds make complex interactions between (non)-terminals
-                possible, while still managing to produce high-performance
-                code.
-                .
-                The final goal would, of course, be to have no inter-terminal
-                combinators anymore.
-                .
-                * GHC 7.6, LLVM, and -fnew-codegen recommended: gives a speedup
-                  of x2 for GAPcriterion
-                .
-                .
-                .
-                .
-                Long term goals: Outer indices with more than two dimensions,
-                specialized table design, a combinator library, a library for
-                computational biology.
                 .
                 Two algorithms from the realm of computational biology are
                 provided as examples on how to write dynamic programming
                 algorithms using this library:
                 <http://hackage.haskell.org/package/Nussinov78> and
                 <http://hackage.haskell.org/package/RNAFold>.
-                .
-                Changes since 0.0.1.2:
-                .
-                * require GHC 7.6
-                .
-                * ADP.Fusion.GAPlike module for (almost) combinator-less grammars
-                .
-                * ConstraintKinds for constrained parsers in GAPlike.
-                .
-                .
-                .
-                Changes since 0.0.1.0:
-                .
-                * compatibility with GHC 7.4
-                .
-                * note: still using fundeps & and TFs together. The TF-only version does not optimize as well (I know why but not yet how to fix it)
-                .
-                .
-                .
-                Using the new code generator?
-                .
-                The new code generator is not official yet, but I recommend trying it out:
-                <<https://raw.github.com/choener/ADPfusion/master/gaplike-newcodegen.png>>
 
 
 
 Extra-Source-Files:
   README.md
-  ADP/Fusion/QuickCheck.hs
-  ADP/Fusion/QuickCheck/Arbitrary.hs
 
-
-Flag devel
-  description: build criterion benchmarks and pull in QuickCheck
-  default: False
 
 
 library
   build-depends:
     base >= 4 && < 5,
-    ghc-prim,
-    primitive      == 0.5.*   ,
-    vector         == 0.10.*  ,
-    PrimitiveArray == 0.4.*
+    deepseq        >= 1.3     ,
+    ghc-prim                  ,
+    primitive      >= 0.5     ,
+    PrimitiveArray == 0.5.2.* ,
+    QuickCheck     >= 2.5     ,
+    repa           >= 3.2     ,
+    strict         >= 0.3.2   ,
+    template-haskell          ,
+    transformers              ,
+    vector         >= 0.10
   exposed-modules:
     ADP.Fusion
-    ADP.Fusion.Monadic
-    ADP.Fusion.Monadic.Internal
-    ADP.Fusion.GAPlike
+    ADP.Fusion.Apply
+    ADP.Fusion.Chr
+    ADP.Fusion.Classes
+    ADP.Fusion.Empty
+    ADP.Fusion.Examples.Palindrome
+    ADP.Fusion.Multi
+    ADP.Fusion.Multi.Classes
+    ADP.Fusion.Multi.Empty
+    ADP.Fusion.Multi.GChr
+    ADP.Fusion.Multi.None
+    ADP.Fusion.None
+    ADP.Fusion.QuickCheck
+    ADP.Fusion.Region
+    ADP.Fusion.Table
 
   ghc-options:
     -O2 -funbox-strict-fields
 
-executable GAPcriterion
-  buildable:
-    False
-  if flag(devel)
-    buildable:
-      True
-    build-depends:
-      criterion  == 0.6.* ,
-      QuickCheck == 2.5
-  other-modules:
-    ADP.Fusion.GAPlike.DevelCommon
-    ADP.Fusion.GAPlike.Criterion
-    ADP.Fusion.GAPlike.QuickCheck
+executable NeedlemanWunsch
   main-is:
-    Tests/GAPcriterion.hs
+    ADP/Fusion/Examples/TwoDim.hs
   ghc-options:
-    -fllvm -O2 -funbox-strict-fields -optlo-O3 -optlo-std-compile-opts
-  if impl(GHC > 7.4)
-    ghc-options:
-      -fnew-codegen
-
+    -Odph
+    -funbox-strict-fields
+    -funfolding-use-threshold1000
+    -funfolding-keeness-factor1000
+    -fllvm
+    -optlo-O3 -optlo-std-compile-opts
+    -fllvm-tbaa
 
 source-repository head
   type: git
