@@ -1,5 +1,5 @@
 name:           ADPfusion
-version:        0.2.0.2
+version:        0.2.0.4
 author:         Christian Hoener zu Siederdissen, 2011-2013
 copyright:      Christian Hoener zu Siederdissen, 2011-2013
 homepage:       http://www.tbi.univie.ac.at/~choener/adpfusion
@@ -104,6 +104,7 @@ library
     ADP.Fusion.QuickCheck
     ADP.Fusion.Region
     ADP.Fusion.Table
+    ADP.Fusion.TH
 
   ghc-options:
     -O2 -funbox-strict-fields

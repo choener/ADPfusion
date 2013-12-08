@@ -26,6 +26,7 @@ instance
   ) => TermElm m (Term ts Empty) (is:.PointL) where
   termStream (ts:!Empty) (io:.Outer) (is:.ij@(PointL(i:.j))) =
     S.map (\(zs:!:(zix:.kl):!:zis:!:e) -> (zs:!:zix:!:(zis:.kl):!:(e:.())))
+    . S.filter (const (i==j))
     . termStream ts io is
     . S.map (\(zs:!:zix:!:(zis:.kl)) -> (zs:!:(zix:.kl):!:zis))
   {-# INLINE termStream #-}
