@@ -17,6 +17,15 @@ description:
                 provided by the vector library) and type-level programming to
                 provide highly efficient dynamic programming combinators.
                 .
+                This library is described in:
+                .
+                @
+                Christian Hoener zu Siederdissen
+                Sneaking Around ConcatMap: Efficient Combinators for Dynamic Programming
+                2012. Proceedings of the 17th ACM SIGPLAN international conference on Functional programming
+                <http://doi.acm.org/10.1145/2364527.2364559> preprint: <http://www.tbi.univie.ac.at/newpapers/pdfs/TBI-p-2012-2.pdf>
+                @
+                .
                 From the programmers' viewpoint, ADPfusion behaves very much
                 like the original ADP implementation
                 <http://bibiserv.techfak.uni-bielefeld.de/adp/> developed by
