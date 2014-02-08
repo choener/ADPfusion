@@ -1,3 +1,7 @@
+{-# LANGUAGE MagicHash #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeOperators #-}
@@ -13,6 +17,15 @@ import           Data.Vector.Fusion.Stream.Size
 import qualified Data.Vector.Unboxed as VU
 import qualified Data.Vector.Generic as VG
 import           Criterion.Main
+import           Data.Vector.Unboxed.Deriving
+import qualified Data.Vector.Generic
+import qualified Data.Vector.Generic.Mutable
+import qualified GHC.Exts as GHC
+import qualified GHC.Base as GHC
+import           Unsafe.Coerce
+import           Data.Word
+import           GHC.Types
+import           GHC.Prim
 
 -- we need these three lines from repa
 
@@ -22,7 +35,18 @@ data Z = Z
 
 {-# NOINLINE v #-}
 v :: VU.Vector Int
-v = VU.fromList [1..1000]
+v = VU.fromList [1..1004]
+
+data ABCD = A | B | C | D
+  deriving (Show,Eq,Bounded,Ord,Enum)
+
+derivingUnbox "ABCD"
+  [t| ABCD -> Int |]
+  [| fromEnum |]
+  [| toEnum   |]
+
+w :: VU.Vector ABCD
+w = VU.fromList $ concat $ replicate 251 [A .. D]
 
 data Var x = Var (VU.Vector x)
   deriving (Show)
@@ -30,14 +54,14 @@ data Var x = Var (VU.Vector x)
 
 {-# NOINLINE partial3 #-}
 partial3 :: Int -> Int -> Int
-partial3 i j = S.foldl' (+) 0
+partial3 i j = S.foldl' min maxBound
              $ S.map (\(Z:.a:.b:.c) -> a+b+c)
              $ S.map partialElems
              $ partialIndex (Z:.Var v:.Var v:.Var v) i j
 
 {-# NOINLINE partial5 #-}
 partial5 :: Int -> Int -> Int
-partial5 i j = S.foldl' (+) 0
+partial5 i j = S.foldl' min maxBound
              $ S.map (\(Z:.a:.b:.c:.d:.e) -> a+b+c+d+e)
              $ S.map partialElems
              $ partialIndex (Z:.Var v:.Var v:.Var v:.Var v:.Var v) i j
@@ -83,17 +107,24 @@ instance (VU.Unbox v, PartialIndex z) => PartialIndex (z:.Var v) where
 
 {-# NOINLINE complete3 #-}
 complete3 :: Int -> Int -> Int
-complete3 i j = S.foldl' (+) 0
+complete3 i j = S.foldl' min maxBound
               $ S.map (\(Z:.a:.b:.c) -> a+b+c)
               $ S.map completeElems
               $ completeIndex (Z:.Var v:.Var v:.Var v) i j
 
 {-# NOINLINE complete5 #-}
 complete5 :: Int -> Int -> Int
-complete5 i j = S.foldl' (+) 0
+complete5 i j = S.foldl' min maxBound
               $ S.map (\(Z:.a:.b:.c:.d:.e) -> a+b+c+d+e)
               $ S.map completeElems
               $ completeIndex (Z:.Var v:.Var v:.Var v:.Var v:.Var v) i j
+
+{-# NOINLINE abcdComp3 #-}
+abcdComp3 :: Int -> Int -> ABCD
+abcdComp3 i j = S.foldl' min D
+              $ S.map (\(Z:.a:.b:.c) -> a `min` b `min` c)
+              $ S.map completeElems
+              $ completeIndex (Z:.Var w:.Var w:.Var w) i j
 
 class CompleteIndex p where
   data F  p :: *
@@ -146,6 +177,10 @@ main = defaultMain
       [ bench "50/ 100" $ whnf (complete3 50)  100
       , bench "50/ 100" $ whnf (complete5 50)  100
       , bench " 1/1000" $ whnf (complete3  1) 1000
+      ]
+  , bgroup "abcd"
+      [ bench "50/ 100" $ whnf (abcdComp3 50)  100
+      , bench " 1/1000" $ whnf (abcdComp3  1) 1000
       ]
   ]
 

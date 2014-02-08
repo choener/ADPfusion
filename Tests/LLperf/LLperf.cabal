@@ -22,9 +22,11 @@ Extra-Source-Files:
 
 executable PerfPartialComplete
   build-depends:
-    base >= 4 && < 5        ,
-    criterion >= 0.8        ,
-    vector         >= 0.10
+    base            >= 4 && < 5 ,
+    criterion       >= 0.8      ,
+    ghc-prim                    ,
+    vector          >= 0.10     ,
+    vector-th-unbox >= 0.2.0.2
   main-is:
     Performance.hs
   ghc-options:
@@ -32,7 +34,7 @@ executable PerfPartialComplete
     -funbox-strict-fields
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000
-    -fforce-recomp
     -fllvm
     -optlo-O3 -optlo-std-compile-opts
+    -fllvm-tbaa
 
