@@ -1,7 +1,7 @@
 name:           ADPfusion
-version:        0.2.0.4
-author:         Christian Hoener zu Siederdissen, 2011-2013
-copyright:      Christian Hoener zu Siederdissen, 2011-2013
+version:        0.2.1.0
+author:         Christian Hoener zu Siederdissen, 2011-2014
+copyright:      Christian Hoener zu Siederdissen, 2011-2014
 homepage:       http://www.tbi.univie.ac.at/~choener/adpfusion
 maintainer:     choener@tbi.univie.ac.at
 category:       Algorithms, Data Structures, Bioinformatics
@@ -82,7 +82,9 @@ Extra-Source-Files:
   README.md
   changelog
 
-
+flag examples
+  description: build the examples (only Needleman-Wunsch for now)
+  default: False
 
 library
   build-depends:
@@ -90,7 +92,7 @@ library
     deepseq        >= 1.3     ,
     ghc-prim                  ,
     primitive      >= 0.5     ,
-    PrimitiveArray == 0.5.2.* ,
+    PrimitiveArray >= 0.5.3   ,
     QuickCheck     >= 2.5     ,
     repa           >= 3.2     ,
     strict         >= 0.3.2   ,
@@ -119,6 +121,9 @@ library
     -O2 -funbox-strict-fields
 
 executable NeedlemanWunsch
+  buildable: False
+  if flag(examples)
+    buildable: True
   main-is:
     ADP/Fusion/Examples/TwoDim.hs
   ghc-options:
