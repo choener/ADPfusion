@@ -86,13 +86,17 @@ flag examples
   description: build the examples (only Needleman-Wunsch for now)
   default: False
 
+flag performancetests
+  description: build performance tests (only via GIT repo)
+  default: True
+
 library
   build-depends:
     base >= 4 && < 5,
     deepseq        >= 1.3     ,
     ghc-prim                  ,
     primitive      >= 0.5     ,
-    PrimitiveArray >= 0.5.3   ,
+    PrimitiveArray >= 0.5.4   ,
     QuickCheck     >= 2.5     ,
     repa           >= 3.2     ,
     strict         >= 0.3.2   ,
@@ -126,6 +130,24 @@ executable NeedlemanWunsch
     buildable: True
   main-is:
     ADP/Fusion/Examples/TwoDim.hs
+  ghc-options:
+    -Odph
+    -funbox-strict-fields
+    -funfolding-use-threshold1000
+    -funfolding-keeness-factor1000
+    -fllvm
+    -optlo-O3 -optlo-std-compile-opts
+    -fllvm-tbaa
+
+executable PerfPartialComplete
+  if flag(performancetests)
+    buildable: True
+    build-depends:
+      criterion >= 0.8
+  else
+    buildable: False
+  main-is:
+    Tests/Performance.hs
   ghc-options:
     -Odph
     -funbox-strict-fields
