@@ -1,0 +1,38 @@
+name:           LLperf
+version:        0.0.0.1
+author:         Christian Hoener zu Siederdissen, 2014
+copyright:      Christian Hoener zu Siederdissen, 2014
+homepage:       http://www.tbi.univie.ac.at/~choener/adpfusion
+maintainer:     choener@tbi.univie.ac.at
+category:       Algorithms, Data Structures, Bioinformatics
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+stability:      experimental
+cabal-version:  >= 1.6.0
+synopsis:
+                Low-level performance tests for ADPfusion
+description:
+                XXX
+
+
+
+Extra-Source-Files:
+  changelog
+
+executable PerfPartialComplete
+  build-depends:
+    base >= 4 && < 5        ,
+    criterion >= 0.8        ,
+    vector         >= 0.10
+  main-is:
+    Performance.hs
+  ghc-options:
+    -Odph
+    -funbox-strict-fields
+    -funfolding-use-threshold1000
+    -funfolding-keeness-factor1000
+    -fforce-recomp
+    -fllvm
+    -optlo-O3 -optlo-std-compile-opts
+

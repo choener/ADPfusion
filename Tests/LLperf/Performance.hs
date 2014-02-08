@@ -12,9 +12,13 @@ import qualified Data.Vector.Fusion.Stream as S
 import           Data.Vector.Fusion.Stream.Size
 import qualified Data.Vector.Unboxed as VU
 import qualified Data.Vector.Generic as VG
-import           Data.Array.Repa.Index
-import           Data.Array.Repa.Shape
 import           Criterion.Main
+
+-- we need these three lines from repa
+
+infixl 3 :.
+data (:.) a b = !a :. !b
+data Z = Z
 
 {-# NOINLINE v #-}
 v :: VU.Vector Int
@@ -24,12 +28,20 @@ data Var x = Var (VU.Vector x)
   deriving (Show)
 
 
-{-# NOINLINE partial #-}
-partial :: Int -> Int -> Int
-partial i j = S.foldl' (+) 0
-            $ S.map (\(Z:.a:.b:.c) -> a+b+c)
-            $ S.map partialElems
-            $ partialIndex (Z:.Var v:.Var v:.Var v) i j
+{-# NOINLINE partial3 #-}
+partial3 :: Int -> Int -> Int
+partial3 i j = S.foldl' (+) 0
+             $ S.map (\(Z:.a:.b:.c) -> a+b+c)
+             $ S.map partialElems
+             $ partialIndex (Z:.Var v:.Var v:.Var v) i j
+
+{-# NOINLINE partial5 #-}
+partial5 :: Int -> Int -> Int
+partial5 i j = S.foldl' (+) 0
+             $ S.map (\(Z:.a:.b:.c:.d:.e) -> a+b+c+d+e)
+             $ S.map partialElems
+             $ partialIndex (Z:.Var v:.Var v:.Var v:.Var v:.Var v) i j
+
 
 class PartialIndex p where
   data E  p :: *
@@ -55,10 +67,12 @@ instance (VU.Unbox v, PartialIndex z) => PartialIndex (z:.Var v) where
   partialElems (EzVar _ ez v) = partialElems ez :. v
   partialIndex (z:.Var (!v)) !i !j = S.flatten mk step Unknown
                                    $ partialIndex z i j
-    where mk   s = (s:.getIndex s)
-          step (s:.k)
-            | k>j       = S.Done
-            | otherwise = S.Yield (EzVar k s (VU.unsafeIndex v k)) (s:.k+1)
+    where mk   s = (s:.j-getIndex s)
+          step (s:.z)
+--            | z<0       = S.Done
+--            | otherwise = let !k=j-z in S.Yield (EzVar k s (VU.unsafeIndex v k)) (s:.z-1) -- 'k'
+            | z>=0      = let !k=j-z in S.Yield (EzVar k s (VU.unsafeIndex v k)) (s:.z-1)
+            | otherwise = S.Done
           {-# INLINE [1] mk #-}
           {-# INLINE [1] step #-}
   {-# INLINE partialElems #-}
@@ -67,12 +81,19 @@ instance (VU.Unbox v, PartialIndex z) => PartialIndex (z:.Var v) where
 
 
 
-{-# NOINLINE complete #-}
-complete :: Int -> Int -> Int
-complete i j = S.foldl' (+) 0
-             $ S.map (\(Z:.a:.b:.c) -> a+b+c)
-             $ S.map completeElems
-             $ completeIndex (Z:.Var v:.Var v:.Var v) i j
+{-# NOINLINE complete3 #-}
+complete3 :: Int -> Int -> Int
+complete3 i j = S.foldl' (+) 0
+              $ S.map (\(Z:.a:.b:.c) -> a+b+c)
+              $ S.map completeElems
+              $ completeIndex (Z:.Var v:.Var v:.Var v) i j
+
+{-# NOINLINE complete5 #-}
+complete5 :: Int -> Int -> Int
+complete5 i j = S.foldl' (+) 0
+              $ S.map (\(Z:.a:.b:.c:.d:.e) -> a+b+c+d+e)
+              $ S.map completeElems
+              $ completeIndex (Z:.Var v:.Var v:.Var v:.Var v:.Var v) i j
 
 class CompleteIndex p where
   data F  p :: *
@@ -98,10 +119,10 @@ instance (VU.Unbox v, CompleteIndex z) => CompleteIndex (z:.Var v) where
   completeElems (FzVar _ fz v) = completeElems fz :. v
   completeIndex (z:.Var (!v)) !i !j = S.flatten mk step Unknown
                                     $ completeIndex z i j
-    where mk   s = let (k:.l) = fetIndex s in (s:.(l:.l))
-          step (s:.(k:.l))
-            | l>j       = S.Done
-            | otherwise = S.Yield (FzVar (k:.l) s (VU.unsafeIndex v l)) (s:.(k:.l+1))
+    where mk   s = let (_:.l) = fetIndex s;z = j-l in (s:.l:.z)
+          step (s:.k:.z)
+            | z>=0      = let !l=j-z in S.Yield (FzVar (k:.l) s (VU.unsafeIndex v l)) (s:.k:.z-1)
+            | otherwise = S.Done
           {-# INLINE [1] mk #-}
           {-# INLINE [1] step #-}
   {-# INLINE completeElems #-}
@@ -114,13 +135,17 @@ main = defaultMain
 --      [ bench " 1/ 10" $ whnf (partial  1)  10
 --      , bench " 5/ 10" $ whnf (partial  5)  10
 --      , bench " 1/100" $ whnf (partial  1) 100
-      [ bench "50/100" $ whnf (partial 50) 100
+      [ bench "50/ 100" $ whnf (partial3 50)  100
+      , bench "50/ 100" $ whnf (partial5 50)  100
+      , bench " 1/1000" $ whnf (partial3  1) 1000
       ]
   , bgroup "complete"
 --      [ bench " 1/ 10" $ whnf (complete  1)  10
 --      , bench " 5/ 10" $ whnf (complete  5)  10
 --      , bench " 1/100" $ whnf (complete  1) 100
-      [ bench "50/100" $ whnf (complete 50) 100
+      [ bench "50/ 100" $ whnf (complete3 50)  100
+      , bench "50/ 100" $ whnf (complete5 50)  100
+      , bench " 1/1000" $ whnf (complete3  1) 1000
       ]
   ]
 
