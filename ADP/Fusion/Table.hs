@@ -1,38 +1,36 @@
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PatternGuards #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ADP.Fusion.Table where
 
-import Control.Monad.Primitive
-import Data.Array.Repa.Index
-import Data.Array.Repa.Shape
-import Data.Strict.Tuple
-import Data.Vector.Fusion.Stream.Size
+import           Control.Monad.Primitive
+import           Data.Array.Repa.Index
+import           Data.Array.Repa.Shape
+import           Data.Strict.Tuple
+import           Data.Vector.Fusion.Stream.Size
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Unboxed as VU
-import Data.Strict.Maybe
-import Prelude hiding (Maybe(..))
 
-import Data.Array.Repa.Index.Subword
-import Data.Array.Repa.Index.Points
-import Data.Array.Repa.ExtShape
+import           Data.Array.Repa.ExtShape
+import           Data.Array.Repa.Index.Points
+import           Data.Array.Repa.Index.Subword
 import qualified Data.PrimitiveArray as PA
 import qualified Data.PrimitiveArray.Zero as PA
 
 import ADP.Fusion.Classes
 
-import Debug.Trace
 
 
+{-
 
 -- * Mutable table with adaptive storage.
 
@@ -560,4 +558,6 @@ instance
 
 -}
 
+
+-}
 

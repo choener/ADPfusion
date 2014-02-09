@@ -61,9 +61,10 @@ import qualified Data.Vector.Fusion.Stream.Monadic as S
 --import ADP.Fusion.Apply
 import ADP.Fusion.Chr
 import ADP.Fusion.Classes
+import ADP.Fusion.Multi.Classes
 --import ADP.Fusion.Empty
 --import ADP.Fusion.Region
---import ADP.Fusion.Table
+import ADP.Fusion.Table
 --import ADP.Fusion.None
 
 import qualified Data.Vector.Unboxed as VU
@@ -72,12 +73,18 @@ import Data.Array.Repa.Index
 import Data.Array.Repa.Index.Subword
 
 
-{-# NOINLINE test #-}
-test :: Int -> Int -> IO Int
-test i j = S.foldl' (\z (Z:.a:.b) ->z+a+b) 0 $ S.map getArg $ mkStream (S:!:chr cs:!:chr cs) Static (subword i j)
+{-# NOINLINE test1 #-}
+test1 :: Int -> Int -> IO Int
+test1 i j = S.foldl' (\z (Z:.a:.b) ->z+a+b) 0 $ S.map getArg $ mkStream (S:!:chr cs:!:chr cs) Static (subword i j)
+
+{-# NOINLINE test2 #-}
+test2 :: Int -> Int -> IO Int
+test2 i j =
+  let ix = (Z:.subword i j:.subword i j)
+  in  S.foldl' (\z (Z:.(Z:.a:.b):.(Z:.c:.d)) ->z+a+b+c+d) 0 $ S.map getArg $ mkStream (S:!:(M:>chr cs:>chr cs):!:(M:>chr cs:>chr cs)) (initialSV ix) ix
 
 {-# NOINLINE ddd #-}
-ddd = test 1 10
+ddd = test2 1 3
 
 {-# NOINLINE cs #-}
 cs :: VU.Vector Int

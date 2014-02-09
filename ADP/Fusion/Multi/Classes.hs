@@ -1,112 +1,137 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 
 module ADP.Fusion.Multi.Classes where
 
-import Data.Array.Repa.Index
-import Data.Strict.Tuple
+import           Data.Array.Repa.Index
+import           Data.Strict.Tuple
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
-import ADP.Fusion.Classes
+import           Data.Array.Repa.Index.Points
+import           Data.Array.Repa.Index.Subword
+
+import           ADP.Fusion.Classes
 
 
 
--- | The zero-th dimension of every terminal parser.
+-- * Multi-dimensional extension
 
-data TermBase = T
+-- | Terminates a multi-dimensional terminal symbol stack.
 
--- | Combine a terminal parser of dimension k in @a@ with a new 1-dim parser
--- @b@ generating a parser of dimension k+1.
+data M = M
+  deriving (Eq,Show)
 
-data Term a b = a :! b
+infixl 2 :>
 
--- | A 'termStream' extracts all terminal elements from a multi-dimensional
--- terminal symbol.
+-- | Terminal symbols are stacked together with @a@ tails and @b@ head.
 
-class
-  ( Monad m
-  ) => TermElm m t ix where
-  termStream :: t -> InOut ix -> ix -> S.Stream m (ze :!: zix :!: ix) -> S.Stream m (ze :!: zix :!: ix :!: TermOf t)
+data TermSymbol a b = a :> b
+  deriving (Eq,Show)
 
--- |
+-- | Extracts the type of a multi-dimensional terminal argument.
 
-type family TermOf t :: *
+type family   TermArg x :: *
+type instance TermArg M                = Z
+--type instance TermArg (TermSymbol a b) = TermArg a :. b
 
--- | To calculate parser ranges and index validity we need an additional type
--- class that recurses over the individual 'Term' elements.
-
-class TermValidIndex t i where
-  termDimensionsValid :: t -> ParserRange i -> i -> Bool
-  getTermParserRange  :: t -> i -> ParserRange i -> ParserRange i
-  termInnerOuter :: t -> i -> InOut i -> InOut i
-  termLeftIndex :: t -> i -> i
-
-
-
--- * The instance declarations for generic @Term a b@ data ctors.
-
-instance Build (Term a b)
-
-instance
-  ( ValidIndex ls ix
-  , TermValidIndex (Term a b) ix
-  , Show ix
-  , Show (ParserRange ix)
-  ) => ValidIndex (ls :!: Term a b) ix where
-  validIndex (ls :!: t) abc ix =
-    termDimensionsValid t abc ix && validIndex ls abc ix
-  {-# INLINE validIndex #-}
-  getParserRange (ls :!: t) ix = getTermParserRange t ix (getParserRange ls ix)
-  {-# INLINE getParserRange #-}
-
-instance
-  ( Elms ls ix
-  ) => Elms (ls :!: Term a b) ix where
-    data Elm (ls :!: Term a b) ix = ElmTerm !(Elm ls ix) !(TermOf (Term a b)) !ix
-    type Arg (ls :!: Term a b) = Arg ls :. (TermOf (Term a b))
-    getArg !(ElmTerm ls x _) = getArg ls :. x
-    getIdx !(ElmTerm _ _ idx) = idx
-    {-# INLINE getArg #-}
-    {-# INLINE getIdx #-}
+instance (Element ls i) => Element (ls :!: TermSymbol a b) i where
+  data Elm (ls :!: TermSymbol a b) i = ElmTS !(TermArg (TermSymbol a b)) !i !(Elm ls i)
+  type Arg (ls :!: TermSymbol a b)   = Arg ls :. TermArg (TermSymbol a b)
+  getArg (ElmTS a _ ls) = getArg ls :. a
+  getIdx (ElmTS _ i _ ) = i
+  {-# INLINE getArg #-}
+  {-# INLINE getIdx #-}
 
 instance
   ( Monad m
-  , Elms ls ix
-  , MkStream m ls ix
-  , TermElm m (Term a b) ix
-  , TermValidIndex (Term a b) ix
-  ) => MkStream m (ls :!: Term a b) ix where
-  mkStream !(ls :!: t) !io !ij
-    = S.map (\(s:!:Z:!:zij:!:e) -> ElmTerm s e zij)
-    $ termStream t io ij
-    $ S.map (\s -> (s :!: Z :!: getIdx s))
-    $ mkStream ls (termInnerOuter t ij io) (termLeftIndex t ij)
+  , MkStream m ls i
+  , Element ls i
+  , TerminalStream m (TermSymbol a b) i
+  , TermStaticVar (TermSymbol a b) i
+  ) => MkStream m (ls :!: TermSymbol a b) i where
+  mkStream (ls :!: ts) sv i
+    = S.map fromTerminalStream
+    . terminalStream ts sv i
+    . S.map toTerminalStream
+    $ mkStream ls (termStaticVar ts sv i) (termStreamIndex ts sv i)
   {-# INLINE mkStream #-}
 
+instance (Monad m, MkStream m S is) => MkStream m S (is:.Subword) where
+  mkStream S (vs:.Static) (is:.Subword (i:.j))
+    = staticCheck (i==j)
+    . S.map (\(ElmS z) -> ElmS (z:.subword i i))
+    $ mkStream S vs is
+  {-# INLINE mkStream #-}
 
+instance (Monad m, MkStream m S is) => MkStream m S (is:.PointL) where
+  mkStream S (vs:.Static) (is:.PointL (i:.j))
+    = staticCheck (i==j)
+    . S.map (\(ElmS z) -> ElmS (z:.pointL i i))
+    $ mkStream S vs is
+  {-# INLINE mkStream #-}
 
--- * Terminal stream of 'TermBase' with index 'Z'
+instance (Monad m, MkStream m S is) => MkStream m S (is:.PointR) where
+  mkStream S (vs:.Static) (is:.PointR (i:.j))
+    = staticCheck (i==j)
+    . S.map (\(ElmS z) -> ElmS (z:.pointR i i))
+    $ mkStream S vs is
+  {-# INLINE mkStream #-}
 
-type instance TermOf TermBase = Z
+instance Monad m => MkStream m S Z where
+  mkStream _ _ _ = S.singleton (ElmS Z)
+  {-# INLINE mkStream #-}
+
+-- | For multi-dimensional terminals we need to be able to calculate how the
+-- static/variable signal changes and if the index for the inner part needs to
+-- be modified.
+
+class TermStaticVar t i where
+  termStaticVar   :: t -> IxSV i -> i -> IxSV i
+  termStreamIndex :: t -> IxSV i -> i -> i
+
+toTerminalStream s = Tr s Z (getIdx s)
+{-# INLINE toTerminalStream #-}
+
+fromTerminalStream (Qd s Z ij e) = ElmTS e ij s
+{-# INLINE fromTerminalStream #-}
+
+data Triple a b c   = Tr !a !b !c
+data Quad   a b c d = Qd !a !b !c !d
+
+-- | Handles each individual argument within a stack of terminal symbols.
+
+class TerminalStream m t i where
+  terminalStream :: t -> IxSV i -> i -> S.Stream m (Triple s j i) -> S.Stream m (Quad s j i (TermArg t))
+
+instance (Monad m) => TerminalStream m M Z where
+  terminalStream M _ Z = S.map (\(Tr s j Z) -> Qd s j Z Z)
+  {-# INLINE terminalStream #-}
+
+instance TermStaticVar M Z where
+  termStaticVar   _ _ _ = Z
+  termStreamIndex _ _ _ = Z
+  {-# INLINE termStaticVar #-}
+  {-# INLINE termStreamIndex #-}
 
 instance
-  ( Monad m
-  ) => TermElm m (TermBase) Z where
-  termStream T _ Z = S.map (\(zs:!:zix:!:Z) -> (zs:!:zix:!:Z:!:Z))
-  {-# INLINE termStream #-}
+  ( TermStaticVar a is
+  , TermStaticVar b i
+  ) => TermStaticVar (TermSymbol a b) (is:.i) where
+  termStaticVar   (a:>b) (vs:.v) (is:.i) = termStaticVar   a vs is :. termStaticVar   b v i
+  termStreamIndex (a:>b) (vs:.v) (is:.i) = termStreamIndex a vs is :. termStreamIndex b v i
+  {-# INLINE termStaticVar #-}
+  {-# INLINE termStreamIndex #-}
 
-instance TermValidIndex TermBase Z where
-  termDimensionsValid T Z Z = True
-  getTermParserRange  T Z Z = Z
-  termInnerOuter T Z Z = Z
-  termLeftIndex T Z = Z
-  {-# INLINE termDimensionsValid #-}
-  {-# INLINE getTermParserRange #-}
-  {-# INLINE termInnerOuter #-}
-  {-# INLINE termLeftIndex #-}
+instance IxStaticVar Z where
+  type IxSV Z = Z
+  initialSV _ = Z
+
+instance (IxStaticVar is, IxStaticVar i) => IxStaticVar (is:.i) where
+  type IxSV (is:.i) = IxSV is:.IxSV i
+  initialSV (is:.i) = initialSV is:.initialSV i
 
