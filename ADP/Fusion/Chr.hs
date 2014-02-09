@@ -1,14 +1,14 @@
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ADP.Fusion.Chr where
 
@@ -28,10 +28,51 @@ import Debug.Trace
 
 
 
--- | Parses a single character.
+-- | A generic Character parser that reads a single character but allows
+-- passing additional information.
 
-chr xs = GChr (VG.unsafeIndex) xs
+data Chr r x where
+  Chr :: VG.Vector v x
+      => (v x -> Int -> r)  -- | function to retrieve @r@ at index position
+      -> (v x)              -- | actual generic vector with data
+      -> Chr r x
+
+-- | smart constructor for regular 1-character parsers
+
+chr xs = Chr VG.unsafeIndex xs
 {-# INLINE chr #-}
+
+instance Build (Chr r x)
+
+instance
+  ( Element ls Subword
+  ) => Element (ls :!: Chr r x) Subword where
+    data Elm (ls :!: Chr r x) Subword = ElmChr !r !Subword !(Elm ls Subword)
+    type Arg (ls :!: Chr r x) = Arg ls :. r
+    getArg (ElmChr x _ ls) = getArg ls :. x
+    getIdx (ElmChr _ i _ ) = i
+    {-# INLINE getArg #-}
+    {-# INLINE getIdx #-}
+
+instance
+  ( Monad m
+  , Element ls Subword
+  , MkStream m ls Subword
+  ) => MkStream m (ls :!: Chr r x) Subword where
+  mkStream (ls :!: Chr f (!xs)) Static ij@(Subword (i:.j))
+    = staticCheck (j>0)
+    . S.map (ElmChr (f xs (j-1)) (subword (j-1) j))
+    $ mkStream ls Static (subword i $ j-1)
+  mkStream (ls :!: Chr f (!xs)) v ij@(Subword (i:.j))
+    = S.map (\s -> let Subword (k:.l) = getIdx s
+                   in  ElmChr (f xs l) (subword l $ l+1) s
+            )
+    $ mkStream ls v (subword i $ j-1)
+  {-# INLINE mkStream #-}
+
+
+
+{-
 
 -- | Parses a single character and returns the character to the left in a
 -- strict Maybe.
@@ -62,12 +103,6 @@ chrRight xs = GChr f xs where
   {-# INLINE f #-}
 {-# INLINE chrRight #-}
 
--- | A generic Character parser that reads a single character but allows
--- passing additional information.
-
-data GChr r x where -- = forall v . VG.Vector v x =>
-  GChr :: VG.Vector v x => !(v x -> Int -> r) -> !(v x) -> GChr r x
-
 instance Build (GChr r x)
 
 instance
@@ -78,31 +113,6 @@ instance
     {-# INLINE validIndex #-}
     getParserRange (ls :!: GChr _ _) ix = let (a:!:b:!:c) = getParserRange ls ix in (a:!:b+1:!:max 0 (c-1))
     {-# INLINE getParserRange #-}
-
-instance
-  ( Elms ls Subword
-  ) => Elms (ls :!: GChr r x) Subword where
-    data Elm (ls :!: GChr r x) Subword = ElmGChr !(Elm ls Subword) !r !Subword
-    type Arg (ls :!: GChr r x) = Arg ls :. r
-    getArg !(ElmGChr ls x _) = getArg ls :. x
-    getIdx !(ElmGChr _ _ idx) = idx
-    {-# INLINE getArg #-}
-    {-# INLINE getIdx #-}
-
-instance
-  ( Monad m
-  , Elms ls Subword
-  , MkStream m ls Subword
-  ) => MkStream m (ls :!: GChr r x) Subword where
-  mkStream !(ls :!: GChr f xs) Outer !ij@(Subword (i:.j)) =
-    let dta = f xs (j-1)
-    in  dta `seq` S.map (\s -> ElmGChr s dta (subword (j-1) j)) $ mkStream ls Outer (subword i $ j-1)
-  mkStream !(ls :!: GChr f xs) (Inner cnc szd) !ij@(Subword (i:.j))
-    = S.map (\s -> let Subword (k:.l) = getIdx s
-                   in  ElmGChr s (f xs l) (subword l $ l+1)
-            )
-    $ mkStream ls (Inner cnc szd) (subword i $ j-1)
-  {-# INLINE mkStream #-}
 
 -- | Wrapping a GChr to allow zero/one behaviour. Parses a character (or not)
 -- in a strict maybe.
@@ -303,4 +313,6 @@ instance
             )
     $ mkStream ls (Inner cnc szd) ij
   {-# INLINE mkStream #-}
+
+-}
 

@@ -25,7 +25,8 @@
 -- Separating out this check means that certain inner loops can run without any
 -- conditions and just jump.
 
-module ADP.Fusion
+module ADP.Fusion where
+{-
   -- basic combinators
   ( (<<<)
   , (<<#)
@@ -51,20 +52,39 @@ module ADP.Fusion
   , ENZ (..)
   , None (..)
   ) where
+-}
 
 import Data.Strict.Tuple
-import GHC.Exts (inline)
+--import GHC.Exts (inline)
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
-import ADP.Fusion.Apply
+--import ADP.Fusion.Apply
 import ADP.Fusion.Chr
 import ADP.Fusion.Classes
-import ADP.Fusion.Empty
-import ADP.Fusion.Region
-import ADP.Fusion.Table
-import ADP.Fusion.None
+--import ADP.Fusion.Empty
+--import ADP.Fusion.Region
+--import ADP.Fusion.Table
+--import ADP.Fusion.None
+
+import qualified Data.Vector.Unboxed as VU
+import Data.Array.Repa.Shape
+import Data.Array.Repa.Index
+import Data.Array.Repa.Index.Subword
 
 
+{-# NOINLINE test #-}
+test :: Int -> Int -> IO Int
+test i j = S.foldl' (\z (Z:.a:.b) ->z+a+b) 0 $ S.map getArg $ mkStream (S:!:chr cs:!:chr cs) Static (subword i j)
+
+{-# NOINLINE ddd #-}
+ddd = test 1 10
+
+{-# NOINLINE cs #-}
+cs :: VU.Vector Int
+cs = VU.fromList [1 .. 1000]
+
+
+{-
 
 -- | Apply a function to symbols on the RHS of a production rule. Builds the
 -- stack of symbols from 'xs' using 'build', then hands this stack to
@@ -113,10 +133,5 @@ infixl 9 %
 (%) = (:!:)
 {-# INLINE (%) #-}
 
-
-
-
-
-
-
+-}
 
