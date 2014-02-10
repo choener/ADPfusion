@@ -1,5 +1,5 @@
 name:           ADPfusion
-version:        0.2.1.0
+version:        0.3.0.0
 author:         Christian Hoener zu Siederdissen, 2011-2014
 copyright:      Christian Hoener zu Siederdissen, 2011-2014
 homepage:       http://www.tbi.univie.ac.at/~choener/adpfusion
@@ -101,20 +101,20 @@ library
     vector         >= 0.10
   exposed-modules:
     ADP.Fusion
---    ADP.Fusion.Apply
---    ADP.Fusion.Chr
---    ADP.Fusion.Classes
+    ADP.Fusion.Apply
+    ADP.Fusion.Chr
+    ADP.Fusion.Classes
 --    ADP.Fusion.Empty
 --    ADP.Fusion.Examples.Palindrome
---    ADP.Fusion.Multi
---    ADP.Fusion.Multi.Classes
+    ADP.Fusion.Multi
+    ADP.Fusion.Multi.Classes
 --    ADP.Fusion.Multi.Empty
 --    ADP.Fusion.Multi.GChr
 --    ADP.Fusion.Multi.None
 --    ADP.Fusion.None
---    ADP.Fusion.QuickCheck
+    ADP.Fusion.QuickCheck
 --    ADP.Fusion.Region
---    ADP.Fusion.Table
+    ADP.Fusion.Table
 --    ADP.Fusion.TH
 
   ghc-options:

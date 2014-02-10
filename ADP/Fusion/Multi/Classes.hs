@@ -66,6 +66,9 @@ instance (Monad m, MkStream m S is) => MkStream m S (is:.Subword) where
     = staticCheck (i==j)
     . S.map (\(ElmS z) -> ElmS (z:.subword i i))
     $ mkStream S vs is
+  mkStream S (vs:.Variable NoCheck Nothing) (is:.Subword (i:.j))
+    = S.map (\(ElmS z) -> ElmS (z:.subword i i))
+    $ mkStream S vs is
   {-# INLINE mkStream #-}
 
 instance (Monad m, MkStream m S is) => MkStream m S (is:.PointL) where
@@ -94,14 +97,46 @@ class TermStaticVar t i where
   termStaticVar   :: t -> IxSV i -> i -> IxSV i
   termStreamIndex :: t -> IxSV i -> i -> i
 
+-- |
+
+class TableStaticVar i where
+  tableStaticVar   ::                    IxSV i -> i -> IxSV i
+  tableStreamIndex :: TblConstraint i -> IxSV i -> i -> i
+
+instance TableStaticVar Z where
+  tableStaticVar     _ _ = Z
+  tableStreamIndex _ _ _ = Z
+  {-# INLINE tableStaticVar   #-}
+  {-# INLINE tableStreamIndex #-}
+
+instance (TableStaticVar is, TableStaticVar i) => TableStaticVar (is:.i) where
+  tableStaticVar           (vs:.v) (is:.i) = tableStaticVar      vs is :. tableStaticVar     v i
+  tableStreamIndex (cs:.c) (vs:.v) (is:.i) = tableStreamIndex cs vs is :. tableStreamIndex c v i
+  {-# INLINE tableStaticVar   #-}
+  {-# INLINE tableStreamIndex #-}
+
+instance TableStaticVar Subword where
+  tableStaticVar     _ _                = Variable NoCheck Nothing -- maybe we need a check if the constraint is 'NonEmpty' ?
+  tableStreamIndex c _ (Subword (i:.j))
+    | c==EmptyOk  = subword i j
+    | c==NonEmpty = subword i $ j-1
+    | c==OnlyZero = subword i j -- this should then actually request a size in 'tableStaticVar' ...
+  {-# INLINE tableStaticVar   #-}
+  {-# INLINE tableStreamIndex #-}
+
 toTerminalStream s = Tr s Z (getIdx s)
 {-# INLINE toTerminalStream #-}
 
 fromTerminalStream (Qd s Z ij e) = ElmTS e ij s
 {-# INLINE fromTerminalStream #-}
 
-data Triple a b c   = Tr !a !b !c
-data Quad   a b c d = Qd !a !b !c !d
+moveIdxTr :: Triple a b (cs:.c) -> Triple a (b:.c) cs
+moveIdxTr (Tr a b (cs:.c)) = Tr a (b:.c) cs
+{-# INLINE moveIdxTr #-}
+
+data Triple a b c     = Tr !a !b !c
+data Quad   a b c d   = Qd !a !b !c !d
+data Pen    a b c d e = Pn !a !b !c !d !e
 
 -- | Handles each individual argument within a stack of terminal symbols.
 
@@ -130,8 +165,10 @@ instance
 instance IxStaticVar Z where
   type IxSV Z = Z
   initialSV _ = Z
+  {-# INLINE initialSV #-}
 
 instance (IxStaticVar is, IxStaticVar i) => IxStaticVar (is:.i) where
   type IxSV (is:.i) = IxSV is:.IxSV i
   initialSV (is:.i) = initialSV is:.initialSV i
+  {-# INLINE initialSV #-}
 

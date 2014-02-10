@@ -58,7 +58,7 @@ import Data.Strict.Tuple
 --import GHC.Exts (inline)
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
---import ADP.Fusion.Apply
+import ADP.Fusion.Apply
 import ADP.Fusion.Chr
 import ADP.Fusion.Classes
 import ADP.Fusion.Multi.Classes
@@ -72,6 +72,10 @@ import Data.Array.Repa.Shape
 import Data.Array.Repa.Index
 import Data.Array.Repa.Index.Subword
 
+import Data.PrimitiveArray
+import Data.PrimitiveArray.Zero
+
+{-
 
 {-# NOINLINE test1 #-}
 test1 :: Int -> Int -> IO Int
@@ -80,18 +84,27 @@ test1 i j = S.foldl' (\z (Z:.a:.b) ->z+a+b) 0 $ S.map getArg $ mkStream (S:!:chr
 {-# NOINLINE test2 #-}
 test2 :: Int -> Int -> IO Int
 test2 i j =
+  let ix = (Z:.subword i j:.subword i j:.subword i j:.subword i j)
+  in  S.foldl' (\z (Z:.(Z:.a:.b:.c:.d):.(Z:.e:.f:.g:.h)) ->z+a+b+c+d+e+f+g+h) 0 $ S.map getArg $ mkStream (S:!:(M:>chr cs:>chr cs:>chr cs:>chr cs):!:(M:>chr cs:>chr cs:>chr cs:>chr cs)) (initialSV ix) ix
+
+{-# NOINLINE test3 #-}
+test3 :: Int -> Int -> IO Int
+test3 i j =
   let ix = (Z:.subword i j:.subword i j)
-  in  S.foldl' (\z (Z:.(Z:.a:.b):.(Z:.c:.d)) ->z+a+b+c+d) 0 $ S.map getArg $ mkStream (S:!:(M:>chr cs:>chr cs):!:(M:>chr cs:>chr cs)) (initialSV ix) ix
+  in  tbl >>= \t' -> let t=mTbl (Z:.NonEmpty:.NonEmpty) t' in S.foldl' (\z (Z:.x:.y) -> z+x+y) 0 $ S.map getArg $ mkStream (S:!:t:!:t) (initialSV ix) ix
 
 {-# NOINLINE ddd #-}
-ddd = test2 1 3
+ddd = test3 1 3
 
 {-# NOINLINE cs #-}
 cs :: VU.Vector Int
 cs = VU.fromList [1 .. 1000]
 
+{-# NOINLINE tbl #-}
+tbl :: IO (MutArr IO (Unboxed (Z:.Subword:.Subword) Int))
+tbl = newWithM (Z:.subword 0 0:.subword 0 0) (Z:.subword 0 20:.subword 0 20) 1
 
-{-
+-}
 
 -- | Apply a function to symbols on the RHS of a production rule. Builds the
 -- stack of symbols from 'xs' using 'build', then hands this stack to
@@ -101,11 +114,11 @@ cs = VU.fromList [1 .. 1000]
 -- function 'f'.
 
 infixl 8 <<<
-(<<<) f xs = \ij -> outerCheck (checkValidIndex (build xs) ij) . S.map (apply (inline f) . getArg) . mkStream (build xs) (outer ij) $ ij
+(<<<) f xs = \ij -> S.map (apply f . getArg) . mkStream (build xs) (initialSV ij) $ ij
 {-# INLINE (<<<) #-}
 
 infixl 8 <<#
-(<<#) f xs = \ij -> outerCheck (checkValidIndex (build xs) ij) . S.mapM (apply (inline f) . getArg) . mkStream (build xs) (outer ij) $ ij
+(<<#) f xs = \ij -> S.mapM (apply f . getArg) . mkStream (build xs) (initialSV ij) $ ij
 {-# INLINE (<<#) #-}
 
 -- | Combine two RHSs to give a choice between parses.
@@ -122,11 +135,11 @@ infixl 5 ...
 (...) s h = h . s
 {-# INLINE (...) #-}
 
--- | Additional outer check with user-given check function
-
-infixl 6 `check`
-check xs f = \ij -> let chk = f ij in chk `seq` outerCheck chk (xs ij)
-{-# INLINE check #-}
+-- -- | Additional outer check with user-given check function
+-- 
+-- infixl 6 `check`
+-- check xs f = \ij -> let chk = f ij in chk `seq` outerCheck chk (xs ij)
+-- {-# INLINE check #-}
 
 -- | Separator between RHS symbols.
 
@@ -139,6 +152,4 @@ infixl 9 ~~
 infixl 9 %
 (%) = (:!:)
 {-# INLINE (%) #-}
-
--}
 

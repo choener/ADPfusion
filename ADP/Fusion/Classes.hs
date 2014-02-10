@@ -88,6 +88,20 @@ data TableConstraint
   | OnlyZero
   deriving (Eq,Show)
 
+minSize :: TableConstraint -> Int
+minSize NonEmpty = 1
+minSize _        = 0
+{-# INLINE minSize #-}
+
+-- |
+
+type family   TblConstraint x       :: *
+type instance TblConstraint (is:.i) =  TblConstraint is :. TblConstraint i
+type instance TblConstraint Z       = Z
+type instance TblConstraint Subword = TableConstraint
+type instance TblConstraint PointL  = TableConstraint
+type instance TblConstraint PointR  = TableConstraint
+
 
 
 -- * The ADPfusion base classes.

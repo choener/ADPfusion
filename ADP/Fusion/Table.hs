@@ -10,6 +10,10 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+-- | 
+--
+-- TODO multi-dim tables with 'OnlyZero' need a static check!
+
 module ADP.Fusion.Table where
 
 import           Control.Monad.Primitive
@@ -27,8 +31,110 @@ import qualified Data.PrimitiveArray as PA
 import qualified Data.PrimitiveArray.Zero as PA
 
 import ADP.Fusion.Classes
+import ADP.Fusion.Multi.Classes
 
 
+
+-- | A table with mutable elements and attached table constraints.
+
+data MTbl i xs = MTbl !(TblConstraint i) !xs
+
+mTblS :: TblConstraint i -> PA.MutArr m (arr (Z:.i) x) -> MTbl i (PA.MutArr m (arr (Z:.i) x))
+mTblS = MTbl
+{-# INLINE mTblS #-}
+
+mTblD :: TblConstraint i -> PA.MutArr m (arr i x) -> MTbl i (PA.MutArr m (arr i x))
+mTblD = MTbl
+{-# INLINE mTblD #-}
+
+instance Build (MTbl i x)
+
+type MTblSubword m arr x   = MTbl Subword (PA.MutArr m (arr (Z:.Subword) x))
+type MTblMulti   m arr x i = MTbl i       (PA.MutArr m (arr i            x))
+
+instance
+  ( Element ls Subword
+  ) => Element (ls :!: MTblSubword m arr x) Subword where
+  data Elm (ls :!: MTblSubword m arr x) Subword = ElmMtSw !x !Subword !(Elm ls Subword)
+  type Arg (ls :!: MTblSubword m arr x)         = Arg ls :. x
+  getArg (ElmMtSw x _ ls) = getArg ls :. x
+  getIdx (ElmMtSw x i _ ) = i
+  {-# INLINE getArg #-}
+  {-# INLINE getIdx #-}
+
+instance
+  ( Monad m
+  , PrimMonad m
+  , Element ls Subword
+  , MkStream m ls Subword
+  , PA.MPrimArrayOps arr (Z:.Subword) x
+  ) => MkStream m (ls :!: MTblSubword m arr x) Subword where
+  mkStream (ls :!: MTbl c t) Static (Subword (i:.j))
+    = S.mapM (\s -> let Subword (_:.l) = getIdx s
+                    in  PA.readM t (Z:.subword l j) >>= \z -> return $ ElmMtSw z (subword l j) s)
+    $ mkStream ls (Variable Check Nothing) (subword i $ j - minSize c)
+  mkStream (ls :!: MTbl c t) (Variable _ Nothing) (Subword (i:.j))
+    = let mk s = let (Subword (_:.l)) = getIdx s in return (s:.j-l-minSize c)
+          step (s:.z)
+            | z>=0      = do let (Subword (_:.k)) = getIdx s
+                             y <- PA.readM t (Z:.subword k (j-z))
+                             return $ S.Yield (ElmMtSw y (subword k $ j-z) s) (s:.z-1)
+            | otherwise = return $ S.Done
+          {-# INLINE [1] mk   #-}
+          {-# INLINE [1] step #-}
+      in  S.flatten mk step Unknown $ mkStream ls (Variable NoCheck Nothing) (subword i j)
+  {-# INLINE mkStream #-}
+
+-- **
+
+instance Element ls (is:.i) => Element (ls :!: MTblMulti m arr x (is:.i)) (is:.i) where
+  data Elm (ls :!: MTblMulti m arr x (is:.i)) (is:.i) = ElmMTbl !x !(is:.i) !(Elm ls (is:.i))
+  type Arg (ls :!: MTblMulti m arr x (is:.i))         = Arg ls :. x
+  getArg (ElmMTbl x _ ls) = getArg ls :. x
+  getIdx (ElmMTbl _ i _ ) = i
+  {-# INLINE getArg #-}
+  {-# INLINE getIdx #-}
+
+instance
+  ( Monad m
+  , PrimMonad m
+  , TableStaticVar (is:.i)
+  , TableIndices (is:.i)
+  , Element ls (is:.i)
+  , PA.MPrimArrayOps arr (is:.i) x
+  , MkStream m ls (is:.i)
+  ) => MkStream m (ls :!: MTblMulti m arr x (is:.i)) (is:.i) where
+  mkStream (ls :!: MTbl c t) vs is
+    = S.mapM (\(Tr s _ i) -> PA.readM t i >>= \z -> return $ ElmMTbl z i s)
+    . tableIndices c vs is
+    . S.map (\s -> Tr s Z (getIdx s))
+    $ mkStream ls (tableStaticVar vs is) (tableStreamIndex c vs is)
+  {-# INLINE mkStream #-}
+
+class TableIndices i where
+  tableIndices :: (Monad m) => TblConstraint i -> IxSV i -> i -> S.Stream m (Triple z j i) -> S.Stream m (Triple z j i)
+
+instance TableIndices Z where
+  tableIndices _ _ _ = id
+  {-# INLINE tableIndices #-}
+
+instance TableIndices is => TableIndices (is:.Subword) where
+  tableIndices (cs:.c) (vs:.Static) (is:.Subword (i:.j))
+    = S.map (\(Tr s (x:.Subword (_:.l)) ys) -> Tr s x (is:.subword l j)) -- constraint handled: tableStreamIndex
+    . tableIndices cs vs is
+    . S.map moveIdxTr
+  tableIndices (cs:.OnlyZero) _ _ = error "write me"
+  tableIndices (cs:.c) (vs:.Variable _ Nothing) (is:.Subword (i:.j))
+    = S.flatten mk step Unknown
+    . tableIndices cs vs is
+    . S.map moveIdxTr
+    where mk (Tr s (y:.Subword (_:.l)) xs) = return $ Pn s y xs l (j-l-minSize c)
+          step (Pn s y xs k z)
+            | z>= 0     = return $ S.Yield (Tr s y (xs:.subword k (j-z))) (Pn s y xs k (z-1))
+            | otherwise = return $ S.Done
+          {-# INLINE [1] mk   #-}
+          {-# INLINE [1] step #-}
+  {-# INLINE tableIndices #-}
 
 {-
 
@@ -39,10 +145,6 @@ data MTbl i xs = MTbl !(ENZ i) !xs -- (PA.MutArr m (arr i x))
 mTblSw :: ENE -> PA.MutArr m (arr (Z:.Subword) x) -> MTbl Subword (PA.MutArr m (arr (Z:.Subword) x))
 mTblSw = MTbl
 {-# INLINE mTblSw #-}
-
-mTbl :: ENZ i -> PA.MutArr m (arr i x) -> MTbl i (PA.MutArr m (arr i x))
-mTbl = MTbl
-{-# INLINE mTbl #-}
 
 -- | Generate the list of indices for use in table lookup.
 --
@@ -128,8 +230,6 @@ instance TableIndices is => TableIndices (is:.PointL) where
             | l > j = return $ S.Done
             | otherwise = return $ S.Yield (ζ:!:α:!:(is:.pointL k l)) (ζ:!:α:!:is:!:k:!:l+1)
   {-#  INLINE tableIndices #-}
-
-instance Build (MTbl i x)
 
 -- ** Subword
 
