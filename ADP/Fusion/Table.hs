@@ -13,6 +13,8 @@
 -- | 
 --
 -- TODO multi-dim tables with 'OnlyZero' need a static check!
+--
+-- TODO PointL , PointR need sanity checks for boundaries
 
 module ADP.Fusion.Table where
 
@@ -131,6 +133,42 @@ instance TableIndices is => TableIndices (is:.Subword) where
     where mk (Tr s (y:.Subword (_:.l)) xs) = return $ Pn s y xs l (j-l-minSize c)
           step (Pn s y xs k z)
             | z>= 0     = return $ S.Yield (Tr s y (xs:.subword k (j-z))) (Pn s y xs k (z-1))
+            | otherwise = return $ S.Done
+          {-# INLINE [1] mk   #-}
+          {-# INLINE [1] step #-}
+  {-# INLINE tableIndices #-}
+
+instance TableIndices is => TableIndices (is:.PointL) where
+  tableIndices (cs:.c) (vs:.Static) (is:.PointL (i:.j))
+    = S.map (\(Tr s (x:.PointL (_:.l)) ys) -> Tr s x (is:.pointL l j)) -- constraint handled: tableStreamIndex
+    . tableIndices cs vs is
+    . S.map moveIdxTr
+  tableIndices (cs:.OnlyZero) _ _ = error "write me"
+  tableIndices (cs:.c) (vs:.Variable _ Nothing) (is:.PointL (i:.j))
+    = S.flatten mk step Unknown
+    . tableIndices cs vs is
+    . S.map moveIdxTr
+    where mk (Tr s (y:.PointL (_:.l)) xs) = return $ Pn s y xs l (j-l-minSize c)
+          step (Pn s y xs k z)
+            | z>= 0     = return $ S.Yield (Tr s y (xs:.pointL k (j-z))) (Pn s y xs k (z-1))
+            | otherwise = return $ S.Done
+          {-# INLINE [1] mk   #-}
+          {-# INLINE [1] step #-}
+  {-# INLINE tableIndices #-}
+
+instance TableIndices is => TableIndices (is:.PointR) where
+  tableIndices (cs:.c) (vs:.Static) (is:.PointR (i:.j))
+    = S.map (\(Tr s (x:.PointR (_:.l)) ys) -> Tr s x (is:.pointR l j)) -- constraint handled: tableStreamIndex
+    . tableIndices cs vs is
+    . S.map moveIdxTr
+  tableIndices (cs:.OnlyZero) _ _ = error "write me"
+  tableIndices (cs:.c) (vs:.Variable _ Nothing) (is:.PointR (i:.j))
+    = S.flatten mk step Unknown
+    . tableIndices cs vs is
+    . S.map moveIdxTr
+    where mk (Tr s (y:.PointR (_:.l)) xs) = return $ Pn s y xs l (j-l-minSize c)
+          step (Pn s y xs k z)
+            | z>= 0     = return $ S.Yield (Tr s y (xs:.pointR k (j-z))) (Pn s y xs k (z-1))
             | otherwise = return $ S.Done
           {-# INLINE [1] mk   #-}
           {-# INLINE [1] step #-}

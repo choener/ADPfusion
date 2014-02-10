@@ -10,6 +10,10 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+-- |
+--
+-- TODO PointL , PointR need sanity checks for boundaries
+
 module ADP.Fusion.Chr where
 
 import           Data.Array.Repa.Index
@@ -99,6 +103,34 @@ instance
     . S.map (\(Tr s z (is:.i)) -> Tr s (z:.i) is)
   terminalStream (a:>Chr f (!v)) (sv:._) (is:.Subword (i:.j))
     = S.map (\(Qd s (z:.Subword (k:.l)) is e) -> Qd s z (is:.subword l (l+1)) (e:.f v (l-1)))
+    . terminalStream a sv is
+    . S.map (\(Tr s z (is:.i)) -> Tr s (z:.i) is)
+  {-# INLINE terminalStream #-}
+
+instance
+  ( Monad m
+  , TerminalStream m a is
+  ) => TerminalStream m (TermSymbol a (Chr r x)) (is:.PointL) where
+  terminalStream (a:>Chr f (!v)) (sv:.Static) (is:.PointL (i:.j))
+    = S.map (\(Qd s (z:._) is e) -> Qd s z (is:.pointL (j-1) j) (e:.f v (j-1)))
+    . terminalStream a sv is
+    . S.map (\(Tr s z (is:.i)) -> Tr s (z:.i) is)
+  terminalStream (a:>Chr f (!v)) (sv:._) (is:.PointL (i:.j))
+    = S.map (\(Qd s (z:.PointL (k:.l)) is e) -> Qd s z (is:.pointL l (l+1)) (e:.f v (l-1)))
+    . terminalStream a sv is
+    . S.map (\(Tr s z (is:.i)) -> Tr s (z:.i) is)
+  {-# INLINE terminalStream #-}
+
+instance
+  ( Monad m
+  , TerminalStream m a is
+  ) => TerminalStream m (TermSymbol a (Chr r x)) (is:.PointR) where
+  terminalStream (a:>Chr f (!v)) (sv:.Static) (is:.PointR (i:.j))
+    = S.map (\(Qd s (z:._) is e) -> Qd s z (is:.pointR (j-1) j) (e:.f v (j-1)))
+    . terminalStream a sv is
+    . S.map (\(Tr s z (is:.i)) -> Tr s (z:.i) is)
+  terminalStream (a:>Chr f (!v)) (sv:._) (is:.PointR (i:.j))
+    = S.map (\(Qd s (z:.PointR (k:.l)) is e) -> Qd s z (is:.pointR l (l+1)) (e:.f v (l-1)))
     . terminalStream a sv is
     . S.map (\(Tr s z (is:.i)) -> Tr s (z:.i) is)
   {-# INLINE terminalStream #-}
