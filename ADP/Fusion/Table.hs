@@ -142,7 +142,7 @@ instance TableIndices is => TableIndices (is:.Subword) where
 
 instance TableIndices is => TableIndices (is:.PointL) where
   tableIndices (cs:.c) (vs:.Static) (is:.PointL (i:.j))
-    = staticCheck (i<=j)
+    = id -- staticCheck (i<=j)
     . S.map (\(Tr s (x:.PointL (_:.l)) ys) -> Tr s x (is:.pointL l j)) -- constraint handled: tableStreamIndex
     . tableIndices cs vs is
     . S.map moveIdxTr

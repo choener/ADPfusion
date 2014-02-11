@@ -78,12 +78,10 @@ instance (Monad m, MkStream m S is) => MkStream m S (is:.PointL) where
     = staticCheck (i==j)
     . S.map (\(ElmS z) -> ElmS (z:.pointL i i))
     $ mkStream S vs is
-  {-
   mkStream S (vs:.Variable Check   Nothing) (is:.PointL (i:.j))
-    = staticCheck (i==j)
+    = staticCheck (i<=j)
     $ S.map (\(ElmS z) -> ElmS (z:.pointL i i))
     $ mkStream S vs is
-  -}
   mkStream S (vs:.Variable NoCheck Nothing) (is:.PointL (i:.j))
     = S.map (\(ElmS z) -> ElmS (z:.pointL i i))
     $ mkStream S vs is
@@ -136,8 +134,15 @@ instance TableStaticVar Subword where
   {-# INLINE tableStaticVar   #-}
   {-# INLINE tableStreamIndex #-}
 
+-- |
+--
+-- TODO the point of promoting anything to @Variable Check Nothing@ is to have
+-- a sanity check in @mkStream@ above. There we check if @i<=j@ which should
+-- always be ok for the table on the left-most position of our symbols (on the
+-- RHS).
+
 instance TableStaticVar PointL where
-  tableStaticVar     _ _                = Variable NoCheck Nothing -- TODO maybe we need a check if the constraint is 'NonEmpty' ?
+  tableStaticVar     _ _                = Variable Check Nothing -- TODO maybe we need a check if the constraint is 'NonEmpty' ?
   tableStreamIndex c _ (PointL (i:.j))
     | c==EmptyOk  = pointL i j
     | c==NonEmpty = pointL i $ j-1
