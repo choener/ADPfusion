@@ -33,6 +33,8 @@ infixl 2 :>
 data TermSymbol a b = a :> b
   deriving (Eq,Show)
 
+instance Build (TermSymbol a b)
+
 -- | Extracts the type of a multi-dimensional terminal argument.
 
 type family   TermArg x :: *
@@ -76,6 +78,15 @@ instance (Monad m, MkStream m S is) => MkStream m S (is:.PointL) where
     = staticCheck (i==j)
     . S.map (\(ElmS z) -> ElmS (z:.pointL i i))
     $ mkStream S vs is
+  {-
+  mkStream S (vs:.Variable Check   Nothing) (is:.PointL (i:.j))
+    = staticCheck (i==j)
+    $ S.map (\(ElmS z) -> ElmS (z:.pointL i i))
+    $ mkStream S vs is
+  -}
+  mkStream S (vs:.Variable NoCheck Nothing) (is:.PointL (i:.j))
+    = S.map (\(ElmS z) -> ElmS (z:.pointL i i))
+    $ mkStream S vs is
   {-# INLINE mkStream #-}
 
 instance (Monad m, MkStream m S is) => MkStream m S (is:.PointR) where
@@ -83,6 +94,7 @@ instance (Monad m, MkStream m S is) => MkStream m S (is:.PointR) where
     = staticCheck (i==j)
     . S.map (\(ElmS z) -> ElmS (z:.pointR i i))
     $ mkStream S vs is
+  mkStream _ _ _ = error "ADP/Fusion/Multi/Classes.hs :: MkStream S/is:.PointR :: not implemented yet"
   {-# INLINE mkStream #-}
 
 instance Monad m => MkStream m S Z where
@@ -116,11 +128,20 @@ instance (TableStaticVar is, TableStaticVar i) => TableStaticVar (is:.i) where
   {-# INLINE tableStreamIndex #-}
 
 instance TableStaticVar Subword where
-  tableStaticVar     _ _                = Variable NoCheck Nothing -- maybe we need a check if the constraint is 'NonEmpty' ?
+  tableStaticVar     _ _                = error "Multi/Classes.hs :: tableStaticVar/Subword :: fixme" -- Variable NoCheck Nothing -- maybe we need a check if the constraint is 'NonEmpty' ?
   tableStreamIndex c _ (Subword (i:.j))
     | c==EmptyOk  = subword i j
     | c==NonEmpty = subword i $ j-1
     | c==OnlyZero = subword i j -- this should then actually request a size in 'tableStaticVar' ...
+  {-# INLINE tableStaticVar   #-}
+  {-# INLINE tableStreamIndex #-}
+
+instance TableStaticVar PointL where
+  tableStaticVar     _ _                = Variable NoCheck Nothing -- TODO maybe we need a check if the constraint is 'NonEmpty' ?
+  tableStreamIndex c _ (PointL (i:.j))
+    | c==EmptyOk  = pointL i j
+    | c==NonEmpty = pointL i $ j-1
+    | c==OnlyZero = pointL i j -- this should then actually request a size in 'tableStaticVar' ...
   {-# INLINE tableStaticVar   #-}
   {-# INLINE tableStreamIndex #-}
 

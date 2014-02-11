@@ -15,6 +15,8 @@
 -- TODO multi-dim tables with 'OnlyZero' need a static check!
 --
 -- TODO PointL , PointR need sanity checks for boundaries
+--
+-- TODO the sanity checks are acutally a VERY BIG TODO since currently we do not protect against stupidity at all!
 
 module ADP.Fusion.Table where
 
@@ -140,7 +142,8 @@ instance TableIndices is => TableIndices (is:.Subword) where
 
 instance TableIndices is => TableIndices (is:.PointL) where
   tableIndices (cs:.c) (vs:.Static) (is:.PointL (i:.j))
-    = S.map (\(Tr s (x:.PointL (_:.l)) ys) -> Tr s x (is:.pointL l j)) -- constraint handled: tableStreamIndex
+    = staticCheck (i<=j)
+    . S.map (\(Tr s (x:.PointL (_:.l)) ys) -> Tr s x (is:.pointL l j)) -- constraint handled: tableStreamIndex
     . tableIndices cs vs is
     . S.map moveIdxTr
   tableIndices (cs:.OnlyZero) _ _ = error "write me"

@@ -15,44 +15,61 @@ import Prelude hiding (Maybe(..))
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
 import Data.Array.Repa.Index.Subword
+import Data.Array.Repa.Index.Points
 
 import ADP.Fusion.Classes
+import ADP.Fusion.Multi.Classes
 
 
 
 data None = None
 
+
 none = None
 {-# INLINE none #-}
 
--- None is always valid
-
-instance
-  ( ValidIndex ls Subword
-  ) => ValidIndex (ls :!: None) Subword where
-    validIndex (ls:!:None) abc ij@(Subword (i:.j)) = validIndex ls abc ij
-    {-# INLINE validIndex #-}
-
 instance Build None
 
+type instance TermArg (TermSymbol a None) = TermArg a :. ()
+
+-- | Since 'None' doesn't really do anything for all indices, we just thread it
+-- through.
+
+instance TermStaticVar None ix where
+  termStaticVar   _ sv _  = sv
+  termStreamIndex _ _  ij = ij
+  {-# INLINE termStaticVar #-}
+  {-# INLINE termStreamIndex #-}
+
 instance
-  ( Elms ls Subword
-  ) => Elms (ls :!: None) Subword where
-  data Elm (ls :!: None) Subword = ElmNone !(Elm ls Subword) !() !Subword
-  type Arg (ls :!: None) = Arg ls :. ()
-  getArg !(ElmNone ls () _) = getArg ls :. ()
-  getIdx !(ElmNone _ _ i)   = i
+  ( Monad m
+  , TerminalStream m a is
+  ) => TerminalStream m (TermSymbol a None) (is:.PointL) where
+  terminalStream (a:>None) (sv:._) (is:._)
+    = S.map (\(Qd s (z:.i) is e) -> Qd s z (is:.i) (e:.()))
+    . terminalStream a sv is
+    . S.map moveIdxTr
+  {-# INLINE terminalStream #-}
+
+
+
+-- * Single dimensional instances for 'None' are really weird -- since they do
+-- nothing.
+
+instance Element ls Subword => Element (ls :!: None) Subword where
+  data Elm (ls :!: None) Subword = ElmNone !Subword !(Elm ls Subword)
+  type Arg (ls :!: None)         = Arg ls :. ()
+  getArg (ElmNone _ l) = getArg l :. ()
+  getIdx (ElmNone i _) = i
   {-# INLINE getArg #-}
   {-# INLINE getIdx #-}
 
 instance
   ( Monad m
-  , Elms ls Subword
   , MkStream m ls Subword
-  ) => MkStream m (ls:!:None) Subword where
-  mkStream !(ls:!:None) Outer !ij@(Subword (i:.j))
-    = S.map (\s -> ElmNone s () (subword i j))
-    $ S.filter (\_ -> i==j)
-    $ mkStream ls Outer ij
+  ) => MkStream m (ls :!: None) Subword where
+  mkStream (ls :!: None) sv ij
+    = S.map (ElmNone ij)
+    $ mkStream ls sv ij
   {-# INLINE mkStream #-}
 

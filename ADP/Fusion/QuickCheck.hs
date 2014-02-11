@@ -29,11 +29,13 @@ import qualified Data.PrimitiveArray as PA
 import qualified Data.PrimitiveArray.Zero as PA
 
 import ADP.Fusion
-import ADP.Fusion.Classes
-import ADP.Fusion.Multi.Classes
 import ADP.Fusion.Chr
-import ADP.Fusion.Table
+import ADP.Fusion.Classes as ADP
+import ADP.Fusion.Empty
 import ADP.Fusion.Multi
+import ADP.Fusion.Multi.Classes
+import ADP.Fusion.None
+import ADP.Fusion.Table
 
 
 
@@ -271,12 +273,11 @@ prop_CMtCMtC sw@(Subword (i:.j)) = monadicIO $ do
                            | k <- [i+1..j-2]]
     assert $ zs == ls
 
-{-
 -- | And now with non-empty tables.
 
 prop_CMnCMnC sw@(Subword (i:.j)) = monadicIO $ do
     mxs :: (PA.MutArr IO (PA.Unboxed (Z:.Subword) Int)) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
-    let mt = mTblSw NonEmptyT mxs
+    let mt = mTblS ADP.NonEmpty mxs
     zs <- run $ (,,,,) <<< chr xs % mt % chr xs % mt % chr xs ... SM.toList $ sw
     ls <- run $ sequence $ [ (PA.readM mxs (Z:.subword (i+1) k)) >>=
                             \a -> PA.readM mxs (Z:.subword (k+1) (j-1)) >>=
@@ -290,12 +291,6 @@ prop_CMnCMnC sw@(Subword (i:.j)) = monadicIO $ do
     assert $ zs == ls
 
 {-
- - Currently not allowing 0-dim multi-tapes.
-
-prop_Tt ix@Z = zs == ls where
-  zs = id <<< T ... S.toList $ ix
-  ls = [ Z ]
--}
 
 -- **
 
@@ -366,152 +361,82 @@ prop_2dimCMCMC ix@(Z:.TinySubword(i:.j):.TinySubword(k:.l)) = monadicIO $ do
                          | j-i>=3, l-k>=3, i>=0, j<=100, k>=0, l<=100, a<-[i+1..j-2], b<-[k+1..l-2] ]
   assert $ zs==ls
 
+-}
+
 -- * working on 'PointL's
 
 prop_P_Tt ix@(Z:.PointL (i:.j)) = zs == ls where
-  zs = id <<< (T:!chr xs) ... S.toList $ ix
+  zs = id <<< (M:>chr xs) ... S.toList $ ix
   ls = [ (Z:.xs VU.! i) | i+1==j ]
 
 prop_P_CC ix@(Z:.PointL (i:.j)) = zs == ls where
-  zs = (,) <<< (T:!chr xs) % (T:!chr xs) ... S.toList $ ix
+  zs = (,) <<< (M:>chr xs) % (M:>chr xs) ... S.toList $ ix
   ls = [ (Z:.xs VU.! i, Z:.xs VU.! (i+1)) | i+2==j ]
 
-prop_P_2dimCMCMC ix@(Z:.PointL(i:.j):.PointL(k:.l)) = monadicIO $ do
+-- |
+--
+-- TODO need to synchronize the constraints in @ls@ and in 'PointL'
+
+prop_P_2dimMtCC ix@(Z:.PointL(i:.j):.PointL(k:.l)) = monadicIO $ do
+--  let ix@(Z:.PointL(i:.j):.PointL(k:.l)) = (Z:.pointL 0 3:.pointL 0 3)
   mxs <- run $ pure $ mxsPP
-  let mt = mTbl (Z:.EmptyT:.EmptyT) mxs
-  zs <- run $ (,,,,) <<< (T:!chr xs:!chr xs) % mt % (T:!chr xs:!chr xs) % mt % (T:!chr xs:!chr xs) ... SM.toList $ ix
+  let mt = mTblD (Z:.EmptyOk:.EmptyOk) mxs
+  zs <- run $ (,,) <<< mt % (M:>chr xs:>chr xs) % (M:>chr xs:>chr xs) ... SM.toList $ ix
+  ls <- run $ sequence $ [ liftM3 (,,)   (PA.readM mxs (Z:.pointL i (j-2):.pointL k (l-2)))
+                                         (pure $ Z:.xs VU.! (j-2):.xs VU.! (l-2))
+                                         (pure $ Z:.xs VU.! (j-1):.xs VU.! (l-1))
+                         | j-i>=2, l-k>=2, i==0, j<=100, k==0, l<=100] --, a<-[i+1..j-2], b<-[k+1..l-2] ]
+  if zs==ls
+    then assert $ zs==ls
+    else traceShow (zs,ls) $ assert False
+
+-- |
+--
+-- This property WILL FAIL, because we do not protect against the stupidity of
+-- embedding tables between characters.
+--
+-- TODO And actually the @ls@ part is incorrect anyway, since it should be @[]@
+-- legally speaking.
+{-
+prop_P_2dimCMCMC () = monadicIO $ do -- ix@(Z:.PointL(i:.j):.PointL(k:.l)) = monadicIO $ do
+  let ix@(Z:.PointL(i:.j):.PointL(k:.l)) = (Z:.pointL 0 3:.pointL 0 3)
+  mxs <- run $ pure $ mxsPP
+  let mt = mTblD (Z:.EmptyOk:.EmptyOk) mxs
+  zs <- run $ (,,,,) <<< (M:>chr xs:>chr xs) % mt % (M:>chr xs:>chr xs) % mt % (M:>chr xs:>chr xs) ... SM.toList $ ix
   ls <- run $ sequence $ [ liftM5 (,,,,) (pure $ Z:.xs VU.! i:.xs VU.! k)
                                          (PA.readM mxs (Z:.pointL (i+1) a:.pointL (k+1) b))
                                          (pure $ Z:.xs VU.! a:.xs VU.! b)
                                          (PA.readM mxs (Z:.pointL (a+1) (j-1):.pointL (b+1) (l-1)))
                                          (pure $ Z:.xs VU.! (j-1):.xs VU.! (l-1))
                          | j-i>=3, l-k>=3, i>=0, j<=100, k>=0, l<=100, a<-[i+1..j-2], b<-[k+1..l-2] ]
-  assert $ zs==ls
-
-{-
-prop_TcTc ix@(Z:.Point i) = {- traceShow (zs,ls) $ -} zs == ls where
-  zs = (,) <<< Term (T:.Chr xs) % Term (T:.Chr xs) ... S.toList $ ix
-  ls = [ (Z:.xs VU.! (i-2), Z:.xs VU.! (i-1)) | i>1 ]
-
--- deriving instance Show (Elm (None :. Term (T :. Chr Int)) (Z :. Point))
-
-prop_TpTc ix@(Z:.Point i) = {- traceShow (zs,ls) $ -} zs == ls where
-  zs = (,) <<< Term (T:.Peek (-1) xs) % Term (T:.Chr xs) ... S.toList $ ix
-  ls = [ (Z:.f i, Z:.xs VU.! (i-1)) | i>0 ]
-  f i = if i>1 then xs VU.! (i-2) else (-1)
-
-prop_TcTpTc ix@(Z:.Point i) = {- traceShow (zs,ls) $ -} zs == ls where
-  zs = (,,) <<< Term (T:.Chr xs) % Term (T:.Peek (-1) xs) % Term (T:.Chr xs) ... S.toList $ ix
-  ls = [ (Z:.xs VU.! (i-2), Z:.f i, Z:.xs VU.! (i-1)) | i>1 ]
-  f i = if i>1 then xs VU.! (i-2) else (-1)
-
-{-
-prop_Mt_Tc ix@(Z:.Subword(i:.j)) = monadicIO $ do
-    mxs :: (PA.MU IO (Z:.Subword) Int) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ]
-    let mt = mtable mxs
-    zs <- run $ (,) <<< mt % Term (T:.Chr xs) ... SM.toList $ ix
-    ls <- run $ sequence $ [(PA.readM mxs (Z:.subword i (j-1))) >>= \a -> return (a,Z:.xs VU.! (j-1)) | i<j ]
-    assert $ zs == ls
+  if zs==ls
+    then assert $ zs==ls
+    else traceShow (zs,ls) $ assert False
 -}
-
-prop_P_Mt_Tt ix@(Z:.Point i) = monadicIO $ do
-    mxs :: (PA.MU IO (Z:.Point) Int) <- run $ PA.fromListM (Z:.Point 0) (Z:.Point 100) [0 .. ]
-    let mt = mtable mxs
-    zs <- run $ (,) <<< mt % Term (T:.Chr xs) ... SM.toList $ ix
-    ls <- run $ sequence $ [(PA.readM mxs (Z:.Point (i-1))) >>= \a -> return (a,Z:.xs VU.! (i-1)) | i>0 ]
-    assert $ zs == ls
-
-prop_P_Mt_TpTc ix@(Z:.Point i) = monadicIO $ do
-    mxs :: (PA.MU IO (Z:.Point) Int) <- run $ PA.fromListM (Z:.Point 0) (Z:.Point 100) [0 .. ]
-    let mt = mtable mxs
-    let f i = if i>1 then xs VU.! (i-2) else (-1)
-    zs <- run $ (,,) <<< mt % Term (T:.Peek (-1) xs) % Term (T:.Chr xs) ... SM.toList $ ix
-    ls <- run $ sequence $ [(PA.readM mxs (Z:.Point (i-1))) >>= \a -> return (a,Z:.f i,Z:.xs VU.! (i-1)) | i>0 ]
-    assert $ zs == ls
-
--- | and with 2-tape grammars
-
-prop_Tcc ix@(Z:.Subword(i:.j):.Subword(k:.l)) = zs == ls where
-  zs = id <<< Term (T:.Chr xs:.Chr xs) ... S.toList $ ix
-  ls = [ (  Z
-         :. xs VU.! i
-         :. xs VU.! k
-         ) | i+1==j, k+1==l ]
-
-prop_Mt_Tcc (Z:.TinySubword (i:.j):.TinySubword (k:.l)) = monadicIO $ do
-    let ix = Z :. subword i j :. subword k l
-    mxs :: (PA.MU IO (Z:.Subword:.Subword) Int) <- run $ PA.fromListM (Z:. Subword (0:.0):.Subword(0:.0)) (Z:. Subword (0:.j+1):.Subword (0:.k+1)) [0 .. ]
-    let mt = mtable mxs
-    zs <- run $ (,) <<< mt % Term (T:.Chr xs:.Chr xs) ... SM.toList $ ix
-    ls <- run $ sequence $ [ (PA.readM mxs (Z:.subword i (j-1):.subword k (l-1))) >>= \a -> return (a,Z:.xs VU.! (j-1):.xs VU.! (l-1)) | i<j,k<l ]
-    assert $ zs == ls
-
-prop_P_Ttt ix@(Z:.Point i:.Point j) = zs == ls where
-  zs = id <<< Term (T:.Chr xs:.Chr xs) ... S.toList $ ix
-  ls = [ (Z:.xs VU.! (i-1):.xs VU.! (j-1)) | i>0, j>0 ]
-
-prop_P_Mt_Ttt ix@(Z:.Point i:.Point j) = monadicIO $ do
-    mxs :: (PA.MU IO (Z:.Point:.Point) Int) <- run $ PA.fromListM (Z:.Point 0:.Point 0) (Z:.Point 100:.Point 100) [0 .. ]
-    let mt = mtable mxs
-    zs <- run $ (,) <<< mt % Term (T:.Chr xs:.Chr xs) ... SM.toList $ ix
-    ls <- run $ sequence $ [(PA.readM mxs (Z:.Point (i-1):.Point (j-1))) >>= \a -> return (a,Z:.xs VU.! (i-1):.xs VU.! (j-1)) | i>0,j>0 ]
-    assert $ zs == ls
-
-prop_P_Mt_Tpp_Ttt ix@(Z:.Point i:.Point j) = monadicIO $ do
-    mxs :: (PA.MU IO (Z:.Point:.Point) Int) <- run $ PA.fromListM (Z:.Point 0:.Point 0) (Z:.Point 100:.Point 100) [0 .. ]
-    let mt = mtable mxs
-    let f i j = Z:. (if i>1 then xs VU.! (i-2) else (-1)) :. (if j>1 then xs VU.! (j-2) else (-1))
-    zs <- run $ (,,) <<< mt % Term (T:.Peek (-1) xs:.Peek (-1) xs) % Term (T:.Chr xs:.Chr xs) ... SM.toList $ ix
-    ls <- run $ sequence $ [(PA.readM mxs (Z:.Point (i-1):.Point (j-1))) >>= \a -> return (a,f i j,Z:.xs VU.! (i-1):.xs VU.! (j-1)) | i>0,j>0 ]
-    -- traceShow (zs,ls) $
-    assert $ zs == ls
-
--- | and with 3-tape grammars
-
-prop_Tccc ix@(Z:.Subword(i:.j):.Subword(k:.l):.Subword(a:.b)) = zs == ls where
-  zs = id <<< Term (T:.Chr xs:.Chr xs:.Chr xs) ... S.toList $ ix
-  ls = [ (  Z
-         :. xs VU.! i
-         :. xs VU.! k
-         :. xs VU.! a
-         ) | i+1==j, k+1==l, a+1==b ]
 
 -- * helper functions and stuff
 
--- | Helper function to create non-specialized regions
-
-region = Region Nothing Nothing
-
--- |
-
-mtable xs = MTable Eall xs
-
-{-
 -- | A subword (i,j) should always produce an index in the allowed range
 
 prop_subwordIndex (Small n, Subword (i:.j)) = (n>j) ==> p where
   p = n * (n+1) `div` 2 >= k
   k = subwordIndex (subword 0 n) (subword i j)
--}
 
--}
-
--}
 -- | data set. Can be made fixed as the maximal subword size is statically known!
 
 xs = VU.fromList [0 .. 99 :: Int]
 
--- --
--- --
--- --TODO will break if PrimitiveArray assertions are active (need to fixe exact length of list)
--- 
--- mxsSwSw = unsafePerformIO $ zzz where
---   zzz :: IO (PA.MutArr IO (PA.Unboxed (Z:.Subword:.Subword) Int))
---   zzz = PA.fromListM (Z:.subword 0 0:.subword 0 0) (Z:.subword 0 100:.subword 0 100) [0 ..]
--- 
--- mxsPP = unsafePerformIO $ zzz where
---   zzz :: IO (PA.MutArr IO (PA.Unboxed (Z:.PointL:.PointL) Int))
---   zzz = PA.fromListM (Z:.pointL 0 0:.pointL 0 0) (Z:.pointL 0 100:.pointL 0 100) [0 ..]
+--
+--
+--TODO will break if PrimitiveArray assertions are active (need to fixe exact length of list)
+
+mxsSwSw = unsafePerformIO $ zzz where
+  zzz :: IO (PA.MutArr IO (PA.Unboxed (Z:.Subword:.Subword) Int))
+  zzz = PA.fromListM (Z:.subword 0 0:.subword 0 0) (Z:.subword 0 100:.subword 0 100) [0 ..]
+
+mxsPP = unsafePerformIO $ zzz where
+  zzz :: IO (PA.MutArr IO (PA.Unboxed (Z:.PointL:.PointL) Int))
+  zzz = PA.fromListM (Z:.pointL 0 0:.pointL 0 0) (Z:.pointL 0 100:.pointL 0 100) [0 ..]
 
 
 -- * general quickcheck stuff

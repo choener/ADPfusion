@@ -88,6 +88,18 @@ instance TermStaticVar (Chr r x) Subword where
   {-# INLINE termStaticVar #-}
   {-# INLINE termStreamIndex #-}
 
+instance TermStaticVar (Chr r x) PointL where
+  termStaticVar   _ sv _                = sv
+  termStreamIndex _ _  (PointL (i:.j)) = pointL i $ j-1
+  {-# INLINE termStaticVar #-}
+  {-# INLINE termStreamIndex #-}
+
+instance TermStaticVar (Chr r x) PointR where
+  termStaticVar   _ sv _                = sv
+  termStreamIndex _ _  (PointR (i:.j)) = pointR i $ j-1
+  {-# INLINE termStaticVar #-}
+  {-# INLINE termStreamIndex #-}
+
 -- TODO removed the static check since *in principle* the statics system down
 -- at the bottom of the stack should take care of it! Need to verify with
 -- QuickCheck, though.
