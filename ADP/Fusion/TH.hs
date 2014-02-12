@@ -2,12 +2,14 @@
 
 module ADP.Fusion.TH where
 
-import Language.Haskell.TH
-import Language.Haskell.TH.Syntax
-import Data.List
+import           Data.List
+import           Language.Haskell.TH
+import           Language.Haskell.TH.Syntax
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 
 
+
+{-
 
 -- | Create the algebra product function from a signature type constructor.
 
@@ -35,6 +37,8 @@ zzz (nm,s,t) = show (nm,s,t)
 isObjectiveF :: Type -> Bool
 isObjectiveF (AppT (AppT ArrowT (AppT (AppT (ConT s) _) _)) (AppT _ _)) | s == ''SM.Stream = True
 isObjectiveF _ = False
+
+-}
 
 -- AppT (AppT ArrowT
 --            (AppT (AppT (ConT Data.Vector.Fusion.Stream.Monadic.Stream)
