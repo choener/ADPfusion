@@ -98,6 +98,7 @@ library
     strict         >= 0.3.2   ,
     template-haskell          ,
     transformers              ,
+    tuple          >= 0.2     ,
     vector         >= 0.10
   exposed-modules:
     ADP.Fusion
