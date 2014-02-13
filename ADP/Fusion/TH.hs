@@ -38,9 +38,6 @@ makeAlgebraProductH hns nm = do
         runIO $ putStrLn ""
         runIO $ mapM_ print ntTypes
         runIO $ putStrLn ""
-        {-
-        error ""
-        -}
         l <- newName "l"
         vl <- varP l
         lvs <- sequence $ replicate (length fs') (newName "lv")
@@ -50,7 +47,7 @@ makeAlgebraProductH hns nm = do
         -- bind the two algebras in the where part
         -- the single clause we deal with
         let cls = clause [varP l, varP r] (normalB $ tupE [])
-                    -- the body of the where part
+                    -- the body of the where part; this also fixes the type of @varP l/r@
                     [ valD (conP dataConName (map varP lvs)) (normalB $ varE l) []
                     , valD (conP dataConName (map varP rvs)) (normalB $ varE r) []
                     ]
