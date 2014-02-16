@@ -71,7 +71,7 @@ genClause conName allFunNames evalFunNames choiceFunName = do
 --genEvalFunction :: [Name] -> z1 -> z2 VarStrictType -> Q (Name,Exp)
 genEvalFunction nts fL fR (name,_,t) = do
   runIO $ print $ getNames t
-  (lamPat,funL,funR) <-recBuildLamPat nts fL fR $ getNames t
+  (lamPat,funL,funR) <-recBuildLamPat nts fL fR $ init $ getNames t -- @init@ since we don't want the result as a parameter
   let exp = LamE lamPat $ TupE [funL,funR]
   runIO $ print exp
   return (name,exp)
@@ -90,10 +90,9 @@ recBuildLamPat nts fL' fR' t = go ([],VarE fL',VarE fR') t where
                         ffR <- tupE []
                         go (ls++[lmb],ffL,ffR) xs
     | otherwise    = do n   <- newName "t"
-                        lmb <- varP n
+                        lmb <- sigP (varP n) (varT x)
                         ffL <- appE (return fL) (varE n)
-                        -- ys >>= return . SM.map (\y -> funR y c)
-                        ffR <- tupE [] -- appE (return fR) (varE n) -- SM.map ($n) ffR
+                        ffR <- appE (appE [| \r -> return . SM.map (\f -> f r) |] (varE n)) (return fR)
                         go (ls++[lmb],ffL,ffR) xs
 
 -- |
