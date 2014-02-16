@@ -79,21 +79,24 @@ genEvalFunction nts fL fR (name,_,t) = do
 -- |
 
 recBuildLamPat :: [Name] -> Name -> Name -> [Name] -> Q ([Pat], Exp, Exp)
-recBuildLamPat nts fL' fR' t = go ([],VarE fL',VarE fR') t where
-  go tpl [] = return tpl
-  go (ls,fL,fR) (x:xs)
+recBuildLamPat nts fL' fR' t = go True ([],VarE fL',VarE fR') t where
+  go True  tpl [] = error "recBuildLamPat: no arguments"
+  go False (ls,fL,fR) [] = do ffR <- appE [| return |] (return fR)
+                              return (ls,fL,fR)
+  go True  (ls,fL,fR) xs = do ffR <- appE [| SM.singleton |] (return fR)
+                              go False (ls,fL,ffR) xs
+  go False (ls,fL,fR) (x:xs)
     | x `elem` nts = do nX  <- newName "nX"
                         nYs <- newName "nYs"
                         lmb <- tupP [varP nX, varP nYs]
                         ffL <- appE (return fL) (varE nX)
-                        -- something concatmap like
-                        ffR <- tupE []
-                        go (ls++[lmb],ffL,ffR) xs
+                        ffR <- appE (appE [| \ys fs -> SM.concatMap (\f -> SM.map f ys) fs |] (varE nYs)) (return fR)
+                        go False (ls++[lmb],ffL,ffR) xs
     | otherwise    = do n   <- newName "t"
-                        lmb <- sigP (varP n) (varT x)
+                        lmb <- sigP (varP n) (varT x) -- we actually have a signature, nice
                         ffL <- appE (return fL) (varE n)
-                        ffR <- appE (appE [| \r -> return . SM.map (\f -> f r) |] (varE n)) (return fR)
-                        go (ls++[lmb],ffL,ffR) xs
+                        ffR <- appE (appE [| \r -> SM.map (\f -> f r) |] (varE n)) (return fR)
+                        go False (ls++[lmb],ffL,ffR) xs
 
 -- |
 

@@ -13,12 +13,12 @@ import           ADP.Fusion.TH
 
 
 
-data Bla a b {- c -} x {- r -} = Bla
---  { fun1 :: a           -> x }
-  { fun2 :: a -> b      -> x }
---  , fun3 :: a -> b -> c -> x
+data Bla a b c x {- r -} = Bla
+  { fun1 :: a           -> x
+  , fun2 :: a -> b      -> x
+  , fun3 :: a -> b -> c -> x
 --  , h   :: forall m . Monad m => SM.Stream m x -> r
---  }
+  }
 
 makeAlgebraProductH [] ''Bla   -- 'h
 
