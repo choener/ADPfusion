@@ -1,3 +1,4 @@
+{-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE TemplateHaskell #-}
 
@@ -31,44 +32,88 @@ makeAlgebraProductH hns nm = do
         let (fs,hs) = partition ((`notElem` hns) . sel1) fs'
         -- the result types of the @fs@ are the types of the non-terminal symbols
         let ntTypes = nub . map getNtTypes $ fs
-        runIO $ putStrLn ""
-        runIO $ mapM_ print fs
-        runIO $ putStrLn ""
-        runIO $ mapM_ print hs
-        runIO $ putStrLn ""
-        runIO $ mapM_ print ntTypes
-        runIO $ putStrLn ""
-        l <- newName "l"
-        vl <- varP l
-        lvs <- sequence $ replicate (length fs') (newName "lv")
-        r <- newName "r"
-        rvs <- sequence $ replicate (length fs') (newName "rv")
-        e <-  tupE []
-        -- bind the two algebras in the where part
-        -- the single clause we deal with
-        let cls = clause [varP l, varP r] (normalB $ tupE [])
-                    -- the body of the where part; this also fixes the type of @varP l/r@
-                    [ valD (conP dataConName (map varP lvs)) (normalB $ varE l) []
-                    , valD (conP dataConName (map varP rvs)) (normalB $ varE r) []
-                    ]
-        -- finally, we bind everything together, creating the function @(<**)@
-        fun <- funD (mkName "<**") [cls]
-        runIO $ print fun
+        fun <- funD (mkName "<**") [genClause dataConName fs' fs hs]
+        --runIO $ print fun
         return
           [ fun -- FunD (mkName "<**") [Clause [VarP l, VarP r] (NormalB e) []] -- LamE [VarP l] (LamE [VarP r] (undefined))
           ]
       _   -> fail "more than one data ctor"
     _          -> fail "unsupported data type"
 
+-- | Build the single clause of our function. We shall need the functions bound
+-- in the where part to create the joined functions we need to return.
+
+-- genClause :: ?
+genClause conName allFunNames evalFunNames choiceFunName = do
+  let nonTermNames = nub . map getNtTypes $ evalFunNames
+  -- bind the l'eft and r'ight variable of the two algebras we want to join,
+  -- also create unique names for the function names we shall bind later.
+  nameL <- newName "l"
+  varL  <- varP nameL
+  fnmsL <- sequence $ replicate (length allFunNames) (newName "fnamL")
+  nameR <- newName "r"
+  varR  <- varP nameR
+  fnmsR <- sequence $ replicate (length allFunNames) (newName "fnamR")
+  -- bind the individual variables in the where part
+  whereL <- valD (conP conName (map varP fnmsL)) (normalB $ varE nameL) []
+  whereR <- valD (conP conName (map varP fnmsR)) (normalB $ varE nameR) []
+  rce <- recConE conName
+          $ zipWith3 (genEvalFunction nonTermNames) fnmsL fnmsR evalFunNames
+  -- build the function pairs
+  -- to keep our sanity, lets print this stuff
+  let cls = Clause [varL, varR] (NormalB rce) [whereL,whereR]
+  return cls
+
+-- |
+--
+-- TODO need fun names from @l@ and @r@
+
+--genEvalFunction :: [Name] -> z1 -> z2 VarStrictType -> Q (Name,Exp)
+genEvalFunction nts fL fR (name,_,t) = do
+  runIO $ print $ getNames t
+  (lamPat,funL,funR) <-recBuildLamPat nts fL fR $ getNames t
+  let exp = LamE lamPat $ TupE [funL,funR]
+  runIO $ print exp
+  return (name,exp)
+
+-- |
+
+recBuildLamPat :: [Name] -> Name -> Name -> [Name] -> Q ([Pat], Exp, Exp)
+recBuildLamPat nts fL' fR' t = go ([],VarE fL',VarE fR') t where
+  go tpl [] = return tpl
+  go (ls,fL,fR) (x:xs)
+    | x `elem` nts = do nX  <- newName "nX"
+                        nYs <- newName "nYs"
+                        lmb <- tupP [varP nX, varP nYs]
+                        ffL <- appE (return fL) (varE nX)
+                        -- something concatmap like
+                        ffR <- tupE []
+                        go (ls++[lmb],ffL,ffR) xs
+    | otherwise    = do n   <- newName "t"
+                        lmb <- varP n
+                        ffL <- appE (return fL) (varE n)
+                        -- ys >>= return . SM.map (\y -> funR y c)
+                        ffR <- tupE [] -- appE (return fR) (varE n) -- SM.map ($n) ffR
+                        go (ls++[lmb],ffL,ffR) xs
+
+-- |
+
+getNames t = go t where
+  go t
+    | VarT x <- t = [x]
+    | AppT (AppT ArrowT (VarT x)) y <- t = x : go y
+    | otherwise            = error $ "undetermined error:" ++ show t
+
+
 -- | Get us the 'Name' of a non-terminal type. Theses are simply the last
 -- @VarT@s occuring in a function.
 
 getNtTypes :: VarStrictType -> Name
-getNtTypes = go . sel3 where
+getNtTypes vst = go $ sel3 vst where
   go t
     | AppT _ (VarT x) <- t = x
     | AppT _ x        <- t = go x
-    | otherwise            = error $ "undetermined error"
+    | otherwise            = error $ "undetermined error:" ++ show vst
 
 -- |
 
