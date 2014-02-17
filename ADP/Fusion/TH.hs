@@ -44,12 +44,14 @@ makeAlgebraProductH hns nm = do
 -- in the where part to create the joined functions we need to return.
 
 -- genClause :: ?
-genClause conName allFunNames evalFunNames choiceFunName = do
+genClause conName allFunNames evalFunNames choiceFunNames = do
   let nonTermNames = nub . map getNtTypes $ evalFunNames
   -- bind the l'eft and r'ight variable of the two algebras we want to join,
   -- also create unique names for the function names we shall bind later.
   nameL <- newName "l"
   varL  <- varP nameL
+  -- TODO fnmsL,R makes the implicit assumption that function names come first,
+  -- then choice functions; we need to fix that!
   fnmsL <- sequence $ replicate (length allFunNames) (newName "fnamL")
   nameR <- newName "r"
   varR  <- varP nameR
@@ -58,11 +60,18 @@ genClause conName allFunNames evalFunNames choiceFunName = do
   whereL <- valD (conP conName (map varP fnmsL)) (normalB $ varE nameL) []
   whereR <- valD (conP conName (map varP fnmsR)) (normalB $ varE nameR) []
   rce <- recConE conName
-          $ zipWith3 (genEvalFunction nonTermNames) fnmsL fnmsR evalFunNames
+          $  zipWith3 (genChoiceFunction) (drop (length evalFunNames) fnmsL) (drop (length evalFunNames) fnmsR) choiceFunNames
+          ++ zipWith3 (genEvalFunction nonTermNames) fnmsL fnmsR evalFunNames
   -- build the function pairs
   -- to keep our sanity, lets print this stuff
   let cls = Clause [varL, varR] (NormalB rce) [whereL,whereR]
   return cls
+
+genChoiceFunction hL hR (name,_,t) = do
+  runIO $ print (hL,hR,name)
+  (lamPat,funH) <- buildChoice hL hR
+  let exp = LamE lamPat $ funH
+  return (name,exp)
 
 -- |
 --
@@ -70,10 +79,10 @@ genClause conName allFunNames evalFunNames choiceFunName = do
 
 --genEvalFunction :: [Name] -> z1 -> z2 VarStrictType -> Q (Name,Exp)
 genEvalFunction nts fL fR (name,_,t) = do
-  runIO $ print $ getNames t
+  --runIO $ print $ getNames t
   (lamPat,funL,funR) <-recBuildLamPat nts fL fR $ init $ getNames t -- @init@ since we don't want the result as a parameter
   let exp = LamE lamPat $ TupE [funL,funR]
-  runIO $ print exp
+  --runIO $ print exp
   return (name,exp)
 
 -- |
@@ -98,13 +107,24 @@ recBuildLamPat nts fL' fR' t = go True ([],VarE fL',VarE fR') t where
                         ffR <- appE (appE [| \r -> SM.map (\f -> f r) |] (varE n)) (return fR)
                         go False (ls++[lmb],ffL,ffR) xs
 
+buildChoice :: Name -> Name -> Q ([Pat], Exp)
+buildChoice hL' hR' = do
+  hL   <- varE hL'
+  hR   <- varE hR'
+  hcmb <- [| \hL hR xs -> (hL $ SM.map fst xs) >>= \cl -> (hR $ SM.concatMapM snd $ SM.filter ((cl==).fst) $ xs) |]
+  happ <- appE (appE (return hcmb) (return hL)) (return hR)
+  n    <- newName "xs"
+  lmb  <- varP n
+  return ([lmb],happ)
+
 -- |
 
 getNames t = go t where
   go t
     | VarT x <- t = [x]
     | AppT (AppT ArrowT (VarT x)) y <- t = x : go y
-    | otherwise            = error $ "undetermined error:" ++ show t
+--    | ForallT _ _ x <- t = go x
+    | otherwise            = error $ "getNames error: " ++ show t
 
 
 -- | Get us the 'Name' of a non-terminal type. Theses are simply the last
@@ -116,13 +136,6 @@ getNtTypes vst = go $ sel3 vst where
     | AppT _ (VarT x) <- t = x
     | AppT _ x        <- t = go x
     | otherwise            = error $ "undetermined error:" ++ show vst
-
--- |
-
-mkEvalFun :: [Name] -> VarStrictType -> VarStrictTypeQ
-mkEvalFun ns (v,s,t) = do
-  runIO $ mapM_ print ns
-  return undefined
 
 -- |
 
