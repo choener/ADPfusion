@@ -10,13 +10,22 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
 
--- | 
+-- | Tables in ADPfusion memoize results of parses. In the forward phase, table
+-- cells are filled by a table-filling method from @Data.PrimitiveArray@. In
+-- the backtracking phase, grammar rules are associated with tables to provide
+-- efficient backtracking.
 --
 -- TODO multi-dim tables with 'OnlyZero' need a static check!
 --
 -- TODO PointL , PointR need sanity checks for boundaries
 --
--- TODO the sanity checks are acutally a VERY BIG TODO since currently we do not protect against stupidity at all!
+-- TODO the sanity checks are acutally a VERY BIG TODO since currently we do
+-- not protect against stupidity at all!
+--
+-- TODO have boxed tables for top-down parsing.
+--
+-- TODO combine forward and backward phases to simplify the external interface
+-- to the programmer.
 
 module ADP.Fusion.Table where
 
@@ -43,9 +52,15 @@ import ADP.Fusion.Multi.Classes
 
 data MTbl i xs = MTbl !(TblConstraint i) !xs
 
+-- | A single-dimensional table. The index type needs a @Z:.@ when creating the
+-- internal @arr@.
+
 mTblS :: TblConstraint i -> PA.MutArr m (arr (Z:.i) x) -> MTbl i (PA.MutArr m (arr (Z:.i) x))
 mTblS = MTbl
 {-# INLINE mTblS #-}
+
+-- | General multi-dimensional tables. Here, index types and table constraints
+-- just match up.
 
 mTblD :: TblConstraint i -> PA.MutArr m (arr i x) -> MTbl i (PA.MutArr m (arr i x))
 mTblD = MTbl
@@ -55,6 +70,10 @@ instance Build (MTbl i x)
 
 type MTblSubword m arr x   = MTbl Subword (PA.MutArr m (arr (Z:.Subword) x))
 type MTblMulti   m arr x i = MTbl i       (PA.MutArr m (arr i            x))
+
+
+
+-- ** Single-dimensional table using a 'Subword' index.
 
 instance
   ( Element ls Subword
@@ -89,7 +108,9 @@ instance
       in  S.flatten mk step Unknown $ mkStream ls (Variable NoCheck Nothing) (subword i j)
   {-# INLINE mkStream #-}
 
--- **
+
+
+-- ** General multi-dimensional tables.
 
 instance Element ls (is:.i) => Element (ls :!: MTblMulti m arr x (is:.i)) (is:.i) where
   data Elm (ls :!: MTblMulti m arr x (is:.i)) (is:.i) = ElmMTbl !x !(is:.i) !(Elm ls (is:.i))
@@ -114,6 +135,14 @@ instance
     . S.map (\s -> Tr s Z (getIdx s))
     $ mkStream ls (tableStaticVar vs is) (tableStreamIndex c vs is)
   {-# INLINE mkStream #-}
+
+
+
+-- * With 'tableIndices' we create a stream of legal indices for this table. We
+-- need 'tableIndices' in multi-dimensional tables as the type of the
+-- multi-dimensional indices is generic.
+--
+-- TODO own module?
 
 class TableIndices i where
   tableIndices :: (Monad m) => TblConstraint i -> IxSV i -> i -> S.Stream m (Triple z j i) -> S.Stream m (Triple z j i)
@@ -179,10 +208,69 @@ instance TableIndices is => TableIndices (is:.PointR) where
 
 
 
--- * Backtracking tables. These wrap the fuly-calculated DP matrices and also
+-- * Backtracking tables. These wrap the fully-calculated DP matrices and also
 -- capture the backtracking function.
 
-data BtTbl i xs f = BtTbl !(TblConstraint i) !xs f
+-- | Capture table constraints, the table, and the backtracking function.
+--
+-- TODO Check strictness annotation in the backtracking function (we want the
+-- function to be expanded early).
+
+data BtTbl i xs f = BtTbl !(TblConstraint i) !xs !f
+
+btTblS :: TblConstraint i -> arr (Z:.i) x -> (i -> m (S.Stream m b)) -> BtTbl i (arr (Z:.i) x) (i -> m (S.Stream m b))
+btTblS = BtTbl
+{-# INLINE btTblS #-}
+
+btTblD :: TblConstraint i -> arr i x -> (i -> m (S.Stream m b)) -> BtTbl i (arr i x) (i -> m (S.Stream m b))
+btTblD = BtTbl
+{-# INLINE btTblD #-}
+
+instance Build (BtTbl i x f)
+
+type BtTblSubword m arr x   b = BtTbl Subword (arr (Z:.Subword) x) (Subword -> m (S.Stream m b))
+type BtTblMulti   m arr x i b = BtTbl i       (arr i            x) (i       -> m (S.Stream m b))
+
+
+
+-- ** Single-dimensional table using a 'Subword' index.
+
+instance
+  ( Element ls Subword
+  ) => Element (ls :!: BtTblSubword m arr x b) Subword where
+  data Elm (ls :!: BtTblSubword m arr x b) Subword = ElmBttSw !x !(m (S.Stream m b)) !Subword !(Elm ls Subword)
+  type Arg (ls :!: BtTblSubword m arr x b)         = Arg ls :. (x :!: m (S.Stream m b))
+  getArg (ElmBttSw x s _ ls) = getArg ls :. (x:!:s)
+  getIdx (ElmBttSw _ _ k _ ) = k
+  {-# INLINE getArg #-}
+  {-# INLINE getIdx #-}
+
+instance
+  ( Monad m
+  , Element ls Subword
+  , MkStream m ls Subword
+  , PA.PrimArrayOps arr (Z:.Subword) x
+  ) => MkStream m (ls :!: BtTblSubword m arr x b) Subword where
+  mkStream (ls :!: BtTbl c t f) Static (Subword (i:.j))
+    = S.map (\s -> let Subword (_:.l) = getIdx s
+                       ix             = subword l j
+                       d              = t PA.! (Z:.ix)
+                   in  ElmBttSw d (f ix) ix s)
+    $ mkStream ls (Variable Check Nothing) (subword i $ j - minSize c)
+  mkStream (ls :!: BtTbl c t f) (Variable _ Nothing) (Subword (i:.j))
+    = let mk s = let (Subword (_:.l)) = getIdx s in return (s:.j-l-minSize c)
+          step (s:.z)
+            | z>=0      = do let (Subword (_:.k)) = getIdx s
+                                 ix               = subword k (j-z)
+                                 d                = t PA.! (Z:.ix)
+                             return $ S.Yield (ElmBttSw d (f ix) ix s) (s:.z-1)
+            | otherwise = return S.Done
+          {-# INLINE [1] mk   #-}
+          {-# INLINE [1] step #-}
+      in  S.flatten mk step Unknown $ mkStream ls (Variable NoCheck Nothing) (subword i j)
+  {-# INLINE mkStream #-}
+
+
 
 {-
 data BtTbl i xs f = BtTbl !(ENZ i) !xs !f -- (i -> m (S.Stream m b))
