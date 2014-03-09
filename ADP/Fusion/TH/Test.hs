@@ -16,7 +16,7 @@ import           ADP.Fusion.TH
 data Bla m a b c x r = Bla
   { fun1 :: a           -> x
   , fun2 :: a -> b      -> x
-  , fun3 :: a -> b -> c -> x
+  , fun3 :: a -> x -> c -> x
   , h    :: SM.Stream m x -> m r
   }
 
