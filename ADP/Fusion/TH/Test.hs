@@ -45,7 +45,14 @@ makeAlgebraProductH ['h] ''Nussinov
 (<<*) f s = Nussinov unp jux nil h where
   Nussinov unpF juxF nilF hF = f
   Nussinov unpS juxS nilS hS = s
-  unp (x,xs) c          = (unpF x c    , xs >>= return . SM.map (\y -> unpS y c))
+  --unp (x,xs) c          = (unpF x c    , xs >>= return . SM.map (\y -> unpS y c))
+  --unp (x,xs) c          = (unpF x c    , xs >>= \xs' -> return $ SM.concatMap (\x -> SM.singleton $ unpS x c) xs') --xs >>= return . SM.map (\y -> unpS y c))
+  unp (x,xs) c          = (unpF x c    , do xs' <- xs
+                                            ls <- SM.toList xs'
+                                            let ms = [unpS l c | l <- ls]
+                                            return $ SM.fromList ms
+                                            )
+                                                                     
   jux (x,xs) c (y,ys) d = (juxF x c y d, xs >>= \xs' -> ys >>= \ys' -> return $ SM.concatMap (\s -> SM.map (\t -> juxS s c t d) ys') xs')
   nil e                 = (nilF e      , return $ SM.singleton (nilS e))
   h xs = do
@@ -113,7 +120,7 @@ backtrack inp t' = unId . SM.toList . unId . g $ subword 0 n where
 {-# NOINLINE backtrack #-}
 
 runTest :: String -> (Int,[String])
-runTest inp = (t PA.! (Z:.subword 0 n), take 1 b) where
+runTest inp = (t PA.! (Z:.subword 0 n), take 10 b) where
   i = VU.fromList . Prelude.map toUpper $ inp
   n = VU.length i
   t = runST $ forward i
