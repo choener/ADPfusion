@@ -40,9 +40,9 @@ data Nussinov m c e x r = Nussinov
   , h   :: SM.Stream m x -> m r
   }
 
--- makeAlgebraProductH ['h] ''Nussinov
+makeAlgebraProductH ['h] ''Nussinov
 
-(<**) f s = Nussinov unp jux nil h where
+(<<*) f s = Nussinov unp jux nil h where
   Nussinov unpF juxF nilF hF = f
   Nussinov unpS juxS nilS hS = s
   unp (x,xs) c          = (unpF x c    , xs >>= return . SM.map (\y -> unpS y c))
@@ -109,7 +109,7 @@ backtrack inp t' = unId . SM.toList . unId . g $ subword 0 n where
   n = VU.length inp
   c = chr inp
   t = btTblS EmptyOk t' g
-  (_,g) = grammar (bpmax <** pretty) c t
+  (_,g) = grammar (bpmax <<* pretty) c t
 {-# NOINLINE backtrack #-}
 
 runTest :: String -> (Int,[String])
@@ -120,22 +120,3 @@ runTest inp = (t PA.! (Z:.subword 0 n), take 1 b) where
   b = backtrack i t
 {-# NOINLINE runTest #-}
 
-{-
-data Bla m a b c x r = Bla
-  { fun1 :: a           -> x
-  , fun2 :: a -> b      -> x
-  , fun3 :: a -> x -> c -> x
-  , h    :: SM.Stream m x -> m r
-  }
-
-makeAlgebraProductH ['h] ''Bla
-
-aScore :: Monad m => Bla m Int Char Double Int Int
-aScore = Bla
-  { fun1 = \ i     -> i
-  , fun2 = \ i c   -> i + ord c
-  , fun3 = \ i x d -> i + x + round d
-  , h    = SM.foldl' (+) 0
-  }
-{-# INLINE aScore #-}
--}
