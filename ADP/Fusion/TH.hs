@@ -123,6 +123,7 @@ getNames t = go t where
   go t
     | VarT x <- t = [x]
     | AppT (AppT ArrowT (VarT x)) y <- t = x : go y
+--    | AppT (AppT ArrowT (TupleT 0)) y <- t = go y
 --    | ForallT _ _ x <- t = go x
     | otherwise            = error $ "getNames error: " ++ show t
 

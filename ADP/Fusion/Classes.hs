@@ -178,6 +178,8 @@ instance (Monad m) => MkStream m S Subword where
   mkStream S (Variable NoCheck Nothing)   (Subword (i:.j)) = S.singleton (ElmS $ subword i i) where
   -- later on, we'd check here if the minimum size requirements can be met (or we can stop early)
   mkStream S (Variable NoCheck (Just ())) (Subword (i:.j)) = error "write me"
+  -- once we are variable, but still have to check, we make sure that we have a legal subword, then return the empty subword starting at @i@.
+  mkStream S (Variable Check   Nothing)   (Subword (i:.j)) = staticCheck (i<=j) $ S.singleton (ElmS $ subword i i)
   -- in all other cases, we'd better have @i==j@ or this stream stops prematurely
   mkStream S _ (Subword (i:.j)) = staticCheck (i==j) $ S.singleton (ElmS $ subword i i)
   {-# INLINE mkStream #-}

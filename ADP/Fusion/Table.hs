@@ -239,8 +239,8 @@ instance
   ( Element ls Subword
   ) => Element (ls :!: BtTblSubword m arr x b) Subword where
   data Elm (ls :!: BtTblSubword m arr x b) Subword = ElmBttSw !x !(m (S.Stream m b)) !Subword !(Elm ls Subword)
-  type Arg (ls :!: BtTblSubword m arr x b)         = Arg ls :. (x :!: m (S.Stream m b))
-  getArg (ElmBttSw x s _ ls) = getArg ls :. (x:!:s)
+  type Arg (ls :!: BtTblSubword m arr x b)         = Arg ls :. (x , m (S.Stream m b))
+  getArg (ElmBttSw x s _ ls) = getArg ls :. (x,s)
   getIdx (ElmBttSw _ _ k _ ) = k
   {-# INLINE getArg #-}
   {-# INLINE getIdx #-}
