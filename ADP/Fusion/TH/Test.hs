@@ -84,7 +84,7 @@ pretty = Nussinov
   }
 {-# INLINE pretty #-}
 
--- grammar :: Nussinov m c x r -> c' -> t' -> (t', Subword -> m r)
+-- grammar :: Nussinov m Char () x r -> c' -> t' -> (t', Subword -> m r)
 grammar Nussinov{..} c t =
   (t, unp <<< t % c           |||
       jux <<< t % c % t % c   |||
