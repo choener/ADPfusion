@@ -35,8 +35,8 @@ import           ADP.Fusion.Multi.Classes
 
 data Chr r x where
   Chr :: VG.Vector v x
-      => (v x -> Int -> r)  -- | function to retrieve @r@ at index position
-      -> (v x)              -- | actual generic vector with data
+      => !(v x -> Int -> r)  -- | function to retrieve @r@ at index position
+      -> !(v x)              -- | actual generic vector with data
       -> Chr r x
 
 -- | smart constructor for regular 1-character parsers
@@ -65,11 +65,10 @@ instance
   , Element ls Subword
   , MkStream m ls Subword
   ) => MkStream m (ls :!: Chr r x) Subword where
-  mkStream (ls :!: Chr f (!xs)) Static ij@(Subword (i:.j))
-    = id -- staticCheck (j>0)
-    . S.map (ElmChr (f xs (j-1)) (subword (j-1) j))
+  mkStream (ls :!: Chr f xs) Static ij@(Subword (i:.j))
+    = S.map (ElmChr (f xs (j-1)) (subword (j-1) j))
     $ mkStream ls Static (subword i $ j-1)
-  mkStream (ls :!: Chr f (!xs)) v ij@(Subword (i:.j))
+  mkStream (ls :!: Chr f xs) v ij@(Subword (i:.j))
     = S.map (\s -> let Subword (k:.l) = getIdx s
                    in  ElmChr (f xs l) (subword l $ l+1) s
             )

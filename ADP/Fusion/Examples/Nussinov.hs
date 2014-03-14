@@ -71,10 +71,10 @@ bpmax = Nussinov
 
 pairs !c !d
   =  c=='A' && d=='U'
-  || c=='U' && d=='A'
   || c=='C' && d=='G'
   || c=='G' && d=='C'
   || c=='G' && d=='U'
+  || c=='U' && d=='A'
   || c=='U' && d=='G'
 {-# INLINE pairs #-}
 
