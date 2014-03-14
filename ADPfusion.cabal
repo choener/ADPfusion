@@ -153,6 +153,23 @@ executable Nussinov
     -optlo-O3 -optlo-std-compile-opts
     -fllvm-tbaa
 
+executable Durbin
+  if flag(examples)
+    buildable: True
+  else
+    buildable: False
+  main-is:
+    ADP/Fusion/Examples/Durbin.hs
+  ghc-options:
+    -Odph
+    -fcpr-off
+    -funbox-strict-fields
+    -funfolding-use-threshold1000
+    -funfolding-keeness-factor1000
+    -fllvm
+    -optlo-O3 -optlo-std-compile-opts
+    -fllvm-tbaa
+
 source-repository head
   type: git
   location: git://github.com/choener/ADPfusion

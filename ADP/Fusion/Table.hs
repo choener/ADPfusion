@@ -68,6 +68,12 @@ mTblD = MTbl
 
 instance Build (MTbl i x)
 
+instance ModifyConstraint (MTbl Subword arr) where
+  toNonEmpty (MTbl _ arr) = MTbl NonEmpty arr
+  toEmpty    (MTbl _ arr) = MTbl EmptyOk  arr
+  {-# INLINE toNonEmpty #-}
+  {-# INLINE toEmpty #-}
+
 type MTblSubword m arr x   = MTbl Subword (PA.MutArr m (arr (Z:.Subword) x))
 type MTblMulti   m arr x i = MTbl i       (PA.MutArr m (arr i            x))
 
@@ -227,6 +233,12 @@ btTblD = BtTbl
 {-# INLINE btTblD #-}
 
 instance Build (BtTbl i x f)
+
+instance ModifyConstraint (BtTbl Subword arr f) where
+  toNonEmpty (BtTbl _ arr f) = BtTbl NonEmpty arr f
+  toEmpty    (BtTbl _ arr f) = BtTbl EmptyOk  arr f
+  {-# INLINE toNonEmpty #-}
+  {-# INLINE toEmpty #-}
 
 type BtTblSubword m arr x   b = BtTbl Subword (arr (Z:.Subword) x) (Subword -> m (S.Stream m b))
 type BtTblMulti   m arr x i b = BtTbl i       (arr i            x) (i       -> m (S.Stream m b))

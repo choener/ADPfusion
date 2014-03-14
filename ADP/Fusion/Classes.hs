@@ -93,6 +93,10 @@ minSize NonEmpty = 1
 minSize _        = 0
 {-# INLINE minSize #-}
 
+class ModifyConstraint t where
+  toNonEmpty :: t -> t
+  toEmpty    :: t -> t
+
 -- |
 
 type family   TblConstraint x       :: *
