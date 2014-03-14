@@ -116,19 +116,36 @@ library
     ADP.Fusion.QuickCheck
 --    ADP.Fusion.Region
     ADP.Fusion.Table
---    ADP.Fusion.TH
+    ADP.Fusion.TH
 
   ghc-options:
     -O2 -funbox-strict-fields
 
-executable NeedlemanWunsch
-  buildable: False
+-- executable NeedlemanWunsch
+--   buildable: False
+--   if flag(examples)
+--     buildable: True
+--   main-is:
+--     ADP/Fusion/Examples/TwoDim.hs
+--   ghc-options:
+--     -Odph
+--     -funbox-strict-fields
+--     -funfolding-use-threshold1000
+--     -funfolding-keeness-factor1000
+--     -fllvm
+--     -optlo-O3 -optlo-std-compile-opts
+--     -fllvm-tbaa
+
+executable Nussinov
   if flag(examples)
     buildable: True
+  else
+    buildable: False
   main-is:
-    ADP/Fusion/Examples/TwoDim.hs
+    ADP/Fusion/Examples/Nussinov.hs
   ghc-options:
     -Odph
+    -fcpr-off
     -funbox-strict-fields
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000

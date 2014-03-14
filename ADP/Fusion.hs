@@ -18,93 +18,40 @@
 -- bind a terminal symbol to an input of length 0 and then run your grammar,
 -- you probably get errors, garbled data or random crashes. Such checks are
 -- done via asserts in non-production code.
---
--- TODO each combinator should come with a special outer check. Given some
--- index (say (i,j), this can then check if i-const >= 0, or j+const<=n, or
--- i+const<=j. That should speed up everything that uses GChr combinators.
--- Separating out this check means that certain inner loops can run without any
--- conditions and just jump.
 
-module ADP.Fusion where
-{-
-  -- basic combinators
-  ( (<<<)
-  , (<<#)
-  , (|||)
-  , (...)
-  , (~~)
-  , (%)
-  -- filters
-  , check
-  -- parsers
-  , chr
-  , chrLeft
-  , chrRight
-  , peekL
-  , peekR
-  , empty
-  , region
-  , sregion
---  , Tbl (..)
---  , BtTbl (..)
-  , MTbl (..)
-  , ENE (..)
-  , ENZ (..)
-  , None (..)
+module ADP.Fusion
+  ( module ADP.Fusion
+  , module ADP.Fusion.Apply
+  , module ADP.Fusion.Chr
+  , module ADP.Fusion.Classes
+  , module ADP.Fusion.Empty
+  , module ADP.Fusion.Multi.Classes
+  , module ADP.Fusion.None
+  , module ADP.Fusion.Table
+  , module ADP.Fusion.TH
   ) where
--}
 
-import Data.Strict.Tuple
---import GHC.Exts (inline)
+import           Data.Strict.Tuple
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
-import ADP.Fusion.Apply
-import ADP.Fusion.Chr
-import ADP.Fusion.Classes
-import ADP.Fusion.Multi.Classes
---import ADP.Fusion.Empty
---import ADP.Fusion.Region
-import ADP.Fusion.Table
---import ADP.Fusion.None
+import           ADP.Fusion.Apply
+import           ADP.Fusion.Chr
+import           ADP.Fusion.Classes
+import           ADP.Fusion.Empty
+import           ADP.Fusion.Multi.Classes
+import           ADP.Fusion.None
+import           ADP.Fusion.Table
+import           ADP.Fusion.TH
 
+import           Data.Array.Repa.Index
+import           Data.Array.Repa.Index.Subword
+import           Data.Array.Repa.Shape
 import qualified Data.Vector.Unboxed as VU
-import Data.Array.Repa.Shape
-import Data.Array.Repa.Index
-import Data.Array.Repa.Index.Subword
 
-import Data.PrimitiveArray
-import Data.PrimitiveArray.Zero
+import           Data.PrimitiveArray
+import           Data.PrimitiveArray.Zero
 
-{-
 
-{-# NOINLINE test1 #-}
-test1 :: Int -> Int -> IO Int
-test1 i j = S.foldl' (\z (Z:.a:.b) ->z+a+b) 0 $ S.map getArg $ mkStream (S:!:chr cs:!:chr cs) Static (subword i j)
-
-{-# NOINLINE test2 #-}
-test2 :: Int -> Int -> IO Int
-test2 i j =
-  let ix = (Z:.subword i j:.subword i j:.subword i j:.subword i j)
-  in  S.foldl' (\z (Z:.(Z:.a:.b:.c:.d):.(Z:.e:.f:.g:.h)) ->z+a+b+c+d+e+f+g+h) 0 $ S.map getArg $ mkStream (S:!:(M:>chr cs:>chr cs:>chr cs:>chr cs):!:(M:>chr cs:>chr cs:>chr cs:>chr cs)) (initialSV ix) ix
-
-{-# NOINLINE test3 #-}
-test3 :: Int -> Int -> IO Int
-test3 i j =
-  let ix = (Z:.subword i j:.subword i j)
-  in  tbl >>= \t' -> let t=mTbl (Z:.NonEmpty:.NonEmpty) t' in S.foldl' (\z (Z:.x:.y) -> z+x+y) 0 $ S.map getArg $ mkStream (S:!:t:!:t) (initialSV ix) ix
-
-{-# NOINLINE ddd #-}
-ddd = test3 1 3
-
-{-# NOINLINE cs #-}
-cs :: VU.Vector Int
-cs = VU.fromList [1 .. 1000]
-
-{-# NOINLINE tbl #-}
-tbl :: IO (MutArr IO (Unboxed (Z:.Subword:.Subword) Int))
-tbl = newWithM (Z:.subword 0 0:.subword 0 0) (Z:.subword 0 20:.subword 0 20) 1
-
--}
 
 -- | Apply a function to symbols on the RHS of a production rule. Builds the
 -- stack of symbols from 'xs' using 'build', then hands this stack to

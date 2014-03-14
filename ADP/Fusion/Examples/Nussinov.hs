@@ -9,17 +9,19 @@
 -- | Nussinovs RNA secondary structure prediction algorithm via basepair
 -- maximization.
 
-module ADP.Fusion.Examples.Nussinov where
+module Main where
 
+import           Control.Applicative
 import           Control.Monad
 import           Control.Monad.ST
+import           Data.Char (toUpper,toLower)
 import           Data.List
+import           Data.Vector.Fusion.Util
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Syntax
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
-import           Data.Vector.Fusion.Util
-import           Data.Char (toUpper,toLower)
+import           Text.Printf
 
 import           Data.Array.Repa.Index.Subword
 import           Data.Array.Repa.Index
@@ -27,11 +29,6 @@ import           Data.PrimitiveArray.Zero as PA
 import           Data.PrimitiveArray as PA
 
 import           ADP.Fusion
-import           ADP.Fusion.Empty
-import           ADP.Fusion.Classes
-import           ADP.Fusion.Table
-import           ADP.Fusion.Chr
-import           ADP.Fusion.TH
 
 
 
@@ -99,7 +96,7 @@ forward :: VU.Vector Char -> ST s (Unboxed (Z:.Subword) Int)
 forward inp = do
   let n  = VU.length inp
   let c  = chr inp
-  t' <- PA.newWithM (Z:.subword 0 0) (Z:.subword 0 n) (-999999)
+  !t' <- PA.newWithM (Z:.subword 0 0) (Z:.subword 0 n) (-999999)
   let t  = mTblS EmptyOk t'
   fillTable $ grammar bpmax c t
   PA.freeze t'
@@ -126,4 +123,11 @@ runNussinov k inp = (t PA.! (Z:.subword 0 n), take k b) where
   t = runST $ forward i
   b = backtrack i t
 {-# NOINLINE runNussinov #-}
+
+main = do
+  ls <- lines <$> getContents
+  forM_ ls $ \l -> do
+    putStrLn l
+    let (k,[x]) = runNussinov 1 l
+    printf "%s %5d\n" x k
 
