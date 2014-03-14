@@ -1,3 +1,4 @@
+{-# LANGUAGE MonadComprehensions #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -29,8 +30,6 @@ import           ADP.Fusion.Table
 import           ADP.Fusion.Chr
 import           ADP.Fusion.TH
 
-import           Debug.Trace
-
 
 
 data Nussinov m c e x r = Nussinov
@@ -42,23 +41,21 @@ data Nussinov m c e x r = Nussinov
 
 makeAlgebraProductH ['h] ''Nussinov
 
+{- The code below is mainly to see how one could write the algebra product manually
+ -
 (<<*) f s = Nussinov unp jux nil h where
   Nussinov unpF juxF nilF hF = f
   Nussinov unpS juxS nilS hS = s
-  --unp (x,xs) c          = (unpF x c    , xs >>= return . SM.map (\y -> unpS y c))
-  --unp (x,xs) c          = (unpF x c    , xs >>= \xs' -> return $ SM.concatMap (\x -> SM.singleton $ unpS x c) xs') --xs >>= return . SM.map (\y -> unpS y c))
-  unp (x,xs) c          = (unpF x c    , do xs' <- xs
-                                            ls <- SM.toList xs'
-                                            let ms = [unpS l c | l <- ls]
-                                            return $ SM.fromList ms
-                                            )
-                                                                     
-  jux (x,xs) c (y,ys) d = (juxF x c y d, xs >>= \xs' -> ys >>= \ys' -> return $ SM.concatMap (\s -> SM.map (\t -> juxS s c t d) ys') xs')
+  --unp (x,xs) c          = (unpF x c    , xs >>= \xs' -> return $ SM.concatMap (\x -> SM.singleton $ unpS x c) xs')
+  unp (x,xs) c          = (unpF x c    , xs >>= return . SM.concatMap (\x -> SM.singleton $ unpS x c))
+  --jux (x,xs) c (y,ys) d = (juxF x c y d, xs >>= \xs' -> ys >>= \ys' -> return $ SM.concatMap (\x -> SM.concatMap (\y -> SM.singleton $ juxS x c y d) ys') xs')
+  jux (x,xs) c (y,ys) d = (juxF x c y d, xs >>= return . SM.concatMapM (\x -> ys >>= return . SM.concatMapM (\y -> return . SM.singleton $ juxS x c y d)))
   nil e                 = (nilF e      , return $ SM.singleton (nilS e))
   h xs = do
     hfs <- hF $ SM.map fst xs
     let phfs = SM.concatMapM snd . SM.filter ((hfs==) . fst) $ xs
     hS phfs
+-}
 
 bpmax :: Monad m => Nussinov m Char () Int Int
 bpmax = Nussinov
@@ -116,7 +113,7 @@ backtrack inp t' = unId . SM.toList . unId . g $ subword 0 n where
   n = VU.length inp
   c = chr inp
   t = btTblS EmptyOk t' g
-  (_,g) = grammar (bpmax <<* pretty) c t
+  (_,g) = grammar (bpmax <** pretty) c t
 {-# NOINLINE backtrack #-}
 
 runTest :: String -> (Int,[String])
