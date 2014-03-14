@@ -6,7 +6,10 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module ADP.Fusion.TH.Test where
+-- | Nussinovs RNA secondary structure prediction algorithm via basepair
+-- maximization.
+
+module ADP.Fusion.Examples.Nussinov where
 
 import           Control.Monad
 import           Control.Monad.ST
@@ -116,11 +119,11 @@ backtrack inp t' = unId . SM.toList . unId . g $ subword 0 n where
   (_,g) = grammar (bpmax <** pretty) c t
 {-# NOINLINE backtrack #-}
 
-runTest :: String -> (Int,[String])
-runTest inp = (t PA.! (Z:.subword 0 n), take 10 b) where
+runNussinov :: Int -> String -> (Int,[String])
+runNussinov k inp = (t PA.! (Z:.subword 0 n), take k b) where
   i = VU.fromList . Prelude.map toUpper $ inp
   n = VU.length i
   t = runST $ forward i
   b = backtrack i t
-{-# NOINLINE runTest #-}
+{-# NOINLINE runNussinov #-}
 
