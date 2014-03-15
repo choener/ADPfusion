@@ -103,7 +103,7 @@ recBuildLamPat nts fL' fR' ts = do
 buildRns f xs []                     = appE ([| return . SM.singleton |]) (foldl (\g z -> appE g (varE z)) (return f) xs)
 buildRns f xs (VarP v          : ys) = buildRns f (xs++[v]) ys
 buildRns f xs (TupP [_,VarP v] : ys) = do w  <- newName "w"
-                                          [| $(varE v) >>= return . SM.concatMapM (\ $(varP w) -> $(buildRns f (xs++[w]) ys)) |]
+                                          [| $(varE v) >>= return . SM.concatMapM $(lamE [varP w] (buildRns f (xs++[w]) ys)) |]
 
 -- | Build up the choice function.
 --
