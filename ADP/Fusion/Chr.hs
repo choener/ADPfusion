@@ -44,6 +44,15 @@ data Chr r x where
 chr xs = Chr VG.unsafeIndex xs
 {-# INLINE chr #-}
 
+-- | Smart constructor for Maybe Peeking, followed by a character.
+
+chrLeft xs = Chr f xs where
+  f xs k = ( xs VG.!? (k-1)
+           , VG.unsafeIndex xs k
+           )
+  {-# INLINE [1] f #-}
+{-# INLINE chrLeft #-}
+
 instance Build (Chr r x)
 
 instance
