@@ -91,9 +91,9 @@ genEvalFunction nts fL fR (name,_,t) = do
 
 -- |
 
-recBuildLamPat :: [Name] -> Name -> Name -> [Name] -> Q ([Pat], Exp, Exp)
+recBuildLamPat :: [Name] -> Name -> Name -> [[Name]] -> Q ([Pat], Exp, Exp)
 recBuildLamPat nts fL' fR' ts = do
-  ps <- sequence [ if t `elem` nts then tupP [newName "x" >>= varP, newName "ys" >>= varP] else (newName "t" >>= varP) | t<-ts]
+  ps <- sequence [ if length t==1 && head t `elem` nts then tupP [newName "x" >>= varP, newName "ys" >>= varP] else (newName "t" >>= varP) | t<-ts]
   let buildLfun f (TupP [VarP v,_]) = appE f (varE v)
       buildLfun f (VarP v         ) = appE f (varE v)
   lfun <- foldl buildLfun (varE fL') ps
@@ -116,14 +116,17 @@ buildChoice hL' hR' = do
                let phfs = SM.concatMapM snd . SM.filter ((hfs==) . fst) $ xs
                $(varE hR') phfs |]
 
--- |
+-- | Gets the names used in the evaluation function.
 
+getNames :: Type -> [[Name]]
 getNames t = go t where
   go t
-    | VarT x <- t = [x]
-    | AppT (AppT ArrowT (VarT x)) y <- t = x : go y
+    | VarT x <- t = [[x]]
+    | AppT (AppT ArrowT (VarT x  )) y <- t = [x] : go y
+    | AppT (AppT ArrowT (AppT _ _)) y <- t = []  : go y  -- later on, grab all terminal names in a multi-dim case
     | otherwise            = error $ "getNames error: " ++ show t
 
+-- AppT (AppT ArrowT (AppT (AppT (ConT Data.Array.Repa.Index.:.) (AppT (AppT (ConT Data.Array.Repa.Index.:.) (ConT Data.Array.Repa.Index.Z)) (VarT c_1627675270))) (VarT c_1627675270))) (VarT x_1627675265)
 
 -- | Get us the 'Name' of a non-terminal type. Theses are simply the last
 -- @VarT@s occuring in a function.
