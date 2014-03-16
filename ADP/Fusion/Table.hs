@@ -228,7 +228,7 @@ btTblS :: TblConstraint i -> arr (Z:.i) x -> (i -> m (S.Stream m b)) -> BtTbl i 
 btTblS = BtTbl
 {-# INLINE btTblS #-}
 
-btTblD :: TblConstraint i -> arr i x -> (i -> m (S.Stream m b)) -> BtTbl i (arr i x) (i -> m (S.Stream m b))
+btTblD :: TblConstraint i -> arr i      x -> (i -> m (S.Stream m b)) -> BtTbl i (arr i      x) (i -> m (S.Stream m b))
 btTblD = BtTbl
 {-# INLINE btTblD #-}
 
@@ -282,7 +282,28 @@ instance
       in  S.flatten mk step Unknown $ mkStream ls (Variable NoCheck Nothing) (subword i j)
   {-# INLINE mkStream #-}
 
+instance Element ls (is:.i) => Element (ls :!: BtTblMulti m arr x (is:.i) b) (is:.i) where
+  data Elm (ls :!: BtTblMulti m arr x (is:.i) b) (is:.i) = ElmBtTbl !x !(m (S.Stream m b)) !(is:.i) !(Elm ls (is:.i))
+  type Arg (ls :!: BtTblMulti m arr x (is:.i) b)         = Arg ls :. (x, m (S.Stream m b))
+  getArg (ElmBtTbl x s _ ls) = getArg ls :. (x,s)
+  getIdx (ElmBtTbl _ _ k _ ) = k
+  {-# INLINE getArg #-}
+  {-# INLINE getIdx #-}
 
+instance
+  ( Monad m
+  , Element ls (is:.i)
+  , TableStaticVar (is:.i)
+  , TableIndices (is:.i)
+  , MkStream m ls (is:.i)
+  , PA.PrimArrayOps arr (is:.i) x
+  ) => MkStream m (ls :!: BtTblMulti m arr x (is:.i) b) (is:.i) where
+  mkStream (ls :!: BtTbl c t f) vs is
+    = S.map (\(Tr s _ i) -> ElmBtTbl (t PA.! i) (f i) i s)
+    . tableIndices c vs is
+    . S.map (\s -> Tr s Z (getIdx s))
+    $ mkStream ls (tableStaticVar vs is) (tableStreamIndex c vs is)
+  {-# INLINE mkStream #-}
 
 {-
 data BtTbl i xs f = BtTbl !(ENZ i) !xs !f -- (i -> m (S.Stream m b))
