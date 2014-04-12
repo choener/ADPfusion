@@ -88,18 +88,19 @@ flag examples
 
 library
   build-depends:
-    base >= 4 && < 5,
-    deepseq        >= 1.3     ,
-    ghc-prim                  ,
-    primitive      >= 0.5     ,
-    PrimitiveArray >= 0.5.4   ,
-    QuickCheck     >= 2.5     ,
-    repa           >= 3.2     ,
-    strict         >= 0.3.2   ,
-    template-haskell          ,
-    transformers              ,
-    tuple          >= 0.2     ,
-    vector         >= 0.10
+    base            >= 4 && < 5 ,
+    deepseq         >= 1.3      ,
+    ghc-prim                    ,
+    lens            >= 4.0      ,
+    primitive       >= 0.5      ,
+    PrimitiveArray  >= 0.5.5    ,
+    QuickCheck      >= 2.5      ,
+    repa            >= 3.2      ,
+    strict          >= 0.3.2    ,
+    template-haskell            ,
+    transformers                ,
+    tuple           >= 0.2      ,
+    vector          >= 0.10
   exposed-modules:
     ADP.Fusion
     ADP.Fusion.Apply
@@ -114,7 +115,7 @@ library
 --    ADP.Fusion.Multi.None
     ADP.Fusion.None
     ADP.Fusion.QuickCheck
---    ADP.Fusion.Region
+    ADP.Fusion.Region
     ADP.Fusion.Table
     ADP.Fusion.TH
 
