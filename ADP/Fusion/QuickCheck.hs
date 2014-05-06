@@ -418,7 +418,7 @@ prop_P_2dimCMCMC () = monadicIO $ do -- ix@(Z:.PointL(i:.j):.PointL(k:.l)) = mon
 
 -- | A subword (i,j) should always produce an index in the allowed range
 
-prop_subwordIndex (Small n, Subword (i:.j)) = (n>j) ==> p where
+prop_subwordIndex (SmallInt n, Subword (i:.j)) = (n>j) ==> p where
   p = n * (n+1) `div` 2 >= k
   k = subwordIndex (subword 0 n) (subword i j)
 
@@ -449,12 +449,12 @@ allProps = $forAllProperties customCheck
 
 
 
-newtype Small = Small Int
+newtype SmallInt = SmallInt Int
   deriving (Show)
 
-instance Arbitrary Small where
-  arbitrary = Small <$> choose (0,100)
-  shrink (Small i) = Small <$> shrink i
+instance Arbitrary SmallInt where
+  arbitrary = SmallInt <$> choose (0,100)
+  shrink (SmallInt i) = SmallInt <$> shrink i
 
 newtype TinySubword = TinySubword (Int:.Int)
   deriving (Show)
