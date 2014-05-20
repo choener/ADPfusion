@@ -80,7 +80,7 @@ description:
 
 Extra-Source-Files:
   README.md
-  changelog
+  changelog.md
 
 flag examples
   description: build the examples (only Needleman-Wunsch for now)
