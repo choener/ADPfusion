@@ -83,8 +83,9 @@ Extra-Source-Files:
   changelog.md
 
 flag examples
-  description: build the examples (only Needleman-Wunsch for now)
-  default: False
+  description:  build the examples (only Needleman-Wunsch for now)
+  default:      False
+  manual:       True
 
 library
   build-depends:
