@@ -27,7 +27,7 @@ module ADP.Fusion
   , module ADP.Fusion.Empty
   , module ADP.Fusion.Multi.Classes
   , module ADP.Fusion.None
-  , module ADP.Fusion.Region
+--  , module ADP.Fusion.Region
   , module ADP.Fusion.Table
   , module ADP.Fusion.TH
   ) where
@@ -41,7 +41,7 @@ import           ADP.Fusion.Classes
 import           ADP.Fusion.Empty
 import           ADP.Fusion.Multi.Classes
 import           ADP.Fusion.None
-import           ADP.Fusion.Region
+--import           ADP.Fusion.Region
 import           ADP.Fusion.Table
 import           ADP.Fusion.TH
 
