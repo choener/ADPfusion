@@ -26,6 +26,15 @@ description:
                 <http://doi.acm.org/10.1145/2364527.2364559> preprint: <http://www.tbi.univie.ac.at/newpapers/pdfs/TBI-p-2012-2.pdf>
                 @
                 .
+                Additional optimizations learned from the paper below have been integrated:
+                .
+                @
+                Andrew Farmer, Christian Höner zu Siederdissen, and Andy Gill.
+                The HERMIT in the stream: fusing stream fusion’s concatMap.
+                2014. Proceedings of the ACM SIGPLAN 2014 workshop on Partial evaluation and program manipulation.
+                <http://dl.acm.org/citation.cfm?doid=2543728.2543736>
+                @
+                .
                 From the programmers' viewpoint, ADPfusion behaves very much
                 like the original ADP implementation
                 <http://bibiserv.techfak.uni-bielefeld.de/adp/> developed by

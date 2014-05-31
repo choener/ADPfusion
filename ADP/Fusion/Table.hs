@@ -42,11 +42,27 @@ import           Data.Array.Repa.Index.Points
 import           Data.Array.Repa.Index.Subword
 import qualified Data.PrimitiveArray as PA
 import qualified Data.PrimitiveArray.Zero as PA
+import qualified Data.PrimitiveArray.FillTables as PA
 
 import ADP.Fusion.Classes
 import ADP.Fusion.Multi.Classes
 
 
+
+
+class ExposeTables t where
+    type Exposed t :: *
+    expose :: t -> (Exposed t)
+
+instance ExposeTables Z where
+    type Exposed Z = Z
+    expose Z = Z
+    {-# INLINE expose #-}
+
+instance (ExposeTables ts, t ~ (PA.MutArr m (arr sh elm))) => ExposeTables (ts:.(MTbl i t, sh -> m elm)) where
+    type Exposed (ts:.(MTbl i t, sh -> m elm)) = Exposed ts :. (t, sh -> m elm)
+    expose (ts:.(MTbl _ t,f)) = expose ts :. (t,f)
+    {-# INLINE expose #-}
 
 -- | A table with mutable elements and attached table constraints.
 
