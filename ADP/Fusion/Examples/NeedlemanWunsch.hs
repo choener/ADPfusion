@@ -3,10 +3,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeOperators #-}
 
--- | This is not really a working example, but rather to check the GHC-Core for
--- fusion.
-
---module ADP.Fusion.Examples.TwoDim where
 module Main where
 
 import           Control.Applicative
@@ -54,7 +50,9 @@ align [c] = error "single last line"
 align (a:b:xs) = do
   putStrLn a
   putStrLn b
-  print $ needlemanWunsch (VU.fromList a) (VU.fromList b)
+  let (s,rs) = needlemanWunsch (VU.fromList a) (VU.fromList b)
+  print s
+  mapM_ (mapM_ print) rs
   align xs
 
 -- grammar :: Signature m x r c -> ???
@@ -73,7 +71,7 @@ sScore = Signature
   , step_loop = \x _         -> x-1
   , loop_step = \x _         -> x-1
   , nil_nil   = const 0
-  , h = S.foldl' max 0
+  , h = S.foldl' max (-999999)
   }
 {-# INLINE sScore #-}
 
@@ -90,14 +88,14 @@ needlemanWunsch i1 i2 = (ws PA.! (Z:.pointL 0 n1:.pointL 0 n2), bt) where
   (Z:.ws) = unsafePerformIO (forwardPhase i1 i2)
   n1 = VU.length i1
   n2 = VU.length i2
-  bt = backtrack i1 i2 (Z:.ws)
+  bt = take 1 $ backtrack i1 i2 (Z:.ws)
 {-# NOINLINE needlemanWunsch #-}
 
 forwardPhase :: VU.Vector Char -> VU.Vector Char -> IO (Z:.(PA.Unboxed (Z:.PointL:.PointL) Int))
 forwardPhase i1 i2 = do
   let n1 = VU.length i1
   let n2 = VU.length i2
-  !t' <- PA.newWithM (Z:.pointL 0 0:.pointL 0 0) (Z:.pointL 0 n1:.pointL 0 n2) 0
+  !t' <- PA.newWithM (Z:.pointL 0 0:.pointL 0 0) (Z:.pointL 0 n1:.pointL 0 n2) (-999999)
   let t= mTblD (Z:.EmptyOk:.EmptyOk) t'
   PA.runFillTables . expose $ grammar sScore t i1 i2
   PA.freeze t' >>= return . (Z:.)
