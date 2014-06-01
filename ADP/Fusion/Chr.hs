@@ -32,11 +32,14 @@ import           ADP.Fusion.Multi.Classes
 
 -- | A generic Character parser that reads a single character but allows
 -- passing additional information.
+--
+--  'Chr' expects a function to retrieve @r@ at index position, followed by
+--  the actual generic vector with data.
 
 data Chr r x where
   Chr :: VG.Vector v x
-      => !(v x -> Int -> r)  -- | function to retrieve @r@ at index position
-      -> !(v x)              -- | actual generic vector with data
+      => !(v x -> Int -> r)
+      -> !(v x)
       -> Chr r x
 
 -- | smart constructor for regular 1-character parsers

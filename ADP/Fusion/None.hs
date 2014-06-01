@@ -53,8 +53,7 @@ instance
 
 
 
--- * Single dimensional instances for 'None' are really weird -- since they do
--- nothing.
+-- * Single dimensional instances for 'None' are really weird
 
 instance Element ls Subword => Element (ls :!: None) Subword where
   data Elm (ls :!: None) Subword = ElmNone !Subword !(Elm ls Subword)
@@ -63,6 +62,9 @@ instance Element ls Subword => Element (ls :!: None) Subword where
   getIdx (ElmNone i _) = i
   {-# INLINE getArg #-}
   {-# INLINE getIdx #-}
+
+-- | The instance does nothing (except insert @()@ into the argument
+-- stack).
 
 instance
   ( Monad m

@@ -25,14 +25,15 @@ import           Data.Array.Repa.Index.Subword
 -- * Data and type constructors
 
 -- | The Inner/Outer handler. We encode three states. We are in 'Outer' or
--- right-most position, or 'Inner' position. The 'Inner' position encodes if
--- loop conditional 'CheckNoCheck' need to be performed.
+-- right-most position, or 'Inner' position. The 'Inner' position encodes
+-- if loop conditional 'CheckNoCheck' need to be performed.
 --
--- In f <<< Z % table % table, the two tables already perform a conditional
--- branch, so that Z/table does not have to check boundary conditions.
+-- In @f <<< Z % table % table@, the two tables already perform
+-- a conditional branch, so that Z/table does not have to check boundary
+-- conditions.
 --
--- In f <<< Z % table % char, no check is performed in table/char, so Z/table
--- needs to perform a boundary check.
+-- In @f <<< Z % table % char@, no check is performed in table/char, so
+-- Z/table needs to perform a boundary check.
 
 -- | Signals if we still need to do bounds checking. As long as we have static
 -- components, there is the possibility of out-of-bounds errors (once we have
