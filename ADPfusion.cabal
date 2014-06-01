@@ -99,7 +99,7 @@ flag examples
 library
   build-depends:
     primitive       == 0.5.*    ,
-    PrimitiveArray  == 0.5.5.*  ,
+    PrimitiveArray  == 0.6.*    ,
     QuickCheck      == 2.*      ,
     repa            == 3.2.*    ,
     strict          == 0.3.*    ,
@@ -113,7 +113,6 @@ library
     ADP.Fusion.Chr
     ADP.Fusion.Classes
     ADP.Fusion.Empty
---    ADP.Fusion.Examples.Palindrome
     ADP.Fusion.Multi
     ADP.Fusion.Multi.Classes
 --    ADP.Fusion.Multi.Empty
