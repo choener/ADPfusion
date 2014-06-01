@@ -123,6 +123,7 @@ library
     ADP.Fusion.QuickCheck
 --    ADP.Fusion.Region
     ADP.Fusion.Table
+    ADP.Fusion.Table.Fill
     ADP.Fusion.TH
 
   ghc-options:

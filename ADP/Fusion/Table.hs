@@ -49,25 +49,6 @@ import ADP.Fusion.Multi.Classes
 
 
 
--- | Expose the actual mutable table with an 'MTbl'. (Should be temporary
--- until 'MTbl's get a more thorough treatment for auto-filling.
-
-class ExposeTables t where
-    type Exposed t :: *
-    expose :: t -> (Exposed t)
-
-instance ExposeTables Z where
-    type Exposed Z = Z
-    expose Z = Z
-    {-# INLINE expose #-}
-
-instance (ExposeTables ts, t ~ (PA.MutArr m (arr sh elm))) => ExposeTables (ts:.(MTbl i t, sh -> m elm)) where
-    type Exposed (ts:.(MTbl i t, sh -> m elm)) = Exposed ts :. (t, sh -> m elm)
-    expose (ts:.(MTbl _ t,f)) = expose ts :. (t,f)
-    {-# INLINE expose #-}
-
-
-
 -- | A table with mutable elements and attached table constraints.
 
 data MTbl i xs = MTbl !(TblConstraint i) !xs

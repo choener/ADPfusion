@@ -8,6 +8,10 @@
 - somewhat nicer programmer interfaces
 - less type classes to worry about
 - there should be no loss of performance
+- automatic filling and freezing of tables
+- multiple example algorithms (build with -fexamples switch):
+  - Needleman-Wunsch global alignment
+  - RNA secondary structure prediction using simple base pair maximization
 
 0.2.x.x
 -------
