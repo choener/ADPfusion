@@ -20,6 +20,8 @@ import ADP.Fusion.Multi.Classes
 
 type instance TermOf (Term ts Empty) = TermOf ts :. ()
 
+-- ** @PointL@ instances
+
 instance
   ( Monad m
   , TermElm m ts is
@@ -44,4 +46,16 @@ instance
   {-# INLINE getTermParserRange #-}
   {-# INLINE termInnerOuter #-}
   {-# INLINE termLeftIndex #-}
+
+-- ** @Subword@ instances
+
+instance
+    ( Monad m
+    , TermElm m ts is
+    ) => TermElm m (Term ts Empty) (is:.Subword) where
+
+instance
+    ( TermValidIndex ts is
+    ) => TermValidIndex (Term ts Empty) (is:.Subword) where
+
 

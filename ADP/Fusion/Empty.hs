@@ -59,6 +59,10 @@ instance TermStaticVar Empty PointL where
   {-# INLINE termStaticVar #-}
   {-# INLINE termStreamIndex #-}
 
+instance TermStaticVar Empty Subword where
+    termStaticVar = error "write me"
+    termStreamIndex = error "write me"
+
 -- | Again, we assume that no 'staticCheck' is necessary and that @i==j@ is
 -- true.
 
@@ -72,4 +76,16 @@ instance
     . S.map moveIdxTr
   terminalStream _ _ _ = error "mkStream Empty/(is:.PointL) called with illegal parameters"
   {-# INLINE terminalStream #-}
+
+instance
+    ( Monad m
+    , TerminalStream m a is
+    ) => TerminalStream m (TermSymbol a Empty) (is:.Subword) where
+      terminalStream (a:>Empty) (sv:.Static) (is:.Subword (i:.j))
+        = S.map (\(Qd s (z:.i) is e) -> Qd s z (is:.i) (e:.()))
+        . terminalStream a sv is
+        . S.map moveIdxTr
+      terminalStream _ _ _ = error "mkStream Empty/(is:.Subword) called with illegal parameters"
+      {-# INLINE terminalStream #-}
+
 

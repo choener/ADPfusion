@@ -15,13 +15,15 @@ import           ADP.Fusion.Table
 
 
 -- * Specialized table-filling wrapper for 'MTbl's
+--
+-- TODO table-filling does /not/ work for single-dimensional stuff
 
 -- | Run and freeze 'MTbl's. Since actually running the table-filling part
 -- is usually the last thing to do, we can freeze as well.
 
 runFreezeMTbls ts = do
-    PA.runFillTables $ expose ts
-    PA.freezeTables  $ onlyTables ts
+    PA.unsafeRunFillTables $ expose ts
+    PA.freezeTables        $ onlyTables ts
 {-# INLINE runFreezeMTbls #-}
 
 
@@ -44,6 +46,9 @@ instance ExposeTables Z where
     onlyTables Z = Z
     {-# INLINE expose #-}
     {-# INLINE onlyTables #-}
+
+-- | Here is some fun weirdness: if I replace @t@ in the defn's then this
+-- doesn't work anymore ...
 
 instance (ExposeTables ts, t ~ (PA.MutArr m (arr sh elm))) => ExposeTables (ts:.(MTbl i t, sh -> m elm)) where
     type TableFun   (ts:.(MTbl i t, sh -> m elm)) = TableFun ts :. (t, sh -> m elm)
