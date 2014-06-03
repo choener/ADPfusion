@@ -222,48 +222,48 @@ prop_Interior5 sw@(Subword (i:.j)) = zs == ls where
 -- | A single mutable table should return one result.
 
 prop_Mt sw@(Subword (i:.j)) = monadicIO $ do
-    mxs :: PA.MutArr IO (PA.Unboxed (Z:.Subword) Int) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
+    mxs :: PA.MutArr IO (PA.Unboxed Subword Int) <- run $ PA.fromListM (Subword (0:.0)) (Subword (0:.100)) [0 .. ] -- (1 :: Int)
     let mt = mTblS EmptyOk mxs
     zs <- run $ id <<< mt ... SM.toList $ sw
-    ls <- run $ sequence $ [(PA.readM mxs (Z:.sw)) | i<=j]
+    ls <- run $ sequence $ [(PA.readM mxs sw) | i<=j]
     assert $ zs == ls
 
 
 -- | table, then character.
 
 prop_MtC sw@(Subword (i:.j)) = monadicIO $ do
-    mxs :: (PA.MutArr IO (PA.Unboxed (Z:.Subword) Int)) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
+    mxs :: (PA.MutArr IO (PA.Unboxed Subword Int)) <- run $ PA.fromListM (Subword (0:.0)) (Subword (0:.100)) [0 .. ] -- (1 :: Int)
     let mt = mTblS EmptyOk mxs
     zs <- run $ (,) <<< mt % chr xs ... SM.toList $ sw
-    ls <- run $ sequence $ [(PA.readM mxs (Z:.subword i (j-1))) >>= \a -> return (a,xs VU.! (j-1)) | i<j]
+    ls <- run $ sequence $ [(PA.readM mxs (subword i (j-1))) >>= \a -> return (a,xs VU.! (j-1)) | i<j]
     assert $ zs == ls
 
 -- | Character, then table.
 
 prop_CMt sw@(Subword (i:.j)) = monadicIO $ do
-    mxs :: (PA.MutArr IO (PA.Unboxed (Z:.Subword) Int)) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
+    mxs :: (PA.MutArr IO (PA.Unboxed Subword Int)) <- run $ PA.fromListM (Subword (0:.0)) (Subword (0:.100)) [0 .. ] -- (1 :: Int)
     let mt = mTblS EmptyOk mxs
     zs <- run $ (,) <<< chr xs % mt ... SM.toList $ sw
-    ls <- run $ sequence $ [(PA.readM mxs (Z:.subword (i+1) j)) >>= \a -> return (xs VU.! i,a) | i<j]
+    ls <- run $ sequence $ [(PA.readM mxs (subword (i+1) j)) >>= \a -> return (xs VU.! i,a) | i<j]
     assert $ zs == ls
 
 -- | Two mutable tables. Basically like Region's.
 
 prop_MtMt sw@(Subword (i:.j)) = monadicIO $ do
-    mxs :: (PA.MutArr IO (PA.Unboxed (Z:.Subword) Int)) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
+    mxs :: (PA.MutArr IO (PA.Unboxed Subword Int)) <- run $ PA.fromListM (Subword (0:.0)) (Subword (0:.100)) [0 .. ] -- (1 :: Int)
     let mt = mTblS EmptyOk mxs
     zs <- run $ (,) <<< mt % mt ... SM.toList $ sw
-    ls <- run $ sequence $ [(PA.readM mxs (Z:.subword i k)) >>= \a -> PA.readM mxs (Z:.subword k j) >>= \b -> return (a,b) | k <- [i..j]]
+    ls <- run $ sequence $ [(PA.readM mxs (subword i k)) >>= \a -> PA.readM mxs (subword k j) >>= \b -> return (a,b) | k <- [i..j]]
     assert $ zs == ls
 
 -- | Just to make it more interesting, sprinkle in some 'Chr' symbols.
 
 prop_CMtCMtC sw@(Subword (i:.j)) = monadicIO $ do
-    mxs :: (PA.MutArr IO (PA.Unboxed (Z:.Subword) Int)) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
+    mxs :: (PA.MutArr IO (PA.Unboxed Subword Int)) <- run $ PA.fromListM (Subword (0:.0)) (Subword (0:.100)) [0 .. ] -- (1 :: Int)
     let mt = mTblS EmptyOk mxs
     zs <- run $ (,,,,) <<< chr xs % mt % chr xs % mt % chr xs ... SM.toList $ sw
-    ls <- run $ sequence $ [ (PA.readM mxs (Z:.subword (i+1) k)) >>=
-                            \a -> PA.readM mxs (Z:.subword (k+1) (j-1)) >>=
+    ls <- run $ sequence $ [ (PA.readM mxs (subword (i+1) k)) >>=
+                            \a -> PA.readM mxs (subword (k+1) (j-1)) >>=
                             \b -> return ( xs VU.! i
                                          , a
                                          , xs VU.! k
@@ -276,11 +276,11 @@ prop_CMtCMtC sw@(Subword (i:.j)) = monadicIO $ do
 -- | And now with non-empty tables.
 
 prop_CMnCMnC sw@(Subword (i:.j)) = monadicIO $ do
-    mxs :: (PA.MutArr IO (PA.Unboxed (Z:.Subword) Int)) <- run $ PA.fromListM (Z:. Subword (0:.0)) (Z:. Subword (0:.100)) [0 .. ] -- (1 :: Int)
+    mxs :: (PA.MutArr IO (PA.Unboxed Subword Int)) <- run $ PA.fromListM (Subword (0:.0)) (Subword (0:.100)) [0 .. ] -- (1 :: Int)
     let mt = mTblS ADP.NonEmpty mxs
     zs <- run $ (,,,,) <<< chr xs % mt % chr xs % mt % chr xs ... SM.toList $ sw
-    ls <- run $ sequence $ [ (PA.readM mxs (Z:.subword (i+1) k)) >>=
-                            \a -> PA.readM mxs (Z:.subword (k+1) (j-1)) >>=
+    ls <- run $ sequence $ [ (PA.readM mxs (subword (i+1) k)) >>=
+                            \a -> PA.readM mxs (subword (k+1) (j-1)) >>=
                             \b -> return ( xs VU.! i
                                          , a
                                          , xs VU.! k
@@ -439,14 +439,6 @@ mxsPP = unsafePerformIO $ zzz where
   zzz = PA.fromListM (Z:.pointL 0 0:.pointL 0 0) (Z:.pointL 0 100:.pointL 0 100) [0 ..]
 
 
--- * general quickcheck stuff
-
-options = stdArgs {maxSuccess = 1000}
-
-customCheck = quickCheckWithResult options
-
-allProps = $forAllProperties customCheck
-
 
 
 newtype SmallInt = SmallInt Int
@@ -469,4 +461,14 @@ instance Arbitrary z => Arbitrary (z:.TinySubword) where
   arbitrary = (:.) <$> arbitrary <*> arbitrary
   shrink (z:.s) = (:.) <$> shrink z <*> shrink s
 
+
+
+-- * general quickcheck stuff
+
+options = stdArgs {maxSuccess = 1000}
+
+customCheck = quickCheckWithResult options
+
+return []
+allProps = $forAllProperties customCheck
 

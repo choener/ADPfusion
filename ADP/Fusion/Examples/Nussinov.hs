@@ -92,23 +92,23 @@ grammar Nussinov{..} c t =
   )
 {-# INLINE grammar #-}
 
-forward :: VU.Vector Char -> ST s (Unboxed (Z:.Subword) Int)
+forward :: VU.Vector Char -> ST s (Unboxed Subword Int)
 forward inp = do
   let n  = VU.length inp
   let c  = chr inp
-  !t' <- PA.newWithM (Z:.subword 0 0) (Z:.subword 0 n) (-999999)
+  !t' <- PA.newWithM (subword 0 0) (subword 0 n) (-999999)
   let t  = mTblS EmptyOk t'
   fillTable $ grammar bpmax c t
   PA.freeze t'
 {-# NOINLINE forward #-}
 
 fillTable (MTbl _ t,f) = do
-  let (_,Z:.Subword (_:.n)) = boundsM t
+  let (_,Subword (_:.n)) = boundsM t
   forM_ [n,n-1 .. 0] $ \i -> forM_ [i..n] $ \j ->
-    (f $ subword i j) >>= PA.writeM t (Z:.subword i j)
+    (f $ subword i j) >>= PA.writeM t (subword i j)
 {-# INLINE fillTable #-}
 
-backtrack :: VU.Vector Char -> PA.Unboxed (Z:.Subword) Int -> [String]
+backtrack :: VU.Vector Char -> PA.Unboxed Subword Int -> [String]
 backtrack inp t' = unId . SM.toList . unId . g $ subword 0 n where
   n = VU.length inp
   c = chr inp
@@ -117,7 +117,7 @@ backtrack inp t' = unId . SM.toList . unId . g $ subword 0 n where
 {-# NOINLINE backtrack #-}
 
 runNussinov :: Int -> String -> (Int,[String])
-runNussinov k inp = (t PA.! (Z:.subword 0 n), take k b) where
+runNussinov k inp = (t PA.! (subword 0 n), take k b) where
   i = VU.fromList . Prelude.map toUpper $ inp
   n = VU.length i
   t = runST $ forward i

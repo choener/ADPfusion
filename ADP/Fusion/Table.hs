@@ -56,7 +56,7 @@ data MTbl i xs = MTbl !(TblConstraint i) !xs
 -- | A single-dimensional table. The index type needs a @Z:.@ when creating the
 -- internal @arr@.
 
-mTblS :: TblConstraint i -> PA.MutArr m (arr (Z:.i) x) -> MTbl i (PA.MutArr m (arr (Z:.i) x))
+mTblS :: TblConstraint i -> PA.MutArr m (arr i x) -> MTbl i (PA.MutArr m (arr i x))
 mTblS = MTbl
 {-# INLINE mTblS #-}
 
@@ -75,8 +75,8 @@ instance ModifyConstraint (MTbl Subword arr) where
   {-# INLINE toNonEmpty #-}
   {-# INLINE toEmpty #-}
 
-type MTblSubword m arr x   = MTbl Subword (PA.MutArr m (arr (Z:.Subword) x))
-type MTblMulti   m arr x i = MTbl i       (PA.MutArr m (arr i            x))
+type MTblSubword m arr x   = MTbl Subword (PA.MutArr m (arr Subword x))
+type MTblMulti   m arr x i = MTbl i       (PA.MutArr m (arr i       x))
 
 
 
@@ -97,17 +97,17 @@ instance
   , PrimMonad m
   , Element ls Subword
   , MkStream m ls Subword
-  , PA.MPrimArrayOps arr (Z:.Subword) x
+  , PA.MPrimArrayOps arr Subword x
   ) => MkStream m (ls :!: MTblSubword m arr x) Subword where
   mkStream (ls :!: MTbl c t) Static (Subword (i:.j))
     = S.mapM (\s -> let Subword (_:.l) = getIdx s
-                    in  PA.readM t (Z:.subword l j) >>= \z -> return $ ElmMtSw z (subword l j) s)
+                    in  PA.readM t (subword l j) >>= \z -> return $ ElmMtSw z (subword l j) s)
     $ mkStream ls (Variable Check Nothing) (subword i $ j - minSize c)
   mkStream (ls :!: MTbl c t) (Variable _ Nothing) (Subword (i:.j))
     = let mk s = let (Subword (_:.l)) = getIdx s in return (s:.j-l-minSize c)
           step (s:.z)
             | z>=0      = do let (Subword (_:.k)) = getIdx s
-                             y <- PA.readM t (Z:.subword k (j-z))
+                             y <- PA.readM t (subword k (j-z))
                              return $ S.Yield (ElmMtSw y (subword k $ j-z) s) (s:.z-1)
             | otherwise = return $ S.Done
           {-# INLINE [1] mk   #-}
@@ -225,7 +225,7 @@ instance TableIndices is => TableIndices (is:.PointR) where
 
 data BtTbl i xs f = BtTbl !(TblConstraint i) !xs !f
 
-btTblS :: TblConstraint i -> arr (Z:.i) x -> (i -> m (S.Stream m b)) -> BtTbl i (arr (Z:.i) x) (i -> m (S.Stream m b))
+btTblS :: TblConstraint i -> arr i x -> (i -> m (S.Stream m b)) -> BtTbl i (arr i x) (i -> m (S.Stream m b))
 btTblS = BtTbl
 {-# INLINE btTblS #-}
 
@@ -241,7 +241,7 @@ instance ModifyConstraint (BtTbl Subword arr f) where
   {-# INLINE toNonEmpty #-}
   {-# INLINE toEmpty #-}
 
-type BtTblSubword m arr x   b = BtTbl Subword (arr (Z:.Subword) x) (Subword -> m (S.Stream m b))
+type BtTblSubword m arr x   b = BtTbl Subword (arr Subword x) (Subword -> m (S.Stream m b))
 type BtTblMulti   m arr x i b = BtTbl i       (arr i            x) (i       -> m (S.Stream m b))
 
 
@@ -262,12 +262,12 @@ instance
   ( Monad m
   , Element ls Subword
   , MkStream m ls Subword
-  , PA.PrimArrayOps arr (Z:.Subword) x
+  , PA.PrimArrayOps arr Subword x
   ) => MkStream m (ls :!: BtTblSubword m arr x b) Subword where
   mkStream (ls :!: BtTbl c t f) Static (Subword (i:.j))
     = S.map (\s -> let Subword (_:.l) = getIdx s
                        ix             = subword l j
-                       d              = t PA.! (Z:.ix)
+                       d              = t PA.! ix
                    in  ElmBttSw d (f ix) ix s)
     $ mkStream ls (Variable Check Nothing) (subword i $ j - minSize c)
   mkStream (ls :!: BtTbl c t f) (Variable _ Nothing) (Subword (i:.j))
@@ -275,7 +275,7 @@ instance
           step (s:.z)
             | z>=0      = do let (Subword (_:.k)) = getIdx s
                                  ix               = subword k (j-z)
-                                 d                = t PA.! (Z:.ix)
+                                 d                = t PA.! ix
                              return $ S.Yield (ElmBttSw d (f ix) ix s) (s:.z-1)
             | otherwise = return S.Done
           {-# INLINE [1] mk   #-}
