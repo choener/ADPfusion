@@ -7,13 +7,28 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 -- | Nussinovs RNA secondary structure prediction algorithm via basepair
--- maximization.
+-- maximization. Follow this file from top to bottom for a short tutorial
+-- on how to use @ADPfusion@.
+--
+-- In general the task is the following: We are given a sequence of
+-- characters from the alphabet @ACGU@. There are 6 pairing rules (cf.
+-- 'pairs'), @A-U@, @C-G@, @G-C@, @G-U@, @U-A@, and @U-G@ can /pair/ with
+-- each other. Pairs, denoted by brackets @(@, @)@ may be juxtaposed
+-- @().()@ or enclosing @(())@. /Crossing/ pairs are not allowed: @([)]@ is
+-- forbidden, with @()@ and @[]@ pairing. Dots @.@ denote unpaired
+-- characters.
+--
+-- As an example, the sequence @CACAAGGAUU@ admits the following
+-- dot-bracket string @(.)..((..))@.
+--
+-- The algorithm below maximizes the number of legal brackets.
 
 module Main where
 
 import           Control.Applicative
 import           Control.Monad
 import           Control.Monad.ST
+import           Data.Array.Repa.Index
 import           Data.Char (toUpper,toLower)
 import           Data.List
 import           Data.Vector.Fusion.Util
@@ -23,14 +38,18 @@ import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
 import           Text.Printf
 
-import           Data.Array.Repa.Index.Subword
-import           Data.Array.Repa.Index
-import           Data.PrimitiveArray.Zero as PA
+-- Import PrimitiveArray for low-level tables and automatic table
+-- filling.
+
 import           Data.PrimitiveArray as PA
+
+-- High-level ADPfusion stuff.
 
 import           ADP.Fusion
 
 
+
+-- | All grammars require a signature.
 
 data Durbin m c e x r = Durbin
   { nil :: e           -> x
