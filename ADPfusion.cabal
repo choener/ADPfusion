@@ -101,6 +101,8 @@ library
     primitive       == 0.5.*    ,
     PrimitiveArray  == 0.6.*    ,
     QuickCheck      == 2.*      ,
+    mtl             == 2.*      ,
+    monad-primitive == 0.1      ,
     repa            == 3.2.*    ,
     strict          == 0.3.*    ,
     template-haskell            ,
