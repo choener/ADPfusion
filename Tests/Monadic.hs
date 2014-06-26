@@ -17,6 +17,8 @@ import           Control.Monad.ST
 import qualified Data.Vector.Generic.New as New
 import           Control.Monad
 import           Control.Monad.Primitive.Class
+import           Control.Monad.State.Strict
+import           Debug.Trace
 
 
 
@@ -53,4 +55,45 @@ test_002 k = unId . SM.head . optMax . flip SM.sized Unknown $ SM.replicate k k
 test_003 :: Int -> Int
 test_003 k = runReader (SM.head . optReaderMax $ SM.replicate k k) (k `div` 2)
 {-# NOINLINE test_003 #-}
+
+streamOfStream :: (Monad m, MonadState Int m) => SM.Stream m (m (SM.Stream m Int)) -> m (SM.Stream m Int)
+streamOfStream xs =
+  let f = SM.concatMapM (\x -> do a <- get
+                                  put 2
+                                  x' <- x
+                                  put a
+                                  return x'
+                        )
+  in do
+    a <- get
+    put 3
+    let ys = f xs
+    put a
+    return ys
+
+test_004 :: Int -> [Int]
+test_004 k = evalState (evalState (fmap SM.toList . streamOfStream $ SM.singleton (return $ SM.mapM g $ SM.singleton 1)) k) k where
+  g x = do
+    a <- get
+    return $ traceShow a (x-a)
+
+test_005 :: Int -> [Int]
+test_005 k = evalState (SM.toList . sos $ SM.replicate 10 (SM.replicateM 10 (get))) k where
+  axiom :: Monad m => m (SM.Stream m Int) -> SM.Stream m Int
+  axiom m = SM.concatMapM id (SM.singleton m)
+  sos :: (Monad m, MonadState Int m) => SM.Stream m (SM.Stream m Int) -> SM.Stream m Int
+  sos = SM.concatMapM f
+  -- will increase the state by one before the replicates are even started,
+  -- this is the outer singleton
+  f x = do
+    a <- get
+    y <- SM.toList $ SM.mapM g x
+    put $ a
+    return $ SM.fromList y    -- will reset the state for subsequent calls to 'f'
+--    return $ SM.mapM g x      -- since we don't actually execute anything, this will not reset the state
+  -- will increase the state by one for everything being replicated
+  g x = do
+    a <- get
+    put $ a+1
+    return x
 
