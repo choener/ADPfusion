@@ -50,11 +50,11 @@ instance ExposeTables Z where
 -- | Here is some fun weirdness: if I replace @t@ in the defn's then this
 -- doesn't work anymore ...
 
-instance (ExposeTables ts, t ~ (PA.MutArr m (arr sh elm))) => ExposeTables (ts:.(MTbl i t, sh -> m elm)) where
-    type TableFun   (ts:.(MTbl i t, sh -> m elm)) = TableFun ts :. (t, sh -> m elm)
-    type OnlyTables (ts:.(MTbl i t, sh -> m elm)) = OnlyTables ts :. t
-    expose     (ts:.(MTbl _ t,f)) = expose ts :. (t,f)
-    onlyTables (ts:.(MTbl _ t,_)) = onlyTables ts :. t
+instance (ExposeTables ts, t ~ (PA.MutArr m (arr sh elm)), f ~ (sh -> m elm)) => ExposeTables (ts:.(MTbl i t f)) where
+    type TableFun   (ts:. MTbl i t f) = TableFun ts :. (t, f)
+    type OnlyTables (ts:. MTbl i t f) = OnlyTables ts :. t
+    expose     (ts:.MTbl _ t f) = expose ts :. (t,f)
+    onlyTables (ts:.MTbl _ t _) = onlyTables ts :. t
     {-# INLINE expose #-}
     {-# INLINE onlyTables #-}
 
