@@ -32,16 +32,16 @@ module ADP.Fusion.Table.Array
 
 import           Control.Monad.Primitive (PrimMonad)
 import           Data.Array.Repa.Index
-import           Data.Array.Repa.Index.Subword
 import           Data.Strict.Tuple
 import           Data.Vector.Fusion.Stream.Size (Size(Unknown))
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
+import           Data.Array.Repa.Index.Subword
 import qualified Data.PrimitiveArray as PA
 
-import ADP.Fusion.Classes
-import ADP.Fusion.Multi.Classes
-import ADP.Fusion.Table.Indices
+import           ADP.Fusion.Classes
+import           ADP.Fusion.Multi.Classes
+import           ADP.Fusion.Table.Indices
 
 
 
@@ -51,7 +51,7 @@ import ADP.Fusion.Table.Indices
 -- evaluating given an index.
 
 data MTbl i xs f where
-  MTbl :: (xs ~ PA.MutArr m (arr i x), f ~ (i->m x)) => TblConstraint i -> PA.MutArr m (arr i x) -> (i->m x) -> MTbl i xs f
+  MTbl :: (xs ~ PA.MutArr m (arr i x), f ~ (i->m x)) => !(TblConstraint i) -> !(PA.MutArr m (arr i x)) -> !(i->m x) -> MTbl i xs f
 
 type MTblTy m arr i x f = MTbl i (PA.MutArr m (arr i x)) f  -- f ~ i -> r
 

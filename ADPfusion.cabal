@@ -110,24 +110,25 @@ library
     vector          == 0.10.*   ,
     base            == 4.*
   exposed-modules:
---    ADP.Fusion
---    ADP.Fusion.Apply
---    ADP.Fusion.Chr
---    ADP.Fusion.Classes
---    ADP.Fusion.Empty
---    ADP.Fusion.Multi
---    ADP.Fusion.Multi.Classes
-----    ADP.Fusion.Multi.Empty
-----    ADP.Fusion.Multi.GChr
-----    ADP.Fusion.Multi.None
---    ADP.Fusion.None
+    ADP.Fusion
+    ADP.Fusion.Apply
+    ADP.Fusion.Chr
+    ADP.Fusion.Classes
+    ADP.Fusion.Empty
+    ADP.Fusion.Multi
+    ADP.Fusion.Multi.Classes
+--    ADP.Fusion.Multi.Empty
+--    ADP.Fusion.Multi.GChr
+--    ADP.Fusion.Multi.None
+    ADP.Fusion.None
 --    ADP.Fusion.QuickCheck
-----    ADP.Fusion.Region
+--    ADP.Fusion.Region
     ADP.Fusion.Table
     ADP.Fusion.Table.Array
+    ADP.Fusion.Table.Fill
     ADP.Fusion.Table.Indices
---    ADP.Fusion.Table.Fill
---    ADP.Fusion.TH
+    ADP.Fusion.Table.Recursive
+    ADP.Fusion.TH
 
   ghc-options:
     -O2 -funbox-strict-fields
