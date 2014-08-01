@@ -1,8 +1,9 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE GADTs #-}
 
 -- | The Needleman-Wunsch global alignment algorithm. This algorithm is
 -- extremely simple but provides a good showcase for what ADPfusion offers.
@@ -22,7 +23,7 @@ module Main where
 
 import           Control.Applicative
 import           Control.Monad
-import           Data.Array.Repa.Index
+import           Control.Monad.Primitive
 import           Data.Vector.Fusion.Stream.Monadic (Stream (..))
 import           Data.Vector.Fusion.Util
 import qualified Control.Arrow as A
@@ -30,7 +31,6 @@ import qualified Data.Vector as V
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Unboxed as VU
 import           System.IO.Unsafe (unsafePerformIO)
-import           Control.Monad.Primitive
 
 import           Data.PrimitiveArray as PA hiding (map)
 
@@ -151,13 +151,13 @@ makeAlgebraProductH ['h] ''Signature
 -- indices. Just as in the spiritual father of @ADPfusion@, Robert
 -- Giegerichs @ADP@, we hide the actual index calculations.
 
-grammar Signature{..} a i1 i2 =
-  Z:.
-  ( a, step_step <<< a % (M:>chr i1:>chr i2) |||
-       step_loop <<< a % (M:>chr i1:>None  ) |||
-       loop_step <<< a % (M:>None  :>chr i2) |||
-       nil_nil   <<< (M:>Empty:>Empty)       ... h
-  )
+grammar Signature{..} a' i1 i2 =
+  let a = a'  ( step_step <<< a % (M:>chr i1:>chr i2) |||
+                step_loop <<< a % (M:>chr i1:>None  ) |||
+                loop_step <<< a % (M:>None  :>chr i2) |||
+                nil_nil   <<< (M:>Empty:>Empty)       ... h
+              )
+  in Z:.a
 {-# INLINE grammar #-}
 
 -- | A grammar alone is not enough, we also need to say what a @step_step@
@@ -243,7 +243,7 @@ forwardPhase i1 i2 = do
   let n1 = VU.length i1
   let n2 = VU.length i2
   !t' <- PA.newWithM (Z:.pointL 0 0:.pointL 0 0) (Z:.pointL 0 n1:.pointL 0 n2) (-999999)
-  let t = mTblD (Z:.EmptyOk:.EmptyOk) t'
+  let t = MTbl (Z:.EmptyOk:.EmptyOk) t'
   runFreezeMTbls $ grammar sScore t i1 i2
 {-# INLINE forwardPhase #-}
 
@@ -266,8 +266,10 @@ backtrack :: VU.Vector Char -> VU.Vector Char -> Arrs -> [[String]]
 backtrack i1 i2 (Z:.t') = map (map reverse) . unId . S.toList . unId . g $ Z:.pointL 0 n1 :. pointL 0 n2 where
   n1 = VU.length i1
   n2 = VU.length i2
-  t = btTblD (Z:.EmptyOk:.EmptyOk) t' g
-  (Z:.(_,g)) = grammar (sScore <** sPretty) t i1 i2
+--  t = BtTbl (Z:.EmptyOk:.EmptyOk) t' g
+  -- (Z:.BtTbl _ _ g) = grammar (sScore <** sPretty) (BtTbl ((Z:.EmptyOk:.EmptyOk) :: TblConstraint (Z:.PointL:.PointL)) t') i1 i2
+  g = case grammar (sScore <** sPretty) (BtTbl ((Z:.EmptyOk:.EmptyOk) :: TblConstraint (Z:.PointL:.PointL)) t') i1 i2
+        of (Z:.BtTbl _ _ gg) -> gg
 {-# NOINLINE backtrack #-}
 
 -- | Let's write Needleman-Wunsch. We give the maximal number of alignments

@@ -103,7 +103,7 @@ library
     QuickCheck      == 2.*      ,
     mtl             == 2.*      ,
     monad-primitive == 0.1      ,
-    repa            == 3.2.*    ,
+--    repa            == 3.2.*    ,
     strict          == 0.3.*    ,
     template-haskell            ,
     tuple           == 0.2.*    ,

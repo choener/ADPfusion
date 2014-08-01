@@ -25,18 +25,15 @@
 
 module ADP.Fusion.Table.Array
   ( MTbl (..)
-  , MTblTy
   , BtTbl (..)
-  , BtTblTy
   ) where
 
 import           Control.Monad.Primitive (PrimMonad)
-import           Data.Array.Repa.Index
 import           Data.Strict.Tuple
 import           Data.Vector.Fusion.Stream.Size (Size(Unknown))
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
-import           Data.Array.Repa.Index.Subword
+import           Data.PrimitiveArray (Z(..), (:.)(..), Subword(..), subword, PointL(..), pointL, PointR(..), pointR)
 import qualified Data.PrimitiveArray as PA
 
 import           ADP.Fusion.Classes
@@ -50,16 +47,13 @@ import           ADP.Fusion.Table.Indices
 -- | Mutable table with table constraints, a mutable array, and a function
 -- evaluating given an index.
 
-data MTbl i xs f where
-  MTbl :: (xs ~ PA.MutArr m (arr i x), f ~ (i->m x)) => !(TblConstraint i) -> !(PA.MutArr m (arr i x)) -> !(i->m x) -> MTbl i xs f
+data MTbl m arr i x where
+  MTbl :: !(TblConstraint i) -> !(PA.MutArr m (arr i x)) -> !(i -> m x) -> MTbl m arr i x
 
-type MTblTy m arr i x f = MTbl i (PA.MutArr m (arr i x)) f  -- f ~ i -> r
+-- | Backtracking table.
 
--- ** Backtracking tables
-
-data BtTbl i xs f = BtTbl !(TblConstraint i) !xs !f
-
-type BtTblTy m arr i x r = BtTbl i (arr i x) (i -> m (S.Stream m r))
+data BtTbl m arr i x r where
+  BtTbl :: !(TblConstraint i) -> !(arr i x) -> !(i -> m (S.Stream m r)) -> BtTbl m arr i x r
 
 
 
@@ -68,21 +62,21 @@ type BtTblTy m arr i x r = BtTbl i (arr i x) (i -> m (S.Stream m r))
 
 -- ** General instances for 'MTbl' / 'BtTbl'
 
-instance Build (MTbl i x f)
+instance Build (MTbl m arr i x)
 
-instance Build (BtTbl i x f)
+instance Build (BtTbl m arr i x r)
 
-instance Element ls i => Element (ls :!: MTblTy m arr i x f) i where
-  data Elm (ls :!: MTblTy m arr i x f) i = ElmMTbl !x !i !(Elm ls i)
-  type Arg (ls :!: MTblTy m arr i x f)   = Arg ls :. x
+instance Element ls i => Element (ls :!: MTbl m arr i x) i where
+  data Elm (ls :!: MTbl m arr i x) i = ElmMTbl !x !i !(Elm ls i)
+  type Arg (ls :!: MTbl m arr i x)   = Arg ls :. x
   getArg (ElmMTbl x _ ls) = getArg ls :. x
   getIdx (ElmMTbl _ i _ ) = i
   {-# INLINE getArg #-}
   {-# INLINE getIdx #-}
 
-instance Element ls i => Element (ls :!: BtTblTy m arr i x r) i where
-  data Elm (ls :!: BtTblTy m arr i x r) i = ElmBtTbl !x !(m (S.Stream m r)) !i !(Elm ls i)
-  type Arg (ls :!: BtTblTy m arr i x r)   = Arg ls :. (x, m (S.Stream m r))
+instance Element ls i => Element (ls :!: BtTbl m arr i x r) i where
+  data Elm (ls :!: BtTbl m arr i x r) i = ElmBtTbl !x !(m (S.Stream m r)) !i !(Elm ls i)
+  type Arg (ls :!: BtTbl m arr i x r)   = Arg ls :. (x, m (S.Stream m r))
   getArg (ElmBtTbl x s _ ls) = getArg ls :. (x,s)
   getIdx (ElmBtTbl _ _ k _ ) = k
   {-# INLINE getArg #-}
@@ -93,13 +87,13 @@ instance Element ls i => Element (ls :!: BtTblTy m arr i x r) i where
 
 -- ** @Subword@ indexing
 
-instance ModifyConstraint (MTbl Subword arr f) where
+instance ModifyConstraint (MTbl m arr Subword x) where
   toNonEmpty (MTbl _ arr f) = MTbl NonEmpty arr f
   toEmpty    (MTbl _ arr f) = MTbl EmptyOk  arr f
   {-# INLINE toNonEmpty #-}
   {-# INLINE toEmpty #-}
 
-instance ModifyConstraint (BtTbl Subword arr f) where
+instance ModifyConstraint (BtTbl m arr Subword x r) where
   toNonEmpty (BtTbl _ arr f) = BtTbl NonEmpty arr f
   toEmpty    (BtTbl _ arr f) = BtTbl EmptyOk  arr f
   {-# INLINE toNonEmpty #-}
@@ -111,7 +105,7 @@ instance
   , Element ls Subword
   , MkStream m ls Subword
   , PA.MPrimArrayOps arr Subword x
-  ) => MkStream m (ls :!: MTblTy m arr Subword x f) Subword where
+  ) => MkStream m (ls :!: MTbl m arr Subword x) Subword where
   mkStream (ls :!: MTbl c t _) Static (Subword (i:.j))
     = S.mapM (\s -> let Subword (_:.l) = getIdx s
                     in  PA.readM t (subword l j) >>= \z -> return $ ElmMTbl z (subword l j) s)
@@ -133,7 +127,7 @@ instance
   , Element ls Subword
   , MkStream m ls Subword
   , PA.PrimArrayOps arr Subword x
-  ) => MkStream m (ls :!: BtTblTy m arr Subword x r) Subword where
+  ) => MkStream m (ls :!: BtTbl m arr Subword x r) Subword where
   mkStream (ls :!: BtTbl c t f) Static (Subword (i:.j))
     = S.map (\s -> let Subword (_:.l) = getIdx s
                        ix             = subword l j
@@ -165,7 +159,7 @@ instance
   , Element ls (is:.i)
   , PA.MPrimArrayOps arr (is:.i) x
   , MkStream m ls (is:.i)
-  ) => MkStream m (ls :!: MTblTy m arr (is:.i) x f) (is:.i) where
+  ) => MkStream m (ls :!: MTbl m arr (is:.i) x) (is:.i) where
   mkStream (ls :!: MTbl c t _) vs is
     = S.mapM (\(Tr s _ i) -> PA.readM t i >>= \z -> return $ ElmMTbl z i s)
     . tableIndices c vs is
@@ -180,7 +174,7 @@ instance
   , TableIndices (is:.i)
   , MkStream m ls (is:.i)
   , PA.PrimArrayOps arr (is:.i) x
-  ) => MkStream m (ls :!: BtTblTy m arr (is:.i) x r) (is:.i) where
+  ) => MkStream m (ls :!: BtTbl m arr (is:.i) x r) (is:.i) where
   mkStream (ls :!: BtTbl c t f) vs is
     = S.map (\(Tr s _ i) -> ElmBtTbl (t PA.! i) (f i) i s)
     . tableIndices c vs is

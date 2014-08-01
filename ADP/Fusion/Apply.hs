@@ -4,7 +4,8 @@
 
 module ADP.Fusion.Apply where
 
-import Data.Array.Repa.Index
+--import Data.Array.Repa.Index
+import Data.PrimitiveArray (Z(..), (:.)(..))
 
 
 

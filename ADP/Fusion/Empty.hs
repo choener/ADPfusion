@@ -8,17 +8,15 @@
 
 module ADP.Fusion.Empty where
 
-import Data.Array.Repa.Index
-import Data.Strict.Maybe
-import Data.Strict.Tuple
-import Prelude hiding (Maybe(..))
+import           Data.Strict.Maybe
+import           Data.Strict.Tuple
+import           Prelude hiding (Maybe(..))
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
-import Data.Array.Repa.Index.Subword
-import Data.Array.Repa.Index.Points
+import           Data.PrimitiveArray (Z(..), (:.)(..), Subword(..), subword, PointL(..), pointL, PointR(..), pointR)
 
-import ADP.Fusion.Classes
-import ADP.Fusion.Multi.Classes
+import           ADP.Fusion.Classes
+import           ADP.Fusion.Multi.Classes
 
 
 

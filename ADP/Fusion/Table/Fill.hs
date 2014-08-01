@@ -7,7 +7,7 @@ module ADP.Fusion.Table.Fill where
 
 import           Control.Monad.Primitive (PrimMonad (..))
 
-import           Data.Array.Repa.Index
+import           Data.PrimitiveArray (Z(..), (:.)(..))
 import qualified Data.PrimitiveArray as PA
 
 import           ADP.Fusion.Table
@@ -47,12 +47,11 @@ instance ExposeTables Z where
     {-# INLINE expose #-}
     {-# INLINE onlyTables #-}
 
--- | Here is some fun weirdness: if I replace @t@ in the defn's then this
--- doesn't work anymore ...
+-- Thanks to the table being a gadt we now the internal types
 
-instance (ExposeTables ts, t ~ (PA.MutArr m (arr sh elm)), f ~ (sh -> m elm)) => ExposeTables (ts:.(MTbl i t f)) where
-    type TableFun   (ts:. MTbl i t f) = TableFun ts :. (t, f)
-    type OnlyTables (ts:. MTbl i t f) = OnlyTables ts :. t
+instance (ExposeTables ts) => ExposeTables (ts:.(MTbl m arr i x)) where
+    type TableFun   (ts:. MTbl m arr i x) = TableFun   ts :. (PA.MutArr m (arr i x), i -> m x)
+    type OnlyTables (ts:. MTbl m arr i x) = OnlyTables ts :. (PA.MutArr m (arr i x))
     expose     (ts:.MTbl _ t f) = expose ts :. (t,f)
     onlyTables (ts:.MTbl _ t _) = onlyTables ts :. t
     {-# INLINE expose #-}

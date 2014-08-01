@@ -47,9 +47,9 @@ import           ADP.Fusion.Table
 import           ADP.Fusion.Table.Fill
 import           ADP.Fusion.TH
 
-import           Data.Array.Repa.Index
+--import           Data.Array.Repa.Index
 import           Data.Array.Repa.Index.Subword
-import           Data.Array.Repa.Shape
+--import           Data.Array.Repa.Shape
 import qualified Data.Vector.Unboxed as VU
 
 import           Data.PrimitiveArray

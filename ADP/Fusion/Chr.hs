@@ -16,14 +16,12 @@
 
 module ADP.Fusion.Chr where
 
-import           Data.Array.Repa.Index
 import           Data.Strict.Tuple
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Generic as VG
 import qualified Data.Vector.Unboxed as VU
 
-import           Data.Array.Repa.Index.Points
-import           Data.Array.Repa.Index.Subword
+import           Data.PrimitiveArray ((:.)(..), Subword(..), subword, PointL(..), pointL, PointR(..), pointR)
 
 import           ADP.Fusion.Classes
 import           ADP.Fusion.Multi.Classes

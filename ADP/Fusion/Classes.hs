@@ -12,13 +12,11 @@
 
 module ADP.Fusion.Classes where
 
-import           Data.Array.Repa.Index
 import           Data.Strict.Tuple
 import           Data.Vector.Fusion.Stream.Size
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
-import           Data.Array.Repa.Index.Points
-import           Data.Array.Repa.Index.Subword
+import           Data.PrimitiveArray (Z(..), (:.)(..), Subword(..), subword, PointL(..), PointR(..))
 
 
 

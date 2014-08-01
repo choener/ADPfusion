@@ -8,12 +8,10 @@
 
 module ADP.Fusion.Multi.Classes where
 
-import           Data.Array.Repa.Index
 import           Data.Strict.Tuple
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
-import           Data.Array.Repa.Index.Points
-import           Data.Array.Repa.Index.Subword
+import           Data.PrimitiveArray (Z(..), (:.)(..), Subword(..), subword, PointL(..), pointL, PointR(..), pointR)
 
 import           ADP.Fusion.Classes
 

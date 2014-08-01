@@ -8,12 +8,10 @@
 
 module ADP.Fusion.Table.Indices where
 
-import           Data.Array.Repa.Index
 import           Data.Vector.Fusion.Stream.Size (Size(Unknown))
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
-import           Data.Array.Repa.Index.Points
-import           Data.Array.Repa.Index.Subword
+import           Data.PrimitiveArray (Z(..), (:.)(..), Subword(..), subword, PointL(..), pointL, PointR(..), pointR)
 
 import           ADP.Fusion.Classes
 import           ADP.Fusion.Multi.Classes

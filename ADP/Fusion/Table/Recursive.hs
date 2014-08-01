@@ -16,12 +16,13 @@ module ADP.Fusion.Table.Recursive
   , BtRecTy
   ) where
 
-import           Data.Array.Repa.Index
+--import           Data.Array.Repa.Index
 import           Data.Strict.Tuple
 import           Data.Vector.Fusion.Stream.Size (Size(Unknown))
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
 import           Data.Array.Repa.Index.Subword
+import           Data.PrimitiveArray ((:.)(..))
 
 import           ADP.Fusion.Classes
 
