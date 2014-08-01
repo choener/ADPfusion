@@ -29,6 +29,7 @@ module ADP.Fusion
   , module ADP.Fusion.None
 --  , module ADP.Fusion.Region
   , module ADP.Fusion.Table
+  , module ADP.Fusion.Table.Axiom
   , module ADP.Fusion.Table.Fill
   , module ADP.Fusion.TH
   ) where
@@ -44,6 +45,7 @@ import           ADP.Fusion.Multi.Classes
 import           ADP.Fusion.None
 --import           ADP.Fusion.Region
 import           ADP.Fusion.Table
+import           ADP.Fusion.Table.Axiom (axiom)
 import           ADP.Fusion.Table.Fill
 import           ADP.Fusion.TH
 

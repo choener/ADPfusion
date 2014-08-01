@@ -248,28 +248,22 @@ forwardPhase i1 i2 = do
 {-# INLINE forwardPhase #-}
 
 -- | Remember how we also want to know the actual alignment? The backtrack
--- function is similar to the forwardPhase where we filled the table. We
--- take the table we just filled (Z:.t') and bind @t'@ to a backtracking
--- table 'btTblD' together with a backtracking function @g@. Now we need to
--- define @g@. Well, that is simple, we just bind the grammar via
--- @(Z:.(_,g)) = grammar (sScore <** sPretty t i1 i2@ but ignore the table
--- @_@ and keep only the rules bound to @g@. Note how @g@ requires @t@
--- which in turn requires @g@ -- the joy of writing Haskell!
+-- function is similar to the forwardPhase where we filled the table.
 --
--- Finally, we call @g@ with the indices (here we still need explicit
--- indices for now!), unpack from the Id monad, unpack to a list, unpack
--- again from the Id monad, and reverse all the alignments -- as they where
--- stored back-to-front. This then gives us all the co-optimal alignments
--- which we can lazily ask for.
+-- We take the table we just filled (Z:.t') and bind @t'@ to a backtracking
+-- table 'BtTbl'. We then again create a grammar, this time with @sScore@
+-- to return co-optimals over the precalculated arrays, returning pretty
+-- printed alignments via @sPretty@. The functions are bound together via
+-- @sScore <** sPretty@.
+--
+-- We bind the result to @(Z:.g)@ with @g@ the single backtracking table,
+-- now fully bound to and with the grammar and algebra. Via @axiom@ (which
+-- handles finding the correct index to start backtracking automatically),
+-- we get the stream of co-optimals which we can lazily ask for.
 
 backtrack :: VU.Vector Char -> VU.Vector Char -> Arrs -> [[String]]
-backtrack i1 i2 (Z:.t') = map (map reverse) . unId . S.toList . unId . g $ Z:.pointL 0 n1 :. pointL 0 n2 where
-  n1 = VU.length i1
-  n2 = VU.length i2
---  t = BtTbl (Z:.EmptyOk:.EmptyOk) t' g
-  -- (Z:.BtTbl _ _ g) = grammar (sScore <** sPretty) (BtTbl ((Z:.EmptyOk:.EmptyOk) :: TblConstraint (Z:.PointL:.PointL)) t') i1 i2
-  g = case grammar (sScore <** sPretty) (BtTbl ((Z:.EmptyOk:.EmptyOk) :: TblConstraint (Z:.PointL:.PointL)) t') i1 i2
-        of (Z:.BtTbl _ _ gg) -> gg
+backtrack i1 i2 (Z:.t') = map (map reverse) . unId . S.toList . unId $ axiom g where
+  (Z:.g) = grammar (sScore <** sPretty) (BtTbl (Z:.EmptyOk:.EmptyOk) t') i1 i2
 {-# NOINLINE backtrack #-}
 
 -- | Let's write Needleman-Wunsch. We give the maximal number of alignments

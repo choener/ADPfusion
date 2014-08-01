@@ -29,15 +29,16 @@ module ADP.Fusion.Table.Array
   ) where
 
 import           Control.Monad.Primitive (PrimMonad)
-import           Data.Strict.Tuple
+import           Data.Strict.Tuple hiding (uncurry)
 import           Data.Vector.Fusion.Stream.Size (Size(Unknown))
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
-import           Data.PrimitiveArray (Z(..), (:.)(..), Subword(..), subword, PointL(..), pointL, PointR(..), pointR)
+import           Data.PrimitiveArray (Z(..), (:.)(..), Subword(..), subword, PointL(..), pointL, PointR(..), pointR,topmostIndex)
 import qualified Data.PrimitiveArray as PA
 
 import           ADP.Fusion.Classes
 import           ADP.Fusion.Multi.Classes
+import           ADP.Fusion.Table.Axiom
 import           ADP.Fusion.Table.Indices
 
 
@@ -181,4 +182,13 @@ instance
     . S.map (\s -> Tr s Z (getIdx s))
     $ mkStream ls (tableStaticVar vs is) (tableStreamIndex c vs is)
   {-# INLINE mkStream #-}
+
+
+
+-- * Axiom for backtracking
+
+instance (PA.ExtShape i, PA.PrimArrayOps arr i x) => Axiom (BtTbl m arr i x r) where
+  type S (BtTbl m arr i x r) = m (S.Stream m r)
+  axiom (BtTbl _ arr f) = f (uncurry topmostIndex $ PA.bounds arr)
+  {-# INLINE axiom #-}
 

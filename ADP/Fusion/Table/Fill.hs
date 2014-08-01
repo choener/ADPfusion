@@ -48,6 +48,8 @@ instance ExposeTables Z where
     {-# INLINE onlyTables #-}
 
 -- Thanks to the table being a gadt we now the internal types
+--
+-- TODO move to Table/Array.hs
 
 instance (ExposeTables ts) => ExposeTables (ts:.(MTbl m arr i x)) where
     type TableFun   (ts:. MTbl m arr i x) = TableFun   ts :. (PA.MutArr m (arr i x), i -> m x)
