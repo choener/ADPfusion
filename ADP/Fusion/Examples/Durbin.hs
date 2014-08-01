@@ -1,10 +1,11 @@
-{-# LANGUAGE MonadComprehensions #-}
+
 {-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE MonadComprehensions #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeOperators #-}
 
 -- | Nussinovs RNA secondary structure prediction algorithm via basepair
 -- maximization. Follow this file from top to bottom for a short tutorial
@@ -28,7 +29,6 @@ module Main where
 import           Control.Applicative
 import           Control.Monad
 import           Control.Monad.ST
-import           Data.Array.Repa.Index
 import           Data.Char (toUpper,toLower)
 import           Data.List
 import           Data.Vector.Fusion.Util
@@ -94,14 +94,15 @@ pretty = Durbin
 {-# INLINE pretty #-}
 
 -- grammar :: Durbin m Char () x r -> c' -> t' -> (t', Subword -> m r)
-grammar Durbin{..} c t =
-  Z:.
-  (t, nil <<< Empty           |||
-      lef <<< c  % t          |||
-      rig <<< t  % c          |||
-      pai <<< c  % t  % c     |||
-      spl <<< t' % t'         ... h
-  ) where t' = toNonEmpty t
+grammar Durbin{..} c t' =
+  let t = t'  ( nil <<< Empty           |||
+                lef <<< c  % t          |||
+                rig <<< t  % c          |||
+                pai <<< c  % t  % c     |||
+                spl <<< tt % tt         ... h
+              )
+      tt = toNonEmpty t
+  in (Z:.t)
 {-# INLINE grammar #-}
 
 forward :: VU.Vector Char -> ST s (Z:.Unboxed Subword Int)
@@ -109,24 +110,14 @@ forward inp = do
   let n  = VU.length inp
   let c  = chr inp
   !t' <- PA.newWithM (subword 0 0) (subword 0 n) (-999999)
-  let t  = mTblS EmptyOk t'
-  -- fillTable $ grammar bpmax c t
-  -- PA.freeze t'
+  let t  = MTbl EmptyOk t'
   runFreezeMTbls $ grammar bpmax c t
 {-# NOINLINE forward #-}
 
-fillTable (MTbl _ t,f) = do
-  let (_,Subword (_:.n)) = boundsM t
-  forM_ [n,n-1 .. 0] $ \i -> forM_ [i..n] $ \j ->
-    (f $ subword i j) >>= PA.writeM t (subword i j)
-{-# INLINE fillTable #-}
-
 backtrack :: VU.Vector Char -> Z :. PA.Unboxed Subword Int -> [String]
-backtrack inp (Z:.t') = unId . SM.toList . unId . g $ subword 0 n where
-  n = VU.length inp
+backtrack inp (Z:.t') = unId . SM.toList . unId $ axiom g where
   c = chr inp
-  t = btTblS EmptyOk t' g
-  (Z:.(_,g)) = grammar (bpmax <** pretty) c t
+  (Z:.g) = grammar (bpmax <** pretty) c (BtTbl EmptyOk t')
 {-# NOINLINE backtrack #-}
 
 runDurbin :: Int -> String -> (Int,[String])
