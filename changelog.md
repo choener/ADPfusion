@@ -6,13 +6,12 @@
 - optimized loop variable design following "The HERMIT in the Stream" (Farmer
   et al, 2014)
 - somewhat nicer programmer interfaces
-- less type classes to worry about
-- there should be no loss of performance
 - automatic filling and freezing of tables
 - multiple example algorithms (build with -fexamples switch):
   - Needleman-Wunsch global alignment
   - RNA secondary structure prediction using simple base pair maximization
 - updated Table code to handle single-dim Subwords in a better way.
+- simplified backtracking
 
 0.2.x.x
 -------

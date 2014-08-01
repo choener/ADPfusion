@@ -1,10 +1,11 @@
-{-# LANGUAGE MonadComprehensions #-}
+
 {-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE MonadComprehensions #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeOperators #-}
 
 -- | Nussinovs RNA secondary structure prediction algorithm via basepair
 -- maximization.
@@ -24,7 +25,7 @@ import qualified Data.Vector.Unboxed as VU
 import           Text.Printf
 
 import           Data.Array.Repa.Index.Subword
-import           Data.Array.Repa.Index
+--import           Data.Array.Repa.Index
 import           Data.PrimitiveArray.Zero as PA
 import           Data.PrimitiveArray as PA
 
@@ -85,42 +86,34 @@ pretty = Nussinov
 {-# INLINE pretty #-}
 
 -- grammar :: Nussinov m Char () x r -> c' -> t' -> (t', Subword -> m r)
-grammar Nussinov{..} c t =
-  (t, unp <<< t % c           |||
-      jux <<< t % c % t % c   |||
-      nil <<< Empty           ... h
-  )
+grammar Nussinov{..} c t' =
+  let t = t'  ( unp <<< t % c           |||
+                jux <<< t % c % t % c   |||
+                nil <<< Empty           ... h
+              )
+  in Z:.t
 {-# INLINE grammar #-}
 
-forward :: VU.Vector Char -> ST s (Unboxed Subword Int)
+forward :: VU.Vector Char -> ST s (Z:.Unboxed Subword Int)
 forward inp = do
   let n  = VU.length inp
   let c  = chr inp
   !t' <- PA.newWithM (subword 0 0) (subword 0 n) (-999999)
-  let t  = mTblS EmptyOk t'
-  fillTable $ grammar bpmax c t
-  PA.freeze t'
+  let t  = MTbl EmptyOk t'
+  runFreezeMTbls $ grammar bpmax c t
 {-# NOINLINE forward #-}
 
-fillTable (MTbl _ t,f) = do
-  let (_,Subword (_:.n)) = boundsM t
-  forM_ [n,n-1 .. 0] $ \i -> forM_ [i..n] $ \j ->
-    (f $ subword i j) >>= PA.writeM t (subword i j)
-{-# INLINE fillTable #-}
-
 backtrack :: VU.Vector Char -> PA.Unboxed Subword Int -> [String]
-backtrack inp t' = unId . SM.toList . unId . g $ subword 0 n where
-  n = VU.length inp
-  c = chr inp
-  t = btTblS EmptyOk t' g
-  (_,g) = grammar (bpmax <** pretty) c t
+backtrack i t' = unId . SM.toList . unId $ axiom g where
+  c = chr i
+  (Z:.g) = grammar (bpmax <** pretty) c (BtTbl EmptyOk t')
 {-# NOINLINE backtrack #-}
 
 runNussinov :: Int -> String -> (Int,[String])
 runNussinov k inp = (t PA.! (subword 0 n), take k b) where
   i = VU.fromList . Prelude.map toUpper $ inp
   n = VU.length i
-  t = runST $ forward i
+  (Z:.t) = runST $ forward i
   b = backtrack i t
 {-# NOINLINE runNussinov #-}
 

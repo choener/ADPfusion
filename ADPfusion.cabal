@@ -83,7 +83,10 @@ description:
                 provided as examples on how to write dynamic programming
                 algorithms using this library:
                 <http://hackage.haskell.org/package/Nussinov78> and
-                <http://hackage.haskell.org/package/RNAFold>.
+                <http://hackage.haskell.org/package/RNAFold>. In addition, this
+                library comes with three examples in the ADP/Fusion/Examples/
+                directory. They are built if @-fexamples@ is set during
+                configuration.
 
 
 
@@ -92,18 +95,17 @@ Extra-Source-Files:
   changelog.md
 
 flag examples
-  description:  build the examples (only Needleman-Wunsch for now)
+  description:  build the examples
   default:      False
   manual:       True
 
 library
   build-depends:
+    monad-primitive == 0.1      ,
+    mtl             == 2.*      ,
     primitive       == 0.5.*    ,
     PrimitiveArray  == 0.6.*    ,
     QuickCheck      == 2.*      ,
-    mtl             == 2.*      ,
-    monad-primitive == 0.1      ,
---    repa            == 3.2.*    ,
     strict          == 0.3.*    ,
     template-haskell            ,
     tuple           == 0.2.*    ,
