@@ -66,9 +66,6 @@ instance
     {-# INLINE getArg #-}
     {-# INLINE getIdx #-}
 
--- TODO removed the static check since *in principle* the statics system down
--- at the bottom of the stack should take care of it! Need to verify with
--- QuickCheck, though.
 
 instance
   ( Monad m
@@ -76,8 +73,14 @@ instance
   , MkStream m ls Subword
   ) => MkStream m (ls :!: Chr r x) Subword where
   mkStream (ls :!: Chr f xs) Static ij@(Subword (i:.j))
-    = S.map (ElmChr (f xs (j-1)) (subword (j-1) j))
-    $ mkStream ls Static (subword i $ j-1)
+    -- We use a static check here as we can then pull out the @z@ character
+    -- lookup. In the Nussinov example (X -> f <<< z1 t z2 t) this gives
+    -- a 3x performance improvement. Note that this benchmark is a bit
+    -- artificial.
+    = staticCheck (j>0) $
+      let !z = f xs (j-1)
+      in S.map (ElmChr z (subword (j-1) j))
+         $ mkStream ls Static (subword i $ j-1)
   mkStream (ls :!: Chr f xs) v ij@(Subword (i:.j))
     = S.map (\s -> let Subword (k:.l) = getIdx s
                    in  ElmChr (f xs l) (subword l $ l+1) s
