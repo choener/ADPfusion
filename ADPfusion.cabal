@@ -9,7 +9,7 @@ license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
 stability:      experimental
-cabal-version:  >= 1.6.0
+cabal-version:  >= 1.8.0
 synopsis:
                 Efficient, high-level dynamic programming.
 description:
@@ -141,8 +141,16 @@ executable NeedlemanWunsch
     buildable: True
   else
     buildable: False
+  build-depends:
+    ADPfusion       ,
+    primitive       ,
+    PrimitiveArray  ,
+    vector          ,
+    base
+  hs-source-dirs:
+    src
   main-is:
-    ADP/Fusion/Examples/NeedlemanWunsch.hs
+    NeedlemanWunsch.hs
   ghc-options:
     -Odph
     -funbox-strict-fields
@@ -157,8 +165,16 @@ executable Nussinov
     buildable: True
   else
     buildable: False
+  build-depends:
+    ADPfusion         ,
+    PrimitiveArray    ,
+    template-haskell  ,
+    vector            ,
+    base
+  hs-source-dirs:
+    src
   main-is:
-    ADP/Fusion/Examples/Nussinov.hs
+    Nussinov.hs
   ghc-options:
     -Odph
     -fcpr-off
@@ -174,8 +190,16 @@ executable Durbin
     buildable: True
   else
     buildable: False
+  build-depends:
+    ADPfusion         ,
+    PrimitiveArray    ,
+    template-haskell  ,
+    vector            ,
+    base
+  hs-source-dirs:
+    src
   main-is:
-    ADP/Fusion/Examples/Durbin.hs
+    Durbin.hs
   ghc-options:
     -Odph
     -fcpr-off
