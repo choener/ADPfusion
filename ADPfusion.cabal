@@ -101,16 +101,16 @@ flag examples
 
 library
   build-depends:
-    monad-primitive == 0.1      ,
-    mtl             == 2.*      ,
-    primitive       == 0.5.*    ,
-    PrimitiveArray  == 0.6.*    ,
-    QuickCheck      == 2.*      ,
-    strict          == 0.3.*    ,
-    template-haskell            ,
-    tuple           == 0.2.*    ,
-    vector          == 0.10.*   ,
-    base            == 4.*
+    monad-primitive   == 0.1      ,
+    mtl               == 2.*      ,
+    primitive         == 0.5.*    ,
+    PrimitiveArray    == 0.6.*    ,
+    QuickCheck        == 2.*      ,
+    strict            == 0.3.*    ,
+    template-haskell  == 2.*      ,
+    tuple             == 0.2.*    ,
+    vector            == 0.10.*   ,
+    base              == 4.*
   exposed-modules:
     ADP.Fusion
     ADP.Fusion.Apply
