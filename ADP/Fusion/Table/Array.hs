@@ -5,6 +5,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE RankNTypes #-}
 
 -- | Tables in ADPfusion memoize results of parses. In the forward phase, table
 -- cells are filled by a table-filling method from @Data.PrimitiveArray@. In
@@ -56,6 +57,16 @@ data MTbl m arr i x where
 data BtTbl m arr i x r where
   BtTbl :: !(TblConstraint i) -> !(arr i x) -> !(i -> m (S.Stream m r)) -> BtTbl m arr i x r
 
+-- | Immutable table.
+
+data ITbl m arr i x where
+  ITbl :: !(TblConstraint i) -> !(arr i x) -> !(i -> m x) -> ITbl m arr i x
+
+-- | The backtracking version.
+
+data Backtrack t r where
+  Backtrack :: !t -> !(forall m i . i -> m (S.Stream m r)) -> Backtrack t r
+
 
 
 -- * Instances. The instances should look very much alike. As a measure of
@@ -66,6 +77,10 @@ data BtTbl m arr i x r where
 instance Build (MTbl m arr i x)
 
 instance Build (BtTbl m arr i x r)
+
+instance Build (ITbl m arr i x)
+
+instance Build (Backtrack t r)
 
 instance Element ls i => Element (ls :!: MTbl m arr i x) i where
   data Elm (ls :!: MTbl m arr i x) i = ElmMTbl !x !i !(Elm ls i)
@@ -83,6 +98,22 @@ instance Element ls i => Element (ls :!: BtTbl m arr i x r) i where
   {-# INLINE getArg #-}
   {-# INLINE getIdx #-}
 
+instance Element ls i => Element (ls :!: ITbl m arr i x) i where
+  data Elm (ls :!: ITbl m arr i x) i = ElmITbl !x !i !(Elm ls i)
+  type Arg (ls :!: ITbl m arr i x)   = Arg ls :. x
+  getArg (ElmITbl x _ ls) = getArg ls :. x
+  getIdx (ElmITbl _ i _ ) = i
+  {-# INLINE getArg #-}
+  {-# INLINE getIdx #-}
+
+instance Element ls i => Element (ls :!: (Backtrack (ITbl m arr i x) r)) i where
+  data Elm (ls :!: (Backtrack (ITbl m arr i x) r)) i = ElmBtITbl !x !(m (S.Stream m r)) !i (Elm ls i)
+  type Arg (ls :!: (Backtrack (ITbl m arr i x) r))   = Arg ls :. (x, m (S.Stream m r))
+  getArg (ElmBtITbl x s _ ls) = getArg ls :. (x,s)
+  getIdx (ElmBtITbl _ _ i _ ) = i
+  {-# INLINE getArg #-}
+  {-# INLINE getIdx #-}
+
 
 
 
@@ -97,6 +128,18 @@ instance ModifyConstraint (MTbl m arr Subword x) where
 instance ModifyConstraint (BtTbl m arr Subword x r) where
   toNonEmpty (BtTbl _ arr f) = BtTbl NonEmpty arr f
   toEmpty    (BtTbl _ arr f) = BtTbl EmptyOk  arr f
+  {-# INLINE toNonEmpty #-}
+  {-# INLINE toEmpty #-}
+
+instance ModifyConstraint (ITbl m arr Subword x) where
+  toNonEmpty (ITbl _ arr f) = ITbl NonEmpty arr f
+  toEmpty    (ITbl _ arr f) = ITbl EmptyOk  arr f
+  {-# INLINE toNonEmpty #-}
+  {-# INLINE toEmpty #-}
+
+instance ModifyConstraint (Backtrack (ITbl m arr Subword x) r) where
+  toNonEmpty (Backtrack (ITbl _ arr f) bt) = Backtrack (ITbl NonEmpty arr f) bt
+  toEmpty    (Backtrack (ITbl _ arr f) bt) = Backtrack (ITbl EmptyOk  arr f) bt
   {-# INLINE toNonEmpty #-}
   {-# INLINE toEmpty #-}
 
@@ -148,6 +191,49 @@ instance
       in  S.flatten mk step Unknown $ mkStream ls (Variable NoCheck Nothing) (subword i j)
   {-# INLINE mkStream #-}
 
+instance
+  ( Monad m
+  , Element ls Subword
+  , PA.PrimArrayOps arr Subword x
+  , MkStream m ls Subword
+  ) => MkStream m (ls :!: ITbl m arr Subword x) Subword where
+  mkStream (ls :!: ITbl c t _) Static (Subword (i:.j))
+    = S.mapM (\s -> let Subword (_:.l) = getIdx s
+                    in  return $ ElmITbl (t PA.! subword l j) (subword l j) s)
+    $ mkStream ls (Variable Check Nothing) (subword i $ j - minSize c)
+  mkStream (ls :!: ITbl c t _) (Variable _ Nothing) (Subword (i:.j))
+    = let mk s = let (Subword (_:.l)) = getIdx s in return (s , j - l - minSize c) -- TODO maybe make (,) strict?
+          step (s,z) | z>=0 = do let (Subword (_:.k)) = getIdx s
+                                 return $ S.Yield (ElmITbl (t PA.! subword k (j-z)) (subword k $ j-z) s) (s,z-1)
+                     | otherwise = return S.Done
+          {-# INLINE [1] mk #-}
+          {-# INLINE [1] step #-}
+      in S.flatten mk step Unknown $ mkStream ls (Variable NoCheck Nothing) (subword i j)
+  {-# INLINE mkStream #-}
+
+instance
+  ( Monad m
+  , Element ls Subword
+  , MkStream m ls Subword
+  , PA.PrimArrayOps arr Subword x
+  ) => MkStream m (ls :!: Backtrack (ITbl m arr Subword x) r) Subword where
+  mkStream (ls :!: Backtrack (ITbl c t _) bt) Static (Subword (i:.j))
+    = S.mapM (\s -> let Subword (_:.l) = getIdx s
+                        ix             = subword l j
+                        d              = t PA.! ix
+                    in  return $ ElmBtITbl d (bt ix) ix s)
+    $ mkStream ls (Variable Check Nothing) (subword i $ j - minSize c)
+  mkStream (ls :!: Backtrack (ITbl c t _) bt) (Variable _ Nothing) (Subword (i:.j))
+    = let mk s = let (Subword (_:.l)) = getIdx s in return (s, j - l - minSize c)
+          step (s,z) | z>=0 = do let (Subword (_:.k)) = getIdx s
+                                     ix = subword k (j-z)
+                                     d = t PA.! ix
+                                 return $ S.Yield (ElmBtITbl d (bt ix) ix s) (s,z-1)
+                     | otherwise = return S.Done
+          {-# INLINE [1] mk #-}
+          {-# INLINE [1] step #-}
+      in S.flatten mk step Unknown $ mkStream ls (Variable NoCheck Nothing) (subword i j)
+  {-# INLINE mkStream #-}
 
 
 -- ** @(is:.i)@ indexing
@@ -190,5 +276,10 @@ instance
 instance (PA.ExtShape i, PA.PrimArrayOps arr i x) => Axiom (BtTbl m arr i x r) where
   type S (BtTbl m arr i x r) = m (S.Stream m r)
   axiom (BtTbl _ arr f) = f (uncurry topmostIndex $ PA.bounds arr)
+  {-# INLINE axiom #-}
+
+instance (PA.ExtShape i, PA.PrimArrayOps arr i x) => Axiom (Backtrack (ITbl m arr i x) r) where
+  type S (Backtrack (ITbl m arr i x) r) = m (S.Stream m r)
+  axiom (Backtrack (ITbl _ arr _) f) = f . uncurry topmostIndex $ PA.bounds arr
   {-# INLINE axiom #-}
 

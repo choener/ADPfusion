@@ -1,3 +1,9 @@
+0.4.0.0
+-------
+
+- forward phase now operates on immutable tables that are internally thawed
+- resembles the behavior of Data.Vector.Generic.constructN
+
 0.3.0.0
 -------
 
