@@ -25,14 +25,20 @@
 -- to the programmer.
 
 module ADP.Fusion.Table.Array
-  ( MTbl (..)
-  , BtTbl (..)
+  ( MTbl      (..)
+  , BtTbl     (..)
+  , ITbl      (..)
+  , Backtrack (..)
   ) where
 
 import           Control.Monad.Primitive (PrimMonad)
 import           Data.Strict.Tuple hiding (uncurry)
 import           Data.Vector.Fusion.Stream.Size (Size(Unknown))
+import qualified Data.Vector as V
 import qualified Data.Vector.Fusion.Stream.Monadic as S
+import qualified Data.Vector.Generic as VG
+import qualified Data.Vector.Storable as VS
+import qualified Data.Vector.Unboxed as VU
 
 import           Data.PrimitiveArray (Z(..), (:.)(..), Subword(..), subword, PointL(..), pointL, PointR(..), pointR,topmostIndex)
 import qualified Data.PrimitiveArray as PA
