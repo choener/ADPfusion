@@ -3,9 +3,14 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes #-}
+
 module ADP.Fusion.Table.Fill where
 
 import           Control.Monad.Primitive (PrimMonad (..))
+import           Control.Monad.Morph (hoist, MFunctor (..))
+import           Control.Monad.Trans.Class (lift, MonadTrans (..))
 
 import           Data.PrimitiveArray (Z(..), (:.)(..))
 import qualified Data.PrimitiveArray as PA
@@ -58,4 +63,38 @@ instance (ExposeTables ts) => ExposeTables (ts:.(MTbl m arr i x)) where
     onlyTables (ts:.MTbl _ t _) = onlyTables ts :. t
     {-# INLINE expose #-}
     {-# INLINE onlyTables #-}
+
+
+
+-- * Unsafely mutate 'ITbls' and similar tables in the forward phase.
+
+-- | Mutate a cell in a stack of syntactic variables.
+--
+-- NOTE the index @i@ is separate from the table (stack) @t@ as we might
+-- have special cases where @i@ is different from the indices in @t@.
+
+class MutateCell s where
+  type MM s :: * -> * -- The monad used to perform the forward calculations in (probably @Identity@)
+  mutateCell :: (Monad (MM s), Monad n, PrimMonad n, Monad (t n), MonadTrans t, MFunctor t) => (forall a . (MM s) a -> n a) -> s -> (forall i . i) -> t n ()
+
+instance
+  ( PA.PrimArrayOps  arr i x
+  , PA.MPrimArrayOps arr i x
+  ) => MutateCell (ITbl m arr i x) where
+  type MM (ITbl m arr i x) = m
+  mutateCell mmorph (ITbl _ arr f) i = do
+    marr <- lift $ PA.unsafeThaw arr
+    z <- hoist mmorph (lift $ f i)
+    lift $ PA.writeM marr i z
+    return ()
+  {-# INLINE mutateCell #-}
+
+class MutateStack s where
+  mutateStackCell :: (MFunctor t, MonadTrans t, PrimMonad n, Monad (t n)) => (forall a . (MM s) a -> n a) -> s -> (forall i . i) -> t n ()
+
+instance
+  ( MutateCell t
+  , Monad (MM t)
+  ) => MutateStack (ts:.t) where
+  mutateStackCell mmorph (ts:.t) i = mutateCell mmorph t i -- mutateStackCell mmorph ts i >> mutateCell mmorph t i
 
