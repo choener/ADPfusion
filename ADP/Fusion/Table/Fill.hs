@@ -1,16 +1,24 @@
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FlexibleContexts #-}
 
+{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ADP.Fusion.Table.Fill where
 
 import           Control.Monad.Primitive (PrimMonad (..))
 import           Control.Monad.Morph (hoist, MFunctor (..))
 import           Control.Monad.Trans.Class (lift, MonadTrans (..))
+import           Control.Monad.ST
+import           Data.Vector.Fusion.Util (Id(..))
+import           System.IO.Unsafe
+import qualified Data.Vector.Fusion.Stream.Monadic as SM
+import           GHC.Exts (inline)
 
 import           Data.PrimitiveArray (Z(..), (:.)(..))
 import qualified Data.PrimitiveArray as PA
@@ -70,31 +78,53 @@ instance (ExposeTables ts) => ExposeTables (ts:.(MTbl m arr i x)) where
 
 -- | Mutate a cell in a stack of syntactic variables.
 --
--- NOTE the index @i@ is separate from the table (stack) @t@ as we might
--- have special cases where @i@ is different from the indices in @t@.
+-- TODO generalize to monad morphism via @mmorph@ package. This will allow
+-- more interesting @mrph@ functions that can, for example, track some
+-- state in the forward phase. (Note that this can be dangerous, we do
+-- /not/ want to have this state influence forward results, unless that can
+-- be made deterministic, or we'll break Bellman)
 
-class MutateCell s where
-  type MM s :: * -> * -- The monad used to perform the forward calculations in (probably @Identity@)
-  mutateCell :: (Monad (MM s), Monad n, PrimMonad n, Monad (t n), MonadTrans t, MFunctor t) => (forall a . (MM s) a -> n a) -> s -> (forall i . i) -> t n ()
+class MutateCell (s :: *) (im :: * -> *) (om :: * -> *) i where
+  mutateCell :: (forall a . im a -> om a) -> s -> i -> om ()
+
+-- |
+
+class MutateTables (s :: *) (im :: * -> *) (om :: * -> *) where
+  mutateTables :: (forall a . im a -> om a) -> s -> om s
 
 instance
   ( PA.PrimArrayOps  arr i x
   , PA.MPrimArrayOps arr i x
-  ) => MutateCell (ITbl m arr i x) where
-  type MM (ITbl m arr i x) = m
-  mutateCell mmorph (ITbl _ arr f) i = do
-    marr <- lift $ PA.unsafeThaw arr
-    z <- hoist mmorph (lift $ f i)
-    lift $ PA.writeM marr i z
-    return ()
+  , MutateCell ts im om i
+  , PrimMonad om
+  ) => MutateCell (ts:.ITbl im arr i x) im om i where
+  mutateCell mrph (ts:.ITbl (!c) arr f) i = do
+    marr <- PA.unsafeThaw arr
+    z <- (inline mrph) $ f i
+    PA.writeM marr i z
+    mutateCell mrph ts i
   {-# INLINE mutateCell #-}
 
-class MutateStack s where
-  mutateStackCell :: (MFunctor t, MonadTrans t, PrimMonad n, Monad (t n)) => (forall a . (MM s) a -> n a) -> s -> (forall i . i) -> t n ()
+instance
+  ( Monad om
+  , MutateCell (ts:.ITbl im arr i x) im om i
+  , PA.PrimArrayOps arr i x
+  ) => MutateTables (ts:.ITbl im arr i x) im om where
+  mutateTables mrph tt@(_:.ITbl _ arr _) = do
+    let (from,to) = PA.bounds arr
+    SM.mapM_ (mutateCell (inline mrph) tt) $ PA.rangeStream from to
+    return tt
+  {-# INLINE mutateTables #-}
 
 instance
-  ( MutateCell t
-  , Monad (MM t)
-  ) => MutateStack (ts:.t) where
-  mutateStackCell mmorph (ts:.t) i = mutateCell mmorph t i -- mutateStackCell mmorph ts i >> mutateCell mmorph t i
+  ( Monad om
+  ) => MutateCell Z im om i where
+  mutateCell _ Z _ = return ()
+  {-# INLINE mutateCell #-}
+
+-- |
+
+mutateTablesDefault :: MutateTables t Id IO => t -> t
+mutateTablesDefault t = unsafePerformIO $ mutateTables (return . unId) t
+{-# INLINE mutateTablesDefault #-}
 

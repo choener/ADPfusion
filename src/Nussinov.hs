@@ -94,6 +94,17 @@ grammar Nussinov{..} c t' =
   in Z:.t
 {-# INLINE grammar #-}
 
+runNussinov' :: Int -> String -> (Int,[String])
+runNussinov' k inp = (d, take k b) where
+  i = VU.fromList . Prelude.map toUpper $ inp
+  n = VU.length i
+  !(Z:.t) = mutateTablesDefault
+         $ (grammar bpmax (chr i) (ITbl EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-999999) [])) :: Z:.ITbl Id Unboxed Subword Int)
+  d = let (ITbl _ arr _) = t in arr PA.! subword 0 n
+  b = ["would if I could"] -- backtrack $ grammar (bpmax <** pretty) (chr i) (Backtrack t)
+{-# NOINLINE runNussinov' #-}
+
+{-
 forward :: VU.Vector Char -> ST s (Z:.Unboxed Subword Int)
 forward inp = do
   let n  = VU.length inp
@@ -116,11 +127,12 @@ runNussinov k inp = (t PA.! (subword 0 n), take k b) where
   (Z:.t) = runST $ forward i
   b = backtrack i t
 {-# NOINLINE runNussinov #-}
+-}
 
 main = do
   ls <- lines <$> getContents
   forM_ ls $ \l -> do
     putStrLn l
-    let (k,[x]) = runNussinov 1 l
+    let (k,[x]) = runNussinov' 1 l
     printf "%s %5d\n" x k
 

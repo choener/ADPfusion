@@ -197,6 +197,10 @@ instance
       in  S.flatten mk step Unknown $ mkStream ls (Variable NoCheck Nothing) (subword i j)
   {-# INLINE mkStream #-}
 
+-- | TODO As soon as we don't do static checking on @EmptyOk/NonEmpty@
+-- anymore, this works! If we check @c@, we immediately have fusion
+-- breaking down!
+
 instance
   ( Monad m
   , Element ls Subword
@@ -204,17 +208,19 @@ instance
   , MkStream m ls Subword
   ) => MkStream m (ls :!: ITbl m arr Subword x) Subword where
   mkStream (ls :!: ITbl c t _) Static (Subword (i:.j))
-    = S.mapM (\s -> let Subword (_:.l) = getIdx s
+    = let ms = minSize c in ms `seq`
+      S.mapM (\s -> let Subword (_:.l) = getIdx s
                     in  return $ ElmITbl (t PA.! subword l j) (subword l j) s)
-    $ mkStream ls (Variable Check Nothing) (subword i $ j - minSize c)
+    $ mkStream ls (Variable Check Nothing) (subword i $ j - ms) -- - minSize c)
   mkStream (ls :!: ITbl c t _) (Variable _ Nothing) (Subword (i:.j))
-    = let mk s = let (Subword (_:.l)) = getIdx s in return (s , j - l - minSize c) -- TODO maybe make (,) strict?
-          step (s,z) | z>=0 = do let (Subword (_:.k)) = getIdx s
-                                 return $ S.Yield (ElmITbl (t PA.! subword k (j-z)) (subword k $ j-z) s) (s,z-1)
-                     | otherwise = return S.Done
+    = let ms = minSize c
+          mk s = let (Subword (_:.l)) = getIdx s in return (s :. j - l - ms)
+          step (s:.z) | z>=0 = do let (Subword (_:.k)) = getIdx s
+                                  return $ S.Yield (ElmITbl (t PA.! subword k (j-z)) (subword k $ j-z) s) (s:.z-1)
+                      | otherwise = return S.Done
           {-# INLINE [1] mk #-}
           {-# INLINE [1] step #-}
-      in S.flatten mk step Unknown $ mkStream ls (Variable NoCheck Nothing) (subword i j)
+      in ms `seq` S.flatten mk step Unknown $ mkStream ls (Variable NoCheck Nothing) (subword i j)
   {-# INLINE mkStream #-}
 
 instance
