@@ -73,7 +73,24 @@ data ITbl m arr i x where
 data Backtrack t r where
   Backtrack :: !t -> !(forall m i . i -> m (S.Stream m r)) -> Backtrack t r
 
+-- |
+--
+-- TODO this should go into @ADP.Fusion.Table.Backtrack@, more than just
+-- tabulated syntactic vars are going to use it.
 
+class GenBacktrack t m' r where
+  genBacktrack :: t -> BtStack t m' r
+
+instance GenBacktrack (ts:.t) m' r where
+
+type family BtStack t m' r where
+  BtStack Z m' r = Z
+  BtStack (ts:.t) m' r = BtStack ts m' r :. BtStack t m' r
+  BtStack t m' r = BT t m' r
+
+data family BT t (m' :: * -> *) r :: *
+
+data instance BT (ITbl m arr i x) m' r = BtITbl (ITbl m arr i x) (i -> m' (S.Stream m' r))
 
 -- * Instances. The instances should look very much alike. As a measure of
 -- code safety I'm putting them next to each other.

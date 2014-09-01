@@ -1,5 +1,7 @@
 
 -- | This module re-exports all table types.
+--
+-- TODO Rename @.Table.*@ to @.SynVar.*@
 
 module ADP.Fusion.Table
   ( module ADP.Fusion.Table.Array
