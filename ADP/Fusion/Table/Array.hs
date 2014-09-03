@@ -77,20 +77,19 @@ data Backtrack t r where
 --
 -- TODO this should go into @ADP.Fusion.Table.Backtrack@, more than just
 -- tabulated syntactic vars are going to use it.
+--
+-- NOTE You probably need to give the @monad morphism@ between @mF@ and
+-- @mB@ so as to be able to extract forward results in the backtracking
+-- phase.
 
-class GenBacktrack t m' r where
-  genBacktrack :: t -> BtStack t m' r
+data family BT t (mF :: * -> *) (mB :: * -> *) r :: *
 
-instance GenBacktrack (ts:.t) m' r where
-
-type family BtStack t m' r where
-  BtStack Z m' r = Z
-  BtStack (ts:.t) m' r = BtStack ts m' r :. BtStack t m' r
-  BtStack t m' r = BT t m' r
-
-data family BT t (m' :: * -> *) r :: *
-
-data instance BT (ITbl m arr i x) m' r = BtITbl (ITbl m arr i x) (i -> m' (S.Stream m' r))
+data instance BT (ITbl mF arr i x) mF mB r
+  = BtITbl (ITbl mF arr i x) (forall a . mF a -> mB a)  (i -> mB (S.Stream mB r))
+  -- TODO with full @ITbl@s we do not have to keep the function around. All
+  -- information is available via the array: @arr ! i == f ! 1@ with @f@
+  -- the forward function
+  -- = BtITbl !(TblConstraint i) !(arr i x) (i -> mB (S.Stream mB r))
 
 -- * Instances. The instances should look very much alike. As a measure of
 -- code safety I'm putting them next to each other.
@@ -104,6 +103,8 @@ instance Build (BtTbl m arr i x r)
 instance Build (ITbl m arr i x)
 
 instance Build (Backtrack t r)
+
+instance Build (BT t mF mB r)
 
 instance Element ls i => Element (ls :!: MTbl m arr i x) i where
   data Elm (ls :!: MTbl m arr i x) i = ElmMTbl !x !i !(Elm ls i)
@@ -137,6 +138,14 @@ instance Element ls i => Element (ls :!: (Backtrack (ITbl m arr i x) r)) i where
   {-# INLINE getArg #-}
   {-# INLINE getIdx #-}
 
+instance Element ls i => Element (ls :!: (BT (ITbl mF arr i x) mF mB r)) i where
+  data Elm (ls :!: (BT (ITbl mF arr i x) mF mB r)) i = ElmBtITbl' !x !(mB (S.Stream mB r)) !i !(Elm ls i)
+  type Arg (ls :!: (BT (ITbl mF arr i x) mF mB r))   = Arg ls :. (x, mB (S.Stream mB r))
+  getArg (ElmBtITbl' x s _ ls) = getArg ls :. (x,s)
+  getIdx (ElmBtITbl' _ _ i _ ) = i
+  {-# INLINE getArg #-}
+  {-# INLINE getIdx #-}
+
 
 
 
@@ -163,6 +172,14 @@ instance ModifyConstraint (ITbl m arr Subword x) where
 instance ModifyConstraint (Backtrack (ITbl m arr Subword x) r) where
   toNonEmpty (Backtrack (ITbl _ arr f) bt) = Backtrack (ITbl NonEmpty arr f) bt
   toEmpty    (Backtrack (ITbl _ arr f) bt) = Backtrack (ITbl EmptyOk  arr f) bt
+  {-# INLINE toNonEmpty #-}
+  {-# INLINE toEmpty #-}
+
+instance
+  ( ModifyConstraint (ITbl mF arr i x)
+  ) => ModifyConstraint (BT (ITbl mF arr i x) mF mB r) where
+  toNonEmpty (BtITbl t mmrph bt) = BtITbl (toNonEmpty t) mmrph bt
+  toEmpty    (BtITbl t mmrph bt) = BtITbl (toEmpty    t) mmrph bt
   {-# INLINE toNonEmpty #-}
   {-# INLINE toEmpty #-}
 
@@ -240,6 +257,8 @@ instance
       in ms `seq` S.flatten mk step Unknown $ mkStream ls (Variable NoCheck Nothing) (subword i j)
   {-# INLINE mkStream #-}
 
+-- TODO broken!
+
 instance
   ( Monad m
   , Element ls Subword
@@ -263,6 +282,20 @@ instance
           {-# INLINE [1] step #-}
       in S.flatten mk step Unknown $ mkStream ls (Variable NoCheck Nothing) (subword i j)
   {-# INLINE mkStream #-}
+
+{-
+instance
+  ( Monad mB
+  , Element ls Subword
+  , MkStream mB ls Subword
+  , PA.PrimArrayOps arr Subword x
+  ) => MkStream mB (ls :!: BT (ITbl mF arr Subword x) mF mB r) Subword where
+  mkStream (ls :!: BtITbl (ITbl c t _) mmrph bt) Static (Subword (i:.j))
+    = let ms = minSize c in ms `seq`
+      S.mapM (\s -> let (Subword (_:.l)) = getIdx s
+                        ix               = subword l j
+                    in mmrph 
+-}
 
 
 -- ** @(is:.i)@ indexing
