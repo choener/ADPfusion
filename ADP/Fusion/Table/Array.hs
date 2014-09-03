@@ -29,6 +29,7 @@ module ADP.Fusion.Table.Array
   , BtTbl     (..)
   , ITbl      (..)
   , Backtrack (..)
+  , ToBT (..)
   ) where
 
 import           Control.Monad.Primitive (PrimMonad)
@@ -82,14 +83,17 @@ data Backtrack t r where
 -- @mB@ so as to be able to extract forward results in the backtracking
 -- phase.
 
-data family BT t (mF :: * -> *) (mB :: * -> *) r :: *
+class ToBT t (mF :: * -> *) (mB :: * -> *) r where
+  data BT t (mF :: * -> *) (mB :: * -> *) r :: *
+  type BtIx t :: *
+  toBT :: t -> (forall a . mF a -> mB a) -> (BtIx t -> mB (S.Stream mB r)) -> BT t mF mB r
 
-data instance BT (ITbl mF arr i x) mF mB r
-  = BtITbl (ITbl mF arr i x) (forall a . mF a -> mB a)  (i -> mB (S.Stream mB r))
-  -- TODO with full @ITbl@s we do not have to keep the function around. All
-  -- information is available via the array: @arr ! i == f ! 1@ with @f@
-  -- the forward function
-  -- = BtITbl !(TblConstraint i) !(arr i x) (i -> mB (S.Stream mB r))
+instance ToBT (ITbl mF arr i x) mF mB r where
+  --data BT (ITbl mF arr i x) mF mB i r = BtITbl (ITbl mF arr i x) (forall a . mF a -> mB a)  (i -> mB (S.Stream mB r))
+  data BT (ITbl mF arr i x) mF mB r = BtITbl !(TblConstraint i) !(arr i x) (i -> mB (S.Stream mB r))
+  type BtIx (ITbl mF arr i x) = i
+  toBT (ITbl c arr _) _ bt = BtITbl c arr bt
+  {-# INLINE toBT #-}
 
 -- * Instances. The instances should look very much alike. As a measure of
 -- code safety I'm putting them next to each other.
@@ -175,11 +179,9 @@ instance ModifyConstraint (Backtrack (ITbl m arr Subword x) r) where
   {-# INLINE toNonEmpty #-}
   {-# INLINE toEmpty #-}
 
-instance
-  ( ModifyConstraint (ITbl mF arr i x)
-  ) => ModifyConstraint (BT (ITbl mF arr i x) mF mB r) where
-  toNonEmpty (BtITbl t mmrph bt) = BtITbl (toNonEmpty t) mmrph bt
-  toEmpty    (BtITbl t mmrph bt) = BtITbl (toEmpty    t) mmrph bt
+instance ModifyConstraint (BT (ITbl mF arr Subword x) mF mB r) where
+  toNonEmpty (BtITbl _ arr bt) = BtITbl NonEmpty arr bt
+  toEmpty    (BtITbl _ arr bt) = BtITbl EmptyOk  arr bt
   {-# INLINE toNonEmpty #-}
   {-# INLINE toEmpty #-}
 
@@ -283,19 +285,33 @@ instance
       in S.flatten mk step Unknown $ mkStream ls (Variable NoCheck Nothing) (subword i j)
   {-# INLINE mkStream #-}
 
-{-
 instance
   ( Monad mB
   , Element ls Subword
   , MkStream mB ls Subword
   , PA.PrimArrayOps arr Subword x
   ) => MkStream mB (ls :!: BT (ITbl mF arr Subword x) mF mB r) Subword where
-  mkStream (ls :!: BtITbl (ITbl c t _) mmrph bt) Static (Subword (i:.j))
+  mkStream (ls :!: BtITbl c arr bt)  Static (Subword (i:.j))
     = let ms = minSize c in ms `seq`
-      S.mapM (\s -> let (Subword (_:.l)) = getIdx s
-                        ix               = subword l j
-                    in mmrph 
--}
+      S.map (\s -> let (Subword (_:.l)) = getIdx s
+                       ix               = subword l j
+                       d                = arr PA.! ix
+                   in  ElmBtITbl' d (bt ix) ix s)
+      $ mkStream ls (Variable Check Nothing) (subword i $ j - ms)
+  mkStream (ls :!: BtITbl c arr bt) (Variable _ Nothing) (Subword (i:.j))
+    = let ms = minSize c
+          mk s = let (Subword (_:.l)) = getIdx s in return (s:.j-l-ms)
+          step (s:.z)
+            | z>=0      = do let (Subword (_:.k)) = getIdx s
+                                 ix               = subword k (j-z)
+                                 d                = arr PA.! ix
+                             return $ S.Yield (ElmBtITbl' d (bt ix) ix s) (s:.z-1)
+            | otherwise = return $ S.Done
+          {-# INLINE [1] mk   #-}
+          {-# INLINE [1] step #-}
+      in  ms `seq` S.flatten mk step Unknown $ mkStream ls (Variable NoCheck Nothing) (subword i j)
+  {-# INLINE mkStream #-}
+
 
 
 -- ** @(is:.i)@ indexing
@@ -343,5 +359,10 @@ instance (PA.ExtShape i, PA.PrimArrayOps arr i x) => Axiom (BtTbl m arr i x r) w
 instance (PA.ExtShape i, PA.PrimArrayOps arr i x) => Axiom (Backtrack (ITbl m arr i x) r) where
   type S (Backtrack (ITbl m arr i x) r) = m (S.Stream m r)
   axiom (Backtrack (ITbl _ arr _) f) = f . uncurry topmostIndex $ PA.bounds arr
+  {-# INLINE axiom #-}
+
+instance (PA.ExtShape i, PA.PrimArrayOps arr i x) => Axiom (BT (ITbl mF arr i x) mF mB r) where
+  type S (BT (ITbl mF arr i x) mF mB r) = mB (S.Stream mB r)
+  axiom (BtITbl c arr bt) = bt . uncurry topmostIndex $ PA.bounds arr
   {-# INLINE axiom #-}
 

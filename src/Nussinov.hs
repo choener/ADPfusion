@@ -21,6 +21,7 @@ import           Data.Vector.Fusion.Util
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Syntax
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
+import qualified Data.Vector.Fusion.Stream as S
 import qualified Data.Vector.Unboxed as VU
 import           Text.Printf
 
@@ -95,13 +96,17 @@ grammar Nussinov{..} c t' =
 {-# INLINE grammar #-}
 
 runNussinov' :: Int -> String -> (Int,[String])
-runNussinov' k inp = (d, take k b) where
+runNussinov' k inp = (d, take k . S.toList . unId $ axiom b) where
   i = VU.fromList . Prelude.map toUpper $ inp
   n = VU.length i
+  -- NOTE we need to fix the types at least once (@Subword@ and others),
+  -- this we do here
   !(Z:.t) = mutateTablesDefault
-         $ (grammar bpmax (chr i) (ITbl EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-999999) [])) :: Z:.ITbl Id Unboxed Subword Int)
+          $ grammar bpmax
+              (chr i)
+              (ITbl EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-999999) [])) :: Z:.ITbl Id Unboxed Subword Int
   d = let (ITbl _ arr _) = t in arr PA.! subword 0 n
-  b = ["would if I could"] -- backtrack $ grammar (bpmax <** pretty) (chr i) (Backtrack t)
+  !(Z:.b) = grammar (bpmax <** pretty) (chr i) (toBT t (undefined :: Id a -> Id a))
 {-# NOINLINE runNussinov' #-}
 
 {-
