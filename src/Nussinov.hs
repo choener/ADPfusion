@@ -20,15 +20,15 @@ import           Data.List
 import           Data.Vector.Fusion.Util
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Syntax
-import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Fusion.Stream as S
+import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
+import           System.Environment (getArgs)
 import           Text.Printf
 
 import           Data.Array.Repa.Index.Subword
---import           Data.Array.Repa.Index
-import           Data.PrimitiveArray.Zero as PA
 import           Data.PrimitiveArray as PA
+import           Data.PrimitiveArray.Zero as PA
 
 import           ADP.Fusion
 
@@ -64,7 +64,7 @@ bpmax = Nussinov
   { unp = \ x c     -> x
   , jux = \ x c y d -> if c `pairs` d then x + y + 1 else -999999
   , nil = \ ()      -> 0
-  , h   = SM.foldl' max 0
+  , h   = SM.foldl' max (-999999)
   }
 {-# INLINE bpmax #-}
 
@@ -135,9 +135,11 @@ runNussinov k inp = (t PA.! (subword 0 n), take k b) where
 -}
 
 main = do
+  as <- getArgs
+  let k = if null as then 1 else read $ head as
   ls <- lines <$> getContents
   forM_ ls $ \l -> do
     putStrLn l
-    let (k,[x]) = runNussinov' 1 l
-    printf "%s %5d\n" x k
+    let (s,xs) = runNussinov' k l
+    mapM_ (\x -> printf "%s %5d\n" x s) xs
 

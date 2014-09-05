@@ -178,9 +178,8 @@ executable Nussinov
   main-is:
     Nussinov.hs
   ghc-options:
-    -Odph
-    -fcpr-off
-    -funbox-strict-fields
+    -O2
+--    -funbox-strict-fields
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000
     -fllvm
