@@ -98,9 +98,9 @@ instance
   , MutateCell ts im om i
   , PrimMonad om
   ) => MutateCell (ts:.ITbl im arr i x) im om i where
-  mutateCell mrph (ts:.ITbl (!c) arr f) i = do
+  mutateCell mrph (ts:.ITbl (!c) arr f) i = {-# SCC "mutateCell" #-} do
     marr <- PA.unsafeThaw arr
-    z <- (inline mrph) $ f i
+    z <- {-# SCC "inline/mrph/fi" #-} (inline mrph) $ {-# SCC "fi" #-} f i
     PA.writeM marr i z
     mutateCell mrph ts i
   {-# INLINE mutateCell #-}

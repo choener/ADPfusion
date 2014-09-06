@@ -90,7 +90,7 @@ pretty = Nussinov
 {-# INLINE pretty #-}
 
 -- grammar :: Nussinov m Char () x r -> c' -> t' -> (t', Subword -> m r)
-grammar Nussinov{..} c s' t' =
+grammar Nussinov{..} (!c) s' t' =
   let s = s'  ( unp <<< t % c           |||
                 jux <<< t % c % t % c   |||
                 nil <<< Empty           ... h
