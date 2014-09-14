@@ -110,7 +110,7 @@ library
     strict            == 0.3.*    ,
     template-haskell  == 2.*      ,
     transformers      == 0.3.*    ,
-    tuple             == 0.2.*    ,
+    tuple             == 0.3.*    ,
     vector            == 0.10.*   ,
     base              == 4.*
   exposed-modules:
