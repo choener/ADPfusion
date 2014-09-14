@@ -28,9 +28,12 @@ import           Data.Vector.Fusion.Stream.Monadic (Stream (..))
 import           Data.Vector.Fusion.Util
 import qualified Control.Arrow as A
 import qualified Data.Vector as V
-import qualified Data.Vector.Fusion.Stream.Monadic as S
+import qualified Data.Vector.Fusion.Stream as S
+import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
+import           System.Environment (getArgs)
 import           System.IO.Unsafe (unsafePerformIO)
+import           Text.Printf
 
 import           Data.PrimitiveArray as PA hiding (map)
 
@@ -180,7 +183,7 @@ sScore = Signature
   , step_loop = \x _         -> x-1
   , loop_step = \x _         -> x-1
   , nil_nil   = const 0
-  , h = S.foldl' max (-999999)
+  , h = SM.foldl' max (-999999)
   }
 {-# INLINE sScore #-}
 
@@ -194,7 +197,7 @@ sScore = Signature
 -- rather returns all alignments. You already heard about @<**@, we'll use
 -- it below.
 
-sPretty :: Monad m => Signature m [String] (S.Stream m [String]) Char
+sPretty :: Monad m => Signature m [String] (SM.Stream m [String]) Char
 sPretty = Signature
   { step_step = \[x,y] (Z:.a :.b ) -> [a  :x, b  :y]
   , step_loop = \[x,y] (Z:.a :.()) -> [a  :x, '-':y]
@@ -203,6 +206,25 @@ sPretty = Signature
   , h = return . id
   }
 
+-- * This is the new way how to handle table-filling
+
+runNeedlemanWunsch :: Int -> String -> String -> (Int,[[String]])
+runNeedlemanWunsch k i1' i2' = (d, take k . S.toList . unId $ axiom b) where
+  i1 = VU.fromList i1'
+  i2 = VU.fromList i2'
+  n1 = VU.length i1
+  n2 = VU.length i2
+  !(Z:.t) = mutateTablesDefault
+          $ grammar sScore
+              (ITbl (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.pointL 0 0:.pointL 0 0) (Z:.pointL 0 n1:.pointL 0 n2) (-999999) []))
+              i1 i2
+              :: Z:.ITbl Id Unboxed (Z:.PointL:.PointL) Int
+  d = let (ITbl _ arr _) = t in arr PA.! (Z:.pointL 0 n1:.pointL 0 n2)
+  !(Z:.b) = grammar (sScore <** sPretty) (toBT t (undefined :: Id a -> Id a)) i1 i2
+
+-- * The old way, and the still active wrappers
+
+{-
 -- | A single DP array or table is an unboxed table (we want performance!
 -- raw blob in ram, please!) with a two-dim index @(Z:.PointL:.PointL@) and
 -- @Int@ scores. @PointL@ is the index type for left-linear grammars, of
@@ -294,20 +316,20 @@ needlemanWunsch k i1' i2' = (ws PA.! (Z:.pointL 0 n1:.pointL 0 n2), bt) where
   n2 = VU.length i2
   bt = take k $ backtrack i1 i2 (Z:.ws)
 {-# NOINLINE needlemanWunsch #-}
+-}
 
 -- | This wrapper takes a list of input sequences and aligns each odd
 -- sequence with the next even sequence. We want one alignment for each
 -- such pair.
 
-align [] = return ()
-align [c] = error "single last line"
-align (a:b:xs) = do
+align _ [] = return ()
+align _ [c] = error "single last line"
+align k (a:b:xs) = do
   putStrLn a
   putStrLn b
-  let (s,rs) = needlemanWunsch 1 a b 
-  print s
-  mapM_ (mapM_ print) rs
-  align xs
+  let (s,rs) = runNeedlemanWunsch k a b
+  forM_ rs $ \[u,l] -> printf "%s\n%s  %d\n\n" u l s
+  align k xs
 
 -- | And finally have a minimal main that reads from stdio.
 --
@@ -316,6 +338,8 @@ align (a:b:xs) = do
 -- should be beautifully optimized and the algorithm should run quite fast.
 
 main = do
+  as <- getArgs
+  let k = if null as then 1 else read $ head as
   ls <- lines <$> getContents
-  align ls
+  align k ls
 

@@ -46,22 +46,6 @@ data Nussinov m c e x r = Nussinov
 
 makeAlgebraProductH ['h] ''Nussinov
 
-{- The code below is mainly to see how one could write the algebra product manually
- -
-(<<*) f s = Nussinov unp jux nil h where
-  Nussinov unpF juxF nilF hF = f
-  Nussinov unpS juxS nilS hS = s
-  --unp (x,xs) c          = (unpF x c    , xs >>= \xs' -> return $ SM.concatMap (\x -> SM.singleton $ unpS x c) xs')
-  unp (x,xs) c          = (unpF x c    , xs >>= return . SM.concatMap (\x -> SM.singleton $ unpS x c))
-  --jux (x,xs) c (y,ys) d = (juxF x c y d, xs >>= \xs' -> ys >>= \ys' -> return $ SM.concatMap (\x -> SM.concatMap (\y -> SM.singleton $ juxS x c y d) ys') xs')
-  jux (x,xs) c (y,ys) d = (juxF x c y d, xs >>= return . SM.concatMapM (\x -> ys >>= return . SM.concatMapM (\y -> return . SM.singleton $ juxS x c y d)))
-  nil e                 = (nilF e      , return $ SM.singleton (nilS e))
-  h xs = do
-    hfs <- hF $ SM.map fst xs
-    let phfs = SM.concatMapM snd . SM.filter ((hfs==) . fst) $ xs
-    hS phfs
--}
-
 bpmax :: Monad m => Nussinov m Char () Int Int
 bpmax = Nussinov
   { unp = \ x c     -> x
@@ -102,8 +86,8 @@ grammar Nussinov{..} (!c) s' t' =
   in Z:.s:.t
 {-# INLINE grammar #-}
 
-runNussinov' :: Int -> String -> (Int,[String])
-runNussinov' k inp = (d, take k . S.toList . unId $ axiom b) where
+runNussinov :: Int -> String -> (Int,[String])
+runNussinov k inp = (d, take k . S.toList . unId $ axiom b) where
   i = VU.fromList . Prelude.map toUpper $ inp
   n = VU.length i
   -- NOTE we need to fix the types at least once (@Subword@ and others),
@@ -115,32 +99,7 @@ runNussinov' k inp = (d, take k . S.toList . unId $ axiom b) where
                  (ITbl EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-999999) [])) :: Z :. ITbl Id Unboxed Subword Int :. ITbl Id Unboxed Subword Int
   d = let (ITbl _ arr _) = t in arr PA.! subword 0 n
   !(Z:.b:.c) = grammar (bpmax <** pretty) (chr i) (toBT s (undefined :: Id a -> Id a)) (toBT t (undefined :: Id a -> Id a))
-{-# NOINLINE runNussinov' #-}
-
-{-
-forward :: VU.Vector Char -> ST s (Z:.Unboxed Subword Int)
-forward inp = do
-  let n  = VU.length inp
-  let c  = chr inp
-  !t' <- PA.newWithM (subword 0 0) (subword 0 n) (-999999)
-  let t  = MTbl EmptyOk t'
-  runFreezeMTbls $ grammar bpmax c t
-{-# NOINLINE forward #-}
-
-backtrack :: VU.Vector Char -> PA.Unboxed Subword Int -> [String]
-backtrack i t' = unId . SM.toList . unId $ axiom g where
-  c = chr i
-  (Z:.g) = grammar (bpmax <** pretty) c (BtTbl EmptyOk t')
-{-# NOINLINE backtrack #-}
-
-runNussinov :: Int -> String -> (Int,[String])
-runNussinov k inp = (t PA.! (subword 0 n), take k b) where
-  i = VU.fromList . Prelude.map toUpper $ inp
-  n = VU.length i
-  (Z:.t) = runST $ forward i
-  b = backtrack i t
 {-# NOINLINE runNussinov #-}
--}
 
 main = do
   as <- getArgs
@@ -148,6 +107,6 @@ main = do
   ls <- lines <$> getContents
   forM_ ls $ \l -> do
     putStrLn l
-    let (s,xs) = runNussinov' k l
+    let (s,xs) = runNussinov k l
     mapM_ (\x -> printf "%s %5d\n" x s) xs
 

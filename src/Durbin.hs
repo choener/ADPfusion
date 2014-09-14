@@ -34,8 +34,10 @@ import           Data.List
 import           Data.Vector.Fusion.Util
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Syntax
+import qualified Data.Vector.Fusion.Stream as S
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
+import           System.Environment (getArgs)
 import           Text.Printf
 
 -- Import PrimitiveArray for low-level tables and automatic table
@@ -105,6 +107,18 @@ grammar Durbin{..} c t' =
   in (Z:.t)
 {-# INLINE grammar #-}
 
+runDurbin :: Int -> String -> (Int,[String])
+runDurbin k inp = (d, take k . S.toList . unId $ axiom b) where
+  i = VU.fromList . Prelude.map toUpper $ inp
+  n = VU.length i
+  !(Z:.t) = mutateTablesDefault
+          $ grammar bpmax
+              (chr i)
+              (ITbl EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-999999) [])) :: Z:.ITbl Id Unboxed Subword Int
+  d = let (ITbl _ arr _) = t in arr PA.! subword 0 n
+  !(Z:.b) = grammar (bpmax <** pretty) (chr i) (toBT t (undefined :: Id a -> Id a))
+
+{-
 forward :: VU.Vector Char -> ST s (Z:.Unboxed Subword Int)
 forward inp = do
   let n  = VU.length inp
@@ -127,11 +141,14 @@ runDurbin k inp = (t PA.! (subword 0 n), take k b) where
   (Z:.t) = runST $ forward i
   b = backtrack i (Z:.t)
 {-# NOINLINE runDurbin #-}
+-}
 
 main = do
+  as <- getArgs
+  let k = if null as then 1 else read $ head as
   ls <- lines <$> getContents
   forM_ ls $ \l -> do
     putStrLn l
-    let (k,[x]) = runDurbin 1 l
-    printf "%s %5d\n" x k
+    let (s,xs) = runDurbin k l
+    mapM_ (\x -> printf "%s %5d\n" x s) xs
 

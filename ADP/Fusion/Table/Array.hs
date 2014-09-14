@@ -347,6 +347,36 @@ instance
     $ mkStream ls (tableStaticVar vs is) (tableStreamIndex c vs is)
   {-# INLINE mkStream #-}
 
+instance
+  ( Monad m
+  , Element ls (is:.i)
+  , TableStaticVar (is:.i)
+  , TableIndices (is:.i)
+  , MkStream m ls (is:.i)
+  , PA.PrimArrayOps arr (is:.i) x
+  ) => MkStream m (ls :!: ITbl m arr (is:.i) x) (is:.i) where
+  mkStream (ls :!: ITbl c t _) vs is
+    = S.map (\(Tr s _ i) -> ElmITbl (t PA.! i) i s)
+    . tableIndices c vs is
+    . S.map (\s -> Tr s Z (getIdx s))
+    $ mkStream ls (tableStaticVar vs is) (tableStreamIndex c vs is)
+  {-# INLINE mkStream #-}
+
+instance
+  ( Monad mB
+  , Element ls (is:.i)
+  , TableStaticVar (is:.i)
+  , TableIndices (is:.i)
+  , MkStream mB ls (is:.i)
+  , PA.PrimArrayOps arr (is:.i) x
+  ) => MkStream mB (ls :!: BT (ITbl mF arr (is:.i) x) mF mB r) (is:.i) where
+  mkStream (ls :!: BtITbl c arr bt) vs is
+    = S.map (\(Tr s _ i) -> ElmBtITbl' (arr PA.! i) (bt i) i s)
+    . tableIndices c vs is
+    . S.map (\s -> Tr s Z (getIdx s))
+    $ mkStream ls (tableStaticVar vs is) (tableStreamIndex c vs is)
+  {-# INLINE mkStream #-}
+
 
 
 -- * Axiom for backtracking
