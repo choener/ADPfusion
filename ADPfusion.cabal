@@ -130,6 +130,7 @@ library
     ADP.Fusion.Table
     ADP.Fusion.Table.Array
     ADP.Fusion.Table.Axiom
+    ADP.Fusion.Table.Backtrack
     ADP.Fusion.Table.Fill
     ADP.Fusion.Table.Indices
     ADP.Fusion.Table.Recursive

@@ -11,9 +11,6 @@
 
 module ADP.Fusion.Table.Recursive
   ( MRec (..)
-  , MRecTy
-  , BtRec (..)
-  , BtRecTy
   ) where
 
 --import           Data.Array.Repa.Index
@@ -25,29 +22,30 @@ import           Data.Array.Repa.Index.Subword
 import           Data.PrimitiveArray ((:.)(..))
 
 import           ADP.Fusion.Classes
+import           ADP.Fusion.Table.Backtrack
 
 
 
-data MRec i f where
-  MRec :: (f ~ (i -> m x)) => !(TblConstraint i) -> !(i->m x) -> MRec i f
+data MRec m i x where
+  MRec :: !(TblConstraint i) -> !(i->m x) -> MRec m i x
 
-type MRecTy i f = MRec i f -- f ~ i -> m x
-
-data BtRec i f = BtRec !(TblConstraint i) !f
-
-type BtRecTy m i x r = BtRec i (i -> m (S.Stream m r))
+instance ToBT (MRec mF i x) mF mB r where
+  data BT   (MRec mF i x) mF mB r = BtMRec !(TblConstraint i) (i -> mB x) (i -> mB (S.Stream mB r))
+  type BtIx (MRec mF i x)         = i
+  toBT (MRec c f) mrph bt = BtMRec c (mrph . f) bt
+  {-# INLINE toBT #-}
 
 
 
 -- * Instances
 
-instance Build (MRec i f)
+instance Build (MRec m i x)
 
-instance Build (BtRec i f)
+-- instance Build (BtRec i f)
 
-instance Element ls i => Element (ls :!: MRecTy i (i->m x)) i where
-  data Elm (ls :!: MRecTy i (i->m x)) i = ElmMRec !x !i !(Elm ls i)
-  type Arg (ls :!: MRecTy i (i->m x))   = Arg ls :. x
+instance Element ls i => Element (ls :!: MRec m i x) i where
+  data Elm (ls :!: MRec m i x) i = ElmMRec !x !i !(Elm ls i)
+  type Arg (ls :!: MRec m i x)   = Arg ls :. x
   getArg (ElmMRec x _ ls) = getArg ls :. x
   getIdx (ElmMRec _ k _ ) = k
   {-# INLINE getArg #-}
@@ -57,13 +55,15 @@ instance
   ( Monad m
   , Element ls Subword
   , MkStream m ls Subword
-  ) => MkStream m (ls :!: MRecTy Subword (Subword -> m x)) Subword where
+  ) => MkStream m (ls :!: MRec m Subword x) Subword where
   mkStream (ls :!: MRec c f) Static (Subword (i:.j))
-    = S.mapM (\s -> let Subword (_:.l) = getIdx s
+    = let ms = minSize c in ms `seq`
+    S.mapM (\s -> let Subword (_:.l) = getIdx s
                     in  f (subword l j) >>= \z -> return $ ElmMRec z (subword l j) s)
-    $ mkStream ls (Variable Check Nothing) (subword i $ j - minSize c)
+    $ mkStream ls (Variable Check Nothing) (subword i $ j - ms)
   mkStream (ls :!: MRec c f) (Variable _ Nothing) (Subword (i:.j))
-    = let mk s = let (Subword (_:.l)) = getIdx s in return (s:.j-l-minSize c)
+    = let ms = minSize c in ms `seq`
+      let mk s = let (Subword (_:.l)) = getIdx s in return (s:.j-l-ms)
           step (s:.z)
             | z>=0      = do let (Subword (_:.k)) = getIdx s
                              y <- f (subword k (j-z))

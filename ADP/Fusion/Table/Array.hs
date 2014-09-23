@@ -47,6 +47,7 @@ import qualified Data.PrimitiveArray as PA
 import           ADP.Fusion.Classes
 import           ADP.Fusion.Multi.Classes
 import           ADP.Fusion.Table.Axiom
+import           ADP.Fusion.Table.Backtrack
 import           ADP.Fusion.Table.Indices
 
 
@@ -73,20 +74,6 @@ data ITbl m arr i x where
 
 data Backtrack t r where
   Backtrack :: !t -> !(forall m i . i -> m (S.Stream m r)) -> Backtrack t r
-
--- |
---
--- TODO this should go into @ADP.Fusion.Table.Backtrack@, more than just
--- tabulated syntactic vars are going to use it.
---
--- NOTE You probably need to give the @monad morphism@ between @mF@ and
--- @mB@ so as to be able to extract forward results in the backtracking
--- phase.
-
-class ToBT t (mF :: * -> *) (mB :: * -> *) r where
-  data BT t (mF :: * -> *) (mB :: * -> *) r :: *
-  type BtIx t :: *
-  toBT :: t -> (forall a . mF a -> mB a) -> (BtIx t -> mB (S.Stream mB r)) -> BT t mF mB r
 
 instance ToBT (ITbl mF arr i x) mF mB r where
   --data BT (ITbl mF arr i x) mF mB i r = BtITbl (ITbl mF arr i x) (forall a . mF a -> mB a)  (i -> mB (S.Stream mB r))
