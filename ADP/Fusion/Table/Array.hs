@@ -95,8 +95,6 @@ instance Build (ITbl m arr i x)
 
 instance Build (Backtrack t r)
 
-instance Build (BT t mF mB r)
-
 instance Element ls i => Element (ls :!: MTbl m arr i x) i where
   data Elm (ls :!: MTbl m arr i x) i = ElmMTbl !x !i !(Elm ls i)
   type Arg (ls :!: MTbl m arr i x)   = Arg ls :. x

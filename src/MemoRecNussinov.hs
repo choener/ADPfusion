@@ -87,7 +87,7 @@ grammar Nussinov{..} (!c) s' t' =
 {-# INLINE grammar #-}
 
 runNussinov :: Int -> String -> (Int,[String])
-runNussinov k inp = (d, []) where -- take k . S.toList . unId $ axiom b) where
+runNussinov k inp = (d, take k . S.toList . unId $ axiom b) where
   i = VU.fromList . Prelude.map toUpper $ inp
   n = VU.length i
   -- NOTE we need to fix the types at least once (@Subword@ and others),
@@ -98,7 +98,7 @@ runNussinov k inp = (d, []) where -- take k . S.toList . unId $ axiom b) where
                  (ITbl EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-999999) []))
                  (IRec EmptyOk (subword 0 0, subword 0 n)                              ) :: Z :. ITbl Id Unboxed Subword Int :. IRec Id Subword Int
   d = let (ITbl _ arr _) = s in arr PA.! subword 0 n
-  !(Z:.b:.c) = (Z:.():.()) -- grammar (bpmax <** pretty) (chr i) (toBT s (undefined :: Id a -> Id a)) (toBT t (undefined :: Id a -> Id a))
+  !(Z:.b:.c) = grammar (bpmax <** pretty) (chr i) (toBT s (undefined :: Id a -> Id a)) (toBT t (id :: Id a -> Id a))
 {-# NOINLINE runNussinov #-}
 
 main = do

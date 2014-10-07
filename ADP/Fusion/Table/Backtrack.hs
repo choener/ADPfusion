@@ -11,6 +11,8 @@ module ADP.Fusion.Table.Backtrack where
 
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
+import           ADP.Fusion.Classes
+
 
 
 -- |
@@ -26,4 +28,6 @@ class ToBT t (mF :: * -> *) (mB :: * -> *) r where
   data BT t (mF :: * -> *) (mB :: * -> *) r :: *
   type BtIx t :: *
   toBT :: t -> (forall a . mF a -> mB a) -> (BtIx t -> mB (S.Stream mB r)) -> BT t mF mB r
+
+instance Build (BT t mF mB r)
 
