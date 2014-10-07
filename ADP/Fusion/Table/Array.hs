@@ -7,6 +7,10 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE RankNTypes #-}
 
+{-# LANGUAGE MagicHash #-}
+{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE PatternGuards #-}
+
 -- | Tables in ADPfusion memoize results of parses. In the forward phase, table
 -- cells are filled by a table-filling method from @Data.PrimitiveArray@. In
 -- the backtracking phase, grammar rules are associated with tables to provide
@@ -40,6 +44,7 @@ import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Generic as VG
 import qualified Data.Vector.Storable as VS
 import qualified Data.Vector.Unboxed as VU
+import           GHC.Exts
 
 import           Data.PrimitiveArray (Z(..), (:.)(..), Subword(..), subword, PointL(..), pointL, PointR(..), pointR,topmostIndex)
 import qualified Data.PrimitiveArray as PA
@@ -235,14 +240,22 @@ instance
     $ mkStream ls (Variable Check Nothing) (subword i $ j - ms) -- - minSize c)
   mkStream (ls :!: ITbl c t _) (Variable _ Nothing) (Subword (i:.j))
     = let ms = minSize c
+          mk s = let (Subword (_:.l)) = getIdx s ; !(I# jlm) = j-l-ms in return $ PBI s jlm
+          step !(PBI s z) | 1# <- z >=# 0# = do let (Subword (_:.k)) = getIdx s
+                                                return $ S.Yield (ElmITbl (t PA.! subword k (j-(I# z))) (subword k $ j-(I# z)) s) (PBI s (z -# 1#))
+                          | otherwise = return S.Done
+          {-
           mk s = let (Subword (_:.l)) = getIdx s in return (s :. j - l - ms)
           step (s:.z) | z>=0 = do let (Subword (_:.k)) = getIdx s
                                   return $ S.Yield (ElmITbl (t PA.! subword k (j-z)) (subword k $ j-z) s) (s:.z-1)
                       | otherwise = return S.Done
+          -}
           {-# INLINE [1] mk #-}
           {-# INLINE [1] step #-}
       in ms `seq` S.flatten mk step Unknown $ mkStream ls (Variable NoCheck Nothing) (subword i j)
   {-# INLINE mkStream #-}
+
+data PBI (a :: *) = PBI !a !(Int#)
 
 -- TODO broken!
 
