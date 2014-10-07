@@ -99,6 +99,11 @@ flag examples
   default:      False
   manual:       True
 
+flag llvm
+  description:  build using LLVM
+  default:      False
+  manual:       True
+
 library
   build-depends:
     mmorph            == 1.0.*    ,
@@ -159,9 +164,11 @@ executable NeedlemanWunsch
     -funbox-strict-fields
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000
-    -fllvm
-    -optlo-O3 -optlo-std-compile-opts
-    -fllvm-tbaa
+  if flag(llvm)
+    ghc-options:
+      -fllvm
+      -optlo-O3 -optlo-std-compile-opts
+      -fllvm-tbaa
 
 executable Nussinov
   if flag(examples)
@@ -183,9 +190,11 @@ executable Nussinov
     -funbox-strict-fields
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000
-    -fllvm
-    -optlo-O3 -optlo-std-compile-opts
-    -fllvm-tbaa
+  if flag(llvm)
+    ghc-options:
+      -fllvm
+      -optlo-O3 -optlo-std-compile-opts
+      -fllvm-tbaa
 
 executable TwoNussinov
   if flag(examples)
@@ -207,9 +216,11 @@ executable TwoNussinov
     -funbox-strict-fields
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000
-    -fllvm
-    -optlo-O3 -optlo-std-compile-opts
-    -fllvm-tbaa
+  if flag(llvm)
+    ghc-options:
+      -fllvm
+      -optlo-O3 -optlo-std-compile-opts
+      -fllvm-tbaa
 
 executable MemoRecNussinov
   if flag(examples)
@@ -231,9 +242,11 @@ executable MemoRecNussinov
     -funbox-strict-fields
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000
-    -fllvm
-    -optlo-O3 -optlo-std-compile-opts
-    -fllvm-tbaa
+  if flag(llvm)
+    ghc-options:
+      -fllvm
+      -optlo-O3 -optlo-std-compile-opts
+      -fllvm-tbaa
 
 executable Durbin
   if flag(examples)
@@ -256,9 +269,11 @@ executable Durbin
     -funbox-strict-fields
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000
-    -fllvm
-    -optlo-O3 -optlo-std-compile-opts
-    -fllvm-tbaa
+  if flag(llvm)
+    ghc-options:
+      -fllvm
+      -optlo-O3 -optlo-std-compile-opts
+      -fllvm-tbaa
 
 source-repository head
   type: git
