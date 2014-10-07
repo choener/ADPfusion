@@ -92,18 +92,30 @@ class MutateCell (s :: *) (im :: * -> *) (om :: * -> *) i where
 class MutateTables (s :: *) (im :: * -> *) (om :: * -> *) where
   mutateTables :: (forall a . im a -> om a) -> s -> om s
 
+-- ** individual instances for filling a *single cell*
+
 instance
   ( PA.PrimArrayOps  arr i x
   , PA.MPrimArrayOps arr i x
   , MutateCell ts im om i
   , PrimMonad om
   ) => MutateCell (ts:.ITbl im arr i x) im om i where
-  mutateCell mrph (ts:.ITbl (!c) arr f) i = {-# SCC "mutateCell" #-} do
+  mutateCell mrph (ts:.ITbl (!c) arr f) i = {-# SCC "mutateCell/ITbl" #-} do
     marr <- PA.unsafeThaw arr
     z <- {-# SCC "inline/mrph/fi" #-} (inline mrph) $ {-# SCC "fi" #-} f i
     PA.writeM marr i z
     mutateCell mrph ts i
   {-# INLINE mutateCell #-}
+
+instance
+  ( MutateCell ts im om i
+  ) => MutateCell (ts:.IRec im i x) im om i where
+  mutateCell mrph (ts:.IRec (!c) _ f) i = {-# SCC "mutateCell/IRec" #-} do
+    mutateCell mrph ts i
+  {-# INLINE mutateCell #-}
+
+-- ** individual instances for filling a complete table and extracting the
+-- bounds
 
 instance
   ( Monad om
@@ -113,6 +125,18 @@ instance
   mutateTables mrph tt@(_:.ITbl _ arr _) = do
     let (from,to) = PA.bounds arr
     SM.mapM_ (mutateCell (inline mrph) tt) $ PA.rangeStream from to
+    return tt
+  {-# INLINE mutateTables #-}
+
+
+instance
+  ( Monad om
+  , MutateCell (ts:.IRec im i x) im om i
+  , PA.ExtShape i
+  ) => MutateTables (ts:.IRec im i x) im om where
+  mutateTables mrph tt@(_:.IRec _ (from,to) _) = do
+    SM.mapM_ (mutateCell (inline mrph) tt) $ PA.rangeStream from to
+    -- undefined
     return tt
   {-# INLINE mutateTables #-}
 
