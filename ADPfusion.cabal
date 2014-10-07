@@ -211,6 +211,30 @@ executable TwoNussinov
     -optlo-O3 -optlo-std-compile-opts
     -fllvm-tbaa
 
+executable MemoRecNussinov
+  if flag(examples)
+    buildable: True
+  else
+    buildable: False
+  build-depends:
+    ADPfusion         ,
+    PrimitiveArray    ,
+    template-haskell  ,
+    vector            ,
+    base
+  hs-source-dirs:
+    src
+  main-is:
+    MemoRecNussinov.hs
+  ghc-options:
+    -O2
+    -funbox-strict-fields
+    -funfolding-use-threshold1000
+    -funfolding-keeness-factor1000
+    -fllvm
+    -optlo-O3 -optlo-std-compile-opts
+    -fllvm-tbaa
+
 executable Durbin
   if flag(examples)
     buildable: True
