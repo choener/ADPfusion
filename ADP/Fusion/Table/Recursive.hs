@@ -74,8 +74,8 @@ instance
                     in  f (subword l j) >>= \z -> return $ ElmIRec z (subword l j) s)
     $ mkStream ls (Variable Check Nothing) (subword i $ j - ms)
   mkStream (ls :!: IRec c _ f) (Variable _ Nothing) (Subword (i:.j))
-    = let ms = minSize c in ms `seq`
-      let mk s = let (Subword (_:.l)) = getIdx s in return (s:.j-l-ms)
+    = let ms = minSize c
+          mk s = let (Subword (_:.l)) = getIdx s in return (s:.j-l-ms)
           step (s:.z)
             | z>=0      = do let (Subword (_:.k)) = getIdx s
                              y <- f (subword k (j-z))
@@ -83,7 +83,7 @@ instance
             | otherwise = return $ S.Done
           {-# INLINE [1] mk   #-}
           {-# INLINE [1] step #-}
-      in S.flatten mk step Unknown $ mkStream ls (Variable NoCheck Nothing) (subword i j)
+      in ms `seq` S.flatten mk step Unknown $ mkStream ls (Variable NoCheck Nothing) (subword i j)
   {-# INLINE mkStream #-}
 
 instance
