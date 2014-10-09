@@ -136,7 +136,6 @@ instance
   ) => MutateTables (ts:.IRec im i x) im om where
   mutateTables mrph tt@(_:.IRec _ (from,to) _) = do
     SM.mapM_ (mutateCell (inline mrph) tt) $ PA.rangeStream from to
-    -- undefined
     return tt
   {-# INLINE mutateTables #-}
 
@@ -146,7 +145,9 @@ instance
   mutateCell _ Z _ = return ()
   {-# INLINE mutateCell #-}
 
--- |
+-- | Default table filling, assuming that the forward monad is just @IO@.
+--
+-- TODO generalize to @MonadIO@ or @MonadPrim@.
 
 mutateTablesDefault :: MutateTables t Id IO => t -> t
 mutateTablesDefault t = unsafePerformIO $ mutateTables (return . unId) t
