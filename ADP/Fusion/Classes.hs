@@ -99,12 +99,16 @@ class ModifyConstraint t where
 -- |
 
 type family   TblConstraint x       :: *
+
 type instance TblConstraint (is:.i) =  TblConstraint is :. TblConstraint i
 type instance TblConstraint Z       = Z
 type instance TblConstraint Subword = TableConstraint
 type instance TblConstraint PointL  = TableConstraint
 type instance TblConstraint PointR  = TableConstraint
 
+type instance TblConstraint (Outside Subword) = TableConstraint
+type instance TblConstraint (Outside PointL)  = TableConstraint
+type instance TblConstraint (Outside PointR)  = TableConstraint
 
 
 -- * The ADPfusion base classes.
