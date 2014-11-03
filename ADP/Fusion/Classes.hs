@@ -16,7 +16,7 @@ import           Data.Strict.Tuple
 import           Data.Vector.Fusion.Stream.Size
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
-import           Data.PrimitiveArray (Z(..), (:.)(..), Subword(..), subword, PointL(..), PointR(..))
+import           Data.PrimitiveArray (Z(..), (:.)(..), Subword(..), subword, PointL(..), PointR(..), Outside(..))
 
 
 

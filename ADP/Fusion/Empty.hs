@@ -6,6 +6,9 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
+-- | The 'Empty' terminal symbol parses only the empty (sub-)input. @Empty@
+-- however, can mean different things.
+
 module ADP.Fusion.Empty where
 
 import           Data.Strict.Maybe
