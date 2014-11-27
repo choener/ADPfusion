@@ -87,10 +87,10 @@ pretty = Nussinov
 {-# INLINE pretty #-}
 
 -- grammar :: Nussinov m Char () x r -> c' -> t' -> (t', Subword -> m r)
-grammar Nussinov{..} c t' =
+grammar Nussinov{..} c e t' =
   let t = t'  ( unp <<< t % c           |||
                 jux <<< t % c % t % c   |||
-                nil <<< Empty           ... h
+                nil <<< e               ... h
               )
   in Z:.t
 {-# INLINE grammar #-}
@@ -104,35 +104,11 @@ runNussinov k inp = (d, take k . S.toList . unId $ axiom b) where
   !(Z:.t) = mutateTablesDefault
           $ grammar bpmax
               (chr i)
+              (Empty i)
               (ITbl EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-999999) [])) :: Z:.ITbl Id Unboxed Subword Int
   d = let (ITbl _ arr _) = t in arr PA.! subword 0 n
-  !(Z:.b) = grammar (bpmax <** pretty) (chr i) (toBT t (undefined :: Id a -> Id a))
+  !(Z:.b) = grammar (bpmax <** pretty) (chr i) (Empty i) (toBT t (undefined :: Id a -> Id a))
 {-# NOINLINE runNussinov #-}
-
-{-
-forward :: VU.Vector Char -> ST s (Z:.Unboxed Subword Int)
-forward inp = do
-  let n  = VU.length inp
-  let c  = chr inp
-  !t' <- PA.newWithM (subword 0 0) (subword 0 n) (-999999)
-  let t  = MTbl EmptyOk t'
-  runFreezeMTbls $ grammar bpmax c t
-{-# NOINLINE forward #-}
-
-backtrack :: VU.Vector Char -> PA.Unboxed Subword Int -> [String]
-backtrack i t' = unId . SM.toList . unId $ axiom g where
-  c = chr i
-  (Z:.g) = grammar (bpmax <** pretty) c (BtTbl EmptyOk t')
-{-# NOINLINE backtrack #-}
-
-runNussinov :: Int -> String -> (Int,[String])
-runNussinov k inp = (t PA.! (subword 0 n), take k b) where
-  i = VU.fromList . Prelude.map toUpper $ inp
-  n = VU.length i
-  (Z:.t) = runST $ forward i
-  b = backtrack i t
-{-# NOINLINE runNussinov #-}
--}
 
 main = do
   as <- getArgs

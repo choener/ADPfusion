@@ -3,6 +3,9 @@
 
 - forward phase now operates on immutable tables that are internally thawed
 - resembles the behavior of Data.Vector.Generic.constructN
+- Empty needs to be bound to input. We require this as certain index structures
+  have no natural notion of and empty index -- unless one provides additional
+  information in the index
 
 0.3.0.0
 -------

@@ -74,14 +74,14 @@ pretty = Nussinov
 {-# INLINE pretty #-}
 
 -- grammar :: Nussinov m Char () x r -> c' -> t' -> (t', Subword -> m r)
-grammar Nussinov{..} (!c) s' t' =
+grammar Nussinov{..} (!c) e s' t' =
   let s = s'  ( unp <<< t % c           |||
                 jux <<< t % c % t % c   |||
-                nil <<< Empty           ... h
+                nil <<< e               ... h
               )
       t = t'  ( unp <<< s % c           |||
                 jux <<< s % c % s % c   |||
-                nil <<< Empty           ... h
+                nil <<< e               ... h
               )
   in Z:.s:.t
 {-# INLINE grammar #-}
@@ -95,10 +95,11 @@ runNussinov k inp = (d, take k . S.toList . unId $ axiom b) where
   !(Z:.s:.t) = mutateTablesDefault
              $ grammar bpmax
                  (chr i)
+                 (Empty i)
                  (ITbl EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-999999) []))
                  (ITbl EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-999999) [])) :: Z :. ITbl Id Unboxed Subword Int :. ITbl Id Unboxed Subword Int
   d = let (ITbl _ arr _) = t in arr PA.! subword 0 n
-  !(Z:.b:.c) = grammar (bpmax <** pretty) (chr i) (toBT s (undefined :: Id a -> Id a)) (toBT t (undefined :: Id a -> Id a))
+  !(Z:.b:.c) = grammar (bpmax <** pretty) (chr i) (Empty i) (toBT s (undefined :: Id a -> Id a)) (toBT t (undefined :: Id a -> Id a))
 {-# NOINLINE runNussinov #-}
 
 main = do

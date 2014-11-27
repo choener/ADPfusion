@@ -96,12 +96,12 @@ pretty = Durbin
 {-# INLINE pretty #-}
 
 -- grammar :: Durbin m Char () x r -> c' -> t' -> (t', Subword -> m r)
-grammar Durbin{..} c t' =
-  let t = t'  ( nil <<< Empty           |||
-                lef <<< c  % t          |||
-                rig <<< t  % c          |||
-                pai <<< c  % t  % c     |||
-                spl <<< tt % tt         ... h
+grammar Durbin{..} c e t' =
+  let t = t'  ( nil <<< e           |||
+                lef <<< c  % t      |||
+                rig <<< t  % c      |||
+                pai <<< c  % t  % c |||
+                spl <<< tt % tt     ... h
               )
       tt = toNonEmpty t
   in (Z:.t)
@@ -114,34 +114,10 @@ runDurbin k inp = (d, take k . S.toList . unId $ axiom b) where
   !(Z:.t) = mutateTablesDefault
           $ grammar bpmax
               (chr i)
+              (Empty i)
               (ITbl EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-999999) [])) :: Z:.ITbl Id Unboxed Subword Int
   d = let (ITbl _ arr _) = t in arr PA.! subword 0 n
-  !(Z:.b) = grammar (bpmax <** pretty) (chr i) (toBT t (undefined :: Id a -> Id a))
-
-{-
-forward :: VU.Vector Char -> ST s (Z:.Unboxed Subword Int)
-forward inp = do
-  let n  = VU.length inp
-  let c  = chr inp
-  !t' <- PA.newWithM (subword 0 0) (subword 0 n) (-999999)
-  let t  = MTbl EmptyOk t'
-  runFreezeMTbls $ grammar bpmax c t
-{-# NOINLINE forward #-}
-
-backtrack :: VU.Vector Char -> Z :. PA.Unboxed Subword Int -> [String]
-backtrack inp (Z:.t') = unId . SM.toList . unId $ axiom g where
-  c = chr inp
-  (Z:.g) = grammar (bpmax <** pretty) c (BtTbl EmptyOk t')
-{-# NOINLINE backtrack #-}
-
-runDurbin :: Int -> String -> (Int,[String])
-runDurbin k inp = (t PA.! (subword 0 n), take k b) where
-  i = VU.fromList . Prelude.map toUpper $ inp
-  n = VU.length i
-  (Z:.t) = runST $ forward i
-  b = backtrack i (Z:.t)
-{-# NOINLINE runDurbin #-}
--}
+  !(Z:.b) = grammar (bpmax <** pretty) (chr i) (Empty i) (toBT t (undefined :: Id a -> Id a))
 
 main = do
   as <- getArgs

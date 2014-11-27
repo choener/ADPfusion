@@ -158,7 +158,7 @@ grammar Signature{..} a' i1 i2 =
   let a = a'  ( step_step <<< a % (M:>chr i1:>chr i2) |||
                 step_loop <<< a % (M:>chr i1:>None  ) |||
                 loop_step <<< a % (M:>None  :>chr i2) |||
-                nil_nil   <<< (M:>Empty:>Empty)       ... h
+                nil_nil   <<< (M:>Empty i1:>Empty i2) ... h
               )
   in Z:.a
 {-# INLINE grammar #-}
@@ -221,102 +221,6 @@ runNeedlemanWunsch k i1' i2' = (d, take k . S.toList . unId $ axiom b) where
               :: Z:.ITbl Id Unboxed (Z:.PointL:.PointL) Int
   d = let (ITbl _ arr _) = t in arr PA.! (Z:.pointL 0 n1:.pointL 0 n2)
   !(Z:.b) = grammar (sScore <** sPretty) (toBT t (undefined :: Id a -> Id a)) i1 i2
-
--- * The old way, and the still active wrappers
-
-{-
--- | A single DP array or table is an unboxed table (we want performance!
--- raw blob in ram, please!) with a two-dim index @(Z:.PointL:.PointL@) and
--- @Int@ scores. @PointL@ is the index type for left-linear grammars, of
--- which we wrote one above... There are index-types for left- and
--- right-linear grammars as well as context-free grammars; and they all
--- know how to calculate themselves.
-
-type Arr  = PA.Unboxed (Z:.PointL:.PointL) Int
-
--- | We have a single DP table, stacked upon @(Z:.)@. In general we have
--- @(Z:.s:.t:. ...)@ with @s@, @t@, and so on, being the non-terminal
--- memo-tables.
-
-type Arrs = Z:.Arr
-
--- | Let's go and fill the tables. Given two unboxed vectors of the two
--- inputs, we want to calculate the arrays @Arrs@. First we need the
--- lengths of the two inputs.
---
--- Then we create storage for the 2-dim table with @newWithM@ and set the
--- default score to @-999999@. Then we bind the table via @mTblD@ to be
--- a multi-"D"im table. @(Z:.EmptyOk:.EmptyOk)@ allows the grammar to
--- reduce the /minimal size/ of the non-terminal to zero, i.e. @(PointL
--- k k)@.
---
--- This is important for context-free grammars where you can have
--- right-hand sides like @X -> X X@. If @X@ on the right can have a size of
--- 0, then you get infinite loops or weird (and wrong) results. By
--- disallowing empty non-terminals, all rules "shrink", which should be
--- what you want in cases like @X -> X X@.
---
--- Finally we call 'runFreezeMTbls' as @runFreezeMTbls $ grammar sScore
--- t i1 i2@ and are happy that this run function seems to know how to fill
--- the tables correctly.
-
-forwardPhase :: (Applicative m, PrimMonad m) => VU.Vector Char -> VU.Vector Char -> m Arrs
-forwardPhase i1 i2 = do
-  let n1 = VU.length i1
-  let n2 = VU.length i2
-  !t' <- PA.newWithM (Z:.pointL 0 0:.pointL 0 0) (Z:.pointL 0 n1:.pointL 0 n2) (-999999)
-  let t = MTbl (Z:.EmptyOk:.EmptyOk) t'
-  runFreezeMTbls $ grammar sScore t i1 i2
-{-# INLINE forwardPhase #-}
-
--- | Remember how we also want to know the actual alignment? The backtrack
--- function is similar to the forwardPhase where we filled the table.
---
--- We take the table we just filled (Z:.t') and bind @t'@ to a backtracking
--- table 'BtTbl'. We then again create a grammar, this time with @sScore@
--- to return co-optimals over the precalculated arrays, returning pretty
--- printed alignments via @sPretty@. The functions are bound together via
--- @sScore <** sPretty@.
---
--- We bind the result to @(Z:.g)@ with @g@ the single backtracking table,
--- now fully bound to and with the grammar and algebra. Via @axiom@ (which
--- handles finding the correct index to start backtracking automatically),
--- we get the stream of co-optimals which we can lazily ask for.
-
-backtrack :: VU.Vector Char -> VU.Vector Char -> Arrs -> [[String]]
-backtrack i1 i2 (Z:.t') = map (map reverse) . unId . S.toList . unId $ axiom g where
-  (Z:.g) = grammar (sScore <** sPretty) (BtTbl (Z:.EmptyOk:.EmptyOk) t') i1 i2
-{-# NOINLINE backtrack #-}
-
--- | Let's write Needleman-Wunsch. We give the maximal number of alignments
--- @k@ to return, and the two input sequences.
---
--- We return a pair with the optimal score and the co-optimal alignments.
---
--- Internally, we run the forward phase (in @IO@ this time, @ST s@ works
--- just as well). and calculates the backtrack result as well.
---
--- @
--- needlemanWunsch 5 "AAC" "AAD"
--- @
--- produces
--- @
--- (0,[["AAC","AAD"],["AA-C","AAD-"],["AAC-","AA-D"]])
--- @
---
--- Note that as there are exactly three co-optimal alignments of the
--- inputs, requesting five does still give only three.
---
-
-needlemanWunsch k i1' i2' = (ws PA.! (Z:.pointL 0 n1:.pointL 0 n2), bt) where
-  (Z:.ws) = unsafePerformIO (forwardPhase i1 i2)
-  i1 = VU.fromList i1'
-  i2 = VU.fromList i2'
-  n1 = VU.length i1
-  n2 = VU.length i2
-  bt = take k $ backtrack i1 i2 (Z:.ws)
-{-# NOINLINE needlemanWunsch #-}
--}
 
 -- | This wrapper takes a list of input sequences and aligns each odd
 -- sequence with the next even sequence. We want one alignment for each
