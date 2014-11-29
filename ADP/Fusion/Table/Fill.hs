@@ -20,7 +20,7 @@ import           System.IO.Unsafe
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import           GHC.Exts (inline)
 
-import           Data.PrimitiveArray (Z(..), (:.)(..))
+import           Data.PrimitiveArray (Z(..), (:.)(..), Subword(..), Outside(..))
 import qualified Data.PrimitiveArray as PA
 
 import           ADP.Fusion.Table
@@ -64,13 +64,13 @@ instance ExposeTables Z where
 --
 -- TODO move to Table/Array.hs
 
-instance (ExposeTables ts) => ExposeTables (ts:.(MTbl m arr i x)) where
-    type TableFun   (ts:. MTbl m arr i x) = TableFun   ts :. (PA.MutArr m (arr i x), i -> m x)
-    type OnlyTables (ts:. MTbl m arr i x) = OnlyTables ts :. (PA.MutArr m (arr i x))
-    expose     (ts:.MTbl _ t f) = expose ts :. (t,f)
-    onlyTables (ts:.MTbl _ t _) = onlyTables ts :. t
-    {-# INLINE expose #-}
-    {-# INLINE onlyTables #-}
+--instance (ExposeTables ts) => ExposeTables (ts:.(MTbl m arr i x)) where
+--    type TableFun   (ts:. MTbl m arr i x) = TableFun   ts :. (PA.MutArr m (arr i x), i -> m x)
+--    type OnlyTables (ts:. MTbl m arr i x) = OnlyTables ts :. (PA.MutArr m (arr i x))
+--    expose     (ts:.MTbl _ t f) = expose ts :. (t,f)
+--    onlyTables (ts:.MTbl _ t _) = onlyTables ts :. t
+--    {-# INLINE expose #-}
+--    {-# INLINE onlyTables #-}
 
 
 
@@ -85,7 +85,7 @@ instance (ExposeTables ts) => ExposeTables (ts:.(MTbl m arr i x)) where
 -- be made deterministic, or we'll break Bellman)
 
 class MutateCell (s :: *) (im :: * -> *) (om :: * -> *) i where
-  mutateCell :: (forall a . im a -> om a) -> s -> i -> om ()
+  mutateCell :: (forall a . im a -> om a) -> s -> i -> i -> om ()
 
 -- |
 
@@ -100,18 +100,18 @@ instance
   , MutateCell ts im om i
   , PrimMonad om
   ) => MutateCell (ts:.ITbl im arr i x) im om i where
-  mutateCell mrph (ts:.ITbl (!c) arr f) i = {-# SCC "mutateCell/ITbl" #-} do
+  mutateCell mrph (ts:.ITbl (!c) arr f) lu i = {-# SCC "mutateCell/ITbl" #-} do
     marr <- PA.unsafeThaw arr
-    z <- {-# SCC "inline/mrph/fi" #-} (inline mrph) $ {-# SCC "fi" #-} f i
+    z <- {-# SCC "inline/mrph/fi" #-} (inline mrph) $ {-# SCC "fi" #-} f lu i
     PA.writeM marr i z
-    mutateCell mrph ts i
+    mutateCell mrph ts lu i
   {-# INLINE mutateCell #-}
 
 instance
   ( MutateCell ts im om i
   ) => MutateCell (ts:.IRec im i x) im om i where
-  mutateCell mrph (ts:.IRec (!c) _ f) i = {-# SCC "mutateCell/IRec" #-} do
-    mutateCell mrph ts i
+  mutateCell mrph (ts:.IRec (!c) _ f) lu i = {-# SCC "mutateCell/IRec" #-} do
+    mutateCell mrph ts lu i
   {-# INLINE mutateCell #-}
 
 -- ** individual instances for filling a complete table and extracting the
@@ -124,7 +124,7 @@ instance
   ) => MutateTables (ts:.ITbl im arr i x) im om where
   mutateTables mrph tt@(_:.ITbl _ arr _) = do
     let (from,to) = PA.bounds arr
-    SM.mapM_ (mutateCell (inline mrph) tt) $ PA.rangeStream from to
+    SM.mapM_ (mutateCell (inline mrph) tt to) $ PA.rangeStream from to -- TODO check the @to@ part
     return tt
   {-# INLINE mutateTables #-}
 
@@ -135,14 +135,14 @@ instance
   , PA.ExtShape i
   ) => MutateTables (ts:.IRec im i x) im om where
   mutateTables mrph tt@(_:.IRec _ (from,to) _) = do
-    SM.mapM_ (mutateCell (inline mrph) tt) $ PA.rangeStream from to
+    SM.mapM_ (mutateCell (inline mrph) tt (error "lu")) $ PA.rangeStream from to
     return tt
   {-# INLINE mutateTables #-}
 
 instance
   ( Monad om
   ) => MutateCell Z im om i where
-  mutateCell _ Z _ = return ()
+  mutateCell _ Z _ _ = return ()
   {-# INLINE mutateCell #-}
 
 -- | Default table filling, assuming that the forward monad is just @IO@.

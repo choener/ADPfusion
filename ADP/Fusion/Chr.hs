@@ -21,7 +21,7 @@ import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Generic as VG
 import qualified Data.Vector.Unboxed as VU
 
-import           Data.PrimitiveArray ((:.)(..), Subword(..), subword, PointL(..), pointL, PointR(..), pointR)
+import           Data.PrimitiveArray ((:.)(..), Subword(..), subword, PointL(..), pointL, PointR(..), pointR, Outside(..))
 
 import           ADP.Fusion.Classes
 import           ADP.Fusion.Multi.Classes
@@ -57,10 +57,10 @@ chrLeft xs = Chr f xs where
 instance Build (Chr r x)
 
 instance
-  ( Element ls Subword
-  ) => Element (ls :!: Chr r x) Subword where
-    data Elm (ls :!: Chr r x) Subword = ElmChr !r !Subword !(Elm ls Subword)
-    type Arg (ls :!: Chr r x) = Arg ls :. r
+  ( Element ls i
+  ) => Element (ls :!: Chr r x) i where
+    data Elm (ls :!: Chr r x) i = ElmChr !r !i !(Elm ls i)
+    type Arg (ls :!: Chr r x)   = Arg ls :. r
     getArg (ElmChr x _ ls) = getArg ls :. x
     getIdx (ElmChr _ i _ ) = i
     {-# INLINE getArg #-}
@@ -72,7 +72,7 @@ instance
   , Element ls Subword
   , MkStream m ls Subword
   ) => MkStream m (ls :!: Chr r x) Subword where
-  mkStream (ls :!: Chr f xs) Static ij@(Subword (i:.j))
+  mkStream (ls :!: Chr f xs) Static lu ij@(Subword (i:.j))
     -- We use a static check here as we can then pull out the @z@ character
     -- lookup. In the Nussinov example (X -> f <<< z1 t z2 t) this gives
     -- a 3x performance improvement. Note that this benchmark is a bit
@@ -80,12 +80,33 @@ instance
     = staticCheck (j>0) $
       let !z = f xs (j-1)
       in S.map (ElmChr z (subword (j-1) j))
-         $ mkStream ls Static (subword i $ j-1)
-  mkStream (ls :!: Chr f xs) v ij@(Subword (i:.j))
+         $ mkStream ls Static lu (subword i $ j-1)
+  mkStream (ls :!: Chr f xs) v lu ij@(Subword (i:.j))
     = S.map (\s -> let Subword (k:.l) = getIdx s
                    in  ElmChr (f xs l) (subword l $ l+1) s
             )
-    $ mkStream ls v (subword i $ j-1)
+    $ mkStream ls v lu (subword i $ j-1)
+  {-# INLINE mkStream #-}
+
+instance
+  ( Monad m
+  , Element ls (Outside Subword)
+  , MkStream m ls (Outside Subword)
+  ) => MkStream m (ls :!: Chr r x) (Outside Subword) where
+  mkStream (ls :!: Chr f xs) Static lu ij@(O (Subword (i:.j)))
+    -- We use a static check here as we can then pull out the @z@ character
+    -- lookup. In the Nussinov example (X -> f <<< z1 t z2 t) this gives
+    -- a 3x performance improvement. Note that this benchmark is a bit
+    -- artificial.
+    = staticCheck (j>0) $
+      let !z = f xs (j-1)
+      in S.map (ElmChr z (O $ subword (j-1) j))
+         $ mkStream ls Static lu (O $ subword i $ j-1)
+  mkStream (ls :!: Chr f xs) v lu ij@(O (Subword (i:.j)))
+    = S.map (\s -> let O (Subword (k:.l)) = getIdx s
+                   in  ElmChr (f xs l) (O . subword l $ l+1) s
+            )
+    $ mkStream ls v lu (O . subword i $ j-1)
   {-# INLINE mkStream #-}
 
 

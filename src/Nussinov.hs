@@ -68,6 +68,16 @@ bpmax = Nussinov
   }
 {-# INLINE bpmax #-}
 
+prob :: Monad m => Nussinov m Char () Double Double
+prob = Nussinov
+  { unp = \ x c     -> 0.3  * x
+  , jux = \ x c y d -> 0.65 * if c `pairs` d then x * y else 0
+  , nil = \ ()      -> 0.05
+  , h   = SM.foldl' (+) 0
+  }
+
+-- |
+
 pairs !c !d
   =  c=='A' && d=='U'
   || c=='C' && d=='G'
@@ -87,13 +97,22 @@ pretty = Nussinov
 {-# INLINE pretty #-}
 
 -- grammar :: Nussinov m Char () x r -> c' -> t' -> (t', Subword -> m r)
-grammar Nussinov{..} c e t' =
+grammar Nussinov{..} c t' =
   let t = t'  ( unp <<< t % c           |||
                 jux <<< t % c % t % c   |||
-                nil <<< e               ... h
+                nil <<< Empty           ... h
               )
   in Z:.t
 {-# INLINE grammar #-}
+
+outsideGrammar Nussinov{..} c s t' =
+  let t = t'  ( unp <<< t % c         |||
+                jux <<< t % c % s % c |||
+                jux <<< s % c % t % c |||
+                nil <<< Empty         ... h
+              )
+  in Z:.t
+{-# INLINE outsideGrammar #-}
 
 runNussinov :: Int -> String -> (Int,[String])
 runNussinov k inp = (d, take k . S.toList . unId $ axiom b) where
@@ -104,11 +123,27 @@ runNussinov k inp = (d, take k . S.toList . unId $ axiom b) where
   !(Z:.t) = mutateTablesDefault
           $ grammar bpmax
               (chr i)
-              (Empty i)
               (ITbl EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-999999) [])) :: Z:.ITbl Id Unboxed Subword Int
   d = let (ITbl _ arr _) = t in arr PA.! subword 0 n
-  !(Z:.b) = grammar (bpmax <** pretty) (chr i) (Empty i) (toBT t (undefined :: Id a -> Id a))
+  !(Z:.b) = grammar (bpmax <** pretty) (chr i) (toBT t (undefined :: Id a -> Id a))
 {-# NOINLINE runNussinov #-}
+
+runPartitionNussinov :: String -> [(Subword,Double)]
+runPartitionNussinov inp = zipWith (\(sh,a) (_,b) -> (sh,a*b/d)) (PA.assocs $ iTblArray s) (PA.assocs $ iTblArray t) where
+  i = VU.fromList . Prelude.map toUpper $ inp
+  n = VU.length i
+  !(Z:.s) = mutateTablesDefault
+          $ grammar prob
+              (chr i)
+              (ITbl EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) 0 [])) :: Z:.ITbl Id Unboxed Subword Double
+  d = iTblArray s PA.! subword 0 n
+  !(Z:.t) = mutateTablesDefault
+          $ outsideGrammar prob
+              (chr i)
+              --(undefined :: ITbl Id Unboxed (Outside Subword) Double)
+              s
+              (ITbl EmptyOk (PA.fromAssocs (O $ subword 0 0) (O $ subword 0 n) 0 [])) :: Z:.ITbl Id Unboxed (Outside Subword) Double
+{-# NOINLINE runPartitionNussinov #-}
 
 main = do
   as <- getArgs

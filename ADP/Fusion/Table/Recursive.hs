@@ -27,12 +27,12 @@ import           ADP.Fusion.Table.Backtrack
 
 
 data IRec m i x where
-  IRec :: !(TblConstraint i) -> (i,i) -> !(i->m x) -> IRec m i x
+  IRec :: !(TblConstraint i) -> (i,i) -> !(i -> i -> m x) -> IRec m i x
 
 instance ToBT (IRec mF i x) mF mB r where
-  data BT   (IRec mF i x) mF mB r = BtIRec !(TblConstraint i) (i,i) (i -> mB x) (i -> mB (S.Stream mB r))
+  data BT   (IRec mF i x) mF mB r = BtIRec !(TblConstraint i) (i,i) (i -> i -> mB x) (i -> i -> mB (S.Stream mB r))
   type BtIx (IRec mF i x)         = i
-  toBT (IRec c i f) mrph bt = BtIRec c i (mrph . f) bt
+  toBT (IRec c i f) mrph bt = BtIRec c i (\lu i -> mrph $ f lu i) bt
   {-# INLINE toBT #-}
 
 
@@ -68,22 +68,22 @@ instance
   , Element ls Subword
   , MkStream m ls Subword
   ) => MkStream m (ls :!: IRec m Subword x) Subword where
-  mkStream (ls :!: IRec c _ f) Static (Subword (i:.j))
+  mkStream (ls :!: IRec c _ f) Static lu (Subword (i:.j))
     = let ms = minSize c in ms `seq`
     S.mapM (\s -> let Subword (_:.l) = getIdx s
-                    in  f (subword l j) >>= \z -> return $ ElmIRec z (subword l j) s)
-    $ mkStream ls (Variable Check Nothing) (subword i $ j - ms)
-  mkStream (ls :!: IRec c _ f) (Variable _ Nothing) (Subword (i:.j))
+                    in  f lu (subword l j) >>= \z -> return $ ElmIRec z (subword l j) s)
+    $ mkStream ls (Variable Check Nothing) lu (subword i $ j - ms)
+  mkStream (ls :!: IRec c _ f) (Variable _ Nothing) lu (Subword (i:.j))
     = let ms = minSize c
           mk s = let (Subword (_:.l)) = getIdx s in return (s:.j-l-ms)
           step (s:.z)
             | z>=0      = do let (Subword (_:.k)) = getIdx s
-                             y <- f (subword k (j-z))
+                             y <- f lu (subword k (j-z))
                              return $ S.Yield (ElmIRec y (subword k $ j-z) s) (s:.z-1)
             | otherwise = return $ S.Done
           {-# INLINE [1] mk   #-}
           {-# INLINE [1] step #-}
-      in ms `seq` S.flatten mk step Unknown $ mkStream ls (Variable NoCheck Nothing) (subword i j)
+      in ms `seq` S.flatten mk step Unknown $ mkStream ls (Variable NoCheck Nothing) lu (subword i j)
   {-# INLINE mkStream #-}
 
 instance
@@ -91,22 +91,22 @@ instance
   , Element ls Subword
   , MkStream mB ls Subword
   ) => MkStream mB (ls :!: BT (IRec mF Subword x) mF mB r) Subword where
-  mkStream (ls :!: BtIRec c _ f bt) Static (Subword (i:.j))
+  mkStream (ls :!: BtIRec c _ f bt) Static lu (Subword (i:.j))
     = let ms = minSize c in ms `seq`
       S.mapM (\s -> let (Subword (_:.l)) = getIdx s
                         ix               = subword l j
-                    in  f ix >>= \fx -> return $ ElmBtIRec fx (bt ix) ix s)
-      $ mkStream ls (Variable Check Nothing) (subword i $ j-ms)
-  mkStream (ls :!: BtIRec c _ f bt) (Variable _ Nothing) (Subword (i:.j))
+                    in  f lu ix >>= \fx -> return $ ElmBtIRec fx (bt lu ix) ix s)
+      $ mkStream ls (Variable Check Nothing) lu (subword i $ j-ms)
+  mkStream (ls :!: BtIRec c _ f bt) (Variable _ Nothing) lu (Subword (i:.j))
     = let ms = minSize c
           mk s = let Subword (_:.l) = getIdx s in return (s:.j-l-ms)
           step (s:.z)
             | z>=0      = do let Subword (_:.k) = getIdx s
                                  ix             = subword k (j-z)
-                             f ix >>= \fx -> return $ S.Yield (ElmBtIRec fx (bt ix) ix s) (s:.z-1)
+                             f lu ix >>= \fx -> return $ S.Yield (ElmBtIRec fx (bt lu ix) ix s) (s:.z-1)
             | otherwise = return $ S.Done
           {-# INLINE [1] mk   #-}
           {-# INLINE [1] step #-}
-      in ms `seq` S.flatten mk step Unknown $ mkStream ls (Variable NoCheck Nothing) (subword i j)
+      in ms `seq` S.flatten mk step Unknown $ mkStream ls (Variable NoCheck Nothing) lu (subword i j)
   {-# INLINE mkStream #-}
 

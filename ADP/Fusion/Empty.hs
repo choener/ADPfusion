@@ -28,23 +28,23 @@ import           Data.Strict.Tuple
 import           Prelude hiding (Maybe(..))
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
-import           Data.PrimitiveArray (Z(..), (:.)(..), Subword(..), subword, PointL(..), pointL, PointR(..), pointR)
+import           Data.PrimitiveArray (Z(..), (:.)(..), Subword(..), subword, PointL(..), pointL, PointR(..), pointR, Outside(..))
 
 import           ADP.Fusion.Classes
 import           ADP.Fusion.Multi.Classes
 
 
 
-data Empty x = Empty !x
+data Empty = Empty
 
 empty = Empty
 {-# INLINE empty #-}
 
-instance Build (Empty x)
+instance Build Empty
 
-instance (Element ls Subword) => Element (ls :!: Empty x) Subword where
-  data Elm (ls :!: Empty x) Subword = ElmEmpty !Subword !(Elm ls Subword)
-  type Arg (ls :!: Empty x)         = Arg ls :. ()
+instance (Element ls i) => Element (ls :!: Empty) i where
+  data Elm (ls :!: Empty) i = ElmEmpty !i !(Elm ls i)
+  type Arg (ls :!: Empty)   = Arg ls :. ()
   getArg (ElmEmpty _ l) = getArg l :. ()
   getIdx (ElmEmpty i _) = i
   {-# INLINE getArg #-}
@@ -57,22 +57,32 @@ instance (Element ls Subword) => Element (ls :!: Empty x) Subword where
 instance
   ( Monad m
   , MkStream m ls Subword
-  ) => MkStream m (ls :!: Empty x) Subword where
-  mkStream (ls :!: Empty _) Static (Subword (i:.j))
+  ) => MkStream m (ls :!: Empty) Subword where
+  mkStream (ls :!: Empty) Static lu (Subword (i:.j))
     = S.map (ElmEmpty (subword i j))
-    $ mkStream ls Static (subword i j)
-  mkStream _ _ _ = error "mkStream Empty/Subword called with illegal parameters"
+    $ mkStream ls Static lu (subword i j)
+  mkStream _ _ _ _ = error "mkStream Empty/Subword called with illegal parameters"
   {-# INLINE mkStream #-}
 
-type instance TermArg (TermSymbol a (Empty x)) = TermArg a :. ()
+instance
+  ( Monad m
+  , MkStream m ls (Outside Subword)
+  ) => MkStream m (ls :!: Empty) (Outside Subword) where
+  mkStream (ls :!: Empty) Static lu (O (Subword (i:.j)))
+    = S.map (ElmEmpty (O $ subword i j))
+    $ mkStream ls Static lu (O $ subword i j)
+  mkStream _ _ _ _ = error "mkStream Empty/Subword called with illegal parameters"
+  {-# INLINE mkStream #-}
 
-instance TermStaticVar (Empty x) PointL where
+type instance TermArg (TermSymbol a Empty) = TermArg a :. ()
+
+instance TermStaticVar Empty PointL where
   termStaticVar   _ sv _  = sv
   termStreamIndex _ _  ij = ij
   {-# INLINE termStaticVar #-}
   {-# INLINE termStreamIndex #-}
 
-instance TermStaticVar (Empty x) Subword where
+instance TermStaticVar Empty Subword where
     termStaticVar = error "write me"
     termStreamIndex = error "write me"
 
@@ -82,8 +92,8 @@ instance TermStaticVar (Empty x) Subword where
 instance
   ( Monad m
   , TerminalStream m a is
-  ) => TerminalStream m (TermSymbol a (Empty x)) (is:.PointL) where
-  terminalStream (a:>Empty _) (sv:.Static) (is:.PointL (i:.j))
+  ) => TerminalStream m (TermSymbol a Empty) (is:.PointL) where
+  terminalStream (a:>Empty) (sv:.Static) (is:.PointL (i:.j))
     = S.map (\(Qd s (z:.i) is e) -> Qd s z (is:.i) (e:.()))
     . terminalStream a sv is
     . S.map moveIdxTr
@@ -93,8 +103,8 @@ instance
 instance
     ( Monad m
     , TerminalStream m a is
-    ) => TerminalStream m (TermSymbol a (Empty x)) (is:.Subword) where
-      terminalStream (a:>Empty _) (sv:.Static) (is:.Subword (i:.j))
+    ) => TerminalStream m (TermSymbol a Empty) (is:.Subword) where
+      terminalStream (a:>Empty) (sv:.Static) (is:.Subword (i:.j))
         = S.map (\(Qd s (z:.i) is e) -> Qd s z (is:.i) (e:.()))
         . terminalStream a sv is
         . S.map moveIdxTr

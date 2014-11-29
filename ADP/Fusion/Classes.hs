@@ -64,6 +64,10 @@ class IxStaticVar i where
   type IxSV ix :: *
   initialSV :: i -> IxSV i
 
+instance IxStaticVar i => IxStaticVar (Outside i) where
+  type IxSV (Outside i) = IxSV i
+  initialSV (O i) = initialSV i
+
 instance IxStaticVar Subword where
   type IxSV Subword = StaticVariable
   initialSV _ = Static
@@ -133,7 +137,7 @@ class Element x i where
 -- @i@.
 
 class (Monad m) => MkStream m x i where
-  mkStream :: x -> IxSV i -> i -> S.Stream m (Elm x i)
+  mkStream :: x -> IxSV i -> i -> i -> S.Stream m (Elm x i)
 
 -- | Finally, we need to be able to correctly build together symbols on the
 -- right-hand side of the @(<<<)@ operator.
@@ -182,15 +186,19 @@ instance
 
 instance (Monad m) => MkStream m S Subword where
   -- we need to do nothing, because there are no size constraints
-  mkStream S (Variable NoCheck Nothing)   (Subword (i:.j)) = S.singleton (ElmS $ subword i i) where
+  mkStream S (Variable NoCheck Nothing) _  (Subword (i:.j)) = S.singleton (ElmS $ subword i i) where
   -- later on, we'd check here if the minimum size requirements can be met (or we can stop early)
-  mkStream S (Variable NoCheck (Just ())) (Subword (i:.j)) = error "write me"
+  mkStream S (Variable NoCheck (Just ())) _ (Subword (i:.j)) = error "write me"
   -- once we are variable, but still have to check, we make sure that we have a legal subword, then return the empty subword starting at @i@.
-  mkStream S (Variable Check   Nothing)   (Subword (i:.j)) = staticCheck (i<=j) $ S.singleton (ElmS $ subword i i)
+  mkStream S (Variable Check   Nothing) _ (Subword (i:.j)) = staticCheck (i<=j) $ S.singleton (ElmS $ subword i i)
   -- in all other cases, we'd better have @i==j@ or this stream stops prematurely
-  mkStream S _ (Subword (i:.j)) = staticCheck (i==j) $ S.singleton (ElmS $ subword i i)
+  mkStream S _ _ (Subword (i:.j)) = staticCheck (i==j) $ S.singleton (ElmS $ subword i i)
   {-# INLINE mkStream #-}
 
+instance (Monad m) => MkStream m S (Outside Subword) where
+  -- TODO missing some defn's
+  -- all other cases; but mostly when we have @Static@
+  mkStream S _ (O (Subword (l:.u))) (O (Subword (i:.j))) = staticCheck (l==i && u==j) $ S.singleton (ElmS . O $ subword l u)
 
 
 -- * Helper functions

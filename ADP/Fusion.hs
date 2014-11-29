@@ -66,17 +66,17 @@ import           Data.PrimitiveArray
 -- function 'f'.
 
 infixl 8 <<<
-(<<<) f xs = \ij -> S.map (apply f . getArg) . mkStream (build xs) (initialSV ij) $ ij
+(<<<) f xs = \lu ij -> S.map (apply f . getArg) . mkStream (build xs) (initialSV ij) lu $ ij
 {-# INLINE (<<<) #-}
 
 infixl 8 <<#
-(<<#) f xs = \ij -> S.mapM (apply f . getArg) . mkStream (build xs) (initialSV ij) $ ij
+(<<#) f xs = \lu ij -> S.mapM (apply f . getArg) . mkStream (build xs) (initialSV ij) lu $ ij
 {-# INLINE (<<#) #-}
 
 -- | Combine two RHSs to give a choice between parses.
 
 infixl 7 |||
-(|||) xs ys = \ij -> xs ij S.++ ys ij
+(|||) xs ys = \lu ij -> xs lu ij S.++ ys lu ij
 {-# INLINE (|||) #-}
 
 -- | Applies the objective function 'h' to a stream 's'. The objective function
@@ -84,7 +84,7 @@ infixl 7 |||
 -- things).
 
 infixl 5 ...
-(...) s h = h . s
+(...) s h = \lu ij -> h $ s lu ij
 {-# INLINE (...) #-}
 
 -- -- | Additional outer check with user-given check function

@@ -96,8 +96,8 @@ pretty = Durbin
 {-# INLINE pretty #-}
 
 -- grammar :: Durbin m Char () x r -> c' -> t' -> (t', Subword -> m r)
-grammar Durbin{..} c e t' =
-  let t = t'  ( nil <<< e           |||
+grammar Durbin{..} c t' =
+  let t = t'  ( nil <<< Empty       |||
                 lef <<< c  % t      |||
                 rig <<< t  % c      |||
                 pai <<< c  % t  % c |||
@@ -114,10 +114,9 @@ runDurbin k inp = (d, take k . S.toList . unId $ axiom b) where
   !(Z:.t) = mutateTablesDefault
           $ grammar bpmax
               (chr i)
-              (Empty i)
               (ITbl EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-999999) [])) :: Z:.ITbl Id Unboxed Subword Int
   d = let (ITbl _ arr _) = t in arr PA.! subword 0 n
-  !(Z:.b) = grammar (bpmax <** pretty) (chr i) (Empty i) (toBT t (undefined :: Id a -> Id a))
+  !(Z:.b) = grammar (bpmax <** pretty) (chr i) (toBT t (undefined :: Id a -> Id a))
 
 main = do
   as <- getArgs

@@ -54,47 +54,47 @@ instance
   , TerminalStream m (TermSymbol a b) i
   , TermStaticVar (TermSymbol a b) i
   ) => MkStream m (ls :!: TermSymbol a b) i where
-  mkStream (ls :!: ts) sv i
+  mkStream (ls :!: ts) sv lu i
     = S.map fromTerminalStream
     . terminalStream ts sv i
     . S.map toTerminalStream
-    $ mkStream ls (termStaticVar ts sv i) (termStreamIndex ts sv i)
+    $ mkStream ls (termStaticVar ts sv i) lu (termStreamIndex ts sv i)
   {-# INLINE mkStream #-}
 
 instance (Monad m, MkStream m S is) => MkStream m S (is:.Subword) where
-  mkStream S (vs:.Static) (is:.Subword (i:.j))
+  mkStream S (vs:.Static) (lus:.lu) (is:.Subword (i:.j))
     = staticCheck (i==j)
     . S.map (\(ElmS z) -> ElmS (z:.subword i i))
-    $ mkStream S vs is
-  mkStream S (vs:.Variable NoCheck Nothing) (is:.Subword (i:.j))
+    $ mkStream S vs lus is
+  mkStream S (vs:.Variable NoCheck Nothing) (lus:.lu) (is:.Subword (i:.j))
     = S.map (\(ElmS z) -> ElmS (z:.subword i i))
-    $ mkStream S vs is
+    $ mkStream S vs lus is
   {-# INLINE mkStream #-}
 
 instance (Monad m, MkStream m S is) => MkStream m S (is:.PointL) where
-  mkStream S (vs:.Static) (is:.PointL (i:.j))
+  mkStream S (vs:.Static) (lus:.lu) (is:.PointL (i:.j))
     = staticCheck (i==j)
     . S.map (\(ElmS z) -> ElmS (z:.pointL i i))
-    $ mkStream S vs is
-  mkStream S (vs:.Variable Check   Nothing) (is:.PointL (i:.j))
+    $ mkStream S vs lus is
+  mkStream S (vs:.Variable Check   Nothing) (lus:.lu) (is:.PointL (i:.j))
     = staticCheck (i<=j)
     $ S.map (\(ElmS z) -> ElmS (z:.pointL i i))
-    $ mkStream S vs is
-  mkStream S (vs:.Variable NoCheck Nothing) (is:.PointL (i:.j))
+    $ mkStream S vs lus is
+  mkStream S (vs:.Variable NoCheck Nothing) (lus:.lu) (is:.PointL (i:.j))
     = S.map (\(ElmS z) -> ElmS (z:.pointL i i))
-    $ mkStream S vs is
+    $ mkStream S vs lus is
   {-# INLINE mkStream #-}
 
 instance (Monad m, MkStream m S is) => MkStream m S (is:.PointR) where
-  mkStream S (vs:.Static) (is:.PointR (i:.j))
+  mkStream S (vs:.Static) (lus:.lu) (is:.PointR (i:.j))
     = staticCheck (i==j)
     . S.map (\(ElmS z) -> ElmS (z:.pointR i i))
-    $ mkStream S vs is
-  mkStream _ _ _ = error "ADP/Fusion/Multi/Classes.hs :: MkStream S/is:.PointR :: not implemented yet"
+    $ mkStream S vs lus is
+  mkStream _ _ _ _ = error "ADP/Fusion/Multi/Classes.hs :: MkStream S/is:.PointR :: not implemented yet"
   {-# INLINE mkStream #-}
 
 instance Monad m => MkStream m S Z where
-  mkStream _ _ _ = S.singleton (ElmS Z)
+  mkStream _ _ _ _ = S.singleton (ElmS Z)
   {-# INLINE mkStream #-}
 
 -- | For multi-dimensional terminals we need to be able to calculate how the

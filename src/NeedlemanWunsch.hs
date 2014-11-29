@@ -158,7 +158,7 @@ grammar Signature{..} a' i1 i2 =
   let a = a'  ( step_step <<< a % (M:>chr i1:>chr i2) |||
                 step_loop <<< a % (M:>chr i1:>None  ) |||
                 loop_step <<< a % (M:>None  :>chr i2) |||
-                nil_nil   <<< (M:>Empty i1:>Empty i2) ... h
+                nil_nil   <<< (M:>Empty:>Empty)       ... h
               )
   in Z:.a
 {-# INLINE grammar #-}

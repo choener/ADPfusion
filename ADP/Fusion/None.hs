@@ -68,8 +68,8 @@ instance
   ( Monad m
   , MkStream m ls Subword
   ) => MkStream m (ls :!: None) Subword where
-  mkStream (ls :!: None) sv ij
+  mkStream (ls :!: None) sv lu ij
     = S.map (ElmNone ij)
-    $ mkStream ls sv ij
+    $ mkStream ls sv lu ij
   {-# INLINE mkStream #-}
 
