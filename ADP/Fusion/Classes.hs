@@ -18,6 +18,8 @@ import qualified Data.Vector.Fusion.Stream.Monadic as S
 
 import           Data.PrimitiveArray (Z(..), (:.)(..), Subword(..), subword, PointL(..), PointR(..), Outside(..))
 
+import Debug.Trace
+
 
 
 -- * Data and type constructors
@@ -186,7 +188,7 @@ instance
 
 instance (Monad m) => MkStream m S Subword where
   -- we need to do nothing, because there are no size constraints
-  mkStream S (Variable NoCheck Nothing) _  (Subword (i:.j)) = S.singleton (ElmS $ subword i i) where
+  mkStream S (Variable NoCheck Nothing) _  (Subword (i:.j)) = S.singleton (ElmS $ subword i i)
   -- later on, we'd check here if the minimum size requirements can be met (or we can stop early)
   mkStream S (Variable NoCheck (Just ())) _ (Subword (i:.j)) = error "write me"
   -- once we are variable, but still have to check, we make sure that we have a legal subword, then return the empty subword starting at @i@.
@@ -197,6 +199,10 @@ instance (Monad m) => MkStream m S Subword where
 
 instance (Monad m) => MkStream m S (Outside Subword) where
   -- TODO missing some defn's
+  mkStream S (Variable NoCheck Nothing  ) _ (O (Subword (i:.j))) = S.singleton (ElmS . O $ subword i i)
+  mkStream S (Variable NoCheck (Just ())) _ _ = error "S2"
+  mkStream S (Variable Check   Nothing  ) (O (Subword (l:.u))) (O (Subword (i:.j)))
+    = staticCheck (l<=i) $ S.singleton (ElmS . O $ subword i i)
   -- all other cases; but mostly when we have @Static@
   mkStream S _ (O (Subword (l:.u))) (O (Subword (i:.j))) = staticCheck (l==i && u==j) $ S.singleton (ElmS . O $ subword l u)
 

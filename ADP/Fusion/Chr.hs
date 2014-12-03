@@ -72,41 +72,48 @@ instance
   , Element ls Subword
   , MkStream m ls Subword
   ) => MkStream m (ls :!: Chr r x) Subword where
-  mkStream (ls :!: Chr f xs) Static lu ij@(Subword (i:.j))
+  mkStream (ls :!: Chr f xs) Static lu@(Subword (l:.u)) ij@(Subword (i:.j))
     -- We use a static check here as we can then pull out the @z@ character
     -- lookup. In the Nussinov example (X -> f <<< z1 t z2 t) this gives
     -- a 3x performance improvement. Note that this benchmark is a bit
     -- artificial.
-    = staticCheck (j>0) $
+    --
+    -- The static part is called @right-most@, i.e. when only terminals with
+    -- known fixed sizes are on the right of this terminal.
+    = staticCheck (j>0 && j<=u) $
       let !z = f xs (j-1)
       in S.map (ElmChr z (subword (j-1) j))
          $ mkStream ls Static lu (subword i $ j-1)
   mkStream (ls :!: Chr f xs) v lu ij@(Subword (i:.j))
+    -- This version is used when to right, we already had variable-size
+    -- (non-)terminals to the right.
     = S.map (\s -> let Subword (k:.l) = getIdx s
                    in  ElmChr (f xs l) (subword l $ l+1) s
             )
     $ mkStream ls v lu (subword i $ j-1)
   {-# INLINE mkStream #-}
 
+-- Note how the indices grow to the outside!
+
 instance
   ( Monad m
   , Element ls (Outside Subword)
   , MkStream m ls (Outside Subword)
   ) => MkStream m (ls :!: Chr r x) (Outside Subword) where
-  mkStream (ls :!: Chr f xs) Static lu ij@(O (Subword (i:.j)))
-    -- We use a static check here as we can then pull out the @z@ character
-    -- lookup. In the Nussinov example (X -> f <<< z1 t z2 t) this gives
-    -- a 3x performance improvement. Note that this benchmark is a bit
-    -- artificial.
-    = staticCheck (j>0) $
-      let !z = f xs (j-1)
-      in S.map (ElmChr z (O $ subword (j-1) j))
-         $ mkStream ls Static lu (O $ subword i $ j-1)
+  -- For the static case, we move the @j@ index.
+  mkStream (ls :!: Chr f xs) Static lu@(O (Subword (l:.u))) ij@(O (Subword (i:.j)))
+    = staticCheck (j>=0 && j<u) $
+      let !z = f xs j
+      in S.map (ElmChr z (O $ subword j (j+1)))
+         $ mkStream ls Static lu (O $ subword i $ j+1)
+  -- In the variable case, (i) we set @i@ to @i-1@ going further down. (ii) On
+  -- going back up, we extract the rightmost index of the left symbol @l@ --
+  -- which could be @i-1@ but need not be.
   mkStream (ls :!: Chr f xs) v lu ij@(O (Subword (i:.j)))
-    = S.map (\s -> let O (Subword (k:.l)) = getIdx s
+    = S.map (\s -> let O (Subword (_:.l)) = getIdx s
                    in  ElmChr (f xs l) (O . subword l $ l+1) s
             )
-    $ mkStream ls v lu (O . subword i $ j-1)
+    $ mkStream ls v lu (O $ subword (i-1) j)
   {-# INLINE mkStream #-}
 
 

@@ -33,6 +33,8 @@ import           Data.PrimitiveArray (Z(..), (:.)(..), Subword(..), subword, Poi
 import           ADP.Fusion.Classes
 import           ADP.Fusion.Multi.Classes
 
+import           Debug.Trace
+
 
 
 data Empty = Empty

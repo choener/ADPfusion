@@ -70,9 +70,9 @@ bpmax = Nussinov
 
 prob :: Monad m => Nussinov m Char () Double Double
 prob = Nussinov
-  { unp = \ x c     -> 0.3  * x
-  , jux = \ x c y d -> 0.65 * if c `pairs` d then x * y else 0
-  , nil = \ ()      -> 0.05
+  { unp = \ x c     -> 0.3 * x
+  , jux = \ x c y d -> 0.6 * if c `pairs` d then x * y else 0
+  , nil = \ ()      -> 0.1
   , h   = SM.foldl' (+) 0
   }
 
@@ -107,8 +107,8 @@ grammar Nussinov{..} c t' =
 
 outsideGrammar Nussinov{..} c s t' =
   let t = t'  ( unp <<< t % c         |||
-                jux <<< t % c % s % c |||
-                jux <<< s % c % t % c |||
+                -- jux <<< t % c % s % c |||
+                -- jux <<< s % c % t % c |||
                 nil <<< Empty         ... h
               )
   in Z:.t
@@ -128,21 +128,28 @@ runNussinov k inp = (d, take k . S.toList . unId $ axiom b) where
   !(Z:.b) = grammar (bpmax <** pretty) (chr i) (toBT t (undefined :: Id a -> Id a))
 {-# NOINLINE runNussinov #-}
 
-runPartitionNussinov :: String -> [(Subword,Double)]
-runPartitionNussinov inp = zipWith (\(sh,a) (_,b) -> (sh,a*b/d)) (PA.assocs $ iTblArray s) (PA.assocs $ iTblArray t) where
+runPartitionNussinov :: String -> [(Subword,Double,Double,Double)]
+runPartitionNussinov inp
+  = Data.List.map (\(sh,a) -> let b = iTblArray t PA.! (O sh)
+                              in (sh, a, b, a*b/d)
+                  ) (PA.assocs $ iTblArray s)
+  where
   i = VU.fromList . Prelude.map toUpper $ inp
   n = VU.length i
+  s :: ITbl Id Unboxed Subword Double
   !(Z:.s) = mutateTablesDefault
           $ grammar prob
               (chr i)
-              (ITbl EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) 0 [])) :: Z:.ITbl Id Unboxed Subword Double
+              (ITbl EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) 0 []))
+              
   d = iTblArray s PA.! subword 0 n
+  t :: ITbl Id Unboxed (Outside Subword) Double
   !(Z:.t) = mutateTablesDefault
           $ outsideGrammar prob
               (chr i)
               --(undefined :: ITbl Id Unboxed (Outside Subword) Double)
               s
-              (ITbl EmptyOk (PA.fromAssocs (O $ subword 0 0) (O $ subword 0 n) 0 [])) :: Z:.ITbl Id Unboxed (Outside Subword) Double
+              (ITbl EmptyOk (PA.fromAssocs (O $ subword 0 0) (O $ subword 0 n) (-1) []))
 {-# NOINLINE runPartitionNussinov #-}
 
 main = do

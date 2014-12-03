@@ -25,6 +25,8 @@ import qualified Data.PrimitiveArray as PA
 
 import           ADP.Fusion.Table
 
+import           Debug.Trace
+
 
 
 -- * Specialized table-filling wrapper for 'MTbl's
@@ -121,6 +123,7 @@ instance
   ( Monad om
   , MutateCell (ts:.ITbl im arr i x) im om i
   , PA.PrimArrayOps arr i x
+  , Show i
   ) => MutateTables (ts:.ITbl im arr i x) im om where
   mutateTables mrph tt@(_:.ITbl _ arr _) = do
     let (from,to) = PA.bounds arr
