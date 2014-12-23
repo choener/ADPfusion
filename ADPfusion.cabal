@@ -2,8 +2,8 @@ name:           ADPfusion
 version:        0.4.0.0
 author:         Christian Hoener zu Siederdissen, 2011-2014
 copyright:      Christian Hoener zu Siederdissen, 2011-2014
-homepage:       http://www.tbi.univie.ac.at/~choener/adpfusion
-maintainer:     choener@tbi.univie.ac.at
+homepage:       http://www.bioinf.uni-leipzig.de/~choener/adpfusion
+maintainer:     choener@bioinf.uni-leipzig.de
 category:       Algorithms, Data Structures, Bioinformatics
 license:        BSD3
 license-file:   LICENSE
@@ -59,7 +59,7 @@ description:
                 (<http://gapc.eu/>).
                 .
                 Performance comparison figure:
-                <http://www.tbi.univie.ac.at/~choener/adpfusion/gaplike-nussinov-runtime.jpg>
+                <http://www.bioinf.uni-leipzig.de/~choener/adpfusion/gaplike-nussinov-runtime.jpg>
                 .
                 Please note that actual performance will depend much on table
                 layout and data structures accessed during calculations, but in
@@ -146,15 +146,17 @@ library
 
 executable NeedlemanWunsch
   if flag(examples)
-    buildable: True
+    buildable:
+      True
+    build-depends:
+      ADPfusion       ,
+      primitive       ,
+      PrimitiveArray  ,
+      vector          ,
+      base
   else
-    buildable: False
-  build-depends:
-    ADPfusion       ,
-    primitive       ,
-    PrimitiveArray  ,
-    vector          ,
-    base
+    buildable:
+      False
   hs-source-dirs:
     src
   main-is:
@@ -172,15 +174,17 @@ executable NeedlemanWunsch
 
 executable Nussinov
   if flag(examples)
-    buildable: True
+    buildable:
+      True
+    build-depends:
+      ADPfusion         ,
+      PrimitiveArray    ,
+      template-haskell  ,
+      vector            ,
+      base
   else
-    buildable: False
-  build-depends:
-    ADPfusion         ,
-    PrimitiveArray    ,
-    template-haskell  ,
-    vector            ,
-    base
+    buildable:
+      False
   hs-source-dirs:
     src
   main-is:
@@ -198,15 +202,17 @@ executable Nussinov
 
 executable TwoNussinov
   if flag(examples)
-    buildable: True
+    buildable:
+      True
+    build-depends:
+      ADPfusion         ,
+      PrimitiveArray    ,
+      template-haskell  ,
+      vector            ,
+      base
   else
-    buildable: False
-  build-depends:
-    ADPfusion         ,
-    PrimitiveArray    ,
-    template-haskell  ,
-    vector            ,
-    base
+    buildable:
+      False
   hs-source-dirs:
     src
   main-is:
@@ -224,15 +230,17 @@ executable TwoNussinov
 
 executable MemoRecNussinov
   if flag(examples)
-    buildable: True
+    buildable:
+      True
+    build-depends:
+      ADPfusion         ,
+      PrimitiveArray    ,
+      template-haskell  ,
+      vector            ,
+      base
   else
-    buildable: False
-  build-depends:
-    ADPfusion         ,
-    PrimitiveArray    ,
-    template-haskell  ,
-    vector            ,
-    base
+    buildable:
+      False
   hs-source-dirs:
     src
   main-is:
@@ -250,15 +258,17 @@ executable MemoRecNussinov
 
 executable Durbin
   if flag(examples)
-    buildable: True
+    buildable:
+      True
+    build-depends:
+      ADPfusion         ,
+      PrimitiveArray    ,
+      template-haskell  ,
+      vector            ,
+      base
   else
-    buildable: False
-  build-depends:
-    ADPfusion         ,
-    PrimitiveArray    ,
-    template-haskell  ,
-    vector            ,
-    base
+    buildable:
+      False
   hs-source-dirs:
     src
   main-is:
