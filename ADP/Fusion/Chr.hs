@@ -67,6 +67,39 @@ instance
     {-# INLINE getIdx #-}
 
 
+
+-- ** @PointL@ single-dim instances
+
+instance
+  ( Monad m
+  , Element ls PointL
+  , MkStream m ls PointL
+  ) => MkStream m (ls :!: Chr r x) PointL where
+  mkStream (ls :!: Chr f xs) Static lu@(PointL (l:.u)) (PointL (i:.j))
+    = staticCheck (j>l) $
+      let !z = f xs (j-1)
+      in  S.map (ElmChr z (pointL (j-1) j))
+          $ mkStream ls Static lu (pointL i $ j-1)
+  mkStream _ _ _ _ = error "mkStream / Chr / PointL not implemented"
+  {-# INLINE mkStream #-}
+
+instance
+  ( Monad m
+  , Element ls (Outside PointL)
+  , MkStream m ls (Outside PointL)
+  ) => MkStream m (ls :!: Chr r x) (Outside PointL) where
+  mkStream (ls :!: Chr f xs) Static lu@(O (PointL (l:.u))) (O (PointL (i:.j)))
+    = staticCheck (j<u) $
+      let !z = f xs j
+      in  S.map (ElmChr z (O . pointL j $ j+1))
+          $ mkStream ls Static lu (O . pointL i $ j+1)
+  mkStream _ _ _ _ = error "mkStream / Chr / Outside PointL not implemented"
+  {-# INLINE mkStream #-}
+
+
+
+-- ** @Subword@ single-dim instances
+
 instance
   ( Monad m
   , Element ls Subword
