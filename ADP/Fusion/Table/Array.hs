@@ -119,10 +119,26 @@ instance
   ) => MkStream m (ls :!: ITbl m arr PointL x) PointL where
   mkStream (ls :!: ITbl c t _) Static lu (PointL (i:.j))
     = let ms = minSize c in ms `seq`
-    S.mapM (\s -> let PointL (_:.k) = getIdx s
-                  in  return $ ElmITbl (t PA.! pointL k j) (pointL k j) s)
+    S.map (\s -> let PointL (_:.k) = getIdx s
+                 in  ElmITbl (t PA.! pointL k j) (pointL k j) s)
     $ mkStream ls (Variable Check Nothing) lu (pointL i $ j - ms)
   mkStream _ _ _ _ = error "mkStream / ITbl / PointL not implemented"
+  {-# INLINE mkStream #-}
+
+instance
+  ( Monad mB
+  , Element ls PointL
+  , PA.PrimArrayOps arr PointL x
+  , MkStream mB ls PointL
+  ) => MkStream mB (ls :!: BT (ITbl mF arr PointL x) mF mB r) PointL where
+  mkStream (ls :!: BtITbl c arr bt) Static lu (PointL (i:.j))
+    = let ms = minSize c in ms `seq`
+    S.map (\s -> let PointL (h:.k) = getIdx s
+                     ix            = pointL k j
+                     d             = arr PA.! ix
+                 in ElmBtITbl' d (bt lu ix) ix s)
+    $ mkStream ls (Variable Check Nothing) lu (pointL i $ j - ms)
+  mkStream _ _ _ _ = error "mkStream / BT ITbl / PointL not implemented"
   {-# INLINE mkStream #-}
 
 instance
@@ -133,10 +149,26 @@ instance
   ) => MkStream m (ls :!: ITbl m arr (Outside PointL) x) (Outside PointL) where
   mkStream (ls :!: ITbl c t _) Static lu (O (PointL (i:.j)))
     = let ms = minSize c in ms `seq`
-    S.mapM (\s -> let O (PointL (h:.k)) = getIdx s
-                  in  return $ ElmITbl (t PA.! O (pointL k j)) (O $ pointL k j) s)
+    S.map (\s -> let O (PointL (h:.k)) = getIdx s
+                 in  ElmITbl (t PA.! O (pointL k j)) (O $ pointL k j) s)
     $ mkStream ls (Variable Check Nothing) lu (O . pointL i $ j + ms)
   mkStream _ _ _ _ = error "mkStream / ITbl / Outside PointL not implemented"
+  {-# INLINE mkStream #-}
+
+instance
+  ( Monad mB
+  , Element ls (Outside PointL)
+  , PA.PrimArrayOps arr (Outside PointL) x
+  , MkStream mB ls (Outside PointL)
+  ) => MkStream mB (ls :!: BT (ITbl mF arr (Outside PointL) x) mF mB r) (Outside PointL) where
+  mkStream (ls :!: BtITbl c arr bt) Static lu (O (PointL (i:.j)))
+    = let ms = minSize c in ms `seq`
+    S.map (\s -> let O (PointL (h:.k)) = getIdx s
+                     ix                = O $ pointL k j
+                     d                 = arr PA.! ix
+                 in ElmBtITbl' d (bt lu ix) ix s)
+    $ mkStream ls (Variable Check Nothing) lu (O . pointL i $ j + ms)
+  mkStream _ _ _ _ = error "mkStream / BT ITbl / Outside PointL not implemented"
   {-# INLINE mkStream #-}
 
 -- | TODO As soon as we don't do static checking on @EmptyOk/NonEmpty@
