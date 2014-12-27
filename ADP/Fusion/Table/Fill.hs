@@ -109,7 +109,7 @@ instance
     z <- {-# SCC "inline/mrph/fi" #-} (inline mrph) $ {-# SCC "fi" #-} f lu i
     PA.writeM marr i z
 --    let (bl,bh) = PA.bounds arr
-    traceShow (i,z, arr PA.! i) $ mutateCell mrph ts lu i
+    traceShow (lu,i,z, arr PA.! i) $ mutateCell mrph ts lu i
   {-# INLINE mutateCell #-}
 
 instance

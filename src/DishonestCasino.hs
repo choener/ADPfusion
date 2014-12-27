@@ -75,8 +75,11 @@ forward = Signature
 type T = ITbl Id Unboxed PointL P
 type A = IRec Id         PointL P
 
-runCasino :: [Int] -> (P,String)
-runCasino is = (d,"") where
+type Tb = ITbl Id Unboxed (Outside PointL) P
+type Ab = IRec Id         (Outside PointL) P
+
+runCasino :: [Int] -> (P,P,String)
+runCasino is = (d,db,"") where
   i = VU.fromList is
   n = VU.length i
   !(Z:.th:.td:.st)  = mutateTablesDefault
@@ -87,6 +90,14 @@ runCasino is = (d,"") where
                         (IRec EmptyOk (pointL 0 0, pointL 0 n))
       :: Z:.T:.T:.A
   d = unId $ axiom st
+  !(Z:.thb:.tdb:.stb) = mutateTablesDefault
+                      $ outsideGrammar forward
+                          (chr i)
+                          (ITbl EmptyOk (PA.fromAssocs (O $ pointL 0 0) (O $ pointL 0 n) 0 []))
+                          (ITbl EmptyOk (PA.fromAssocs (O $ pointL 0 0) (O $ pointL 0 n) 0 []))
+                          (IRec EmptyOk (O $ pointL 0 0, O $ pointL 0 n))
+      :: Z:.Tb:.Tb:.Ab
+  db = unId $ axiom stb
 {-# NOINLINE runCasino #-}
 
 main = runCasino []

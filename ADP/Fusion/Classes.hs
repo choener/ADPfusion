@@ -215,7 +215,12 @@ instance (Monad m) => MkStream m S PointL where
   {-# INLINE mkStream #-}
 
 instance (Monad m) => MkStream m S (Outside PointL) where
-  mkStream = error "S.Outside PointL write me"
+  mkStream S (Variable Check Nothing) (O (PointL (l:.u))) (O (PointL (i:.j)))
+    = staticCheck (j>=l && j<=u && i<=j) $ S.singleton (ElmS . O $ PointL (j:.j))
+  mkStream S Static (O (PointL (l:.u))) (O (PointL (i:.j)))
+    = staticCheck (i==l && u==j) $ S.singleton (ElmS . O $ PointL (i:.j))
+  mkStream S z (O (PointL (l:.u))) (O (PointL (i:.j))) = error $ "S.PointL write me: " ++ show z
+  {-# INLINE mkStream #-}
 
 -- * Helper functions
 

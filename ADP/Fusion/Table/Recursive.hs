@@ -18,6 +18,7 @@ import           Data.Strict.Tuple
 import           Data.Vector.Fusion.Stream.Size (Size(Unknown))
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
+import           Data.Array.Repa.ExtShape (topmostIndex, ExtShape)
 import           Data.Array.Repa.Index.Subword
 import           Data.PrimitiveArray ((:.)(..))
 
@@ -113,8 +114,10 @@ instance
       in ms `seq` S.flatten mk step Unknown $ mkStream ls (Variable NoCheck Nothing) lu (subword i j)
   {-# INLINE mkStream #-}
 
-instance Axiom (IRec m i x) where
+instance (ExtShape i) => Axiom (IRec m i x) where
   type S (IRec m i x) = m x
-  axiom (IRec c (l,h) f) = f h h -- the first @h@ are the total bounds, the second the call to the biggest index
+  axiom (IRec c (l,h) f) =
+    let top = topmostIndex l h
+    in  f top top -- the first @h@ are the total bounds, the second the call to the biggest index
   {-# INLINE axiom #-}
 
