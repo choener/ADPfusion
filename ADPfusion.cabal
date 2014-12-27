@@ -292,7 +292,10 @@ executable DishonestCasino
       True
     build-depends:
       ADPfusion                   ,
+      cmdargs           == 0.10.* ,
       log-domain        == 0.9.*  ,
+      mwc-random        == 0.13.* ,
+      mwc-random-monad  == 0.7.*  ,
       PrimitiveArray              ,
       template-haskell            ,
       vector                      ,
