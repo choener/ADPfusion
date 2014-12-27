@@ -112,6 +112,7 @@ library
     primitive         == 0.5.*    ,
     PrimitiveArray    == 0.6.*    ,
     QuickCheck        == 2.*      ,
+    repa                          ,
     strict            == 0.3.*    ,
     template-haskell  == 2.*      ,
     transformers      == 0.3.*    ,
@@ -273,6 +274,35 @@ executable Durbin
     src
   main-is:
     Durbin.hs
+  ghc-options:
+    -Odph
+    -fcpr-off
+    -funbox-strict-fields
+    -funfolding-use-threshold1000
+    -funfolding-keeness-factor1000
+  if flag(llvm)
+    ghc-options:
+      -fllvm
+      -optlo-O3 -optlo-std-compile-opts
+      -fllvm-tbaa
+
+executable DishonestCasino
+  if flag(examples)
+    buildable:
+      True
+    build-depends:
+      ADPfusion         ,
+      PrimitiveArray    ,
+      template-haskell  ,
+      vector            ,
+      base
+  else
+    buildable:
+      False
+  hs-source-dirs:
+    src
+  main-is:
+    DishonestCasino.hs
   ghc-options:
     -Odph
     -fcpr-off

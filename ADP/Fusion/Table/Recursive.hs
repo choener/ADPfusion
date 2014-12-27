@@ -13,7 +13,7 @@ module ADP.Fusion.Table.Recursive
   ( IRec (..)
   ) where
 
---import           Data.Array.Repa.Index
+import           Control.Exception(assert)
 import           Data.Strict.Tuple
 import           Data.Vector.Fusion.Stream.Size (Size(Unknown))
 import qualified Data.Vector.Fusion.Stream.Monadic as S
@@ -22,7 +22,10 @@ import           Data.Array.Repa.Index.Subword
 import           Data.PrimitiveArray ((:.)(..))
 
 import           ADP.Fusion.Classes
+import           ADP.Fusion.Table.Axiom
 import           ADP.Fusion.Table.Backtrack
+
+import           Debug.Trace
 
 
 
@@ -109,4 +112,9 @@ instance
           {-# INLINE [1] step #-}
       in ms `seq` S.flatten mk step Unknown $ mkStream ls (Variable NoCheck Nothing) lu (subword i j)
   {-# INLINE mkStream #-}
+
+instance Axiom (IRec m i x) where
+  type S (IRec m i x) = m x
+  axiom (IRec c (l,h) f) = f h h -- the first @h@ are the total bounds, the second the call to the biggest index
+  {-# INLINE axiom #-}
 

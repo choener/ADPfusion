@@ -36,6 +36,7 @@ module ADP.Fusion.Table.Array
   , ToBT (..)
   ) where
 
+import           Control.Exception(assert)
 import           Control.Monad.Primitive (PrimMonad)
 import           Data.Strict.Tuple hiding (uncurry)
 import           Data.Vector.Fusion.Stream.Size (Size(Unknown))
@@ -54,6 +55,8 @@ import           ADP.Fusion.Multi.Classes
 import           ADP.Fusion.Table.Axiom
 import           ADP.Fusion.Table.Backtrack
 import           ADP.Fusion.Table.Indices
+
+import           Debug.Trace
 
 
 
@@ -117,7 +120,9 @@ instance
   , PA.PrimArrayOps arr PointL x
   , MkStream m ls PointL
   ) => MkStream m (ls :!: ITbl m arr PointL x) PointL where
-  mkStream (ls :!: ITbl c t _) Static lu (PointL (i:.j))
+  mkStream (ls :!: ITbl c t _) Static lu@(PointL (l:.u)) (PointL (i:.j))
+  -- TODO sure about these assertions below? they should be ok, given that
+  -- we are in a linear grammar context ...
     = let ms = minSize c in ms `seq`
     S.map (\s -> let PointL (_:.k) = getIdx s
                  in  ElmITbl (t PA.! pointL k j) (pointL k j) s)

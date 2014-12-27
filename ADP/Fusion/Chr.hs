@@ -16,6 +16,7 @@
 
 module ADP.Fusion.Chr where
 
+import           Control.Exception(assert)
 import           Data.Strict.Tuple
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Generic as VG
@@ -25,6 +26,8 @@ import           Data.PrimitiveArray ((:.)(..), Subword(..), subword, PointL(..)
 
 import           ADP.Fusion.Classes
 import           ADP.Fusion.Multi.Classes
+
+import Debug.Trace
 
 
 
@@ -76,7 +79,7 @@ instance
   , MkStream m ls PointL
   ) => MkStream m (ls :!: Chr r x) PointL where
   mkStream (ls :!: Chr f xs) Static lu@(PointL (l:.u)) (PointL (i:.j))
-    = staticCheck (j>l) $
+    = staticCheck (j>l && j>0 && j<=u && j<= VG.length xs) $
       let !z = f xs (j-1)
       in  S.map (ElmChr z (pointL (j-1) j))
           $ mkStream ls Static lu (pointL i $ j-1)

@@ -26,6 +26,7 @@ import qualified Data.PrimitiveArray as PA
 import           ADP.Fusion.Table
 
 import           Debug.Trace
+import           Data.Array.Repa.Shape
 
 
 
@@ -101,12 +102,14 @@ instance
   , PA.MPrimArrayOps arr i x
   , MutateCell ts im om i
   , PrimMonad om
+  , Show x, Show i
   ) => MutateCell (ts:.ITbl im arr i x) im om i where
   mutateCell mrph (ts:.ITbl (!c) arr f) lu i = {-# SCC "mutateCell/ITbl" #-} do
     marr <- PA.unsafeThaw arr
     z <- {-# SCC "inline/mrph/fi" #-} (inline mrph) $ {-# SCC "fi" #-} f lu i
     PA.writeM marr i z
-    mutateCell mrph ts lu i
+--    let (bl,bh) = PA.bounds arr
+    traceShow (i,z, arr PA.! i) $ mutateCell mrph ts lu i
   {-# INLINE mutateCell #-}
 
 instance
@@ -138,7 +141,7 @@ instance
   , PA.ExtShape i
   ) => MutateTables (ts:.IRec im i x) im om where
   mutateTables mrph tt@(_:.IRec _ (from,to) _) = do
-    SM.mapM_ (mutateCell (inline mrph) tt (error "lu")) $ PA.rangeStream from to
+    SM.mapM_ (mutateCell (inline mrph) tt to) $ PA.rangeStream from to
     return tt
   {-# INLINE mutateTables #-}
 

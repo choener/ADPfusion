@@ -52,6 +52,26 @@ instance (Element ls i) => Element (ls :!: Empty) i where
   {-# INLINE getArg #-}
   {-# INLINE getIdx #-}
 
+instance
+  ( Monad m
+  , MkStream m ls PointL
+  ) => MkStream m (ls :!: Empty) PointL where
+  mkStream (ls :!: Empty) Static lu (PointL (i:.j))
+    = S.map (ElmEmpty (pointL i j))
+    $ mkStream ls Static lu (pointL i j)
+  mkStream _ _ _ _ = error "mkStream Empty/PointL called with illegal parameters"
+  {-# INLINE mkStream #-}
+
+instance
+  ( Monad m
+  , MkStream m ls (Outside PointL)
+  ) => MkStream m (ls :!: Empty) (Outside PointL) where
+  mkStream (ls :!: Empty) Static lu (O (PointL (i:.j)))
+    = S.map (ElmEmpty (O $ pointL i j))
+    $ mkStream ls Static lu (O $ pointL i j)
+  mkStream _ _ _ _ = error "mkStream Empty/PointL called with illegal parameters"
+  {-# INLINE mkStream #-}
+
 -- | Empty as an argument only makes sense if empty is static. We don't get to
 -- use 'staticCheck' as the underlying check for the bottom of the argument
 -- stack should take care of the @i==j@ check.
