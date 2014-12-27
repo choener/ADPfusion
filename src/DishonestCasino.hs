@@ -78,8 +78,8 @@ type A = IRec Id         PointL P
 type Tb = ITbl Id Unboxed (Outside PointL) P
 type Ab = IRec Id         (Outside PointL) P
 
-runCasino :: [Int] -> (P,P,String)
-runCasino is = (d,db,"") where
+runCasino :: [Int] -> (P,P,VU.Vector P,String)
+runCasino is = (d,db,v,"") where
   i = VU.fromList is
   n = VU.length i
   !(Z:.th:.td:.st)  = mutateTablesDefault
@@ -98,9 +98,12 @@ runCasino is = (d,db,"") where
                           (IRec EmptyOk (O $ pointL 0 0, O $ pointL 0 n))
       :: Z:.Tb:.Tb:.Ab
   db = unId $ axiom stb
+  v = let ITbl _ (Unboxed _ vf) _ = th
+          ITbl _ (Unboxed _ vb) _ = thb
+      in  VU.zipWith (\x y -> x * y / d) vf vb
 {-# NOINLINE runCasino #-}
 
-main = runCasino []
+main = print $ runCasino []
 
 bla :: VU.Vector Int -> Int
 bla v = unId

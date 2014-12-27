@@ -291,10 +291,11 @@ executable DishonestCasino
     buildable:
       True
     build-depends:
-      ADPfusion         ,
-      PrimitiveArray    ,
-      template-haskell  ,
-      vector            ,
+      ADPfusion                   ,
+      log-domain        == 0.9.*  ,
+      PrimitiveArray              ,
+      template-haskell            ,
+      vector                      ,
       base
   else
     buildable:
