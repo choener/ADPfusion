@@ -96,7 +96,7 @@ runNussinov k inp = (d, take k . S.toList . unId $ axiom b) where
              $ grammar bpmax
                  (chr i)
                  (ITbl EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-999999) []))
-                 (IRec EmptyOk (subword 0 0, subword 0 n)                              ) :: Z :. ITbl Id Unboxed Subword Int :. IRec Id Subword Int
+                 (IRec EmptyOk (subword 0 0) (subword 0 n)                              ) :: Z :. ITbl Id Unboxed Subword Int :. IRec Id Subword Int
   d = let (ITbl _ arr _) = s in arr PA.! subword 0 n
   !(Z:.b:.c) = grammar (bpmax <** pretty) (chr i) (toBT s (undefined :: Id a -> Id a)) (toBT t (id :: Id a -> Id a))
 {-# NOINLINE runNussinov #-}

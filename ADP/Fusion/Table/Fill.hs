@@ -114,7 +114,7 @@ instance
 instance
   ( MutateCell ts im om i
   ) => MutateCell (ts:.IRec im i x) im om i where
-  mutateCell mrph (ts:.IRec (!c) _ f) lu i = do
+  mutateCell mrph (ts:.IRec (!c) _ _ f) lu i = do
     mutateCell mrph ts lu i
   {-# INLINE mutateCell #-}
 
@@ -139,7 +139,7 @@ instance
   , MutateCell (ts:.IRec im i x) im om i
   , PA.ExtShape i
   ) => MutateTables (ts:.IRec im i x) im om where
-  mutateTables mrph tt@(_:.IRec _ (from,to) _) = do
+  mutateTables mrph tt@(_:.IRec _ from to _) = do
     SM.mapM_ (mutateCell (inline mrph) tt to) $ PA.rangeStream from to
     return tt
   {-# INLINE mutateTables #-}

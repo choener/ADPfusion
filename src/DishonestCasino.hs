@@ -153,7 +153,7 @@ runForward (!n) (!i)
       (chr i)
       (ITbl EmptyOk (PA.fromAssocs (pointL 0 0) (pointL 0 n) 0 []))
       (ITbl EmptyOk (PA.fromAssocs (pointL 0 0) (pointL 0 n) 0 []))
-      (IRec EmptyOk (pointL 0 0, pointL 0 n))
+      (IRec EmptyOk (pointL 0 0) (pointL 0 n))
 {-# NOINLINE runForward #-}
 
 -- | Same for the backward algorithm.
@@ -165,7 +165,7 @@ runBackward (!n) (!i)
       (chr i)
       (ITbl EmptyOk (PA.fromAssocs (O $ pointL 0 0) (O $ pointL 0 n) 0 []))
       (ITbl EmptyOk (PA.fromAssocs (O $ pointL 0 0) (O $ pointL 0 n) 0 []))
-      (IRec EmptyOk (O $ pointL 0 0, O $ pointL 0 n))
+      (IRec EmptyOk (O $ pointL 0 0) (O $ pointL 0 n))
 {-# NOINLINE runBackward #-}
 
 {-

@@ -31,12 +31,16 @@ import           Debug.Trace
 
 
 data IRec m i x where
-  IRec :: !(TblConstraint i) -> (i,i) -> !(i -> i -> m x) -> IRec m i x
+  IRec :: { iRecConstraint  :: !(TblConstraint i)
+          , iRecFrom        :: !i
+          , iRecTo          :: !i
+          , iRecFun         :: !(i -> i -> m x)
+          } -> IRec m i x
 
 instance ToBT (IRec mF i x) mF mB r where
-  data BT   (IRec mF i x) mF mB r = BtIRec !(TblConstraint i) (i,i) (i -> i -> mB x) (i -> i -> mB (S.Stream mB r))
+  data BT   (IRec mF i x) mF mB r = BtIRec !(TblConstraint i) i i (i -> i -> mB x) (i -> i -> mB (S.Stream mB r))
   type BtIx (IRec mF i x)         = i
-  toBT (IRec c i f) mrph bt = BtIRec c i (\lu i -> mrph $ f lu i) bt
+  toBT (IRec c iF iT f) mrph bt = BtIRec c iF iT (\lu i -> mrph $ f lu i) bt
   {-# INLINE toBT #-}
 
 
@@ -62,8 +66,8 @@ instance Element ls i => Element (ls :!: (BT (IRec mF i x) mF mB r)) i where
   {-# INLINE getIdx #-}
 
 instance ModifyConstraint (IRec m Subword x) where
-  toNonEmpty (IRec _ i f) = IRec NonEmpty i f
-  toEmpty    (IRec _ i f) = IRec EmptyOk  i f
+  toNonEmpty (IRec _ iF iT f) = IRec NonEmpty iF iT f
+  toEmpty    (IRec _ iF iT f) = IRec EmptyOk  iF iT f
   {-# INLINE toNonEmpty #-}
   {-# INLINE toEmpty    #-}
 
@@ -72,12 +76,12 @@ instance
   , Element ls Subword
   , MkStream m ls Subword
   ) => MkStream m (ls :!: IRec m Subword x) Subword where
-  mkStream (ls :!: IRec c _ f) Static lu (Subword (i:.j))
+  mkStream (ls :!: IRec c _ _ f) Static lu (Subword (i:.j))
     = let ms = minSize c in ms `seq`
     S.mapM (\s -> let Subword (_:.l) = getIdx s
                     in  f lu (subword l j) >>= \z -> return $ ElmIRec z (subword l j) s)
     $ mkStream ls (Variable Check Nothing) lu (subword i $ j - ms)
-  mkStream (ls :!: IRec c _ f) (Variable _ Nothing) lu (Subword (i:.j))
+  mkStream (ls :!: IRec c _ _ f) (Variable _ Nothing) lu (Subword (i:.j))
     = let ms = minSize c
           mk s = let (Subword (_:.l)) = getIdx s in return (s:.j-l-ms)
           step (s:.z)
@@ -95,13 +99,13 @@ instance
   , Element ls Subword
   , MkStream mB ls Subword
   ) => MkStream mB (ls :!: BT (IRec mF Subword x) mF mB r) Subword where
-  mkStream (ls :!: BtIRec c _ f bt) Static lu (Subword (i:.j))
+  mkStream (ls :!: BtIRec c _ _ f bt) Static lu (Subword (i:.j))
     = let ms = minSize c in ms `seq`
       S.mapM (\s -> let (Subword (_:.l)) = getIdx s
                         ix               = subword l j
                     in  f lu ix >>= \fx -> return $ ElmBtIRec fx (bt lu ix) ix s)
       $ mkStream ls (Variable Check Nothing) lu (subword i $ j-ms)
-  mkStream (ls :!: BtIRec c _ f bt) (Variable _ Nothing) lu (Subword (i:.j))
+  mkStream (ls :!: BtIRec c _ _ f bt) (Variable _ Nothing) lu (Subword (i:.j))
     = let ms = minSize c
           mk s = let Subword (_:.l) = getIdx s in return (s:.j-l-ms)
           step (s:.z)
@@ -116,7 +120,7 @@ instance
 
 instance (ExtShape i) => Axiom (IRec m i x) where
   type S (IRec m i x) = m x
-  axiom (IRec c (l,h) f) =
+  axiom (IRec c l h f) =
     let top = topmostIndex l h
     in  f top top -- the first @h@ are the total bounds, the second the call to the biggest index
   {-# INLINE axiom #-}
