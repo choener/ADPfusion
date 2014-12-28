@@ -168,31 +168,7 @@ runBackward (!n) (!i)
       (IRec EmptyOk (O $ pointL 0 0) (O $ pointL 0 n))
 {-# NOINLINE runBackward #-}
 
-{-
-runBackward' :: Int -> VU.Vector Int -> (Z:.Tb:.Tb:.Ab)
-runBackward' (!n) (!i)
-  = backwardGrammar forward
-      (chr i)
-      (ITbl EmptyOk (PA.fromAssocs (O $ pointL 0 0) (O $ pointL 0 n) 0 []))
-      (ITbl EmptyOk (PA.fromAssocs (O $ pointL 0 0) (O $ pointL 0 n) 0 []))
-      (IRec EmptyOk (O $ pointL 0 0, O $ pointL 0 n))
-{-# NOINLINE runBackward' #-}
 
-fucked :: Int -> VU.Vector Int -> (Z:.Tb:.Tb:.Tb)
-fucked (!n) (!i)
-  = backwardGrammar forward
-      (chr i)
-      (ITbl EmptyOk (PA.fromAssocs (O $ pointL 0 0) (O $ pointL 0 n) 0 []))
-      (ITbl EmptyOk (PA.fromAssocs (O $ pointL 0 0) (O $ pointL 0 n) 0 []))
-      (ITbl EmptyOk (PA.fromAssocs (O $ pointL 0 0) (O $ pointL 0 n) 0 []))
-      --(IRec EmptyOk (O $ pointL 0 0, O $ pointL 0 n))
-{-# NOINLINE fucked #-}
-
-fucked2 n i = let (Z:.a:.b:.c) = fucked n i
-                  -- IRec _ _ f = c
-              in  iTblFun b
-{-# NOINLINE fucked2 #-}
--}
 
 -- * Machinery for generating example data, and running the algorithm.
 
