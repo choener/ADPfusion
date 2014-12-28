@@ -35,6 +35,7 @@ module ADP.Fusion
   ) where
 
 import           Data.Strict.Tuple
+import           GHC.Exts (inline)
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
 import           ADP.Fusion.Apply
@@ -84,7 +85,7 @@ infixl 7 |||
 -- things).
 
 infixl 5 ...
-(...) s h = \lu ij -> h $ s lu ij
+(...) s h = \lu ij -> (inline h) $ s lu ij
 {-# INLINE (...) #-}
 
 -- -- | Additional outer check with user-given check function
