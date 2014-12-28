@@ -77,18 +77,18 @@ forwardGrammar Signature{..} c th' td' st' =
 -- same, however. Typically the backward algebras will be somewhat like
 -- mirroring functions to the forward ones.
 
-backwardGrammar Signature{..} c th' td' st' =
-  let th = th'  ( nil <<< Empty   |||
-                  h_h <<< th % c  |||
-                  d_h <<< td % c  ... h   -- rotated @h_d@ to @d_h@ (simpler example code)
-                )
-      td = td'  ( nil <<< Empty   |||
-                  h_d <<< th % c  |||     -- rotation @d_h@ to @h_d@
-                  d_d <<< td % c  ... h
-                )
-      st = st'  ( idd <<< th      ... h
-                )
-  in Z:.th:.td:.st
+backwardGrammar Signature{..} (!c) th' td' st' = Z:.th:.td:.st
+  where
+  th = th'  ( nil <<< Empty   |||
+              h_h <<< th % c  |||
+              d_h <<< td % c  ... h   -- rotated @h_d@ to @d_h@ (simpler example code)
+            )
+  td = td'  ( nil <<< Empty   |||
+              h_d <<< th % c  |||     -- rotation @d_h@ to @h_d@
+              d_d <<< td % c  ... h
+            )
+  st = st'  ( idd <<< th      ... h
+            )
 {-# INLINE backwardGrammar #-}
 
 -- | Calculations in probability space are prone to finite-math errors. We
@@ -132,21 +132,9 @@ runCasino :: [Int] -> (P,P,VU.Vector P,VU.Vector P)
 runCasino is = (d,db,vh,vd) where
   i = VU.fromList is
   n = VU.length i
-  !(Z:.th:.td:.st)  = mutateTablesDefault
-                    $ forwardGrammar forward
-                        (chr i)
-                        (ITbl EmptyOk (PA.fromAssocs (pointL 0 0) (pointL 0 n) 0 []))
-                        (ITbl EmptyOk (PA.fromAssocs (pointL 0 0) (pointL 0 n) 0 []))
-                        (IRec EmptyOk (pointL 0 0, pointL 0 n))
-      :: Z:.T:.T:.A
+  (Z:.th:.td:.st) = runForward n i
   d = unId $ axiom st
-  !(Z:.thb:.tdb:.stb) = mutateTablesDefault
-                      $ backwardGrammar forward
-                          (chr i)
-                          (ITbl EmptyOk (PA.fromAssocs (O $ pointL 0 0) (O $ pointL 0 n) 0 []))
-                          (ITbl EmptyOk (PA.fromAssocs (O $ pointL 0 0) (O $ pointL 0 n) 0 []))
-                          (IRec EmptyOk (O $ pointL 0 0, O $ pointL 0 n))
-      :: Z:.Tb:.Tb:.Ab
+  (Z:.thb:.tdb:.stb) = runBackward n i
   db = unId $ axiom stb
   vh = let ITbl _ (Unboxed _ vf) _ = th
            ITbl _ (Unboxed _ vb) _ = thb
@@ -155,6 +143,56 @@ runCasino is = (d,db,vh,vd) where
            ITbl _ (Unboxed _ vb) _ = tdb
        in  VU.zipWith (\x y -> x * y / d) vf vb
 {-# NOINLINE runCasino #-}
+
+-- | Extracted functionality to run the forward algorithm
+
+runForward :: Int -> VU.Vector Int -> (Z:.T:.T:.A)
+runForward (!n) (!i)
+  = {-# SCC "runForward" #-} mutateTablesDefault
+  $ forwardGrammar forward
+      (chr i)
+      (ITbl EmptyOk (PA.fromAssocs (pointL 0 0) (pointL 0 n) 0 []))
+      (ITbl EmptyOk (PA.fromAssocs (pointL 0 0) (pointL 0 n) 0 []))
+      (IRec EmptyOk (pointL 0 0, pointL 0 n))
+{-# NOINLINE runForward #-}
+
+-- | Same for the backward algorithm.
+
+runBackward :: Int -> VU.Vector Int -> (Z:.Tb:.Tb:.Ab)
+runBackward (!n) (!i)
+  = {-# SCC "runBackward" #-} mutateTablesDefault
+  $ backwardGrammar forward
+      (chr i)
+      (ITbl EmptyOk (PA.fromAssocs (O $ pointL 0 0) (O $ pointL 0 n) 0 []))
+      (ITbl EmptyOk (PA.fromAssocs (O $ pointL 0 0) (O $ pointL 0 n) 0 []))
+      (IRec EmptyOk (O $ pointL 0 0, O $ pointL 0 n))
+{-# NOINLINE runBackward #-}
+
+{-
+runBackward' :: Int -> VU.Vector Int -> (Z:.Tb:.Tb:.Ab)
+runBackward' (!n) (!i)
+  = backwardGrammar forward
+      (chr i)
+      (ITbl EmptyOk (PA.fromAssocs (O $ pointL 0 0) (O $ pointL 0 n) 0 []))
+      (ITbl EmptyOk (PA.fromAssocs (O $ pointL 0 0) (O $ pointL 0 n) 0 []))
+      (IRec EmptyOk (O $ pointL 0 0, O $ pointL 0 n))
+{-# NOINLINE runBackward' #-}
+
+fucked :: Int -> VU.Vector Int -> (Z:.Tb:.Tb:.Tb)
+fucked (!n) (!i)
+  = backwardGrammar forward
+      (chr i)
+      (ITbl EmptyOk (PA.fromAssocs (O $ pointL 0 0) (O $ pointL 0 n) 0 []))
+      (ITbl EmptyOk (PA.fromAssocs (O $ pointL 0 0) (O $ pointL 0 n) 0 []))
+      (ITbl EmptyOk (PA.fromAssocs (O $ pointL 0 0) (O $ pointL 0 n) 0 []))
+      --(IRec EmptyOk (O $ pointL 0 0, O $ pointL 0 n))
+{-# NOINLINE fucked #-}
+
+fucked2 n i = let (Z:.a:.b:.c) = fucked n i
+                  -- IRec _ _ f = c
+              in  iTblFun b
+{-# NOINLINE fucked2 #-}
+-}
 
 -- * Machinery for generating example data, and running the algorithm.
 
@@ -230,7 +268,7 @@ generate b n p
 bla :: VU.Vector Int -> Int
 bla v = unId
       . SM.foldl' (+) 0
-      . staticCheck' (VU.length v > 0)
+      . staticCheck (VU.length v > 0)
       $ let z = VU.unsafeHead v
         in  SM.enumFromStepN z 1 1
 {-# NOINLINE bla #-}

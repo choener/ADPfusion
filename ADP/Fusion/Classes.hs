@@ -210,8 +210,9 @@ instance (Monad m) => MkStream m S (Outside Subword) where
 instance (Monad m) => MkStream m S PointL where
   mkStream S (Variable Check Nothing) (PointL (l:.u)) (PointL (i:.j))
     = staticCheck (j>=l && j<=u && i<=j) $ S.singleton (ElmS $ PointL (i:.i))
-  mkStream S Static (PointL (l:.u)) (PointL (i:.j)) = staticCheck (i==j) $ S.singleton (ElmS $ PointL (i:.i))
-  mkStream S z (PointL (l:.u)) (PointL (i:.j)) = error $ "S.PointL write me: " ++ show z
+  mkStream S Static (PointL (l:.u)) (PointL (i:.j))
+    = staticCheck (i==j) $ S.singleton (ElmS $ PointL (i:.i))
+--  mkStream S z (PointL (l:.u)) (PointL (i:.j)) = error $ "S.PointL write me: " ++ show z
   {-# INLINE mkStream #-}
 
 instance (Monad m) => MkStream m S (Outside PointL) where
@@ -219,7 +220,7 @@ instance (Monad m) => MkStream m S (Outside PointL) where
     = staticCheck (j>=l && j<=u && i<=j) $ S.singleton (ElmS . O $ PointL (j:.j))
   mkStream S Static (O (PointL (l:.u))) (O (PointL (i:.j)))
     = staticCheck (i==l && u==j) $ S.singleton (ElmS . O $ PointL (i:.j))
-  mkStream S z (O (PointL (l:.u))) (O (PointL (i:.j))) = error $ "S.PointL write me: " ++ show z
+--  mkStream S z (O (PointL (l:.u))) (O (PointL (i:.j))) = error $ "S.PointL write me: " ++ show z
   {-# INLINE mkStream #-}
 
 -- * Helper functions
@@ -238,15 +239,4 @@ staticCheck b (S.Stream step t n) = b `seq` S.Stream snew (Left (b:.t)) (toMax n
                                  S.Skip    s' -> return $ S.Skip    (Right s')
                                  S.Done       -> return $ S.Done
 {-# INLINE staticCheck #-}
-
-staticCheck' :: Monad m => Bool -> S.Stream m a -> S.Stream m a
-staticCheck' b (S.Stream step t n) = S.Stream snew (Left (b,t)) (toMax n) where
-  {-# INLINE [1] snew #-}
-  snew (Left  (b,t)) = return $ if b then S.Skip (Right t) else S.Done
-  snew (Right s    ) = do r <- step s
-                          case r of
-                            S.Yield x s' -> return $ S.Yield x (Right s')
-                            S.Skip    s' -> return $ S.Skip    (Right s')
-                            S.Done       -> return $ S.Done
-{-# INLINE staticCheck' #-}
 

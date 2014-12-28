@@ -104,19 +104,17 @@ instance
   , PrimMonad om
   , Show x, Show i
   ) => MutateCell (ts:.ITbl im arr i x) im om i where
-  mutateCell mrph (ts:.ITbl (!c) arr f) lu i = {-# SCC "mutateCell/ITbl" #-} do
+  mutateCell mrph (ts:.ITbl (!c) arr f) lu i = do
     marr <- PA.unsafeThaw arr
-    z <- {-# SCC "inline/mrph/fi" #-} (inline mrph) $ {-# SCC "fi" #-} f lu i
+    z <- (inline mrph) $ f lu i
     PA.writeM marr i z
---    let (bl,bh) = PA.bounds arr
---    traceShow (lu,i,z, arr PA.! i) $
     mutateCell mrph ts lu i
   {-# INLINE mutateCell #-}
 
 instance
   ( MutateCell ts im om i
   ) => MutateCell (ts:.IRec im i x) im om i where
-  mutateCell mrph (ts:.IRec (!c) _ f) lu i = {-# SCC "mutateCell/IRec" #-} do
+  mutateCell mrph (ts:.IRec (!c) _ f) lu i = do
     mutateCell mrph ts lu i
   {-# INLINE mutateCell #-}
 

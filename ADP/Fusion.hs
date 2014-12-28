@@ -27,7 +27,6 @@ module ADP.Fusion
   , module ADP.Fusion.Empty
   , module ADP.Fusion.Multi.Classes
   , module ADP.Fusion.None
---  , module ADP.Fusion.Region
   , module ADP.Fusion.Table
   , module ADP.Fusion.Table.Axiom
   , module ADP.Fusion.Table.Fill
@@ -44,15 +43,12 @@ import           ADP.Fusion.Classes
 import           ADP.Fusion.Empty
 import           ADP.Fusion.Multi.Classes
 import           ADP.Fusion.None
---import           ADP.Fusion.Region
 import           ADP.Fusion.Table
 import           ADP.Fusion.Table.Axiom (axiom)
 import           ADP.Fusion.Table.Fill
 import           ADP.Fusion.TH
 
---import           Data.Array.Repa.Index
 import           Data.Array.Repa.Index.Subword
---import           Data.Array.Repa.Shape
 import qualified Data.Vector.Unboxed as VU
 
 import           Data.PrimitiveArray
@@ -67,11 +63,11 @@ import           Data.PrimitiveArray
 -- function 'f'.
 
 infixl 8 <<<
-(<<<) f xs = \lu ij -> S.map (apply f . getArg) . mkStream (build xs) (initialSV ij) lu $ ij
+(<<<) f xs = \lu ij -> S.map (apply (inline f) . getArg) . mkStream (build xs) (initialSV ij) lu $ ij
 {-# INLINE (<<<) #-}
 
 infixl 8 <<#
-(<<#) f xs = \lu ij -> S.mapM (apply f . getArg) . mkStream (build xs) (initialSV ij) lu $ ij
+(<<#) f xs = \lu ij -> S.mapM (apply (inline f) . getArg) . mkStream (build xs) (initialSV ij) lu $ ij
 {-# INLINE (<<#) #-}
 
 -- | Combine two RHSs to give a choice between parses.
