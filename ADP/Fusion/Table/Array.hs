@@ -27,6 +27,9 @@
 --
 -- TODO combine forward and backward phases to simplify the external interface
 -- to the programmer.
+--
+-- TODO include the notion of @interfaces@ into tables. With Outside
+-- grammars coming up now, we need this.
 
 module ADP.Fusion.Table.Array
 --  ( MTbl      (..)
