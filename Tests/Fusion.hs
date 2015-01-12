@@ -1,4 +1,6 @@
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
 
 module Tests.Fusion where
 
@@ -14,9 +16,10 @@ import Test.QuickCheck
 import Test.QuickCheck.All
 import Test.QuickCheck.Monadic
 import Data.List ((\\))
+import Data.Vector.Fusion.Stream.Size
+import Data.Vector.Fusion.Util
 
 import Data.Array.Repa.Index.Subword
-import Data.Array.Repa.Index.Point
 import qualified Data.PrimitiveArray as PA
 import qualified Data.PrimitiveArray.Zero as PA
 
@@ -24,6 +27,19 @@ import ADP.Fusion
 
 
 
+mkFlattening :: Int
+mkFlattening = S.foldl' (+) 0 $ S.flatten mk1 step1 Unknown $ S.flatten mk1 step1 Unknown $ S.flatten mk1 step1 Unknown $ S.enumFromStepN 1 1 10
+  where mk1 i = S.enumFromStepN i 1 11
+        step1 (SM.Stream go x !z) = case (unId $ go x) of
+          S.Done -> S.Done
+          S.Skip y -> S.Skip (SM.Stream go y z)
+          S.Yield a y -> S.Yield a (SM.Stream go y z)
+        {-# INLINE [1] mk1   #-}
+        {-# INLINE [1] step1 #-}
+{-# NOINLINE mkFlattening #-}
+
+
+{-
 testF :: Int -> Int -> Int
 testF i j =
   p6 <<< peekL testVs % chr testVs % Tbl testA % sregion 3 10 testVs % chr testVs % peekR testVs |||
@@ -52,3 +68,5 @@ testVs = VU.fromList [ 0 .. 9999 ]
 --gugg :: Int -> Int -> [(Int,VU.Vector Int,Int)]
 gugg i j = (,,) <<< chrR testVs % region testVs % chrL testVs ... Sp.toList $ subword i j
 -}
+-}
+
