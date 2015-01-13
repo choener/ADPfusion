@@ -39,6 +39,28 @@ mkFlattening = S.foldl' (+) 0 $ S.flatten mk1 step1 Unknown $ S.flatten mk1 step
 {-# NOINLINE mkFlattening #-}
 
 
+ccm :: Monad m => (a -> SM.Stream m b) -> SM.Stream m a -> SM.Stream m b
+ccm gen = SM.flatten mk step Unknown
+  where mk = return . gen
+        step (SM.Stream go x _) = do
+          s <- go x
+          case s of
+            SM.Done      -> return $ SM.Done
+            SM.Skip y    -> return $ SM.Skip (SM.Stream go y Unknown)
+            SM.Yield b y -> return $ SM.Yield b (SM.Stream go y Unknown)
+        {-# INLINE [1] mk   #-}
+        {-# INLINE [1] step #-}
+{-# INLINE ccm #-}
+
+fooboo :: Int
+fooboo = S.foldl' (+) 0 $ ccm (\i -> S.enumFromStepN i 1 11) $ ccm (\i -> S.enumFromStepN i 1 11) $ ccm (\i -> S.enumFromStepN i 1 11) $ S.enumFromStepN 1 1 10
+{-# NOINLINE fooboo #-}
+
+oriboo :: Int
+oriboo = S.foldl' (+) 0 $ S.concatMap (\i -> S.enumFromStepN i 1 11) $ S.concatMap (\i -> S.enumFromStepN i 1 11) $ S.concatMap (\i -> S.enumFromStepN i 1 11) $ S.enumFromStepN 1 1 10
+{-# NOINLINE oriboo #-}
+
+
 {-
 testF :: Int -> Int -> Int
 testF i j =
