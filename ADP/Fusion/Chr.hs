@@ -22,7 +22,7 @@ import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Generic as VG
 import qualified Data.Vector.Unboxed as VU
 
-import           Data.PrimitiveArray ((:.)(..), Subword(..), subword, PointL(..), pointL, PointR(..), pointR, Outside(..))
+import           Data.PrimitiveArray -- ((:.)(..), Subword(..), subword, PointL(..), pointL, PointR(..), pointR, Outside(..))
 
 import           ADP.Fusion.Classes
 import           ADP.Fusion.Multi.Classes
@@ -103,6 +103,7 @@ instance
 
 -- ** @Subword@ single-dim instances
 
+{-
 instance
   ( Monad m
   , Element ls Subword
@@ -128,9 +129,11 @@ instance
             )
     $ mkStream ls v lu (subword i $ j-1)
   {-# INLINE mkStream #-}
+-}
 
 -- Note how the indices grow to the outside!
 
+{-
 instance
   ( Monad m
   , Element ls (Outside Subword)
@@ -151,18 +154,20 @@ instance
             )
     $ mkStream ls v lu (O $ subword (i-1) j)
   {-# INLINE mkStream #-}
-
+-}
 
 
 -- * Multi-dimensional stuff
 
 type instance TermArg (TermSymbol a (Chr r x)) = TermArg a :. r
 
+{-
 instance TermStaticVar (Chr r x) Subword where
   termStaticVar   _ sv _                = sv
   termStreamIndex _ _  (Subword (i:.j)) = subword i $ j-1
   {-# INLINE termStaticVar #-}
   {-# INLINE termStreamIndex #-}
+-}
 
 instance TermStaticVar (Chr r x) PointL where
   termStaticVar   _ sv _                = sv
@@ -180,6 +185,7 @@ instance TermStaticVar (Chr r x) PointR where
 -- at the bottom of the stack should take care of it! Need to verify with
 -- QuickCheck, though.
 
+{-
 instance
   ( Monad m
   , TerminalStream m a is
@@ -194,7 +200,9 @@ instance
     . terminalStream a sv is
     . S.map (\(Tr s z (is:.i)) -> Tr s (z:.i) is)
   {-# INLINE terminalStream #-}
+-}
 
+{-
 instance
   ( Monad m
   , TerminalStream m a is
@@ -208,7 +216,9 @@ instance
     . terminalStream a sv is
     . S.map (\(Tr s z (is:.i)) -> Tr s (z:.i) is)
   {-# INLINE terminalStream #-}
+-}
 
+{-
 instance
   ( Monad m
   , TerminalStream m a is
@@ -222,4 +232,5 @@ instance
     . terminalStream a sv is
     . S.map (\(Tr s z (is:.i)) -> Tr s (z:.i) is)
   {-# INLINE terminalStream #-}
+-}
 

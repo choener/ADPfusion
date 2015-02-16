@@ -15,8 +15,9 @@ module ADP.Fusion.Classes where
 import           Data.Strict.Tuple
 import           Data.Vector.Fusion.Stream.Size
 import qualified Data.Vector.Fusion.Stream.Monadic as S
+import           Data.Bits
 
-import           Data.PrimitiveArray (Z(..), (:.)(..), Subword(..), subword, PointL(..), PointR(..), Outside(..))
+import           Data.PrimitiveArray -- (Z(..), (:.)(..), Subword(..), subword, PointL(..), PointR(..), Outside(..))
 
 import Debug.Trace
 
@@ -49,14 +50,15 @@ data CheckBounds
 -- from the outside, or use the moving indices calculated in in the inner
 -- parts.
 
-data StaticVariable
+data StaticVariable v
   = Static
-  | Variable CheckBounds (Maybe ()) -- TODO type family based on the index type to allow saying if we need maximal sizes further in
+  | Variable CheckBounds (Maybe v) -- TODO type family based on the index type to allow saying if we need maximal sizes further in
   deriving Eq
 
-instance Show StaticVariable where
+instance Show v => Show (StaticVariable v) where
   show (Static) = "Static"
-  show (Variable cb _) = "Variable " ++ show cb
+  show (Variable cb Nothing) = "Variable " ++ show cb
+  show (Variable cb (Just v)) = "Variable " ++ show cb ++ " " ++ show v
 
 -- | @IxStaticVar@ allows us to connect each type of index with variants of
 -- @StaticVariable@ stacks. This is important for multi-dimensional grammars,
@@ -70,16 +72,30 @@ instance IxStaticVar i => IxStaticVar (Outside i) where
   type IxSV (Outside i) = IxSV i
   initialSV (O i) = initialSV i
 
+{-
 instance IxStaticVar Subword where
   type IxSV Subword = StaticVariable
   initialSV _ = Static
+-}
 
 instance IxStaticVar PointL where
-  type IxSV PointL  = StaticVariable
+  type IxSV PointL  = StaticVariable ()
   initialSV _ = Static
 
 instance IxStaticVar PointR where
-  type IxSV PointR  = StaticVariable
+  type IxSV PointR  = StaticVariable ()
+  initialSV _ = Static
+
+instance IxStaticVar BitSet where
+  type IxSV BitSet = StaticVariable Int
+  initialSV _ = Static
+
+instance IxStaticVar (BitSet:>Interface i) where
+  type IxSV (BitSet:>Interface i) = StaticVariable Int
+  initialSV _ = Static
+
+instance IxStaticVar (BitSet:>Interface i:>Interface j) where
+  type IxSV (BitSet:>Interface i:>Interface j) = StaticVariable Int
   initialSV _ = Static
 
 -- | Constrains the behaviour of the memoizing tables. They may be 'EmptyOk' if
@@ -108,14 +124,21 @@ type family   TblConstraint x       :: *
 
 type instance TblConstraint (is:.i) =  TblConstraint is :. TblConstraint i
 type instance TblConstraint Z       = Z
+{-
 type instance TblConstraint Subword = TableConstraint
+-}
 type instance TblConstraint PointL  = TableConstraint
 type instance TblConstraint PointR  = TableConstraint
+type instance TblConstraint BitSet  = TableConstraint
+type instance TblConstraint (BitSet:>Interface i)  = TableConstraint
+type instance TblConstraint (BitSet:>Interface i:>Interface j)  = TableConstraint
 
+{-
 type instance TblConstraint (Outside Subword) = TableConstraint
 type instance TblConstraint (Outside PointL)  = TableConstraint
 type instance TblConstraint (Outside PointR)  = TableConstraint
-
+-}
+type instance TblConstraint (Outside o) = TblConstraint o
 
 -- * The ADPfusion base classes.
 
@@ -186,6 +209,7 @@ instance
 -- recursion and therefore occurs only once, not in every single loop. And
 -- neither does it introduce another loop.
 
+{-
 instance (Monad m) => MkStream m S Subword where
   -- we need to do nothing, because there are no size constraints
   mkStream S (Variable NoCheck Nothing) _  (Subword (i:.j)) = S.singleton (ElmS $ subword i i)
@@ -206,6 +230,7 @@ instance (Monad m) => MkStream m S (Outside Subword) where
   -- all other cases; but mostly when we have @Static@
   mkStream S _ (O (Subword (l:.u))) (O (Subword (i:.j))) = staticCheck (l==i && u==j) $ S.singleton (ElmS . O $ subword l u)
   {-# INLINE mkStream #-}
+-}
 
 instance (Monad m) => MkStream m S PointL where
   mkStream S (Variable Check Nothing) (PointL (l:.u)) (PointL (i:.j))
@@ -222,6 +247,53 @@ instance (Monad m) => MkStream m S (Outside PointL) where
     = staticCheck (i==l && u==j) $ S.singleton (ElmS . O $ PointL (i:.j))
 --  mkStream S z (O (PointL (l:.u))) (O (PointL (i:.j))) = error $ "S.PointL write me: " ++ show z
   {-# INLINE mkStream #-}
+
+-- TODO need to check these guys
+
+{-
+instance (Monad m) => MkStream m S BitSet where
+  mkStream S (Variable Check Nothing) (BitSet l) (BitSet h)
+    = staticCheck (l<=h) $ S.singleton (ElmS $ BitSet l)
+  mkStream S Static (BitSet l) (BitSet h)
+    = staticCheck (l==h) $ S.singleton (ElmS $ BitSet l)
+  {-# INLINE mkStream #-}
+
+instance (Monad m) => MkStream m S (BitSet:>Interface i) where
+  mkStream S (Variable Check Nothing) (BitSet lb:>Interface li) (BitSet hb:>Interface hi)
+    = staticCheck (lb<=hb && li <= hi) $ S.singleton (ElmS $ (BitSet lb:>Interface li))
+  mkStream S Static (BitSet lb:>Interface li) (BitSet hb:>Interface hi)
+    = staticCheck (lb==hb && li==hi) $ S.singleton (ElmS (BitSet lb:>Interface li))
+  {-# INLINE mkStream #-}
+-}
+
+-- | For bitsets, we do not always return just a singleton case. Whenever
+-- we are in the variable case with a moving @Last@ point, more than one
+-- returned candidate needs to be generated.
+
+instance (Monad m) => MkStream m S (BitSet:>Interface First:>Interface Last) where
+  -- In the static case we should have an empty bitset at this point. In
+  -- the stack @(S:.x)@ @x@ is something like @Empty@ or a terminal.
+  mkStream S Static _ (BitSet b:>_:>_)
+    = staticCheck (b==0) $ S.singleton (ElmS (BitSet b:>Interface 0:>Interface 0))
+  -- this one is fun. We first need to calcuate which bits need to be
+  -- switched on. Lets say, @popCount cb==3@ and @k==2@. Then we need to
+  -- produce all bitsets that are subsets of @cb@ with two active bits. Of
+  -- these, @ci@ is fixed as one of the interface bits. The @cj@ interface
+  -- is unimportant.
+  mkStream S (Variable _ (Just k)) (BitSet zb:>Interface zi:>Interface zj) (BitSet cb:>Interface ci:>_)
+    = S.map (\(Z:.(b:>j)) -> ElmS (b:>Interface ci:>j))
+    $ S.takeWhile (\(Z:.(BitSet b:>_)) -> popCount b <= k)
+    $ streamUp (Z:.(BitSet (2^k):>Interface 0)) (Z:.(BitSet (2^(popCount cb)):>Interface 0))
+  {-# INLINE mkStream #-}
+
+{-
+instance (Monad m) => MkStream m S (BitSet:>Interface i:>Interface j) where
+  mkStream S (Variable Check Nothing) (BitSet lb:>Interface li:>Interface lj) (BitSet hb:>Interface hi:>Interface hj)
+    = staticCheck (lb<=hb && li <= hi && lj <= hj) $ S.singleton (ElmS (BitSet lb:>Interface li:>Interface lj))
+  mkStream S Static (BitSet lb:>Interface li:>Interface lj) (BitSet hb:>Interface hi:>Interface hj)
+    = staticCheck (lb==hb && li==hi && lj==hj) $ S.singleton (ElmS (BitSet lb:>Interface li:>Interface lj))
+  {-# INLINE mkStream #-}
+-}
 
 -- * Helper functions
 

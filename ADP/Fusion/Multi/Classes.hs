@@ -11,7 +11,7 @@ module ADP.Fusion.Multi.Classes where
 import           Data.Strict.Tuple
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
-import           Data.PrimitiveArray (Z(..), (:.)(..), Subword(..), subword, PointL(..), pointL, PointR(..), pointR)
+import           Data.PrimitiveArray -- (Z(..), (:.)(..), Subword(..), subword, PointL(..), pointL, PointR(..), pointR)
 
 import           ADP.Fusion.Classes
 
@@ -24,11 +24,11 @@ import           ADP.Fusion.Classes
 data M = M
   deriving (Eq,Show)
 
-infixl 2 :>
+infixl 2 :|
 
 -- | Terminal symbols are stacked together with @a@ tails and @b@ head.
 
-data TermSymbol a b = a :> b
+data TermSymbol a b = a :| b
   deriving (Eq,Show)
 
 instance Build (TermSymbol a b)
@@ -61,6 +61,7 @@ instance
     $ mkStream ls (termStaticVar ts sv i) lu (termStreamIndex ts sv i)
   {-# INLINE mkStream #-}
 
+{-
 instance (Monad m, MkStream m S is) => MkStream m S (is:.Subword) where
   mkStream S (vs:.Static) (lus:.lu) (is:.Subword (i:.j))
     = staticCheck (i==j)
@@ -70,6 +71,7 @@ instance (Monad m, MkStream m S is) => MkStream m S (is:.Subword) where
     = S.map (\(ElmS z) -> ElmS (z:.subword i i))
     $ mkStream S vs lus is
   {-# INLINE mkStream #-}
+-}
 
 instance (Monad m, MkStream m S is) => MkStream m S (is:.PointL) where
   mkStream S (vs:.Static) (lus:.lu) (is:.PointL (i:.j))
@@ -123,6 +125,7 @@ instance (TableStaticVar is, TableStaticVar i) => TableStaticVar (is:.i) where
   {-# INLINE tableStaticVar   #-}
   {-# INLINE tableStreamIndex #-}
 
+{-
 instance TableStaticVar Subword where
   tableStaticVar     _ _                = error "Multi/Classes.hs :: tableStaticVar/Subword :: fixme" -- Variable NoCheck Nothing -- maybe we need a check if the constraint is 'NonEmpty' ?
   tableStreamIndex c _ (Subword (i:.j))
@@ -131,6 +134,7 @@ instance TableStaticVar Subword where
     | c==OnlyZero = subword i j -- this should then actually request a size in 'tableStaticVar' ...
   {-# INLINE tableStaticVar   #-}
   {-# INLINE tableStreamIndex #-}
+-}
 
 -- |
 --
@@ -181,8 +185,8 @@ instance
   ( TermStaticVar a is
   , TermStaticVar b i
   ) => TermStaticVar (TermSymbol a b) (is:.i) where
-  termStaticVar   (a:>b) (vs:.v) (is:.i) = termStaticVar   a vs is :. termStaticVar   b v i
-  termStreamIndex (a:>b) (vs:.v) (is:.i) = termStreamIndex a vs is :. termStreamIndex b v i
+  termStaticVar   (a:|b) (vs:.v) (is:.i) = termStaticVar   a vs is :. termStaticVar   b v i
+  termStreamIndex (a:|b) (vs:.v) (is:.i) = termStreamIndex a vs is :. termStreamIndex b v i
   {-# INLINE termStaticVar #-}
   {-# INLINE termStreamIndex #-}
 

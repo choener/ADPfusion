@@ -105,42 +105,43 @@ flag llvm
   manual:       True
 
 library
-  build-depends:
-    mmorph            == 1.0.*    ,
-    monad-primitive   == 0.1      ,
-    mtl               == 2.*      ,
-    primitive         == 0.5.*    ,
-    PrimitiveArray    == 0.6.*    ,
-    QuickCheck        == 2.*      ,
-    repa                          ,
-    strict            == 0.3.*    ,
-    template-haskell  == 2.*      ,
-    transformers      == 0.3.*    ,
-    tuple             == 0.3.*    ,
-    vector            == 0.10.*   ,
-    base              == 4.*
+  build-depends:  base              == 4.*
+               ,  mmorph            == 1.0.*
+               ,  monad-primitive   == 0.1
+               ,  mtl               == 2.*
+               ,  OrderedBits       == 0.0.0.1
+               ,  primitive         == 0.5.*
+               ,  PrimitiveArray    == 0.6.*
+               ,  QuickCheck        == 2.*
+               ,  repa
+               ,  strict            == 0.3.*
+               ,  template-haskell  == 2.*
+               ,  transformers      == 0.3.*
+               ,  tuple             == 0.3.*
+               ,  vector            == 0.10.*
   exposed-modules:
-    ADP.Fusion
-    ADP.Fusion.Apply
+--    ADP.Fusion
+--    ADP.Fusion.Apply
     ADP.Fusion.Chr
     ADP.Fusion.Classes
-    ADP.Fusion.Empty
-    ADP.Fusion.Multi
+    ADP.Fusion.Edge
+--    ADP.Fusion.Empty
+--    ADP.Fusion.Multi
     ADP.Fusion.Multi.Classes
---    ADP.Fusion.Multi.Empty
---    ADP.Fusion.Multi.GChr
---    ADP.Fusion.Multi.None
-    ADP.Fusion.None
---    ADP.Fusion.QuickCheck
---    ADP.Fusion.Region
-    ADP.Fusion.Table
-    ADP.Fusion.Table.Array
-    ADP.Fusion.Table.Axiom
-    ADP.Fusion.Table.Backtrack
-    ADP.Fusion.Table.Fill
-    ADP.Fusion.Table.Indices
-    ADP.Fusion.Table.Recursive
-    ADP.Fusion.TH
+----    ADP.Fusion.Multi.Empty
+----    ADP.Fusion.Multi.GChr
+----    ADP.Fusion.Multi.None
+--    ADP.Fusion.None
+----    ADP.Fusion.QuickCheck
+----    ADP.Fusion.Region
+--    ADP.Fusion.Table
+--    ADP.Fusion.Table.Array
+--    ADP.Fusion.Table.Axiom
+--    ADP.Fusion.Table.Backtrack
+--    ADP.Fusion.Table.Fill
+--    ADP.Fusion.Table.Indices
+--    ADP.Fusion.Table.Recursive
+--    ADP.Fusion.TH
 
   ghc-options:
     -O2 -funbox-strict-fields
