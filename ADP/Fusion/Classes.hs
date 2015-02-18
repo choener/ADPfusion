@@ -1,14 +1,15 @@
-{-# LANGUAGE MultiWayIf #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PatternGuards #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeSynonymInstances #-}
+{-# Language MultiWayIf #-}
+{-# Language LambdaCase #-}
+{-# Language BangPatterns #-}
+{-# Language DefaultSignatures #-}
+{-# Language FlexibleContexts #-}
+{-# Language FlexibleInstances #-}
+{-# Language MultiParamTypeClasses #-}
+{-# Language PatternGuards #-}
+{-# Language TypeFamilies #-}
+{-# Language TypeOperators #-}
+{-# Language TypeSynonymInstances #-}
+{-# Language StandaloneDeriving #-}
 
 module ADP.Fusion.Classes where
 
@@ -17,6 +18,7 @@ import           Data.Vector.Fusion.Stream.Size
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 import           Data.Bits
 
+import           Data.Bits.Ordered
 import           Data.PrimitiveArray -- (Z(..), (:.)(..), Subword(..), subword, PointL(..), PointR(..), Outside(..))
 
 import Debug.Trace
@@ -203,6 +205,8 @@ instance
   {-# INLINE getArg #-}
   {-# INLINE getIdx #-}
 
+deriving instance Show ix => Show (Elm S ix)
+
 -- | The instance for the bottom of a stack with subwords. In cases where we
 -- still need to check correctness of boundaries (i.e. @i==j@ in the
 -- bottom-most case), we use a 'staticCheck' which is promoted upward in the
@@ -281,9 +285,10 @@ instance (Monad m) => MkStream m S (BitSet:>Interface First:>Interface Last) whe
   -- these, @ci@ is fixed as one of the interface bits. The @cj@ interface
   -- is unimportant.
   mkStream S (Variable _ (Just k)) (BitSet zb:>Interface zi:>Interface zj) (BitSet cb:>Interface ci:>_)
-    = S.map (\(Z:.(b:>j)) -> ElmS (b:>Interface ci:>j))
+    = S.map (\(Z:.(BitSet b:>j)) -> ElmS (BitSet (movePopulation cb b):>Interface ci:>j))
+    $ S.filter (\(Z:.(BitSet b:>Interface j)) -> testBit b ci && (popCount b == 1 || ci /= j))
     $ S.takeWhile (\(Z:.(BitSet b:>_)) -> popCount b <= k)
-    $ streamUp (Z:.(BitSet (2^k):>Interface 0)) (Z:.(BitSet (2^(popCount cb)):>Interface 0))
+    $ streamUp (Z:.(BitSet (2^k-1):>Interface 0)) (Z:.(BitSet (2^(popCount cb)-1):>Interface 0))
   {-# INLINE mkStream #-}
 
 {-

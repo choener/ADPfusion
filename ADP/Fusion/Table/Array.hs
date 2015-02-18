@@ -49,8 +49,9 @@ import qualified Data.Vector.Generic as VG
 import qualified Data.Vector.Storable as VS
 import qualified Data.Vector.Unboxed as VU
 import           GHC.Exts
+import           Data.Bits
 
-import           Data.PrimitiveArray (Z(..), (:.)(..), Subword(..), subword, PointL(..), pointL, PointR(..), pointR,topmostIndex, Outside(..))
+import           Data.PrimitiveArray -- (Z(..), (:.)(..), Subword(..), subword, PointL(..), pointL, PointR(..), pointR,topmostIndex, Outside(..))
 import qualified Data.PrimitiveArray as PA
 
 import           ADP.Fusion.Classes
@@ -104,18 +105,72 @@ instance Element ls i => Element (ls :!: (BT (ITbl mF arr i x) mF mB r)) i where
 
 
 
-
+{-
 instance ModifyConstraint (ITbl m arr Subword x) where
   toNonEmpty (ITbl _ arr f) = ITbl NonEmpty arr f
   toEmpty    (ITbl _ arr f) = ITbl EmptyOk  arr f
   {-# INLINE toNonEmpty #-}
   {-# INLINE toEmpty #-}
+-}
 
+{-
 instance ModifyConstraint (BT (ITbl mF arr Subword x) mF mB r) where
   toNonEmpty (BtITbl _ arr bt) = BtITbl NonEmpty arr bt
   toEmpty    (BtITbl _ arr bt) = BtITbl EmptyOk  arr bt
   {-# INLINE toNonEmpty #-}
   {-# INLINE toEmpty #-}
+-}
+
+-- TODO empty table @ms@ stuff
+
+instance
+  ( Monad m
+  , Element ls (BS2I First Last)
+  , PA.PrimArrayOps arr (BS2I First Last) x
+  , MkStream m ls (BS2I First Last)
+  ) => MkStream m (ls :!: ITbl m arr (BS2I First Last) x) (BS2I First Last) where
+  -- outermost case. Grab inner indices, calculate the remainder of the
+  -- set, return value
+  mkStream (ls :!: ITbl c t _) Static s (BitSet b:>Interface i:>Interface j)
+    = S.map (\z -> let (BitSet zb:>_:>Interface zj) = getIdx z  -- the bitset we get from the guy before us
+                       here = (BitSet (b `xor` zb .|. zj):>Interface zj:>Interface j) -- everything missing, set common interface
+                   in  ElmITbl (t PA.! here) here z
+            )
+    $ mkStream ls (Variable Check Nothing) s (BitSet (clearBit b j):>Interface i:>Interface j)
+  -- generate all possible subsets of the index. With A @Variable
+  -- _ Nothing@, there is something to the right that will fill up the set.
+  mkStream (ls :!: ITbl c t _) (Variable Check Nothing) full (BitSet b:>Interface i:>Interface j)
+    = S.flatten mk step Unknown
+    $ mkStream ls (Variable Check Nothing) full (BitSet b:>Interface i:>Interface j)
+    where mk z = return (z,Just $ BitSet 0:>Interface 0:>Interface 0)
+          step (_,Nothing) = return $ S.Done
+          step (z,Just s ) = return $ S.Yield (ElmITbl (t PA.! s) s z) (z,succSet full s)
+          {-# Inline [0] mk   #-}
+          {-# Inline [0] step #-}
+  -- generate only those indices with the requested number of set bits
+  {-# Inline mkStream #-}
+
+instance
+  ( Monad mB
+  , Element ls (BS2I First Last)
+  , PA.PrimArrayOps arr (BS2I First Last) x
+  , MkStream mB ls (BS2I First Last)
+  ) => MkStream mB (ls :!: BT (ITbl mF arr (BS2I First Last) x) mF mB r) (BS2I First Last) where
+  mkStream (ls :!: BtITbl c arr bt) Static full (BitSet b:>Interface i:>Interface j)
+    = S.map (\z -> let (BitSet zb:>Interface zi:>Interface zj) = getIdx z
+                       here = BitSet (clearBit b j):>Interface i:>Interface zj
+                       d = arr PA.! here
+                   in ElmBtITbl' d (bt full here) here z)
+    $ mkStream ls (Variable Check Nothing) full (BitSet (clearBit b j):>Interface i:>Interface (-1))
+  mkStream (ls :!: BtITbl c arr bt) (Variable Check Nothing) full (BitSet b:>Interface i:>Interface j)
+    = S.flatten mk step Unknown
+    $ mkStream ls (Variable Check Nothing) full (BitSet b:>Interface i:>Interface j)
+    where mk z = return (z,Just $ BitSet 0:>Interface 0:>Interface 0)
+          step (_,Nothing) = return $ S.Done
+          step (z,Just s ) = return $ S.Yield (ElmBtITbl' (arr PA.! s) (bt full s) s z) (z,succSet full s)
+          {-# Inline [0] mk   #-}
+          {-# Inline [0] step #-}
+  {-# Inline mkStream #-}
 
 instance
   ( Monad m
@@ -183,6 +238,7 @@ instance
 -- anymore, this works! If we check @c@, we immediately have fusion
 -- breaking down!
 
+{-
 instance
   ( Monad m
   , Element ls Subword
@@ -217,7 +273,9 @@ instance
           {-# INLINE [1] step #-}
       in ms `seq` S.flatten mk step Unknown $ mkStream ls (Variable NoCheck Nothing) lu (subword i j)
   {-# INLINE mkStream #-}
+-}
 
+{-
 instance
   ( Monad mB
   , Element ls Subword
@@ -244,7 +302,9 @@ instance
           {-# INLINE [1] step #-}
       in  ms `seq` S.flatten mk step Unknown $ mkStream ls (Variable NoCheck Nothing) lu (subword i j)
   {-# INLINE mkStream #-}
+-}
 
+{-
 instance
   ( Monad m
   , Element ls (Outside Subword)
@@ -266,7 +326,9 @@ instance
           {-# INLINE [1] step #-}
       in ms `seq` S.flatten mk step Unknown $ mkStream ls (Variable NoCheck Nothing) lu (O $ subword i j)
   {-# INLINE mkStream #-}
+-}
 
+{-
 instance
   ( Monad m
   , Element ls (Outside Subword)
@@ -288,7 +350,7 @@ instance
           {-# INLINE [1] step #-}
       in ms `seq` S.flatten mk step Unknown $ mkStream ls (Variable NoCheck Nothing) lu (O $ subword i j)
   {-# INLINE mkStream #-}
-
+-}
 
 
 instance
@@ -325,8 +387,8 @@ instance
 
 -- * Axiom for backtracking
 
-instance (PA.ExtShape i, PA.PrimArrayOps arr i x) => Axiom (BT (ITbl mF arr i x) mF mB r) where
+instance (PA.PrimArrayOps arr i x) => Axiom (BT (ITbl mF arr i x) mF mB r) where
   type S (BT (ITbl mF arr i x) mF mB r) = mB (S.Stream mB r)
-  axiom (BtITbl c arr bt) = bt (error "missing bounds") . uncurry topmostIndex $ PA.bounds arr
+  axiom (BtITbl c arr bt) = bt (error "missing bounds") . Prelude.snd $ PA.bounds arr
   {-# INLINE axiom #-}
 

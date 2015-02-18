@@ -11,7 +11,7 @@ module ADP.Fusion.Table.Indices where
 import           Data.Vector.Fusion.Stream.Size (Size(Unknown))
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
-import           Data.PrimitiveArray (Z(..), (:.)(..), Subword(..), subword, PointL(..), pointL, PointR(..), pointR)
+import           Data.PrimitiveArray -- (Z(..), (:.)(..), Subword(..), subword, PointL(..), pointL, PointR(..), pointR)
 
 import           ADP.Fusion.Classes
 import           ADP.Fusion.Multi.Classes
@@ -25,6 +25,7 @@ instance TableIndices Z where
   tableIndices _ _ _ = id
   {-# INLINE tableIndices #-}
 
+{-
 instance TableIndices is => TableIndices (is:.Subword) where
   tableIndices (cs:.c) (vs:.Static) (is:.Subword (i:.j))
     = S.map (\(Tr s (x:.Subword (_:.l)) ys) -> Tr s x (is:.subword l j)) -- constraint handled: tableStreamIndex
@@ -42,6 +43,7 @@ instance TableIndices is => TableIndices (is:.Subword) where
           {-# INLINE [1] mk   #-}
           {-# INLINE [1] step #-}
   {-# INLINE tableIndices #-}
+-}
 
 instance TableIndices is => TableIndices (is:.PointL) where
   tableIndices (cs:.c) (vs:.Static) (is:.PointL (i:.j))
