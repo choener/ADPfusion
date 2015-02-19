@@ -45,7 +45,8 @@ data Chr r x where
 
 -- | smart constructor for regular 1-character parsers
 
-chr xs = Chr VG.unsafeIndex xs
+--chr xs = Chr VG.unsafeIndex xs
+chr xs = Chr (VG.!) xs
 {-# INLINE chr #-}
 
 -- | Smart constructor for Maybe Peeking, followed by a character.
@@ -202,21 +203,19 @@ instance
   {-# INLINE terminalStream #-}
 -}
 
-{-
 instance
   ( Monad m
   , TerminalStream m a is
   ) => TerminalStream m (TermSymbol a (Chr r x)) (is:.PointL) where
-  terminalStream (a:>Chr f (!v)) (sv:.Static) (is:.PointL (i:.j))
+  terminalStream (a:|Chr f (!v)) (sv:.Static) (is:.PointL (i:.j))
     = S.map (\(Qd s (z:._) is e) -> Qd s z (is:.pointL (j-1) j) (e:.f v (j-1)))
     . terminalStream a sv is
     . S.map (\(Tr s z (is:.i)) -> Tr s (z:.i) is)
-  terminalStream (a:>Chr f (!v)) (sv:._) (is:.PointL (i:.j))
+  terminalStream (a:|Chr f (!v)) (sv:._) (is:.PointL (i:.j))
     = S.map (\(Qd s (z:.PointL (k:.l)) is e) -> Qd s z (is:.pointL l (l+1)) (e:.f v (l-1)))
     . terminalStream a sv is
     . S.map (\(Tr s z (is:.i)) -> Tr s (z:.i) is)
   {-# INLINE terminalStream #-}
--}
 
 {-
 instance

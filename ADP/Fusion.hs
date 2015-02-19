@@ -48,7 +48,7 @@ import           ADP.Fusion.Table.Axiom (axiom)
 import           ADP.Fusion.Table.Fill
 import           ADP.Fusion.TH
 
-import           Data.Array.Repa.Index.Subword
+--import           Data.Array.Repa.Index.Subword
 import qualified Data.Vector.Unboxed as VU
 
 import           Data.PrimitiveArray

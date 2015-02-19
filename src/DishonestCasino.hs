@@ -136,11 +136,11 @@ runCasino is = (d,db,vh,vd) where
   d = unId $ axiom st
   (Z:.thb:.tdb:.stb) = runBackward n i
   db = unId $ axiom stb
-  vh = let ITbl _ (Unboxed _ vf) _ = th
-           ITbl _ (Unboxed _ vb) _ = thb
+  vh = let ITbl _ (Unboxed _ _ vf) _ = th
+           ITbl _ (Unboxed _ _ vb) _ = thb
        in  VU.zipWith (\x y -> x * y / d) vf vb
-  vd = let ITbl _ (Unboxed _ vf) _ = td
-           ITbl _ (Unboxed _ vb) _ = tdb
+  vd = let ITbl _ (Unboxed _ _ vf) _ = td
+           ITbl _ (Unboxed _ _ vb) _ = tdb
        in  VU.zipWith (\x y -> x * y / d) vf vb
 {-# NOINLINE runCasino #-}
 

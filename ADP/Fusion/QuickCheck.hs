@@ -365,30 +365,9 @@ prop_2dimCMCMC ix@(Z:.TinySubword(i:.j):.TinySubword(k:.l)) = monadicIO $ do
 
 -- * working on 'PointL's
 
-prop_P_Tt ix@(Z:.PointL (i:.j)) = zs == ls where
-  zs = id <<< (M:>chr xs) ... S.toList $ ix
-  ls = [ (Z:.xs VU.! i) | i+1==j ]
-
-prop_P_CC ix@(Z:.PointL (i:.j)) = zs == ls where
-  zs = (,) <<< (M:>chr xs) % (M:>chr xs) ... S.toList $ ix
-  ls = [ (Z:.xs VU.! i, Z:.xs VU.! (i+1)) | i+2==j ]
-
 -- |
 --
 -- TODO need to synchronize the constraints in @ls@ and in 'PointL'
-
-prop_P_2dimMtCC ix@(Z:.PointL(i:.j):.PointL(k:.l)) = monadicIO $ do
---  let ix@(Z:.PointL(i:.j):.PointL(k:.l)) = (Z:.pointL 0 3:.pointL 0 3)
-  mxs <- run $ pure $ mxsPP
-  let mt = MTbl (Z:.EmptyOk:.EmptyOk) mxs (const $ return undefined)
-  zs <- run $ (,,) <<< mt % (M:>chr xs:>chr xs) % (M:>chr xs:>chr xs) ... SM.toList $ ix
-  ls <- run $ sequence $ [ liftM3 (,,)   (PA.readM mxs (Z:.pointL i (j-2):.pointL k (l-2)))
-                                         (pure $ Z:.xs VU.! (j-2):.xs VU.! (l-2))
-                                         (pure $ Z:.xs VU.! (j-1):.xs VU.! (l-1))
-                         | j-i>=2, l-k>=2, i==0, j<=100, k==0, l<=100] --, a<-[i+1..j-2], b<-[k+1..l-2] ]
-  if zs==ls
-    then assert $ zs==ls
-    else traceShow (zs,ls) $ assert False
 
 -- |
 --
@@ -433,10 +412,6 @@ xs = VU.fromList [0 .. 99 :: Int]
 mxsSwSw = unsafePerformIO $ zzz where
   zzz :: IO (PA.MutArr IO (PA.Unboxed (Z:.Subword:.Subword) Int))
   zzz = PA.fromListM (Z:.subword 0 0:.subword 0 0) (Z:.subword 0 100:.subword 0 100) [0 ..]
-
-mxsPP = unsafePerformIO $ zzz where
-  zzz :: IO (PA.MutArr IO (PA.Unboxed (Z:.PointL:.PointL) Int))
-  zzz = PA.fromListM (Z:.pointL 0 0:.pointL 0 0) (Z:.pointL 0 100:.pointL 0 100) [0 ..]
 
 
 

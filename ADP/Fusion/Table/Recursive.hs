@@ -18,9 +18,9 @@ import           Data.Strict.Tuple
 import           Data.Vector.Fusion.Stream.Size (Size(Unknown))
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
-import           Data.Array.Repa.ExtShape (topmostIndex, ExtShape)
-import           Data.Array.Repa.Index.Subword
-import           Data.PrimitiveArray ((:.)(..))
+--import           Data.Array.Repa.ExtShape (topmostIndex, ExtShape)
+--import           Data.Array.Repa.Index.Subword
+import           Data.PrimitiveArray -- ((:.)(..))
 
 import           ADP.Fusion.Classes
 import           ADP.Fusion.Table.Axiom
@@ -65,6 +65,7 @@ instance Element ls i => Element (ls :!: (BT (IRec mF i x) mF mB r)) i where
   {-# INLINE getArg #-}
   {-# INLINE getIdx #-}
 
+{-
 instance ModifyConstraint (IRec m Subword x) where
   toNonEmpty (IRec _ iF iT f) = IRec NonEmpty iF iT f
   toEmpty    (IRec _ iF iT f) = IRec EmptyOk  iF iT f
@@ -117,11 +118,12 @@ instance
           {-# INLINE [1] step #-}
       in ms `seq` S.flatten mk step Unknown $ mkStream ls (Variable NoCheck Nothing) lu (subword i j)
   {-# INLINE mkStream #-}
+-}
 
-instance (ExtShape i) => Axiom (IRec m i x) where
+instance Axiom (IRec m i x) where
   type S (IRec m i x) = m x
   axiom (IRec c l h f) =
-    let top = topmostIndex l h
+    let top = h -- topmostIndex l h -- TODO need topmostIndex in 'Index' in PrimitiveArray to figure this out for inside/outside selection
     in  f top top -- the first @h@ are the total bounds, the second the call to the biggest index
   {-# INLINE axiom #-}
 

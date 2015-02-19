@@ -387,8 +387,10 @@ instance
 
 -- * Axiom for backtracking
 
-instance (PA.PrimArrayOps arr i x) => Axiom (BT (ITbl mF arr i x) mF mB r) where
+instance (PA.PrimArrayOps arr i x, Monad mB, IndexStream i) => Axiom (BT (ITbl mF arr i x) mF mB r) where
   type S (BT (ITbl mF arr i x) mF mB r) = mB (S.Stream mB r)
-  axiom (BtITbl c arr bt) = bt (error "missing bounds") . Prelude.snd $ PA.bounds arr
+  axiom (BtITbl c arr bt) = do
+    h <- (S.head . uncurry streamDown) $ PA.bounds arr
+    bt h h
   {-# INLINE axiom #-}
 

@@ -20,7 +20,7 @@ import           System.IO.Unsafe
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import           GHC.Exts (inline)
 
-import           Data.PrimitiveArray (Z(..), (:.)(..), Subword(..), Outside(..))
+import           Data.PrimitiveArray -- (Z(..), (:.)(..), Subword(..), Outside(..))
 import qualified Data.PrimitiveArray as PA
 
 import           ADP.Fusion.Table
@@ -126,10 +126,12 @@ instance
   , MutateCell (ts:.ITbl im arr i x) im om i
   , PA.PrimArrayOps arr i x
   , Show i
+  , IndexStream i
   ) => MutateTables (ts:.ITbl im arr i x) im om where
   mutateTables mrph tt@(_:.ITbl _ arr _) = do
     let (from,to) = PA.bounds arr
-    SM.mapM_ (mutateCell (inline mrph) tt to) $ PA.rangeStream from to -- TODO check the @to@ part
+    -- SM.mapM_ (mutateCell (inline mrph) tt to) $ PA.rangeStream from to -- TODO check the @to@ part
+    SM.mapM_ (mutateCell (inline mrph) tt to) $ PA.streamUp from to -- TODO check the @to@ part
     return tt
   {-# INLINE mutateTables #-}
 
@@ -137,10 +139,11 @@ instance
 instance
   ( Monad om
   , MutateCell (ts:.IRec im i x) im om i
-  , PA.ExtShape i
+  , IndexStream i
   ) => MutateTables (ts:.IRec im i x) im om where
   mutateTables mrph tt@(_:.IRec _ from to _) = do
-    SM.mapM_ (mutateCell (inline mrph) tt to) $ PA.rangeStream from to
+    -- SM.mapM_ (mutateCell (inline mrph) tt to) $ PA.rangeStream from to
+    SM.mapM_ (mutateCell (inline mrph) tt to) $ PA.streamUp from to
     return tt
   {-# INLINE mutateTables #-}
 

@@ -120,28 +120,29 @@ library
                ,  tuple             == 0.3.*
                ,  vector            == 0.10.*
   exposed-modules:
---    ADP.Fusion
---    ADP.Fusion.Apply
+    ADP.Fusion
+    ADP.Fusion.Apply
     ADP.Fusion.Chr
     ADP.Fusion.Classes
     ADP.Fusion.Edge
---    ADP.Fusion.Empty
+    ADP.Fusion.Empty
 --    ADP.Fusion.Multi
     ADP.Fusion.Multi.Classes
 ----    ADP.Fusion.Multi.Empty
 ----    ADP.Fusion.Multi.GChr
 ----    ADP.Fusion.Multi.None
---    ADP.Fusion.None
+    ADP.Fusion.None
+    ADP.Fusion.QuickCheck.Point
 ----    ADP.Fusion.QuickCheck
 ----    ADP.Fusion.Region
---    ADP.Fusion.Table
+    ADP.Fusion.Table
     ADP.Fusion.Table.Array
---    ADP.Fusion.Table.Axiom
---    ADP.Fusion.Table.Backtrack
---    ADP.Fusion.Table.Fill
+    ADP.Fusion.Table.Axiom
+    ADP.Fusion.Table.Backtrack
+    ADP.Fusion.Table.Fill
     ADP.Fusion.Table.Indices
---    ADP.Fusion.Table.Recursive
---    ADP.Fusion.TH
+    ADP.Fusion.Table.Recursive
+    ADP.Fusion.TH
 
   ghc-options:
     -O2 -funbox-strict-fields
@@ -174,118 +175,118 @@ executable NeedlemanWunsch
       -optlo-O3 -optlo-std-compile-opts
       -fllvm-tbaa
 
-executable Nussinov
-  if flag(examples)
-    buildable:
-      True
-    build-depends:
-      ADPfusion         ,
-      PrimitiveArray    ,
-      template-haskell  ,
-      vector            ,
-      base
-  else
-    buildable:
-      False
-  hs-source-dirs:
-    src
-  main-is:
-    Nussinov.hs
-  ghc-options:
-    -O2
-    -funbox-strict-fields
-    -funfolding-use-threshold1000
-    -funfolding-keeness-factor1000
-  if flag(llvm)
-    ghc-options:
-      -fllvm
-      -optlo-O3 -optlo-std-compile-opts
-      -fllvm-tbaa
+--executable Nussinov
+--  if flag(examples)
+--    buildable:
+--      True
+--    build-depends:
+--      ADPfusion         ,
+--      PrimitiveArray    ,
+--      template-haskell  ,
+--      vector            ,
+--      base
+--  else
+--    buildable:
+--      False
+--  hs-source-dirs:
+--    src
+--  main-is:
+--    Nussinov.hs
+--  ghc-options:
+--    -O2
+--    -funbox-strict-fields
+--    -funfolding-use-threshold1000
+--    -funfolding-keeness-factor1000
+--  if flag(llvm)
+--    ghc-options:
+--      -fllvm
+--      -optlo-O3 -optlo-std-compile-opts
+--      -fllvm-tbaa
 
-executable TwoNussinov
-  if flag(examples)
-    buildable:
-      True
-    build-depends:
-      ADPfusion         ,
-      PrimitiveArray    ,
-      template-haskell  ,
-      vector            ,
-      base
-  else
-    buildable:
-      False
-  hs-source-dirs:
-    src
-  main-is:
-    TwoNussinov.hs
-  ghc-options:
-    -O2
-    -funbox-strict-fields
-    -funfolding-use-threshold1000
-    -funfolding-keeness-factor1000
-  if flag(llvm)
-    ghc-options:
-      -fllvm
-      -optlo-O3 -optlo-std-compile-opts
-      -fllvm-tbaa
+--executable TwoNussinov
+--  if flag(examples)
+--    buildable:
+--      True
+--    build-depends:
+--      ADPfusion         ,
+--      PrimitiveArray    ,
+--      template-haskell  ,
+--      vector            ,
+--      base
+--  else
+--    buildable:
+--      False
+--  hs-source-dirs:
+--    src
+--  main-is:
+--    TwoNussinov.hs
+--  ghc-options:
+--    -O2
+--    -funbox-strict-fields
+--    -funfolding-use-threshold1000
+--    -funfolding-keeness-factor1000
+--  if flag(llvm)
+--    ghc-options:
+--      -fllvm
+--      -optlo-O3 -optlo-std-compile-opts
+--      -fllvm-tbaa
 
-executable MemoRecNussinov
-  if flag(examples)
-    buildable:
-      True
-    build-depends:
-      ADPfusion         ,
-      PrimitiveArray    ,
-      template-haskell  ,
-      vector            ,
-      base
-  else
-    buildable:
-      False
-  hs-source-dirs:
-    src
-  main-is:
-    MemoRecNussinov.hs
-  ghc-options:
-    -O2
-    -funbox-strict-fields
-    -funfolding-use-threshold1000
-    -funfolding-keeness-factor1000
-  if flag(llvm)
-    ghc-options:
-      -fllvm
-      -optlo-O3 -optlo-std-compile-opts
-      -fllvm-tbaa
+--executable MemoRecNussinov
+--  if flag(examples)
+--    buildable:
+--      True
+--    build-depends:
+--      ADPfusion         ,
+--      PrimitiveArray    ,
+--      template-haskell  ,
+--      vector            ,
+--      base
+--  else
+--    buildable:
+--      False
+--  hs-source-dirs:
+--    src
+--  main-is:
+--    MemoRecNussinov.hs
+--  ghc-options:
+--    -O2
+--    -funbox-strict-fields
+--    -funfolding-use-threshold1000
+--    -funfolding-keeness-factor1000
+--  if flag(llvm)
+--    ghc-options:
+--      -fllvm
+--      -optlo-O3 -optlo-std-compile-opts
+--      -fllvm-tbaa
 
-executable Durbin
-  if flag(examples)
-    buildable:
-      True
-    build-depends:
-      ADPfusion         ,
-      PrimitiveArray    ,
-      template-haskell  ,
-      vector            ,
-      base
-  else
-    buildable:
-      False
-  hs-source-dirs:
-    src
-  main-is:
-    Durbin.hs
-  ghc-options:
-    -Odph
-    -fcpr-off
-    -funbox-strict-fields
-    -funfolding-use-threshold1000
-    -funfolding-keeness-factor1000
-  if flag(llvm)
-    ghc-options:
-      -fllvm
-      -optlo-O3 -optlo-std-compile-opts
-      -fllvm-tbaa
+--executable Durbin
+--  if flag(examples)
+--    buildable:
+--      True
+--    build-depends:
+--      ADPfusion         ,
+--      PrimitiveArray    ,
+--      template-haskell  ,
+--      vector            ,
+--      base
+--  else
+--    buildable:
+--      False
+--  hs-source-dirs:
+--    src
+--  main-is:
+--    Durbin.hs
+--  ghc-options:
+--    -Odph
+--    -fcpr-off
+--    -funbox-strict-fields
+--    -funfolding-use-threshold1000
+--    -funfolding-keeness-factor1000
+--  if flag(llvm)
+--    ghc-options:
+--      -fllvm
+--      -optlo-O3 -optlo-std-compile-opts
+--      -fllvm-tbaa
 
 executable DishonestCasino
   if flag(examples)

@@ -28,7 +28,7 @@ import           Data.Strict.Tuple
 import           Prelude hiding (Maybe(..))
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
-import           Data.PrimitiveArray (Z(..), (:.)(..), Subword(..), subword, PointL(..), pointL, PointR(..), pointR, Outside(..))
+import           Data.PrimitiveArray -- (Z(..), (:.)(..), Subword(..), subword, PointL(..), pointL, PointR(..), pointR, Outside(..))
 
 import           ADP.Fusion.Classes
 import           ADP.Fusion.Multi.Classes
@@ -76,6 +76,7 @@ instance
 -- use 'staticCheck' as the underlying check for the bottom of the argument
 -- stack should take care of the @i==j@ check.
 
+{-
 instance
   ( Monad m
   , MkStream m ls Subword
@@ -95,6 +96,7 @@ instance
     $ mkStream ls Static lu (O $ subword i j)
   mkStream _ _ _ _ = error "mkStream Empty/Subword called with illegal parameters"
   {-# INLINE mkStream #-}
+-}
 
 type instance TermArg (TermSymbol a Empty) = TermArg a :. ()
 
@@ -104,9 +106,11 @@ instance TermStaticVar Empty PointL where
   {-# INLINE termStaticVar #-}
   {-# INLINE termStreamIndex #-}
 
+{-
 instance TermStaticVar Empty Subword where
     termStaticVar = error "write me"
     termStreamIndex = error "write me"
+-}
 
 -- | Again, we assume that no 'staticCheck' is necessary and that @i==j@ is
 -- true.
@@ -115,13 +119,14 @@ instance
   ( Monad m
   , TerminalStream m a is
   ) => TerminalStream m (TermSymbol a Empty) (is:.PointL) where
-  terminalStream (a:>Empty) (sv:.Static) (is:.PointL (i:.j))
+  terminalStream (a:|Empty) (sv:.Static) (is:.PointL (i:.j))
     = S.map (\(Qd s (z:.i) is e) -> Qd s z (is:.i) (e:.()))
     . terminalStream a sv is
     . S.map moveIdxTr
   terminalStream _ _ _ = error "mkStream Empty/(is:.PointL) called with illegal parameters"
   {-# INLINE terminalStream #-}
 
+{-
 instance
     ( Monad m
     , TerminalStream m a is
@@ -132,5 +137,5 @@ instance
         . S.map moveIdxTr
       terminalStream _ _ _ = error "mkStream Empty/(is:.Subword) called with illegal parameters"
       {-# INLINE terminalStream #-}
-
+-}
 

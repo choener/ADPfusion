@@ -13,7 +13,7 @@ import           Data.Strict.Tuple
 import           Prelude hiding (Maybe(..))
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
-import           Data.PrimitiveArray (Z(..), (:.)(..), Subword(..), subword, PointL(..), pointL, PointR(..), pointR)
+import           Data.PrimitiveArray -- (Z(..), (:.)(..), Subword(..), subword, PointL(..), pointL, PointR(..), pointR)
 
 import           ADP.Fusion.Classes
 import           ADP.Fusion.Multi.Classes
@@ -43,7 +43,7 @@ instance
   ( Monad m
   , TerminalStream m a is
   ) => TerminalStream m (TermSymbol a None) (is:.PointL) where
-  terminalStream (a:>None) (sv:._) (is:._)
+  terminalStream (a:|None) (sv:._) (is:._)
     = S.map (\(Qd s (z:.i) is e) -> Qd s z (is:.i) (e:.()))
     . terminalStream a sv is
     . S.map moveIdxTr
@@ -53,6 +53,7 @@ instance
 
 -- * Single dimensional instances for 'None' are really weird
 
+{-
 instance Element ls Subword => Element (ls :!: None) Subword where
   data Elm (ls :!: None) Subword = ElmNone !Subword !(Elm ls Subword)
   type Arg (ls :!: None)         = Arg ls :. ()
@@ -60,10 +61,12 @@ instance Element ls Subword => Element (ls :!: None) Subword where
   getIdx (ElmNone i _) = i
   {-# INLINE getArg #-}
   {-# INLINE getIdx #-}
+-}
 
 -- | The instance does nothing (except insert @()@ into the argument
 -- stack).
 
+{-
 instance
   ( Monad m
   , MkStream m ls Subword
@@ -72,4 +75,5 @@ instance
     = S.map (ElmNone ij)
     $ mkStream ls sv lu ij
   {-# INLINE mkStream #-}
+-}
 
