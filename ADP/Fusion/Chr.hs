@@ -81,8 +81,8 @@ instance
   ) => MkStream m (ls :!: Chr r x) PointL where
   mkStream (ls :!: Chr f xs) Static lu@(PointL (l:.u)) (PointL (i:.j))
     = staticCheck (j>l && j>0 && j<=u && j<= VG.length xs) $
-      let !z = f xs (j-1) -- extract [j-1 , j]
-      in  S.map (ElmChr z (pointL (j-1) j))
+      let !z = () -- f xs (j-1) -- let-floating leads to too early evaluation
+      in  S.map (ElmChr (f xs $ j-1) (pointL (j-1) j))
           $ mkStream ls Static lu (pointL i $ j-1)
 --  mkStream _ _ _ _ = error "mkStream / Chr / PointL not implemented"
   {-# INLINE mkStream #-}
