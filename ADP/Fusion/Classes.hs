@@ -62,6 +62,17 @@ instance Show v => Show (StaticVariable v) where
   show (Variable cb Nothing) = "Variable " ++ show cb
   show (Variable cb (Just v)) = "Variable " ++ show cb ++ " " ++ show v
 
+-- | 'mkStream' needs to know the current context within the sequence of
+-- symbols.
+
+data CurrentContext
+  -- |
+  = Outermost
+  -- |
+  | RightOfHole
+  -- |
+  | LeftOfHole
+
 -- | @IxStaticVar@ allows us to connect each type of index with variants of
 -- @StaticVariable@ stacks. This is important for multi-dimensional grammars,
 -- as they have different static/variable behaviour for each dimension.
