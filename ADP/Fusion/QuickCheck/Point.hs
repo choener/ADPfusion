@@ -61,6 +61,13 @@ prop_2dimItCC ix@(Z:.PointL(i:.j):.PointL(k:.l)) = zs == ls where
 
 -- | left-linear outside grammar
 
+prop_O_It ix@(O (PointL(i:.j))) = zs == ls where
+  t = ITbl EmptyOk xsPo (\ _ _ -> Id 1)
+  zs = (id <<< t ... S.toList) (O $ pointL 0 0) ix
+  ls = [ unsafeIndex xsPo (O $ pointL i j) | j-i>=0, i==0, j<=100 ]
+
+-- | left-linear outside grammar
+
 prop_O_ItC ix@(O (PointL(i:.j))) = zs == ls where
   t = ITbl EmptyOk xsPo (\ _ _ -> Id 1)
   zs = ((,) <<< t % chr xs ... S.toList) (O $ pointL 0 0) ix
