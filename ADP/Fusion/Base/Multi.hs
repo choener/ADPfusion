@@ -59,6 +59,12 @@ instance
 class TerminalStream m t i where
   terminalStream :: t -> Context i -> i -> S.Stream m (S5 s j j i i) -> S.Stream m (S6 s j j i i (TermArg t))
 
+iPackTerminalStream a sv    (is:.i)  = terminalStream a sv is     . S.map (\(S5 s zi zo    (is:.i)     (os:.o) ) -> S5 s (zi:.i) (zo:.o)    is     os )
+{-# Inline iPackTerminalStream #-}
+
+oPackTerminalStream a sv (O (is:.i)) = terminalStream a sv (O is) . S.map (\(S5 s zi zo (O (is:.i)) (O (os:.o))) -> S5 s (zi:.i) (zo:.o) (O is) (O os))
+{-# Inline oPackTerminalStream #-}
+
 instance (Monad m) => TerminalStream m M Z where
   terminalStream M _ Z = S.map (\(S5 s j1 j2 Z Z) -> S6 s j1 j2 Z Z Z)
   {-# INLINE terminalStream #-}

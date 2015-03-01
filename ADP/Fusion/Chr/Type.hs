@@ -32,7 +32,7 @@ data Chr r x where
 
 --chr xs = Chr VG.unsafeIndex xs
 chr xs = Chr (VG.!) xs
-{-# INLINE chr #-}
+{-# Inline chr #-}
 
 -- | Smart constructor for Maybe Peeking, followed by a character.
 
@@ -40,8 +40,8 @@ chrLeft xs = Chr f xs where
   f xs k = ( xs VG.!? (k-1)
            , VG.unsafeIndex xs k
            )
-  {-# INLINE [1] f #-}
-{-# INLINE chrLeft #-}
+  {-# Inline [1] f #-}
+{-# Inline chrLeft #-}
 
 instance Build (Chr r x)
 
@@ -53,8 +53,9 @@ instance
     getArg (ElmChr x _ _ ls) = getArg ls :. x
     getIdx (ElmChr _ i _ _ ) = i
     getOmx (ElmChr _ _ o _ ) = o
-    {-# INLINE getArg #-}
-    {-# INLINE getIdx #-}
+    {-# Inline getArg #-}
+    {-# Inline getIdx #-}
+    {-# Inline getOmx #-}
 
 type instance TermArg (TermSymbol a (Chr r x)) = TermArg a :. r
 

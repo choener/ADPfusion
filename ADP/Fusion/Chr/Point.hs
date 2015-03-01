@@ -57,14 +57,20 @@ instance
   ( Monad m
   , TerminalStream m a is
   ) => TerminalStream m (TermSymbol a (Chr r x)) (is:.PointL) where
-  terminalStream (a:|Chr f (!v)) (sv:.IStatic) (is:.PointL j)
+  terminalStream (a:|Chr f (!v)) (sv:.IStatic) (is:.i@(PointL j))
     = S.map (\(S6 s (zi:._) (zo:._) is os e) -> S6 s zi zo (is:.PointL j) (os:.PointL 0) (e:.f v (j-1)))
+    . iPackTerminalStream a sv (is:.i)
+    {-
     . terminalStream a sv is
     . S.map (\(S5 s zi zo (is:.i) (os:.o)) -> S5 s (zi:.i) (zo:.o) is os)
-  terminalStream (a:|Chr f (!v)) (sv:._) (is:.PointL i)
+    -}
+  terminalStream (a:|Chr f (!v)) (sv:._) (is:.i@(PointL _))
     = S.map (\(S6 s (zi:.PointL k) (zo:.PointL l) is os e) -> S6 s zi zo (is:.PointL (k+1)) (os:.PointL 0) (e:.f v (l-1)))
+    . iPackTerminalStream a sv (is:.i)
+    {-
     . terminalStream a sv is
     . S.map (\(S5 s zi zo (is:.i) (os:.o)) -> S5 s (zi:.i) (zo:.o) is os)
+    -}
   {-# INLINE terminalStream #-}
 
 instance
@@ -72,10 +78,13 @@ instance
   , TerminalStream m a (Outside is)
   , Context (Outside (is:.PointL)) ~ (Context (Outside is) :. OutsideContext Int)
   ) => TerminalStream m (TermSymbol a (Chr r x)) (Outside (is:.PointL)) where
-  terminalStream (a:|Chr f (!v)) (sv:.OStatic d) (O (is:.PointL j))
+  terminalStream (a:|Chr f (!v)) (sv:.OStatic d) (O (is:.i))
     = S.map (\(S6 s (zi:._) (zo:.(PointL k)) (O is) (O os) e) -> S6 s zi zo (O (is:.(PointL $ k-d))) (O (os:.PointL k)) (e:.f v (k-d-1)))
+    . oPackTerminalStream a sv (O (is:.i))
+    {-
     . terminalStream a sv (O is)
     . S.map (\(S5 s zi zo (O (is:.i)) (O (os:.o))) -> S5 s (zi:.i) (zo:.o) (O is) (O os))
+    -}
   {-
   terminalStream (a:|Chr f (!v)) (sv:._) (is:.PointL i)
     = S.map (\(S6 s (zi:.PointL k) (zo:.PointL l) is os e) -> S6 s zi zo (is:.PointL (k+1)) (os:.PointL 0) (e:.f v (l-1)))

@@ -22,6 +22,26 @@ import ADP.Fusion
 
 
 
+prop_Empty ix@(PointL j) = zs == ls where
+  zs = (id <<< Empty ... S.toList) (PointL 100) ix
+  ls = [ () | j == 0 ]
+
+prop_O_Empty ix@(O (PointL j)) = zs == ls where
+  zs = (id <<< Empty ... S.toList) (O (PointL 100)) ix
+  ls = [ () | j == 100 ]
+
+prop_ZEmpty ix@(Z:.PointL j) = zs == ls where
+  zs = (id <<< (M:|Empty) ... S.toList) (Z:.PointL 100) ix
+  ls = [ Z:.() | j == 0 ]
+
+prop_O_ZEmpty ix@(O (Z:.PointL j)) = zs == ls where
+  zs = (id <<< (M:|Empty) ... S.toList) (O (Z:.PointL 100)) ix
+  ls = [ Z:.() | j == 100 ]
+
+prop_O_ZEmptyEmpty ix@(O (Z:.PointL j:.PointL l)) = zs == ls where
+  zs = (id <<< (M:|Empty:|Empty) ... S.toList) (O (Z:.PointL 100:.PointL 100)) ix
+  ls = [ Z:.():.() | j == 100, l == 100 ]
+
 -- | A single character terminal
 
 prop_Tt ix@(Z:.PointL j) = zs == ls where
@@ -85,6 +105,7 @@ prop_O_ItCC ix@(O (PointL j)) = zs == ls where
          , xs VU.! (j+0)
          , xs VU.! (j+1)
          ) | j >= 0, j <= 98 ]
+{-# Noinline prop_O_ItCC #-}
 
 prop_O_ZItCC ix@(O (Z:.PointL j)) = zs == ls where
   t = ITbl (Z:.EmptyOk) xsZPo (\ _ _ -> Id 1)
@@ -170,7 +191,7 @@ xs = VU.fromList [0 .. 99 :: Int]
 
 -- * general quickcheck stuff
 
-options = stdArgs {maxSuccess = 10000}
+options = stdArgs {maxSuccess = 1000}
 
 customCheck = quickCheckWithResult options
 

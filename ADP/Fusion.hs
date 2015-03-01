@@ -24,13 +24,10 @@ module ADP.Fusion
   , module ADP.Fusion.Apply
   , module ADP.Fusion.Base
   , module ADP.Fusion.Chr
+  , module ADP.Fusion.Empty
   , module ADP.Fusion.Table
   , module ADP.Fusion.TH
---  , module ADP.Fusion.Classes
---  , module ADP.Fusion.Empty
---  , module ADP.Fusion.Multi.Classes
 --  , module ADP.Fusion.None
---  , module ADP.Fusion.Table
 --  , module ADP.Fusion.Table.Axiom
 --  , module ADP.Fusion.Table.Fill
 --  , module ADP.Fusion.TH
@@ -41,13 +38,13 @@ import           GHC.Exts (inline)
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
 import           ADP.Fusion.Apply
-import           ADP.Fusion.Chr
 import           ADP.Fusion.Base
+import           ADP.Fusion.Chr
+import           ADP.Fusion.Empty
 import           ADP.Fusion.Table
 import           ADP.Fusion.TH
 
 --import           ADP.Fusion.Classes
---import           ADP.Fusion.Empty
 --import           ADP.Fusion.Multi.Classes
 --import           ADP.Fusion.None
 --import           ADP.Fusion.Table

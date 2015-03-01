@@ -37,7 +37,7 @@ instance (Monad m) => MkStream m S PointL where
 
 instance (Monad m) => MkStream m S (Outside PointL) where
   mkStream S (OStatic d) (O (PointL u)) (O (PointL i))
-    = staticCheck (i>=0 && i+d<=u) . singleton $ ElmS (O $ PointL i) (O . PointL $ i+d)
+    = staticCheck (i>=0 && i+d<=u && u == i) . singleton $ ElmS (O $ PointL i) (O . PointL $ i+d)
   mkStream S (OVariable FarLeft d) (O (PointL u)) (O (PointL i))
     = staticCheck (i>=0 && i+d<=u) . singleton $ ElmS (O $ PointL i) (O . PointL $ i+d)
   {-# Inline mkStream #-}
@@ -63,7 +63,7 @@ instance
   , Context (Outside (is:.PointL)) ~ (Context (Outside is) :. OutsideContext Int)
   ) => MkStream m S (Outside (is:.PointL)) where
   mkStream S (vs:.OStatic d) (O (lus:.PointL u)) (O (is:.PointL i))
-    = staticCheck (i>=0 && i+d<=u)
+    = staticCheck (i>=0 && i+d == u)
     . map (\(ElmS (O zi) (O zo)) -> ElmS (O (zi:.PointL i)) (O (zo:.(PointL $ i+d))))
     $ mkStream S vs (O lus) (O is)
   mkStream S (vs:.OVariable FarLeft d) (O (us:.PointL u)) (O (is:.PointL i))

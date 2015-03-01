@@ -22,3 +22,5 @@ instance (Element ls i) => Element (ls :!: Empty) i where
   {-# INLINE getArg #-}
   {-# INLINE getIdx #-}
 
+type instance TermArg (TermSymbol a Empty) = TermArg a :. ()
+
