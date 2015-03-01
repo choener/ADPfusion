@@ -1,4 +1,14 @@
 
+module ADP.Fusion.Table.Array
+  ( module ADP.Fusion.Table.Array.Type
+  , module ADP.Fusion.Table.Array.Point
+  ) where
+
+import ADP.Fusion.Table.Array.Point
+import ADP.Fusion.Table.Array.Type
+
+{-
+
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -41,10 +51,8 @@ module ADP.Fusion.Table.Array
 
 import           Control.Exception(assert)
 import           Control.Monad.Primitive (PrimMonad)
-import           Data.Strict.Tuple hiding (uncurry)
 import           Data.Vector.Fusion.Stream.Size (Size(Unknown))
 import qualified Data.Vector as V
-import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Generic as VG
 import qualified Data.Vector.Storable as VS
 import qualified Data.Vector.Unboxed as VU
@@ -66,14 +74,6 @@ import           Debug.Trace
 
 -- ** Mutable fill-phase tables.
 
--- | Immutable table.
-
-data ITbl m arr i x where
-  ITbl :: { iTblConstraint :: !(TblConstraint i)
-          , iTblArray      :: !(arr i x)
-          , iTblFun        :: !(i -> i -> m x)
-          } -> ITbl m arr i x
-
 -- | The backtracking version.
 
 instance ToBT (ITbl mF arr i x) mF mB r where
@@ -84,16 +84,6 @@ instance ToBT (ITbl mF arr i x) mF mB r where
   {-# INLINE toBT #-}
 
 
-instance Build (ITbl m arr i x)
-
-
-instance Element ls i => Element (ls :!: ITbl m arr j x) i where
-  data Elm (ls :!: ITbl m arr j x) i = ElmITbl !x !i !(Elm ls i)
-  type Arg (ls :!: ITbl m arr j x)   = Arg ls :. x
-  getArg (ElmITbl x _ ls) = getArg ls :. x
-  getIdx (ElmITbl _ i _ ) = i
-  {-# INLINE getArg #-}
-  {-# INLINE getIdx #-}
 
 instance Element ls i => Element (ls :!: (BT (ITbl mF arr i x) mF mB r)) i where
   data Elm (ls :!: (BT (ITbl mF arr i x) mF mB r)) i = ElmBtITbl' !x !(mB (S.Stream mB r)) !i !(Elm ls i)
@@ -171,22 +161,6 @@ instance
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline mkStream #-}
-
-instance
-  ( Monad m
-  , Element ls PointL
-  , PA.PrimArrayOps arr PointL x
-  , MkStream m ls PointL
-  ) => MkStream m (ls :!: ITbl m arr PointL x) PointL where
-  mkStream (ls :!: ITbl c t _) Static lu@(PointL (l:.u)) (PointL (i:.j))
-  -- TODO sure about these assertions below? they should be ok, given that
-  -- we are in a linear grammar context ...
-    = let ms = minSize c in seq ms $ seq t $
-    S.map (\s -> let PointL (_:.k) = getIdx s
-                 in  ElmITbl (t PA.! pointL k j) (pointL k j) s)
-    $ mkStream ls (Variable Check Nothing) lu (pointL i $ j - ms)
---  mkStream _ _ _ _ = error "mkStream / ITbl / PointL not implemented"
-  {-# INLINE mkStream #-}
 
 instance
   ( Monad mB
@@ -393,4 +367,6 @@ instance (PA.PrimArrayOps arr i x, Monad mB, IndexStream i) => Axiom (BT (ITbl m
     h <- (S.head . uncurry streamDown) $ PA.bounds arr
     bt h h
   {-# INLINE axiom #-}
+
+-}
 

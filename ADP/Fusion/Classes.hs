@@ -1,4 +1,6 @@
+
 {-# Language MultiWayIf #-}
+{-# Language GADTs #-}
 {-# Language LambdaCase #-}
 {-# Language BangPatterns #-}
 {-# Language DefaultSignatures #-}
@@ -13,13 +15,9 @@
 
 module ADP.Fusion.Classes where
 
-import           Data.Strict.Tuple
-import           Data.Vector.Fusion.Stream.Size
-import qualified Data.Vector.Fusion.Stream.Monadic as S
 import           Data.Bits
 
 import           Data.Bits.Ordered
-import           Data.PrimitiveArray -- (Z(..), (:.)(..), Subword(..), subword, PointL(..), PointR(..), Outside(..))
 
 import Debug.Trace
 
@@ -52,6 +50,7 @@ data CheckBounds
 -- from the outside, or use the moving indices calculated in in the inner
 -- parts.
 
+{-
 data StaticVariable v
   = Static
   | Variable CheckBounds (Maybe v) -- TODO type family based on the index type to allow saying if we need maximal sizes further in
@@ -61,22 +60,16 @@ instance Show v => Show (StaticVariable v) where
   show (Static) = "Static"
   show (Variable cb Nothing) = "Variable " ++ show cb
   show (Variable cb (Just v)) = "Variable " ++ show cb ++ " " ++ show v
+-}
 
 -- | 'mkStream' needs to know the current context within the sequence of
 -- symbols.
-
-data CurrentContext
-  -- |
-  = Outermost
-  -- |
-  | RightOfHole
-  -- |
-  | LeftOfHole
 
 -- | @IxStaticVar@ allows us to connect each type of index with variants of
 -- @StaticVariable@ stacks. This is important for multi-dimensional grammars,
 -- as they have different static/variable behaviour for each dimension.
 
+{-
 class IxStaticVar i where
   type IxSV ix :: *
   initialSV :: i -> IxSV i
@@ -84,6 +77,7 @@ class IxStaticVar i where
 instance IxStaticVar i => IxStaticVar (Outside i) where
   type IxSV (Outside i) = IxSV i
   initialSV (O i) = initialSV i
+-}
 
 {-
 instance IxStaticVar Subword where
@@ -91,6 +85,7 @@ instance IxStaticVar Subword where
   initialSV _ = Static
 -}
 
+{-
 instance IxStaticVar PointL where
   type IxSV PointL  = StaticVariable ()
   initialSV _ = Static
@@ -110,33 +105,8 @@ instance IxStaticVar (BitSet:>Interface i) where
 instance IxStaticVar (BitSet:>Interface i:>Interface j) where
   type IxSV (BitSet:>Interface i:>Interface j) = StaticVariable Int
   initialSV _ = Static
+-}
 
--- | Constrains the behaviour of the memoizing tables. They may be 'EmptyOk' if
--- @i==j@ is allowed (empty subwords or similar); or they may need 'NonEmpty'
--- indices, or finally they can be 'OnlyZero' (only @i==j@ allowed) which is
--- useful in multi-dimensional casese.
-
-data TableConstraint
-  = EmptyOk
-  | NonEmpty
-  | OnlyZero
-  deriving (Eq,Show)
-
-minSize :: TableConstraint -> Int
-minSize NonEmpty = 1
-minSize _        = 0
-{-# INLINE minSize #-}
-
-class ModifyConstraint t where
-  toNonEmpty :: t -> t
-  toEmpty    :: t -> t
-
--- |
-
-type family   TblConstraint x       :: *
-
-type instance TblConstraint (is:.i) =  TblConstraint is :. TblConstraint i
-type instance TblConstraint Z       = Z
 {-
 type instance TblConstraint Subword = TableConstraint
 -}
@@ -151,72 +121,13 @@ type instance TblConstraint (Outside Subword) = TableConstraint
 type instance TblConstraint (Outside PointL)  = TableConstraint
 type instance TblConstraint (Outside PointR)  = TableConstraint
 -}
-type instance TblConstraint (Outside o) = TblConstraint o
 
 -- * The ADPfusion base classes.
-
--- | During construction of the stream, we need to extract individual elements
--- from symbols in production rules. An element in a stream is fixed by both,
--- the type @x@ of the actual argument we want to grab (say individual
--- characters we parse from an input) and the type of indices @i@ we use.
---
--- @Elm@ data constructors are all eradicated during fusion and should never
--- show up in CORE.
-
-class Element x i where
-  data Elm x i :: *
-  type Arg x :: *
-  getArg :: Elm x i -> Arg x
-  getIdx :: Elm x i -> i
-
--- | @mkStream@ creates the actual stream of elements (@Elm@) that will be fed
--- to functions on the left of the @(<<<)@ operator. Streams work over all
--- monads and are specialized for each combination of arguments @x@ and indices
--- @i@.
-
-class (Monad m) => MkStream m x i where
-  mkStream :: x -> IxSV i -> i -> i -> S.Stream m (Elm x i)
-
--- | Finally, we need to be able to correctly build together symbols on the
--- right-hand side of the @(<<<)@ operator.
---
--- The default makes sure that the last (or only) argument left over is
--- correctly assigned a @Z@ to terminate the symbol stack.
-
-class Build x where
-  type Stack x :: *
-  type Stack x = S :!: x
-  build :: x -> Stack x
-  default build :: (Stack x ~ (S :!: x)) => x -> Stack x
-  build x = S :!: x
-  {-# INLINE build #-}
-
-instance Build x => Build (x:!:y) where
-  type Stack (x:!:y) = Stack x :!: y
-  build (x:!:y) = build x :!: y
-  {-# INLINE build #-}
 
 
 
 -- * Instances for the bottom of the stack. We provide default instances for
 -- 'Subword', 'PointL', 'PointR' and the multidimensional variants.
-
--- | Similar to 'Z', but terminates an argument stack.
-
-data S = S
-  deriving (Eq,Show)
-
-instance
-  (
-  ) => Element S ix where
-  data Elm S ix = ElmS !ix
-  type Arg S    = Z
-  getArg (ElmS _) = Z
-  getIdx (ElmS ix) = ix
-  {-# INLINE getArg #-}
-  {-# INLINE getIdx #-}
-
-deriving instance Show ix => Show (Elm S ix)
 
 -- | The instance for the bottom of a stack with subwords. In cases where we
 -- still need to check correctness of boundaries (i.e. @i==j@ in the
@@ -247,14 +158,7 @@ instance (Monad m) => MkStream m S (Outside Subword) where
   {-# INLINE mkStream #-}
 -}
 
-instance (Monad m) => MkStream m S PointL where
-  mkStream S (Variable Check Nothing) (PointL (l:.u)) (PointL (i:.j))
-    = staticCheck (j>=l && j<=u && i<=j) $ S.singleton (ElmS $ PointL (i:.i))
-  mkStream S Static (PointL (l:.u)) (PointL (i:.j))
-    = staticCheck (i==j) $ S.singleton (ElmS $ PointL (i:.i))
---  mkStream S z (PointL (l:.u)) (PointL (i:.j)) = error $ "S.PointL write me: " ++ show z
-  {-# INLINE mkStream #-}
-
+{-
 instance (Monad m) => MkStream m S (Outside PointL) where
   mkStream S (Variable Check Nothing) (O (PointL (l:.u))) (O (PointL (i:.j)))
     = staticCheck (j>=l && j<=u && i<=j) $ S.singleton (ElmS . O $ PointL (j:.j))
@@ -262,6 +166,7 @@ instance (Monad m) => MkStream m S (Outside PointL) where
     = staticCheck (i==l && u==j) $ S.singleton (ElmS . O $ PointL (i:.j))
 --  mkStream S z (O (PointL (l:.u))) (O (PointL (i:.j))) = error $ "S.PointL write me: " ++ show z
   {-# INLINE mkStream #-}
+-}
 
 -- TODO need to check these guys
 
@@ -285,6 +190,7 @@ instance (Monad m) => MkStream m S (BitSet:>Interface i) where
 -- we are in the variable case with a moving @Last@ point, more than one
 -- returned candidate needs to be generated.
 
+{-
 instance (Monad m) => MkStream m S (BitSet:>Interface First:>Interface Last) where
   -- In the static case we should have an empty bitset at this point. In
   -- the stack @(S:.x)@ @x@ is something like @Empty@ or a terminal.
@@ -301,6 +207,7 @@ instance (Monad m) => MkStream m S (BitSet:>Interface First:>Interface Last) whe
     $ S.takeWhile (\(Z:.(BitSet b:>_)) -> popCount b <= k)
     $ streamUp (Z:.(BitSet (2^k-1):>Interface 0)) (Z:.(BitSet (2^(popCount cb)-1):>Interface 0))
   {-# INLINE mkStream #-}
+-}
 
 {-
 instance (Monad m) => MkStream m S (BitSet:>Interface i:>Interface j) where
@@ -312,19 +219,4 @@ instance (Monad m) => MkStream m S (BitSet:>Interface i:>Interface j) where
 -}
 
 -- * Helper functions
-
--- | 'staticCheck' acts as a static filter. If 'b' is true, we keep all stream
--- elements. If 'b' is false, we discard all stream elements.
-
-staticCheck :: Monad m => Bool -> S.Stream m a -> S.Stream m a
-staticCheck b (S.Stream step t n) = b `seq` S.Stream snew (Left (b:.t)) (toMax n) where
-  {-# INLINE [1] snew #-}
-  snew (Left  (False:._)) = return $ S.Done
-  snew (Left  (True :.s)) = return $ S.Skip (Right s)
-  snew (Right s         ) = do r <- step s
-                               case r of
-                                 S.Yield x s' -> return $ S.Yield x (Right s')
-                                 S.Skip    s' -> return $ S.Skip    (Right s')
-                                 S.Done       -> return $ S.Done
-{-# INLINE staticCheck #-}
 

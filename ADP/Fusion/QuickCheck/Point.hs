@@ -21,6 +21,7 @@ import ADP.Fusion
 
 
 
+{-
 -- | A single character terminal
 
 prop_Tt ix@(Z:.PointL (i:.j)) = zs == ls where
@@ -74,6 +75,7 @@ prop_O_ItC ix@(O (PointL(i:.j))) = zs == ls where
   ls = [ ( unsafeIndex xsPo (O $ pointL i (j-1))
          , xs VU.! (j-1)
          ) | j-i>=1, i==0, j<=100 ]
+-}
 
 {-
 prop_P_2dimMtCC ix@(Z:.PointL(i:.j):.PointL(k:.l)) = monadicIO $ do
@@ -90,17 +92,17 @@ prop_P_2dimMtCC ix@(Z:.PointL(i:.j):.PointL(k:.l)) = monadicIO $ do
 -}
 
 xsP :: Unboxed (PointL) Int
-xsP = fromList (pointL 0 0) (pointL 0 100) [0 ..]
+xsP = fromList (PointL 0) (PointL 100) [0 ..]
 
 xsPo :: Unboxed (Outside (PointL)) Int
-xsPo = fromList (O $ pointL 0 0) (O $ pointL 0 100) [0 ..]
+xsPo = fromList (O $ PointL 0) (O $ PointL 100) [0 ..]
 
 xsPP :: Unboxed (Z:.PointL:.PointL) Int
-xsPP = fromList (Z:.pointL 0 0:.pointL 0 0) (Z:.pointL 0 100:.pointL 0 100) [0 ..]
+xsPP = fromList (Z:.PointL 0:.PointL 0) (Z:.PointL 100:.PointL 100) [0 ..]
 
 mxsPP = unsafePerformIO $ zzz where
   zzz :: IO (MutArr IO (Unboxed (Z:.PointL:.PointL) Int))
-  zzz = fromListM (Z:.pointL 0 0:.pointL 0 0) (Z:.pointL 0 100:.pointL 0 100) [0 ..]
+  zzz = fromListM (Z:.PointL 0:.PointL 0) (Z:.PointL 100:.PointL 100) [0 ..]
 
 xs = VU.fromList [0 .. 99 :: Int]
 

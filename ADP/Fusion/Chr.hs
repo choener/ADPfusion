@@ -1,6 +1,22 @@
+
+module ADP.Fusion.Chr
+  ( module ADP.Fusion.Chr.Type
+  , module ADP.Fusion.Chr.Point
+  ) where
+
+import ADP.Fusion.Chr.Point
+import ADP.Fusion.Chr.Type
+
+
+
+
+
+
+
+{-
+
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -17,63 +33,21 @@
 module ADP.Fusion.Chr where
 
 import           Control.Exception(assert)
-import           Data.Strict.Tuple
 import qualified Data.Vector.Fusion.Stream.Monadic as S
-import qualified Data.Vector.Generic as VG
 import qualified Data.Vector.Unboxed as VU
 
 import           Data.PrimitiveArray -- ((:.)(..), Subword(..), subword, PointL(..), pointL, PointR(..), pointR, Outside(..))
 
-import           ADP.Fusion.Classes
-import           ADP.Fusion.Multi.Classes
 
 import Debug.Trace
 
 
 
--- | A generic Character parser that reads a single character but allows
--- passing additional information.
---
---  'Chr' expects a function to retrieve @r@ at index position, followed by
---  the actual generic vector with data.
-
-data Chr r x where
-  Chr :: VG.Vector v x
-      => !(v x -> Int -> r)
-      -> !(v x)
-      -> Chr r x
-
--- | smart constructor for regular 1-character parsers
-
---chr xs = Chr VG.unsafeIndex xs
-chr xs = Chr (VG.!) xs
-{-# INLINE chr #-}
-
--- | Smart constructor for Maybe Peeking, followed by a character.
-
-chrLeft xs = Chr f xs where
-  f xs k = ( xs VG.!? (k-1)
-           , VG.unsafeIndex xs k
-           )
-  {-# INLINE [1] f #-}
-{-# INLINE chrLeft #-}
-
-instance Build (Chr r x)
-
-instance
-  ( Element ls i
-  ) => Element (ls :!: Chr r x) i where
-    data Elm (ls :!: Chr r x) i = ElmChr !r !i !(Elm ls i)
-    type Arg (ls :!: Chr r x)   = Arg ls :. r
-    getArg (ElmChr x _ ls) = getArg ls :. x
-    getIdx (ElmChr _ i _ ) = i
-    {-# INLINE getArg #-}
-    {-# INLINE getIdx #-}
-
 
 
 -- ** @PointL@ single-dim instances
 
+{-
 instance
   ( Monad m
   , Element ls PointL
@@ -99,7 +73,7 @@ instance
           $ mkStream ls Static lu (O . pointL i $ j+1)
 --  mkStream _ _ _ _ = error "mkStream / Chr / Outside PointL not implemented"
   {-# INLINE mkStream #-}
-
+-}
 
 
 -- ** @Subword@ single-dim instances
@@ -157,6 +131,9 @@ instance
   {-# INLINE mkStream #-}
 -}
 
+
+
+{-
 
 -- * Multi-dimensional stuff
 
@@ -231,5 +208,10 @@ instance
     . terminalStream a sv is
     . S.map (\(Tr s z (is:.i)) -> Tr s (z:.i) is)
   {-# INLINE terminalStream #-}
+-}
+
+-}
+
+
 -}
 

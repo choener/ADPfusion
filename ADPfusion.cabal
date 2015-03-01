@@ -9,7 +9,7 @@ license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
 stability:      experimental
-cabal-version:  >= 1.8.0
+cabal-version:  >= 1.10.0
 synopsis:
                 Efficient, high-level dynamic programming.
 description:
@@ -120,29 +120,49 @@ library
                ,  tuple             == 0.3.*
                ,  vector            == 0.10.*
   exposed-modules:
-    ADP.Fusion
+--    ADP.Fusion
     ADP.Fusion.Apply
+    ADP.Fusion.Base
+    ADP.Fusion.Base.Classes
+    ADP.Fusion.Base.Point
     ADP.Fusion.Chr
-    ADP.Fusion.Classes
-    ADP.Fusion.Edge
+    ADP.Fusion.Chr.Point
+    ADP.Fusion.Chr.Type
     ADP.Fusion.Empty
---    ADP.Fusion.Multi
-    ADP.Fusion.Multi.Classes
-----    ADP.Fusion.Multi.Empty
-----    ADP.Fusion.Multi.GChr
-----    ADP.Fusion.Multi.None
-    ADP.Fusion.None
-    ADP.Fusion.QuickCheck.Point
-----    ADP.Fusion.QuickCheck
-----    ADP.Fusion.Region
+    ADP.Fusion.Empty.Point
+    ADP.Fusion.Empty.Type
     ADP.Fusion.Table
     ADP.Fusion.Table.Array
-    ADP.Fusion.Table.Axiom
-    ADP.Fusion.Table.Backtrack
-    ADP.Fusion.Table.Fill
-    ADP.Fusion.Table.Indices
-    ADP.Fusion.Table.Recursive
+    ADP.Fusion.Table.Array.Point
+    ADP.Fusion.Table.Array.Type
     ADP.Fusion.TH
+--    ADP.Fusion.Classes
+--    ADP.Fusion.Edge
+----    ADP.Fusion.Multi
+--    ADP.Fusion.Multi.Classes
+------    ADP.Fusion.Multi.Empty
+------    ADP.Fusion.Multi.GChr
+------    ADP.Fusion.Multi.None
+--    ADP.Fusion.None
+--    ADP.Fusion.QuickCheck.Point
+------    ADP.Fusion.QuickCheck
+------    ADP.Fusion.Region
+--    ADP.Fusion.Table
+--    ADP.Fusion.Table.Array
+--    ADP.Fusion.Table.Axiom
+--    ADP.Fusion.Table.Backtrack
+--    ADP.Fusion.Table.Fill
+--    ADP.Fusion.Table.Indices
+--    ADP.Fusion.Table.Recursive
+
+  default-extensions: FlexibleContexts
+                    , FlexibleInstances
+                    , GADTs
+                    , MultiParamTypeClasses
+                    , TypeFamilies
+                    , TypeOperators
+                    , TypeSynonymInstances
+  default-language: Haskell2010
 
   ghc-options:
     -O2 -funbox-strict-fields

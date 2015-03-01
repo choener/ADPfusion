@@ -1,8 +1,16 @@
+
+module ADP.Fusion.Empty
+  ( module ADP.Fusion.Empty.Type
+  , module ADP.Fusion.Empty.Point
+  ) where
+
+import ADP.Fusion.Empty.Point
+import ADP.Fusion.Empty.Type
+
+{-
+
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
@@ -24,9 +32,7 @@
 module ADP.Fusion.Empty where
 
 import           Data.Strict.Maybe
-import           Data.Strict.Tuple
 import           Prelude hiding (Maybe(..))
-import qualified Data.Vector.Fusion.Stream.Monadic as S
 
 import           Data.PrimitiveArray -- (Z(..), (:.)(..), Subword(..), subword, PointL(..), pointL, PointR(..), pointR, Outside(..))
 
@@ -36,41 +42,6 @@ import           ADP.Fusion.Multi.Classes
 import           Debug.Trace
 
 
-
-data Empty = Empty
-
-empty = Empty
-{-# INLINE empty #-}
-
-instance Build Empty
-
-instance (Element ls i) => Element (ls :!: Empty) i where
-  data Elm (ls :!: Empty) i = ElmEmpty !i !(Elm ls i)
-  type Arg (ls :!: Empty)   = Arg ls :. ()
-  getArg (ElmEmpty _ l) = getArg l :. ()
-  getIdx (ElmEmpty i _) = i
-  {-# INLINE getArg #-}
-  {-# INLINE getIdx #-}
-
-instance
-  ( Monad m
-  , MkStream m ls PointL
-  ) => MkStream m (ls :!: Empty) PointL where
-  mkStream (ls :!: Empty) Static lu (PointL (i:.j))
-    = S.map (ElmEmpty (pointL i j))
-    $ mkStream ls Static lu (pointL i j)
-  mkStream _ _ _ _ = error "mkStream Empty/PointL called with illegal parameters"
-  {-# INLINE mkStream #-}
-
-instance
-  ( Monad m
-  , MkStream m ls (Outside PointL)
-  ) => MkStream m (ls :!: Empty) (Outside PointL) where
-  mkStream (ls :!: Empty) Static lu (O (PointL (i:.j)))
-    = S.map (ElmEmpty (O $ pointL i j))
-    $ mkStream ls Static lu (O $ pointL i j)
-  mkStream _ _ _ _ = error "mkStream Empty/PointL called with illegal parameters"
-  {-# INLINE mkStream #-}
 
 -- | Empty as an argument only makes sense if empty is static. We don't get to
 -- use 'staticCheck' as the underlying check for the bottom of the argument
@@ -137,5 +108,7 @@ instance
         . S.map moveIdxTr
       terminalStream _ _ _ = error "mkStream Empty/(is:.Subword) called with illegal parameters"
       {-# INLINE terminalStream #-}
+-}
+
 -}
 
