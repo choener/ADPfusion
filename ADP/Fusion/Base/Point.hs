@@ -59,13 +59,17 @@ instance
 
 instance
   ( Monad m
-  , MkStream m S is
-  ) => MkStream m S (is:.(Outside PointL)) where
-  mkStream S (vs:.OStatic d) (lus:.O (PointL u)) (is:.O (PointL i))
-    = traceShow ("Base.Point",d,u,i) . staticCheck (i>=0 && i+d<=u)
-    . map (\(ElmS zi zo) -> ElmS (zi:.(O $ PointL i)) (zo:.(O $ PointL $ i+d)))
-    $ mkStream S vs lus is
-  mkStream _ _ _ _ = error "Base.Point"
+  , MkStream m S (Outside is)
+  , Context (Outside (is:.PointL)) ~ (Context (Outside is) :. OutsideContext Int)
+  ) => MkStream m S (Outside (is:.PointL)) where
+  mkStream S (vs:.OStatic d) (O (lus:.PointL u)) (O (is:.PointL i))
+    = staticCheck (i>=0 && i+d<=u)
+    . map (\(ElmS (O zi) (O zo)) -> ElmS (O (zi:.PointL i)) (O (zo:.(PointL $ i+d))))
+    $ mkStream S vs (O lus) (O is)
+  mkStream S (vs:.OVariable FarLeft d) (O (us:.PointL u)) (O (is:.PointL i))
+    = staticCheck (i>=0 && i+d<=u)
+    . map (\(ElmS (O zi) (O zo)) -> ElmS (O (zi:.PointL i)) (O (zo:.(PointL $ i+d))))
+    $ mkStream S vs (O us) (O is)
   {-# Inline mkStream #-}
 
 instance TableStaticVar PointL where
@@ -74,6 +78,15 @@ instance TableStaticVar PointL where
     | c==EmptyOk  = PointL j
     | c==NonEmpty = PointL $ j-1
     | c==OnlyZero = PointL j -- this should then actually request a size in 'tableStaticVar' ...
+  {-# INLINE tableStaticVar   #-}
+  {-# INLINE tableStreamIndex #-}
+
+instance TableStaticVar (Outside PointL) where
+  tableStaticVar     (OStatic d) _ = OVariable FarLeft d
+  tableStreamIndex c _ (O (PointL j))
+    | c==EmptyOk  = O (PointL j)
+    | c==NonEmpty = O (PointL $ j-1)
+    | c==OnlyZero = O (PointL j) -- this should then actually request a size in 'tableStaticVar' ...
   {-# INLINE tableStaticVar   #-}
   {-# INLINE tableStreamIndex #-}
 

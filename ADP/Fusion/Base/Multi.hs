@@ -63,8 +63,16 @@ instance (Monad m) => TerminalStream m M Z where
   terminalStream M _ Z = S.map (\(S5 s j1 j2 Z Z) -> S6 s j1 j2 Z Z Z)
   {-# INLINE terminalStream #-}
 
+instance (Monad m) => TerminalStream m M (Outside Z) where
+  terminalStream M _ (O Z) = S.map (\(S5 s j1 j2 (O Z) (O Z)) -> S6 s j1 j2 (O Z) (O Z) Z)
+  {-# INLINE terminalStream #-}
+
 instance Monad m => MkStream m S Z where
   mkStream _ _ _ _ = S.singleton (ElmS Z Z)
+  {-# INLINE mkStream #-}
+
+instance Monad m => MkStream m S (Outside Z) where
+  mkStream _ _ _ _ = S.singleton (ElmS (O Z) (O Z))
   {-# INLINE mkStream #-}
 
 -- | For multi-dimensional terminals we need to be able to calculate how the
@@ -81,12 +89,30 @@ instance TermStaticVar M Z where
   {-# INLINE termStaticVar #-}
   {-# INLINE termStreamIndex #-}
 
+instance TermStaticVar M (Outside Z) where
+  termStaticVar   _ _ _ = Z
+  termStreamIndex _ _ _ = O Z
+  {-# INLINE termStaticVar #-}
+  {-# INLINE termStreamIndex #-}
+
 instance
   ( TermStaticVar a is
   , TermStaticVar b i
   ) => TermStaticVar (TermSymbol a b) (is:.i) where
   termStaticVar   (a:|b) (vs:.v) (is:.i) = termStaticVar   a vs is :. termStaticVar   b v i
   termStreamIndex (a:|b) (vs:.v) (is:.i) = termStreamIndex a vs is :. termStreamIndex b v i
+  {-# INLINE termStaticVar #-}
+  {-# INLINE termStreamIndex #-}
+
+instance
+  ( TermStaticVar a (Outside is)
+  , TermStaticVar b (Outside i)
+  ) => TermStaticVar (TermSymbol a b) (Outside (is:.i)) where
+  termStaticVar   (a:|b) (vs:.v) (O (is:.i)) = termStaticVar   a vs (O is) :. termStaticVar   b v (O i)
+  termStreamIndex (a:|b) (vs:.v) (O (is:.i)) =
+    let (O js) = termStreamIndex a vs (O is)
+        (O j)  = termStreamIndex b v (O i)
+    in O (js:.j)
   {-# INLINE termStaticVar #-}
   {-# INLINE termStreamIndex #-}
 
@@ -107,9 +133,19 @@ instance RuleContext Z where
   initialContext _ = Z
   {-# INLINE initialContext #-}
 
+instance RuleContext (Outside Z) where
+  type Context (Outside Z) = Z
+  initialContext _ = Z
+  {-# INLINE initialContext #-}
+
 instance (RuleContext is, RuleContext i) => RuleContext (is:.i) where
   type Context (is:.i) = Context is:.Context i
   initialContext (is:.i) = initialContext is:.initialContext i
+  {-# INLINE initialContext #-}
+
+instance (RuleContext (Outside is), RuleContext (Outside i)) => RuleContext (Outside (is:.i)) where
+  type Context (Outside (is:.i)) = Context (Outside is):.Context (Outside i)
+  initialContext (O (is:.i)) = initialContext (O is):.initialContext (O i)
   {-# INLINE initialContext #-}
 
 class TableStaticVar i where
@@ -122,9 +158,24 @@ instance TableStaticVar Z where
   {-# INLINE tableStaticVar   #-}
   {-# INLINE tableStreamIndex #-}
 
+instance TableStaticVar (Outside Z) where
+  tableStaticVar     _ _ = Z
+  tableStreamIndex _ _ _ = O Z
+  {-# INLINE tableStaticVar   #-}
+  {-# INLINE tableStreamIndex #-}
+
 instance (TableStaticVar is, TableStaticVar i) => TableStaticVar (is:.i) where
   tableStaticVar           (vs:.v) (is:.i) = tableStaticVar      vs is :. tableStaticVar     v i
   tableStreamIndex (cs:.c) (vs:.v) (is:.i) = tableStreamIndex cs vs is :. tableStreamIndex c v i
+  {-# INLINE tableStaticVar   #-}
+  {-# INLINE tableStreamIndex #-}
+
+instance (TableStaticVar (Outside is), TableStaticVar (Outside i)) => TableStaticVar (Outside (is:.i)) where
+  tableStaticVar           (vs:.v) (O (is:.i)) = tableStaticVar      vs (O is) :. tableStaticVar     v (O i)
+  tableStreamIndex (cs:.c) (vs:.v) (O (is:.i)) =
+    let (O js) = tableStreamIndex cs vs (O is)
+        (O j)  = tableStreamIndex c  v  (O i)
+    in O (js:.j)
   {-# INLINE tableStaticVar   #-}
   {-# INLINE tableStreamIndex #-}
 

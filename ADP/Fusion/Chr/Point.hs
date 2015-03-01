@@ -70,12 +70,13 @@ instance
 
 instance
   ( Monad m
-  , TerminalStream m a is
-  ) => TerminalStream m (TermSymbol a (Chr r x)) (is:.(Outside PointL)) where
-  terminalStream (a:|Chr f (!v)) (sv:.OStatic d) (is:.O (PointL j))
-    = S.map (\(S6 s (zi:._) (zo:.(O (PointL k))) is os e) -> traceShow (k,d) $ S6 s zi zo (is:.(O $ PointL $ k-d)) (os:.(O $ PointL k)) (e:.f v (k-d-1)))
-    . terminalStream a sv is
-    . S.map (\(S5 s zi zo (is:.i) (os:.o)) -> S5 s (zi:.i) (zo:.o) is os)
+  , TerminalStream m a (Outside is)
+  , Context (Outside (is:.PointL)) ~ (Context (Outside is) :. OutsideContext Int)
+  ) => TerminalStream m (TermSymbol a (Chr r x)) (Outside (is:.PointL)) where
+  terminalStream (a:|Chr f (!v)) (sv:.OStatic d) (O (is:.PointL j))
+    = S.map (\(S6 s (zi:._) (zo:.(PointL k)) (O is) (O os) e) -> S6 s zi zo (O (is:.(PointL $ k-d))) (O (os:.PointL k)) (e:.f v (k-d-1)))
+    . terminalStream a sv (O is)
+    . S.map (\(S5 s zi zo (O (is:.i)) (O (os:.o))) -> S5 s (zi:.i) (zo:.o) (O is) (O os))
   {-
   terminalStream (a:|Chr f (!v)) (sv:._) (is:.PointL i)
     = S.map (\(S6 s (zi:.PointL k) (zo:.PointL l) is os e) -> S6 s zi zo (is:.PointL (k+1)) (os:.PointL 0) (e:.f v (l-1)))

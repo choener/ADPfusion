@@ -25,6 +25,10 @@ instance TableIndices Z where
   tableIndices _ _ _ = id
   {-# INLINE tableIndices #-}
 
+instance TableIndices (Outside Z) where
+  tableIndices _ _ _ = id
+  {-# INLINE tableIndices #-}
+
 {-
 instance TableIndices is => TableIndices (is:.Subword) where
   tableIndices (cs:.c) (vs:.Static) (is:.Subword (i:.j))
@@ -62,6 +66,12 @@ instance TableIndices is => TableIndices (is:.PointL) where
           {-# Inline [1] mk   #-}
           {-# Inline [1] step #-}
   {-# Inline tableIndices #-}
+
+instance TableIndices (Outside is) => TableIndices (Outside (is:.PointL)) where
+  tableIndices (cs:.c) (vs:.OStatic d) (O (is:.PointL j))
+    = map (\(S5 s (zi:.PointL _) (zo:.PointL k) (O is) (O os)) -> S5 s zi zo (O (is:.PointL k)) (O (os:.PointL k))) -- constraint handled: tableStreamIndex
+    . tableIndices cs vs (O is)
+    . map (\(S5 s zi zo (O (is:.i)) (O (os:.o))) -> S5 s (zi:.i) (zo:.o) (O is) (O os))
 
 {-
 instance TableIndices is => TableIndices (is:.PointR) where

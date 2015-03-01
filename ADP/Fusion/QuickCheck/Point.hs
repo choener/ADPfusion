@@ -50,6 +50,16 @@ prop_O_It ix@(O (PointL j)) = zs == ls where
   zs = (id <<< t ... S.toList) (O (PointL 100)) ix
   ls = [ unsafeIndex xsPo ix | j>=0, j<=100 ]
 
+prop_ZIt ix@(Z:.PointL j) = zs == ls where
+  t = ITbl (Z:.EmptyOk) xsZP (\ _ _ -> Id 1)
+  zs = (id <<< t ... S.toList) (Z:.PointL 100) ix
+  ls = [ unsafeIndex xsZP ix | j>=0, j<=100 ]
+
+prop_O_ZIt ix@(O (Z:.PointL j)) = zs == ls where
+  t = ITbl (Z:.EmptyOk) xsZPo (\ _ _ -> Id 1)
+  zs = (id <<< t ... S.toList) (O (Z:.PointL 100)) ix
+  ls = [ unsafeIndex xsZPo ix | j>=0, j<=100 ]
+
 -- | Table, then single terminal
 
 prop_ItC ix@(PointL j) = zs == ls where
@@ -68,6 +78,22 @@ prop_O_ItC ix@(O (PointL j)) = zs == ls where
          , xs VU.! (j+0)
          ) | j >= 0, j < 100 ]
 
+prop_O_ItCC ix@(O (PointL j)) = traceShow (j,zs,ls) $ zs == ls where
+  t = ITbl EmptyOk xsPo (\ _ _ -> Id 1)
+  zs = ((,,) <<< t % chr xs % chr xs ... S.toList) (O $ PointL 100) ix
+  ls = [ ( unsafeIndex xsPo (O $ PointL $ j+2)
+         , xs VU.! (j+0)
+         , xs VU.! (j+1)
+         ) | j >= 0, j <= 98 ]
+
+prop_O_ZItCC ix@(O (Z:.PointL j)) = zs == ls where
+  t = ITbl (Z:.EmptyOk) xsZPo (\ _ _ -> Id 1)
+  zs = ((,,) <<< t % (M:|chr xs) % (M:|chr xs) ... S.toList) (O (Z:.PointL 100)) ix
+  ls = [ ( unsafeIndex xsZPo (O (Z:.PointL (j+2)))
+         , Z:.xs VU.! (j+0)
+         , Z:.xs VU.! (j+1)
+         ) | j >= 0, j <= 98 ]
+
 -- | synvar followed by a 2-tape character terminal
 
 prop_2dimItCC ix@(Z:.PointL j:.PointL l) = zs == ls where
@@ -81,10 +107,10 @@ prop_2dimItCC ix@(Z:.PointL j:.PointL l) = zs == ls where
 prop_O_2dimItCC ix@(O (Z:.PointL j:.PointL l)) = zs == ls where
   t = ITbl (Z:.EmptyOk:.EmptyOk) xsPPo (\ _ _ -> Id 1)
   zs = ((,,) <<< t % (M:|chr xs:|chr xs) % (M:|chr xs:|chr xs) ... S.toList) (O (Z:.PointL 100:.PointL 100)) ix
-  ls = [ ( unsafeIndex xsPPo (O (Z:.PointL (j-2):.PointL (l-2)))
-         , Z:.xs VU.! (j-2):.xs VU.! (l-2)
-         , Z:.xs VU.! (j-1):.xs VU.! (l-1)
-         ) | j>=2, l>=2, j<=100, l<=100 ]
+  ls = [ ( unsafeIndex xsPPo (O (Z:.PointL (j+2):.PointL (l+2)))
+         , Z:.xs VU.! (j+0):.xs VU.! (l+0)
+         , Z:.xs VU.! (j+1):.xs VU.! (l+1)
+         ) | j>=0, l>=0, j<=98, l<=98 ]
 
 {-
 -- | left-linear outside grammar
@@ -121,8 +147,14 @@ prop_P_2dimMtCC ix@(Z:.PointL(i:.j):.PointL(k:.l)) = monadicIO $ do
 xsP :: Unboxed (PointL) Int
 xsP = fromList (PointL 0) (PointL 100) [0 ..]
 
+xsZP :: Unboxed (Z:.PointL) Int
+xsZP = fromList (Z:.PointL 0) (Z:.PointL 100) [0 ..]
+
 xsPo :: Unboxed (Outside (PointL)) Int
 xsPo = fromList (O $ PointL 0) (O $ PointL 100) [0 ..]
+
+xsZPo :: Unboxed (Outside (Z:.PointL)) Int
+xsZPo = fromList (O (Z:.PointL 0)) (O (Z:.PointL 100)) [0 ..]
 
 xsPP :: Unboxed (Z:.PointL:.PointL) Int
 xsPP = fromList (Z:.PointL 0:.PointL 0) (Z:.PointL 100:.PointL 100) [0 ..]

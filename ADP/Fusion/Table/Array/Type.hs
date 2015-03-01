@@ -46,3 +46,18 @@ instance
     $ mkStream ls (tableStaticVar vs is) lu (tableStreamIndex c vs is)
   {-# INLINE mkStream #-}
 
+instance
+  ( Monad m
+  , Element ls (Outside (is:.i))
+  , TableStaticVar (Outside (is:.i))
+  , TableIndices (Outside (is:.i))
+  , MkStream m ls (Outside (is:.i))
+  , PrimArrayOps arr (Outside (is:.i)) x
+  ) => MkStream m (ls :!: ITbl m arr (Outside (is:.i)) x) (Outside (is:.i)) where
+  mkStream (ls :!: ITbl c t _) vs lu is
+    = map (\(S5 s _ _ i o) -> ElmITbl (t ! i) i o s)
+    . tableIndices c vs is
+    . map (\s -> S5 s Z Z (getIdx s) (getOmx s))
+    $ mkStream ls (tableStaticVar vs is) lu (tableStreamIndex c vs is)
+  {-# INLINE mkStream #-}
+
