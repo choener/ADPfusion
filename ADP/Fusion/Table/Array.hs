@@ -328,21 +328,6 @@ instance
 
 
 instance
-  ( Monad m
-  , Element ls (is:.i)
-  , TableStaticVar (is:.i)
-  , TableIndices (is:.i)
-  , MkStream m ls (is:.i)
-  , PA.PrimArrayOps arr (is:.i) x
-  ) => MkStream m (ls :!: ITbl m arr (is:.i) x) (is:.i) where
-  mkStream (ls :!: ITbl c t _) vs lu is
-    = S.map (\(Tr s _ i) -> ElmITbl (t PA.! i) i s)
-    . tableIndices c vs is
-    . S.map (\s -> Tr s Z (getIdx s))
-    $ mkStream ls (tableStaticVar vs is) lu (tableStreamIndex c vs is)
-  {-# INLINE mkStream #-}
-
-instance
   ( Monad mB
   , Element ls (is:.i)
   , TableStaticVar (is:.i)

@@ -124,6 +124,7 @@ library
     ADP.Fusion.Apply
     ADP.Fusion.Base
     ADP.Fusion.Base.Classes
+    ADP.Fusion.Base.Multi
     ADP.Fusion.Base.Point
     ADP.Fusion.Chr
     ADP.Fusion.Chr.Point
@@ -155,7 +156,8 @@ library
 --    ADP.Fusion.Table.Indices
 --    ADP.Fusion.Table.Recursive
 
-  default-extensions: FlexibleContexts
+  default-extensions: BangPatterns
+                    , FlexibleContexts
                     , FlexibleInstances
                     , GADTs
                     , MultiParamTypeClasses

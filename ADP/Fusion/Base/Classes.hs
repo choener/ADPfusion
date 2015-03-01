@@ -145,3 +145,4 @@ type instance TblConstraint (Outside o) = TblConstraint o
 
 type instance TblConstraint PointL      = TableConstraint
 type instance TblConstraint PointR      = TableConstraint
+

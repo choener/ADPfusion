@@ -21,45 +21,45 @@ import ADP.Fusion
 
 
 
-{-
 -- | A single character terminal
 
-prop_Tt ix@(Z:.PointL (i:.j)) = zs == ls where
-  zs = (id <<< (M:|chr xs) ... S.toList) (Z:.PointL (0:.0)) ix
-  ls = [ (Z:.xs VU.! i) | i+1==j ]
+prop_Tt ix@(Z:.PointL i) = zs == ls where
+  zs = (id <<< (M:|chr xs) ... S.toList) (Z:.PointL 100) ix
+  ls = [ (Z:.xs VU.! (i-1)) | 1==i ]
 
 -- | Two single-character terminals
 
-prop_CC ix@(Z:.PointL (i:.j)) = zs == ls where
-  zs = ((,) <<< (M:|chr xs) % (M:|chr xs) ... S.toList) (Z:.PointL (0:.0)) ix
-  ls = [ (Z:.xs VU.! i, Z:.xs VU.! (i+1)) | i+2==j ]
+prop_CC ix@(Z:.PointL i) = zs == ls where
+  zs = ((,) <<< (M:|chr xs) % (M:|chr xs) ... S.toList) (Z:.PointL 100) ix
+  ls = [ (Z:.xs VU.! (i-2), Z:.xs VU.! (i-1)) | 2==i ]
 
 -- | Just a table
 
-prop_It ix@(PointL(i:.j)) = zs == ls where
+prop_It ix@(PointL i) = zs == ls where
   t = ITbl EmptyOk xsP (\ _ _ -> Id 1)
-  zs = (id <<< t ... S.toList) (pointL 0 j) ix
-  ls = [ unsafeIndex xsP (pointL i j) | j-i>=0, i==0, j<=100 ]
+  zs = (id <<< t ... S.toList) (PointL 100) ix
+  ls = [ unsafeIndex xsP ix | i>=0, i<=100 ]
 
 -- | Table, then single terminal
 
-prop_ItC ix@(PointL(i:.j)) = zs == ls where
+prop_ItC ix@(PointL i) = zs == ls where
   t = ITbl EmptyOk xsP (\ _ _ -> Id 1)
-  zs = ((,) <<< t % chr xs ... S.toList) (pointL 0 j) ix
-  ls = [ ( unsafeIndex xsP (pointL i (j-1))
-         , xs VU.! (j-1)
-         ) | j-i>=1, i==0, j<=100 ]
+  zs = ((,) <<< t % chr xs ... S.toList) (PointL 100) ix
+  ls = [ ( unsafeIndex xsP (PointL $ i-1)
+         , xs VU.! (i-1)
+         ) | i>=1, i<=100 ]
 
 -- | synvar followed by a 2-tape character terminal
 
-prop_2dimItCC ix@(Z:.PointL(i:.j):.PointL(k:.l)) = zs == ls where
+prop_2dimItCC ix@(Z:.PointL j:.PointL l) = zs == ls where
   t = ITbl (Z:.EmptyOk:.EmptyOk) xsPP (\ _ _ -> Id 1)
-  zs = ((,,) <<< t % (M:|chr xs:|chr xs) % (M:|chr xs:|chr xs) ... S.toList) (Z:.pointL 0 0:.pointL 0 0) ix
-  ls = [ ( unsafeIndex xsPP (Z:.pointL i (j-2):.pointL k (l-2))
+  zs = ((,,) <<< t % (M:|chr xs:|chr xs) % (M:|chr xs:|chr xs) ... S.toList) (Z:.PointL 100:.PointL 100) ix
+  ls = [ ( unsafeIndex xsPP (Z:.PointL (j-2):.PointL (l-2))
          , Z:.xs VU.! (j-2):.xs VU.! (l-2)
          , Z:.xs VU.! (j-1):.xs VU.! (l-1)
-         ) | j-i>=2, l-k>=2, i==0, j<=100, k==0, l<=100 ]
+         ) | j>=2, l>=2, j<=100, l<=100 ]
 
+{-
 -- | left-linear outside grammar
 
 prop_O_It ix@(O (PointL(i:.j))) = zs == ls where

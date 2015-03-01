@@ -56,3 +56,5 @@ instance
     {-# INLINE getArg #-}
     {-# INLINE getIdx #-}
 
+type instance TermArg (TermSymbol a (Chr r x)) = TermArg a :. r
+

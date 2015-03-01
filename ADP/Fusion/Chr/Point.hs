@@ -41,3 +41,23 @@ instance
   mkStream _ _ _ _ = error "mkStream / Chr / PointL can only be implemented for OStatic"
   {-# Inline mkStream #-}
 
+instance TermStaticVar (Chr r x) PointL where
+  termStaticVar   _ sv _                = sv
+  termStreamIndex _ _  (PointL j) = PointL $ j-1
+  {-# Inline termStaticVar #-}
+  {-# Inline termStreamIndex #-}
+
+instance
+  ( Monad m
+  , TerminalStream m a is
+  ) => TerminalStream m (TermSymbol a (Chr r x)) (is:.PointL) where
+  terminalStream (a:|Chr f (!v)) (sv:.IStatic) (is:.PointL j)
+    = S.map (\(S6 s (zi:._) (zo:._) is os e) -> S6 s zi zo (is:.PointL j) (os:.PointL 0) (e:.f v (j-1)))
+    . terminalStream a sv is
+    . S.map (\(S5 s zi zo (is:.i) (os:.o)) -> S5 s (zi:.i) (zo:.o) is os)
+  terminalStream (a:|Chr f (!v)) (sv:._) (is:.PointL i)
+    = S.map (\(S6 s (zi:.PointL k) (zo:.PointL l) is os e) -> S6 s zi zo (is:.PointL (k+1)) (os:.PointL 0) (e:.f v (l-1)))
+    . terminalStream a sv is
+    . S.map (\(S5 s zi zo (is:.i) (os:.o)) -> S5 s (zi:.i) (zo:.o) is os)
+  {-# INLINE terminalStream #-}
+

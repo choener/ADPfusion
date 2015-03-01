@@ -137,8 +137,6 @@ instance
 
 -- * Multi-dimensional stuff
 
-type instance TermArg (TermSymbol a (Chr r x)) = TermArg a :. r
-
 {-
 instance TermStaticVar (Chr r x) Subword where
   termStaticVar   _ sv _                = sv
@@ -146,12 +144,6 @@ instance TermStaticVar (Chr r x) Subword where
   {-# INLINE termStaticVar #-}
   {-# INLINE termStreamIndex #-}
 -}
-
-instance TermStaticVar (Chr r x) PointL where
-  termStaticVar   _ sv _                = sv
-  termStreamIndex _ _  (PointL (i:.j)) = pointL i $ j-1
-  {-# INLINE termStaticVar #-}
-  {-# INLINE termStreamIndex #-}
 
 instance TermStaticVar (Chr r x) PointR where
   termStaticVar   _ sv _                = sv
@@ -179,20 +171,6 @@ instance
     . S.map (\(Tr s z (is:.i)) -> Tr s (z:.i) is)
   {-# INLINE terminalStream #-}
 -}
-
-instance
-  ( Monad m
-  , TerminalStream m a is
-  ) => TerminalStream m (TermSymbol a (Chr r x)) (is:.PointL) where
-  terminalStream (a:|Chr f (!v)) (sv:.Static) (is:.PointL (i:.j))
-    = S.map (\(Qd s (z:._) is e) -> Qd s z (is:.pointL (j-1) j) (e:.f v (j-1)))
-    . terminalStream a sv is
-    . S.map (\(Tr s z (is:.i)) -> Tr s (z:.i) is)
-  terminalStream (a:|Chr f (!v)) (sv:._) (is:.PointL (i:.j))
-    = S.map (\(Qd s (z:.PointL (k:.l)) is e) -> Qd s z (is:.pointL l (l+1)) (e:.f v (l-1)))
-    . terminalStream a sv is
-    . S.map (\(Tr s z (is:.i)) -> Tr s (z:.i) is)
-  {-# INLINE terminalStream #-}
 
 {-
 instance

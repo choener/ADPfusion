@@ -2,10 +2,13 @@
 module ADP.Fusion.Table.Array.Type where
 
 import Data.Strict.Tuple
+import Data.Vector.Fusion.Stream.Monadic (map)
+import Prelude hiding (map)
 
-import Data.PrimitiveArray
+import Data.PrimitiveArray hiding (map)
 
 import ADP.Fusion.Base
+import ADP.Fusion.Table.Indices
 
 
 
@@ -27,4 +30,19 @@ instance Element ls i => Element (ls :!: ITbl m arr j x) i where
   getOmx (ElmITbl _ _ o _ ) = o
   {-# INLINE getArg #-}
   {-# INLINE getIdx #-}
+
+instance
+  ( Monad m
+  , Element ls (is:.i)
+  , TableStaticVar (is:.i)
+  , TableIndices (is:.i)
+  , MkStream m ls (is:.i)
+  , PrimArrayOps arr (is:.i) x
+  ) => MkStream m (ls :!: ITbl m arr (is:.i) x) (is:.i) where
+  mkStream (ls :!: ITbl c t _) vs lu is
+    = map (\(S5 s _ _ i o) -> ElmITbl (t ! i) i o s)
+    . tableIndices c vs is
+    . map (\s -> S5 s Z Z (getIdx s) (getOmx s))
+    $ mkStream ls (tableStaticVar vs is) lu (tableStreamIndex c vs is)
+  {-# INLINE mkStream #-}
 

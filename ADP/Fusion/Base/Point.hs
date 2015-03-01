@@ -5,11 +5,13 @@
 
 module ADP.Fusion.Base.Point where
 
-import Data.Vector.Fusion.Stream.Monadic (singleton)
+import Data.Vector.Fusion.Stream.Monadic (singleton,map)
+import Prelude hiding (map)
 
-import Data.PrimitiveArray
+import Data.PrimitiveArray hiding (map)
 
 import ADP.Fusion.Base.Classes
+import ADP.Fusion.Base.Multi
 
 
 
@@ -26,9 +28,9 @@ instance RuleContext (Complement PointL) where
   initialContext _ = Complemented
 
 instance (Monad m) => MkStream m S PointL where
-  mkStream S IStatic   _ (PointL j)
+  mkStream S IStatic (PointL u) (PointL j)
     = staticCheck (0==j) . singleton $ ElmS (PointL 0) (PointL 0)
-  mkStream S IVariable _ (PointL j)
+  mkStream S IVariable (PointL u) (PointL j)
     = staticCheck (0<=j) . singleton $ ElmS (PointL j) (PointL 0)
   {-# Inline mkStream #-}
 
@@ -39,12 +41,26 @@ instance (Monad m) => MkStream m S (Outside PointL) where
     = staticCheck (i>=0 && i+d<=u) . singleton $ ElmS (O $ PointL i) (O . PointL $ i+d)
   {-# Inline mkStream #-}
 
-{-
-instance (Monad m) => MkStream m S PointL where
-  mkStream S (Variable Check Nothing) (PointL (l:.u)) (PointL (i:.j))
-    = staticCheck (j>=l && j<=u && i<=j) $ S.singleton (ElmS $ PointL (i:.i))
-  mkStream S Static (PointL (l:.u)) (PointL (i:.j))
-    = staticCheck (i==j) $ S.singleton (ElmS $ PointL (i:.i))
---  mkStream S z (PointL (l:.u)) (PointL (i:.j)) = error $ "S.PointL write me: " ++ show z
+instance
+  ( Monad m, MkStream m S is
+  , Context (is:.PointL) ~ (Context is:.InsideContext)
+  ) => MkStream m S (is:.PointL) where
+  mkStream S (vs:.IStatic) (lus:.PointL u) (is:.PointL i)
+    = staticCheck (i==0)
+    . map (\(ElmS zi zo) -> ElmS (zi:.PointL i) (zo:.PointL 0))
+    $ mkStream S vs lus is
+  mkStream S (vs:.IVariable ) (lus:.PointL u) (is:.PointL i)
+    = staticCheck (i>=0 && i<=u)
+    $ map (\(ElmS zi zo) -> ElmS (zi:.PointL i) (zo:.PointL 0))
+    $ mkStream S vs lus is
   {-# INLINE mkStream #-}
--}
+
+instance TableStaticVar PointL where
+  tableStaticVar     _ _                = IVariable
+  tableStreamIndex c _ (PointL j)
+    | c==EmptyOk  = PointL j
+    | c==NonEmpty = PointL $ j-1
+    | c==OnlyZero = PointL j -- this should then actually request a size in 'tableStaticVar' ...
+  {-# INLINE tableStaticVar   #-}
+  {-# INLINE tableStreamIndex #-}
+
