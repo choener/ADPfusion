@@ -36,8 +36,7 @@ instance
   , MkStream m ls (Outside PointL)
   ) => MkStream m (ls :!: Chr r x) (Outside PointL) where
   mkStream (ls :!: Chr f xs) (OStatic d) (O (PointL u)) (O (PointL i))
-    = staticCheck (i>=d && i<=u && i<= VG.length xs)
-    $ S.map (\z -> let (O (PointL k)) = getOmx z in ElmChr (f xs $ k-d-1) (O . PointL $ k-d) (getOmx z) z)
+    = S.map (\z -> let (O (PointL k)) = getOmx z in ElmChr (f xs $ k-d-1) (O . PointL $ k-d) (getOmx z) z)
     $ mkStream ls (OStatic $ d+1) (O $ PointL u) (O $ PointL i)
   mkStream _ _ _ _ = error "Chr.Point / mkStream / Chr / Outside.PointL can only be implemented for OStatic"
   {-# Inline mkStream #-}

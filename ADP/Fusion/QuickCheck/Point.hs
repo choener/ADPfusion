@@ -78,7 +78,7 @@ prop_O_ItC ix@(O (PointL j)) = zs == ls where
          , xs VU.! (j+0)
          ) | j >= 0, j < 100 ]
 
-prop_O_ItCC ix@(O (PointL j)) = traceShow (j,zs,ls) $ zs == ls where
+prop_O_ItCC ix@(O (PointL j)) = zs == ls where
   t = ITbl EmptyOk xsPo (\ _ _ -> Id 1)
   zs = ((,,) <<< t % chr xs % chr xs ... S.toList) (O $ PointL 100) ix
   ls = [ ( unsafeIndex xsPo (O $ PointL $ j+2)
@@ -170,7 +170,7 @@ xs = VU.fromList [0 .. 99 :: Int]
 
 -- * general quickcheck stuff
 
-options = stdArgs {maxSuccess = 1000}
+options = stdArgs {maxSuccess = 10000}
 
 customCheck = quickCheckWithResult options
 
