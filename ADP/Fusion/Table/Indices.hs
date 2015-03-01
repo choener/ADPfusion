@@ -61,12 +61,6 @@ instance TableIndices is => TableIndices (is:.PointL) where
             | otherwise = return $ Done
           {-# Inline [1] mk   #-}
           {-# Inline [1] step #-}
-    {-
-    where mk (S5 s (y:.PointL (_:.l)) xs) = return $ Pn s y xs l (j-l-minSize c)
-          step (Pn s y xs k z)
-            | z>= 0     = return $ S.Yield (Tr s y (xs:.pointL k (j-z))) (Pn s y xs k (z-1))
-            | otherwise = return $ S.Done
-            -}
   {-# Inline tableIndices #-}
 
 {-

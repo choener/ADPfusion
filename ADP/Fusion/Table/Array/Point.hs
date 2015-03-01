@@ -33,6 +33,6 @@ instance
     = let ms = minSize c in seq ms $ seq t $
     S.map (\z -> let o = getOmx z
                  in  ElmITbl (t ! o) o o z)
-    $ mkStream ls (OVariable FarLeft d)  (O $ PointL u) undefined
+    $ mkStream ls (OVariable FarLeft d)  (O $ PointL u) (O $ PointL $ i - ms)
   {-# Inline mkStream #-}
 

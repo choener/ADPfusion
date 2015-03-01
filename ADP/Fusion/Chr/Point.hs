@@ -8,6 +8,7 @@
 module ADP.Fusion.Chr.Point where
 
 import           Data.Strict.Tuple
+import           Debug.Trace
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Generic as VG
 
@@ -35,15 +36,21 @@ instance
   , MkStream m ls (Outside PointL)
   ) => MkStream m (ls :!: Chr r x) (Outside PointL) where
   mkStream (ls :!: Chr f xs) (OStatic d) (O (PointL u)) (O (PointL i))
-    = staticCheck (i>d && i<=u && i<= VG.length xs)
+    = staticCheck (i>=d && i<=u && i<= VG.length xs)
     $ S.map (\z -> let (O (PointL k)) = getOmx z in ElmChr (f xs $ k-d-1) (O . PointL $ k-d) (getOmx z) z)
     $ mkStream ls (OStatic $ d+1) (O $ PointL u) (O $ PointL i)
-  mkStream _ _ _ _ = error "mkStream / Chr / PointL can only be implemented for OStatic"
+  mkStream _ _ _ _ = error "Chr.Point / mkStream / Chr / Outside.PointL can only be implemented for OStatic"
   {-# Inline mkStream #-}
 
 instance TermStaticVar (Chr r x) PointL where
   termStaticVar   _ sv _                = sv
   termStreamIndex _ _  (PointL j) = PointL $ j-1
+  {-# Inline termStaticVar #-}
+  {-# Inline termStreamIndex #-}
+
+instance TermStaticVar (Chr r x) (Outside PointL) where
+  termStaticVar   _ (OStatic d) _ = OStatic (d+1) 
+  termStreamIndex _ _           j = j
   {-# Inline termStaticVar #-}
   {-# Inline termStreamIndex #-}
 
@@ -59,5 +66,21 @@ instance
     = S.map (\(S6 s (zi:.PointL k) (zo:.PointL l) is os e) -> S6 s zi zo (is:.PointL (k+1)) (os:.PointL 0) (e:.f v (l-1)))
     . terminalStream a sv is
     . S.map (\(S5 s zi zo (is:.i) (os:.o)) -> S5 s (zi:.i) (zo:.o) is os)
+  {-# INLINE terminalStream #-}
+
+instance
+  ( Monad m
+  , TerminalStream m a is
+  ) => TerminalStream m (TermSymbol a (Chr r x)) (is:.(Outside PointL)) where
+  terminalStream (a:|Chr f (!v)) (sv:.OStatic d) (is:.O (PointL j))
+    = S.map (\(S6 s (zi:._) (zo:.(O (PointL k))) is os e) -> traceShow (k,d) $ S6 s zi zo (is:.(O $ PointL $ k-d)) (os:.(O $ PointL k)) (e:.f v (k-d-1)))
+    . terminalStream a sv is
+    . S.map (\(S5 s zi zo (is:.i) (os:.o)) -> S5 s (zi:.i) (zo:.o) is os)
+  {-
+  terminalStream (a:|Chr f (!v)) (sv:._) (is:.PointL i)
+    = S.map (\(S6 s (zi:.PointL k) (zo:.PointL l) is os e) -> S6 s zi zo (is:.PointL (k+1)) (os:.PointL 0) (e:.f v (l-1)))
+    . terminalStream a sv is
+    . S.map (\(S5 s zi zo (is:.i) (os:.o)) -> S5 s (zi:.i) (zo:.o) is os)
+  -}
   {-# INLINE terminalStream #-}
 

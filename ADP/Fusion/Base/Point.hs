@@ -6,6 +6,7 @@
 module ADP.Fusion.Base.Point where
 
 import Data.Vector.Fusion.Stream.Monadic (singleton,map)
+import Debug.Trace
 import Prelude hiding (map)
 
 import Data.PrimitiveArray hiding (map)
@@ -42,7 +43,8 @@ instance (Monad m) => MkStream m S (Outside PointL) where
   {-# Inline mkStream #-}
 
 instance
-  ( Monad m, MkStream m S is
+  ( Monad m
+  , MkStream m S is
   , Context (is:.PointL) ~ (Context is:.InsideContext)
   ) => MkStream m S (is:.PointL) where
   mkStream S (vs:.IStatic) (lus:.PointL u) (is:.PointL i)
@@ -54,6 +56,17 @@ instance
     $ map (\(ElmS zi zo) -> ElmS (zi:.PointL i) (zo:.PointL 0))
     $ mkStream S vs lus is
   {-# INLINE mkStream #-}
+
+instance
+  ( Monad m
+  , MkStream m S is
+  ) => MkStream m S (is:.(Outside PointL)) where
+  mkStream S (vs:.OStatic d) (lus:.O (PointL u)) (is:.O (PointL i))
+    = traceShow ("Base.Point",d,u,i) . staticCheck (i>=0 && i+d<=u)
+    . map (\(ElmS zi zo) -> ElmS (zi:.(O $ PointL i)) (zo:.(O $ PointL $ i+d)))
+    $ mkStream S vs lus is
+  mkStream _ _ _ _ = error "Base.Point"
+  {-# Inline mkStream #-}
 
 instance TableStaticVar PointL where
   tableStaticVar     _ _                = IVariable
