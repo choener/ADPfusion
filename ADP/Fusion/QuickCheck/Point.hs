@@ -22,6 +22,8 @@ import ADP.Fusion
 
 
 
+-- * Empty cases
+
 prop_Empty ix@(PointL j) = zs == ls where
   zs = (id <<< Empty ... S.toList) (PointL 100) ix
   ls = [ () | j == 0 ]
@@ -41,6 +43,47 @@ prop_O_ZEmpty ix@(O (Z:.PointL j)) = zs == ls where
 prop_O_ZEmptyEmpty ix@(O (Z:.PointL j:.PointL l)) = zs == ls where
   zs = (id <<< (M:|Empty:|Empty) ... S.toList) (O (Z:.PointL 100:.PointL 100)) ix
   ls = [ Z:.():.() | j == 100, l == 100 ]
+
+
+
+-- * None cases
+
+prop_O_ItNC ix@(O (PointL j)) = zs == ls where
+  t = ITbl EmptyOk xsPo (\ _ _ -> Id 1)
+  zs = ((,,) <<< t % None % chr xs ... S.toList) (O $ PointL 100) ix
+  ls = [ ( unsafeIndex xsPo (O $ PointL $ j+1)
+         , ()
+         , xs VU.! (j+0)
+         ) | j >= 0, j <= 99 ]
+{-# Noinline prop_O_ItNC #-}
+
+prop_O_ZItNC ix@(O (Z:.PointL j)) = zs == ls where
+  t = ITbl (Z:.EmptyOk) xsZPo (\ _ _ -> Id 1)
+  zs = ((,,) <<< t % (M:|None) % (M:|chr xs) ... S.toList) (O (Z:.PointL 100)) ix
+  ls = [ ( unsafeIndex xsZPo (O (Z:.PointL (j+1)))
+         , Z:.()
+         , Z:.xs VU.! (j+0)
+         ) | j >= 0, j <= 99 ]
+
+prop_O_2dimIt_NC_CN ix@(O (Z:.PointL j:.PointL l)) = zs == ls where
+  t = ITbl (Z:.EmptyOk:.EmptyOk) xsPPo (\ _ _ -> Id 1)
+  zs = ((,,) <<< t % (M:|None:|chr xs) % (M:|chr xs:|None) ... S.toList) (O (Z:.PointL 100:.PointL 100)) ix
+  ls = [ ( unsafeIndex xsPPo (O (Z:.PointL (j+1):.PointL (l+1)))
+         , Z:.()           :.xs VU.! (l+0)
+         , Z:.xs VU.! (j+0):.()
+         ) | j>=0, l>=0, j<=99, l<=99 ]
+
+prop_2dimIt_NC_CN ix@(Z:.PointL j:.PointL l) = zs == ls where
+  t = ITbl (Z:.EmptyOk:.EmptyOk) xsPP (\ _ _ -> Id 1)
+  zs = ((,,) <<< t % (M:|None:|chr xs) % (M:|chr xs:|None) ... S.toList) (Z:.PointL 100:.PointL 100) ix
+  ls = [ ( unsafeIndex xsPP (Z:.PointL (j-1):.PointL (l-1))
+         , Z:.()           :.xs VU.! (l-1)
+         , Z:.xs VU.! (j-1):.()
+         ) | j>=1, l>=1, j<=100, l<=100 ]
+
+
+
+-- * terminal cases
 
 -- | A single character terminal
 

@@ -25,9 +25,9 @@ module ADP.Fusion
   , module ADP.Fusion.Base
   , module ADP.Fusion.Chr
   , module ADP.Fusion.Empty
+  , module ADP.Fusion.None
   , module ADP.Fusion.Table
   , module ADP.Fusion.TH
---  , module ADP.Fusion.None
 --  , module ADP.Fusion.Table.Axiom
 --  , module ADP.Fusion.Table.Fill
 --  , module ADP.Fusion.TH
@@ -41,13 +41,12 @@ import           ADP.Fusion.Apply
 import           ADP.Fusion.Base
 import           ADP.Fusion.Chr
 import           ADP.Fusion.Empty
+import           ADP.Fusion.None
 import           ADP.Fusion.Table
 import           ADP.Fusion.TH
 
 --import           ADP.Fusion.Classes
 --import           ADP.Fusion.Multi.Classes
---import           ADP.Fusion.None
---import           ADP.Fusion.Table
 --import           ADP.Fusion.Table.Axiom (axiom)
 --import           ADP.Fusion.Table.Fill
 --import           ADP.Fusion.TH

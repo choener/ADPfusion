@@ -1,13 +1,14 @@
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 
-module ADP.Fusion.None where
+module ADP.Fusion.None
+  ( module ADP.Fusion.None.Type
+  , module ADP.Fusion.None.Point
+  ) where
 
+import ADP.Fusion.None.Point
+import ADP.Fusion.None.Type
+
+
+{-
 import           Data.Strict.Maybe
 import           Data.Strict.Tuple
 import           Prelude hiding (Maybe(..))
@@ -20,15 +21,9 @@ import           ADP.Fusion.Multi.Classes
 
 
 
-data None = None
-
 
 none = None
 {-# INLINE none #-}
-
-instance Build None
-
-type instance TermArg (TermSymbol a None) = TermArg a :. ()
 
 -- | Since 'None' doesn't really do anything for all indices, we just thread it
 -- through.
@@ -75,5 +70,7 @@ instance
     = S.map (ElmNone ij)
     $ mkStream ls sv lu ij
   {-# INLINE mkStream #-}
+-}
+
 -}
 

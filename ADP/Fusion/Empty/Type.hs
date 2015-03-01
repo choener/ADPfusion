@@ -19,8 +19,9 @@ instance (Element ls i) => Element (ls :!: Empty) i where
   getArg (ElmEmpty _ _ l) = getArg l :. ()
   getIdx (ElmEmpty i _ _) = i
   getOmx (ElmEmpty _ o _) = o
-  {-# INLINE getArg #-}
-  {-# INLINE getIdx #-}
+  {-# Inline getArg #-}
+  {-# Inline getIdx #-}
+  {-# Inline getOmx #-}
 
 type instance TermArg (TermSymbol a Empty) = TermArg a :. ()
 

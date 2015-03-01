@@ -120,7 +120,7 @@ library
                ,  tuple             == 0.3.*
                ,  vector            == 0.10.*
   exposed-modules:
---    ADP.Fusion
+    ADP.Fusion
     ADP.Fusion.Apply
     ADP.Fusion.Base
     ADP.Fusion.Base.Classes
@@ -132,6 +132,9 @@ library
     ADP.Fusion.Empty
     ADP.Fusion.Empty.Point
     ADP.Fusion.Empty.Type
+    ADP.Fusion.None
+    ADP.Fusion.None.Point
+    ADP.Fusion.None.Type
     ADP.Fusion.Table
     ADP.Fusion.Table.Array
     ADP.Fusion.Table.Array.Point
@@ -144,7 +147,6 @@ library
 ------    ADP.Fusion.Multi.Empty
 ------    ADP.Fusion.Multi.GChr
 ------    ADP.Fusion.Multi.None
---    ADP.Fusion.None
 --    ADP.Fusion.QuickCheck.Point
 ------    ADP.Fusion.QuickCheck
 ------    ADP.Fusion.Region
