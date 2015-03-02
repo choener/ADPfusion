@@ -222,9 +222,10 @@ runNeedlemanWunsch k i1' i2' = (d, take k . S.toList . unId $ axiom b) where
               :: Z:.ITbl Id Unboxed (Z:.PointL:.PointL) Int
   d = let (ITbl _ arr _) = t in arr PA.! (Z:.PointL n1:.PointL n2)
   !(Z:.b) = grammar (sScore <** sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
+{-# Noinline runNeedlemanWunsch #-}
 
-runOutsideNeedlemanWunsch :: Int -> String -> String -> (Int,[[String]])
-runOutsideNeedlemanWunsch k i1' i2' = (d, take k . S.toList . unId $ axiom b) where
+--runOutsideNeedlemanWunsch :: Int -> String -> String -> (Int,[[String]])
+runOutsideNeedlemanWunsch k i1' i2' = (d, take k . S.toList . unId $ axiom b,gogo) where
   i1 = VU.fromList i1'
   i2 = VU.fromList i2'
   n1 = VU.length i1
@@ -236,11 +237,17 @@ runOutsideNeedlemanWunsch k i1' i2' = (d, take k . S.toList . unId $ axiom b) wh
               :: Z:.ITbl Id Unboxed (Outside (Z:.PointL:.PointL)) Int
   d = let (ITbl _ arr _) = t in arr PA.! (O (Z:.PointL 0:.PointL 0))
   !(Z:.b) = grammar (sScore <** sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
+  (BtITbl _ bta btf) = b
+  gogo = forM_ [0..n1] $ \i -> forM_ [0..n2] $ \j -> do
+    let xs = S.toList . unId $ btf (O (Z:.PointL n1:.PointL n2)) (O (Z:.PointL i:.PointL j))
+    print xs
+{-# Noinline runOutsideNeedlemanWunsch #-}
 
 -- | This wrapper takes a list of input sequences and aligns each odd
 -- sequence with the next even sequence. We want one alignment for each
 -- such pair.
 
+{-
 align _ [] = return ()
 align _ [c] = error "single last line"
 align k (a:b:xs) = do
@@ -263,4 +270,5 @@ main = do
   let k = if null as then 1 else read $ head as
   ls <- lines <$> getContents
   align k ls
+-}
 

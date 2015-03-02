@@ -95,6 +95,7 @@ instance
   , TableIndices (Outside (is:.i))
   , MkStream m ls (Outside (is:.i))
   , PrimArrayOps arr (Outside (is:.i)) x
+  , Show (is:.i)
   ) => MkStream m (ls :!: ITbl m arr (Outside (is:.i)) x) (Outside (is:.i)) where
   mkStream (ls :!: ITbl c t _) vs lu is
     = map (\(S5 s _ _ i o) -> ElmITbl (t ! o) i o s)
@@ -113,7 +114,7 @@ instance
   , Show (is:.i)
   ) => MkStream mB (ls :!: Backtrack (ITbl mF arr (Outside (is:.i)) x) mF mB r) (Outside (is:.i)) where
   mkStream (ls :!: BtITbl c t bt) vs us is
-    = map (\(S5 s _ _ i o) -> ElmBtITbl (t ! o) (bt us o) i o s)
+    = map (\(S5 s _ _ i o) -> traceShow ("2",i,o) $ ElmBtITbl (t ! o) (bt us i) i o s)
     . tableIndices c vs is
     . map (\s -> S5 s Z Z (getIdx s) (getOmx s))
     $ mkStream ls (tableStaticVar vs is) us (tableStreamIndex c vs is)

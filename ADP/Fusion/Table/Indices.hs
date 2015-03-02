@@ -69,7 +69,7 @@ instance TableIndices is => TableIndices (is:.PointL) where
 
 instance TableIndices (Outside is) => TableIndices (Outside (is:.PointL)) where
   tableIndices (cs:.c) (vs:.OStatic d) (O (is:.PointL j))
-    = map (\(S5 s (zi:.PointL _) (zo:.PointL k) (O is) (O os)) -> S5 s zi zo (O (is:.PointL k)) (O (os:.PointL k))) -- constraint handled: tableStreamIndex
+    = map (\(S5 s (zi:.PointL i) (zo:.PointL o) (O is) (O os)) -> S5 s zi zo (O (is:.PointL i)) (O (os:.PointL o))) -- constraint handled: tableStreamIndex
     . tableIndices cs vs (O is)
     . map (\(S5 s zi zo (O (is:.i)) (O (os:.o))) -> S5 s (zi:.i) (zo:.o) (O is) (O os))
 
