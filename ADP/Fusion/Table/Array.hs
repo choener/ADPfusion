@@ -76,22 +76,7 @@ import           Debug.Trace
 
 -- | The backtracking version.
 
-instance ToBT (ITbl mF arr i x) mF mB r where
-  --data BT (ITbl mF arr i x) mF mB i r = BtITbl (ITbl mF arr i x) (forall a . mF a -> mB a)  (i -> mB (S.Stream mB r))
-  data BT (ITbl mF arr i x) mF mB r = BtITbl !(TblConstraint i) !(arr i x) (i -> i -> mB (S.Stream mB r))
-  type BtIx (ITbl mF arr i x) = i
-  toBT (ITbl c arr _) _ bt = BtITbl c arr bt
-  {-# INLINE toBT #-}
 
-
-
-instance Element ls i => Element (ls :!: (BT (ITbl mF arr i x) mF mB r)) i where
-  data Elm (ls :!: (BT (ITbl mF arr i x) mF mB r)) i = ElmBtITbl' !x !(mB (S.Stream mB r)) !i !(Elm ls i)
-  type Arg (ls :!: (BT (ITbl mF arr i x) mF mB r))   = Arg ls :. (x, mB (S.Stream mB r))
-  getArg (ElmBtITbl' x s _ ls) = getArg ls :. (x,s)
-  getIdx (ElmBtITbl' _ _ i _ ) = i
-  {-# INLINE getArg #-}
-  {-# INLINE getIdx #-}
 
 
 
@@ -161,22 +146,6 @@ instance
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline mkStream #-}
-
-instance
-  ( Monad mB
-  , Element ls PointL
-  , PA.PrimArrayOps arr PointL x
-  , MkStream mB ls PointL
-  ) => MkStream mB (ls :!: BT (ITbl mF arr PointL x) mF mB r) PointL where
-  mkStream (ls :!: BtITbl c arr bt) Static lu (PointL (i:.j))
-    = let ms = minSize c in ms `seq`
-    S.map (\s -> let PointL (h:.k) = getIdx s
-                     ix            = pointL k j
-                     d             = arr PA.! ix
-                 in ElmBtITbl' d (bt lu ix) ix s)
-    $ mkStream ls (Variable Check Nothing) lu (pointL i $ j - ms)
---  mkStream _ _ _ _ = error "mkStream / BT ITbl / PointL not implemented"
-  {-# INLINE mkStream #-}
 
 instance
   ( Monad m
@@ -327,31 +296,9 @@ instance
 -}
 
 
-instance
-  ( Monad mB
-  , Element ls (is:.i)
-  , TableStaticVar (is:.i)
-  , TableIndices (is:.i)
-  , MkStream mB ls (is:.i)
-  , PA.PrimArrayOps arr (is:.i) x
-  ) => MkStream mB (ls :!: BT (ITbl mF arr (is:.i) x) mF mB r) (is:.i) where
-  mkStream (ls :!: BtITbl c arr bt) vs lu is
-    = S.map (\(Tr s _ i) -> ElmBtITbl' (arr PA.! i) (bt lu i) i s)
-    . tableIndices c vs is
-    . S.map (\s -> Tr s Z (getIdx s))
-    $ mkStream ls (tableStaticVar vs is) lu (tableStreamIndex c vs is)
-  {-# INLINE mkStream #-}
-
 
 
 -- * Axiom for backtracking
-
-instance (PA.PrimArrayOps arr i x, Monad mB, IndexStream i) => Axiom (BT (ITbl mF arr i x) mF mB r) where
-  type S (BT (ITbl mF arr i x) mF mB r) = mB (S.Stream mB r)
-  axiom (BtITbl c arr bt) = do
-    h <- (S.head . uncurry streamDown) $ PA.bounds arr
-    bt h h
-  {-# INLINE axiom #-}
 
 -}
 

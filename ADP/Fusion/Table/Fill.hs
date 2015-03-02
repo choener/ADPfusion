@@ -11,22 +11,20 @@
 
 module ADP.Fusion.Table.Fill where
 
-import           Control.Monad.Primitive (PrimMonad (..))
 import           Control.Monad.Morph (hoist, MFunctor (..))
-import           Control.Monad.Trans.Class (lift, MonadTrans (..))
+import           Control.Monad.Primitive (PrimMonad (..))
 import           Control.Monad.ST
+import           Control.Monad.Trans.Class (lift, MonadTrans (..))
 import           Data.Vector.Fusion.Util (Id(..))
-import           System.IO.Unsafe
-import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import           GHC.Exts (inline)
+import qualified Data.Vector.Fusion.Stream.Monadic as SM
+import           System.IO.Unsafe
 
-import           Data.PrimitiveArray -- (Z(..), (:.)(..), Subword(..), Outside(..))
-import qualified Data.PrimitiveArray as PA
+import           Data.PrimitiveArray
 
-import           ADP.Fusion.Table
+import           ADP.Fusion.Table.Array -- TODO we want to keep only classes in here, move instances to the corresponding modules
 
 import           Debug.Trace
-import           Data.Array.Repa.Shape
 
 
 
@@ -38,8 +36,8 @@ import           Data.Array.Repa.Shape
 -- is usually the last thing to do, we can freeze as well.
 
 runFreezeMTbls ts = do
-    PA.unsafeRunFillTables $ expose ts
-    PA.freezeTables        $ onlyTables ts
+    unsafeRunFillTables $ expose ts
+    freezeTables        $ onlyTables ts
 {-# INLINE runFreezeMTbls #-}
 
 
@@ -98,25 +96,27 @@ class MutateTables (s :: *) (im :: * -> *) (om :: * -> *) where
 -- ** individual instances for filling a *single cell*
 
 instance
-  ( PA.PrimArrayOps  arr i x
-  , PA.MPrimArrayOps arr i x
+  ( PrimArrayOps  arr i x
+  , MPrimArrayOps arr i x
   , MutateCell ts im om i
   , PrimMonad om
   , Show x, Show i
   ) => MutateCell (ts:.ITbl im arr i x) im om i where
   mutateCell mrph (ts:.ITbl (!c) arr f) lu i = do
-    marr <- PA.unsafeThaw arr
+    marr <- unsafeThaw arr
     z <- (inline mrph) $ f lu i
-    PA.writeM marr i z
+    writeM marr i z
     mutateCell mrph ts lu i
   {-# INLINE mutateCell #-}
 
+{-
 instance
   ( MutateCell ts im om i
   ) => MutateCell (ts:.IRec im i x) im om i where
   mutateCell mrph (ts:.IRec (!c) _ _ f) lu i = do
     mutateCell mrph ts lu i
   {-# INLINE mutateCell #-}
+-}
 
 -- ** individual instances for filling a complete table and extracting the
 -- bounds
@@ -124,18 +124,18 @@ instance
 instance
   ( Monad om
   , MutateCell (ts:.ITbl im arr i x) im om i
-  , PA.PrimArrayOps arr i x
+  , PrimArrayOps arr i x
   , Show i
   , IndexStream i
   ) => MutateTables (ts:.ITbl im arr i x) im om where
   mutateTables mrph tt@(_:.ITbl _ arr _) = do
-    let (from,to) = PA.bounds arr
+    let (from,to) = bounds arr
     -- SM.mapM_ (mutateCell (inline mrph) tt to) $ PA.rangeStream from to -- TODO check the @to@ part
-    SM.mapM_ (mutateCell (inline mrph) tt to) $ PA.streamUp from to -- TODO check the @to@ part
+    SM.mapM_ (mutateCell (inline mrph) tt to) $ streamUp from to -- TODO check the @to@ part
     return tt
   {-# INLINE mutateTables #-}
 
-
+{-
 instance
   ( Monad om
   , MutateCell (ts:.IRec im i x) im om i
@@ -146,6 +146,7 @@ instance
     SM.mapM_ (mutateCell (inline mrph) tt to) $ PA.streamUp from to
     return tt
   {-# INLINE mutateTables #-}
+-}
 
 instance
   ( Monad om

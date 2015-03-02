@@ -10,7 +10,7 @@ module ADP.Fusion.Table.Axiom where
 
 class Axiom t where
   -- | The corresponding stream being returned by 'axiom'
-  type S t :: *
+  type AxiomStream t :: *
   -- | Given a table, run the axiom
-  axiom :: t -> S t
+  axiom :: t -> AxiomStream t
 

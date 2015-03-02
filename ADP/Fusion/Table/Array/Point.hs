@@ -8,6 +8,7 @@ import           Data.PrimitiveArray
 
 import           ADP.Fusion.Base
 import           ADP.Fusion.Table.Array.Type
+import           ADP.Fusion.Table.Backtrack
 
 
 
@@ -17,11 +18,23 @@ instance
   , PrimArrayOps arr PointL x
   , MkStream m ls PointL
   ) => MkStream m (ls :!: ITbl m arr PointL x) PointL where
-  mkStream (ls :!: ITbl c t _) IStatic (PointL u) (PointL i)
-    = let ms = minSize c in seq ms $ seq t $
-    S.map (ElmITbl (t ! PointL i) (PointL i) (PointL 0))
-    $ mkStream ls IVariable (PointL u) (PointL $ i - ms)
+  mkStream (ls :!: ITbl c t _) IStatic u j@(PointL pj)
+    = let ms = minSize c in ms `seq`
+    S.map (ElmITbl (t!j) j (PointL 0))
+    $ mkStream ls IVariable u (PointL $ pj - ms)
   {-# Inline mkStream #-}
+
+instance
+  ( Monad mB
+  , Element ls PointL
+  , PrimArrayOps arr PointL x
+  , MkStream mB ls PointL
+  ) => MkStream mB (ls :!: Backtrack (ITbl mF arr PointL x) mF mB r) PointL where
+  mkStream (ls :!: BtITbl c t bt) IStatic u j@(PointL pj)
+    = let ms = minSize c in ms `seq`
+    S.map (\s -> ElmBtITbl (t!j) (bt u j) j (PointL 0) s)
+    $ mkStream ls IVariable u (PointL $ pj - ms)
+  {-# INLINE mkStream #-}
 
 instance
   ( Monad m
@@ -29,10 +42,22 @@ instance
   , PrimArrayOps arr (Outside PointL) x
   , MkStream m ls (Outside PointL)
   ) => MkStream m (ls :!: ITbl m arr (Outside PointL) x) (Outside PointL) where
-  mkStream (ls :!: ITbl c t _) (OStatic d) (O (PointL u)) (O (PointL i))
-    = let ms = minSize c in seq ms $ seq t $
+  mkStream (ls :!: ITbl c t _) (OStatic d) u (O (PointL pj))
+    = let ms = minSize c in ms `seq`
     S.map (\z -> let o = getOmx z
                  in  ElmITbl (t ! o) o o z)
-    $ mkStream ls (OVariable FarLeft d)  (O $ PointL u) (O $ PointL $ i - ms)
+    $ mkStream ls (OVariable FarLeft d) u (O $ PointL $ pj - ms)
   {-# Inline mkStream #-}
+
+instance
+  ( Monad mB
+  , Element ls (Outside PointL)
+  , PrimArrayOps arr (Outside PointL) x
+  , MkStream mB ls (Outside PointL)
+  ) => MkStream mB (ls :!: Backtrack (ITbl mF arr (Outside PointL) x) mF mB r) (Outside PointL) where
+  mkStream (ls :!: BtITbl c t bt) (OStatic d) u (O (PointL pj))
+    = let ms = minSize c in ms `seq`
+    S.map (\s -> let o = getOmx s in ElmBtITbl (t!o) (bt u o) o o s)
+    $ mkStream ls (OVariable FarLeft d) u (O $ PointL $ pj - ms)
+  {-# INLINE mkStream #-}
 

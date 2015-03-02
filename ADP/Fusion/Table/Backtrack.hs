@@ -9,9 +9,9 @@
 
 module ADP.Fusion.Table.Backtrack where
 
-import qualified Data.Vector.Fusion.Stream.Monadic as S
+import Data.Vector.Fusion.Stream.Monadic (Stream)
 
-import           ADP.Fusion.Classes
+import ADP.Fusion.Base
 
 
 
@@ -24,10 +24,10 @@ import           ADP.Fusion.Classes
 -- @mB@ so as to be able to extract forward results in the backtracking
 -- phase.
 
-class ToBT t (mF :: * -> *) (mB :: * -> *) r where
-  data BT t (mF :: * -> *) (mB :: * -> *) r :: *
-  type BtIx t :: *
-  toBT :: t -> (forall a . mF a -> mB a) -> (BtIx t -> BtIx t -> mB (S.Stream mB r)) -> BT t mF mB r
+class GenBacktrackTable t (mF :: * -> *) (mB :: * -> *) r where
+  data Backtrack t (mF :: * -> *) (mB :: * -> *) r :: *
+  type BacktrackIndex t :: *
+  toBacktrack :: t -> (forall a . mF a -> mB a) -> (BacktrackIndex t -> BacktrackIndex t -> mB (Stream mB r)) -> Backtrack t mF mB r
 
-instance Build (BT t mF mB r)
+instance Build (Backtrack t mF mB r)
 

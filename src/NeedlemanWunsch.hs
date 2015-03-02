@@ -26,6 +26,7 @@ import           Control.Monad
 import           Control.Monad.Primitive
 import           Data.Vector.Fusion.Stream.Monadic (Stream (..))
 import           Data.Vector.Fusion.Util
+import           Debug.Trace
 import qualified Control.Arrow as A
 import qualified Data.Vector as V
 import qualified Data.Vector.Fusion.Stream as S
@@ -202,7 +203,7 @@ sPretty = Signature
   { step_step = \[x,y] (Z:.a :.b ) -> [a  :x, b  :y]
   , step_loop = \[x,y] (Z:.a :.()) -> [a  :x, '-':y]
   , loop_step = \[x,y] (Z:.():.b ) -> ['-':x, b  :y]
-  , nil_nil   = const ["",""]
+  , nil_nil   = const [".","."]
   , h = return . id
   }
 
@@ -216,11 +217,25 @@ runNeedlemanWunsch k i1' i2' = (d, take k . S.toList . unId $ axiom b) where
   n2 = VU.length i2
   !(Z:.t) = mutateTablesDefault
           $ grammar sScore
-              (ITbl (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.pointL 0 0:.pointL 0 0) (Z:.pointL 0 n1:.pointL 0 n2) (-999999) []))
+              (ITbl (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n1:.PointL n2) (-999999) []))
               i1 i2
               :: Z:.ITbl Id Unboxed (Z:.PointL:.PointL) Int
-  d = let (ITbl _ arr _) = t in arr PA.! (Z:.pointL 0 n1:.pointL 0 n2)
-  !(Z:.b) = grammar (sScore <** sPretty) (toBT t (undefined :: Id a -> Id a)) i1 i2
+  d = let (ITbl _ arr _) = t in arr PA.! (Z:.PointL n1:.PointL n2)
+  !(Z:.b) = grammar (sScore <** sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
+
+runOutsideNeedlemanWunsch :: Int -> String -> String -> (Int,[[String]])
+runOutsideNeedlemanWunsch k i1' i2' = (d, take k . S.toList . unId $ axiom b) where
+  i1 = VU.fromList i1'
+  i2 = VU.fromList i2'
+  n1 = VU.length i1
+  n2 = VU.length i2
+  !(Z:.t) = mutateTablesDefault
+          $ grammar sScore
+              (ITbl (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (O (Z:.PointL 0:.PointL 0)) (O (Z:.PointL n1:.PointL n2)) (-999999) []))
+              i1 i2
+              :: Z:.ITbl Id Unboxed (Outside (Z:.PointL:.PointL)) Int
+  d = let (ITbl _ arr _) = t in arr PA.! (O (Z:.PointL 0:.PointL 0))
+  !(Z:.b) = grammar (sScore <** sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
 
 -- | This wrapper takes a list of input sequences and aligns each odd
 -- sequence with the next even sequence. We want one alignment for each
@@ -231,8 +246,10 @@ align _ [c] = error "single last line"
 align k (a:b:xs) = do
   putStrLn a
   putStrLn b
-  let (s,rs) = runNeedlemanWunsch k a b
-  forM_ rs $ \[u,l] -> printf "%s\n%s  %d\n\n" u l s
+  --let (sI,rsI) = runNeedlemanWunsch k a b
+  let (sO,rsO) = runOutsideNeedlemanWunsch k a b
+  --forM_ rsI $ \[u,l] -> printf "%s\n%s  %d\n\n" (reverse u) (reverse l) sI
+  forM_ rsO $ \[u,l] -> printf "%s\n%s  %d\n\n" (reverse u) (reverse l) sO
   align k xs
 
 -- | And finally have a minimal main that reads from stdio.
