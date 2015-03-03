@@ -40,6 +40,8 @@ instance (Element ls i) => Element (ls :!: TermSymbol a b) i where
   {-# INLINE getArg #-}
   {-# INLINE getIdx #-}
 
+deriving instance (Show i, Show (TermArg (TermSymbol a b)), Show (Elm ls i)) => Show (Elm (ls :!: TermSymbol a b) i)
+
 instance
   ( Monad m
   , MkStream m ls i

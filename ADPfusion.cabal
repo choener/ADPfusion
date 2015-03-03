@@ -158,6 +158,7 @@ library
                     , FlexibleInstances
                     , GADTs
                     , MultiParamTypeClasses
+                    , StandaloneDeriving
                     , TypeFamilies
                     , TypeOperators
                     , TypeSynonymInstances

@@ -57,5 +57,7 @@ instance
     {-# Inline getIdx #-}
     {-# Inline getOmx #-}
 
+deriving instance (Show i, Show r, Show (Elm ls i)) => Show (Elm (ls :!: Chr r x) i)
+
 type instance TermArg (TermSymbol a (Chr r x)) = TermArg a :. r
 

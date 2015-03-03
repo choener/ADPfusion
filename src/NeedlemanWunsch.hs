@@ -203,7 +203,7 @@ sPretty = Signature
   { step_step = \[x,y] (Z:.a :.b ) -> [a  :x, b  :y]
   , step_loop = \[x,y] (Z:.a :.()) -> [a  :x, '-':y]
   , loop_step = \[x,y] (Z:.():.b ) -> ['-':x, b  :y]
-  , nil_nil   = const [".","."]
+  , nil_nil   = const ["",""]
   , h = return . id
   }
 
@@ -224,8 +224,8 @@ runNeedlemanWunsch k i1' i2' = (d, take k . S.toList . unId $ axiom b) where
   !(Z:.b) = grammar (sScore <** sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
 {-# Noinline runNeedlemanWunsch #-}
 
---runOutsideNeedlemanWunsch :: Int -> String -> String -> (Int,[[String]])
-runOutsideNeedlemanWunsch k i1' i2' = (d, take k . S.toList . unId $ axiom b,gogo) where
+runOutsideNeedlemanWunsch :: Int -> String -> String -> (Int,[[String]])
+runOutsideNeedlemanWunsch k i1' i2' = (d, take k . S.toList . unId $ axiom b) where -- ,gogo) where
   i1 = VU.fromList i1'
   i2 = VU.fromList i2'
   n1 = VU.length i1
@@ -237,26 +237,31 @@ runOutsideNeedlemanWunsch k i1' i2' = (d, take k . S.toList . unId $ axiom b,gog
               :: Z:.ITbl Id Unboxed (Outside (Z:.PointL:.PointL)) Int
   d = let (ITbl _ arr _) = t in arr PA.! (O (Z:.PointL 0:.PointL 0))
   !(Z:.b) = grammar (sScore <** sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
+  {-
   (BtITbl _ bta btf) = b
-  gogo = forM_ [0..n1] $ \i -> forM_ [0..n2] $ \j -> do
+  gogo = forM_ [n1,n1-1 .. 0] $ \i -> forM_ [n2,n2-1 .. 0] $ \j -> do
+    print (n1,n2,i,j)
     let xs = S.toList . unId $ btf (O (Z:.PointL n1:.PointL n2)) (O (Z:.PointL i:.PointL j))
     print xs
+  -}
 {-# Noinline runOutsideNeedlemanWunsch #-}
+
+--kkk x y = let (a,b,c) = runOutsideNeedlemanWunsch 1 x y in c >> print b
 
 -- | This wrapper takes a list of input sequences and aligns each odd
 -- sequence with the next even sequence. We want one alignment for each
 -- such pair.
 
-{-
 align _ [] = return ()
 align _ [c] = error "single last line"
 align k (a:b:xs) = do
   putStrLn a
   putStrLn b
-  --let (sI,rsI) = runNeedlemanWunsch k a b
+  putStrLn ""
+  let (sI,rsI) = runNeedlemanWunsch k a b
   let (sO,rsO) = runOutsideNeedlemanWunsch k a b
-  --forM_ rsI $ \[u,l] -> printf "%s\n%s  %d\n\n" (reverse u) (reverse l) sI
-  forM_ rsO $ \[u,l] -> printf "%s\n%s  %d\n\n" (reverse u) (reverse l) sO
+  forM_ rsI $ \[u,l] -> printf "%s\n%s  %d\n\n" (reverse u) (reverse l) sI
+  forM_ rsO $ \[u,l] -> printf "%s\n%s  %d\n\n" (id      u) (id      l) sO
   align k xs
 
 -- | And finally have a minimal main that reads from stdio.
@@ -270,5 +275,4 @@ main = do
   let k = if null as then 1 else read $ head as
   ls <- lines <$> getContents
   align k ls
--}
 

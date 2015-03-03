@@ -6,6 +6,8 @@ module ADP.Fusion.QuickCheck.Point where
 
 import           Control.Applicative
 import           Control.Monad
+import           Data.Strict.Tuple
+import           Data.Vector.Fusion.Util
 import           Debug.Trace
 import qualified Data.Vector.Fusion.Stream as S
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
@@ -14,7 +16,6 @@ import           System.IO.Unsafe
 import           Test.QuickCheck
 import           Test.QuickCheck.All
 import           Test.QuickCheck.Monadic
-import           Data.Vector.Fusion.Util
 
 import           Data.PrimitiveArray
 
@@ -176,37 +177,30 @@ prop_O_2dimItCC ix@(O (Z:.PointL j:.PointL l)) = zs == ls where
          , Z:.xs VU.! (j+1):.xs VU.! (l+1)
          ) | j>=0, l>=0, j<=98, l<=98 ]
 
-{-
--- | left-linear outside grammar
+-- * direct index tests
 
-prop_O_It ix@(O (PointL(i:.j))) = zs == ls where
-  t = ITbl EmptyOk xsPo (\ _ _ -> Id 1)
-  zs = (id <<< t ... S.toList) (O $ pointL 0 0) ix
-  ls = [ unsafeIndex xsPo (O $ pointL i j) | j-i>=0, i==0, j<=100 ]
+xprop_O_ixZItCC ix@(O (Z:.PointL j)) = zs where
+  t = ITbl (Z:.EmptyOk) xsZPo (\ _ _ -> Id 1)
+  zs = (id >>> t % (M:|chr xs) % (M:|chr xs) ... S.toList) (O (Z:.PointL 100)) ix
 
--- | left-linear outside grammar
+infixl 8 >>>
+(>>>) f xs = \lu ij -> S.map f . mkStream (build xs) (initialContext ij) lu $ ij
 
-prop_O_ItC ix@(O (PointL(i:.j))) = zs == ls where
-  t = ITbl EmptyOk xsPo (\ _ _ -> Id 1)
-  zs = ((,) <<< t % chr xs ... S.toList) (O $ pointL 0 0) ix
-  ls = [ ( unsafeIndex xsPo (O $ pointL i (j-1))
-         , xs VU.! (j-1)
-         ) | j-i>=1, i==0, j<=100 ]
--}
+class GetIxs x i where
+  type R x i :: *
+  getIxs :: Elm x i -> R x i
 
-{-
-prop_P_2dimMtCC ix@(Z:.PointL(i:.j):.PointL(k:.l)) = monadicIO $ do
-  mxs <- run $ pure $ mxsPP
-  let mt = ITbl (Z:.EmptyOk:.EmptyOk) mxs (const $ return undefined)
-  zs <- run $ (((,,) <<< mt % (M:|chr xs:|chr xs) % (M:|chr xs:|chr xs) ... SM.toList) (Z:.PointL (0:.0):.(PointL (0:.0)))) (Z:.PointL (0:.0):.PointL (0:.0)) ix
-  ls <- run $ sequence $ [ liftM3 (,,)   (readM mxs (Z:.pointL i (j-2):.pointL k (l-2)))
-                                         (pure $ Z:.xs VU.! (j-2):.xs VU.! (l-2))
-                                         (pure $ Z:.xs VU.! (j-1):.xs VU.! (l-1))
-                         | j-i>=2, l-k>=2, i==0, j<=100, k==0, l<=100] --, a<-[i+1..j-2], b<-[k+1..l-2] ]
-  if zs==ls
-    then assert $ zs==ls
-    else traceShow (zs,ls) $ assert False
--}
+instance GetIxs S i where
+  type R S i = Z:.(i,i)
+  getIxs e = Z:.(getIdx e, getOmx e)
+
+instance GetIxs ls i => GetIxs (ls :!: Chr a b) i where
+  type R (ls :!: Chr a b) i = R ls i :. (i,i)
+  getIxs (ElmChr _ i o s) = getIxs s :. (i,o)
+
+instance GetIxs ls i => GetIxs (ls :!: ITbl m a i x) i where
+  type R (ls :!: ITbl m a i x) i = R ls i :. (i,i)
+  getIxs (ElmITbl _ i o s) = getIxs s :. (i,o)
 
 xsP :: Unboxed (PointL) Int
 xsP = fromList (PointL 0) (PointL 100) [0 ..]

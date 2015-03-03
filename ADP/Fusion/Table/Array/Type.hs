@@ -1,7 +1,7 @@
 
 module ADP.Fusion.Table.Array.Type where
 
-import Data.Strict.Tuple hiding (uncurry)
+import Data.Strict.Tuple hiding (uncurry,snd)
 import Data.Vector.Fusion.Stream.Monadic (map,Stream,head)
 import Debug.Trace
 import Prelude hiding (map,head)
@@ -35,7 +35,7 @@ instance (Show i, PrimArrayOps arr i x, Monad mB, IndexStream i) => Axiom (Backt
   type AxiomStream (Backtrack (ITbl mF arr i x) mF mB r) = mB (Stream mB r)
   axiom (BtITbl c arr bt) = do
     h <- (head . uncurry streamDown) $ bounds arr
-    bt h h
+    bt (snd $ bounds arr) h
   {-# Inline axiom #-}
 
 instance Element ls i => Element (ls :!: ITbl m arr j x) i where
@@ -48,6 +48,8 @@ instance Element ls i => Element (ls :!: ITbl m arr j x) i where
   {-# Inline getIdx #-}
   {-# Inline getOmx #-}
 
+deriving instance (Show i, Show (Elm ls i), Show x) => Show (Elm (ls :!: ITbl m arr j x) i)
+
 instance Element ls i => Element (ls :!: (Backtrack (ITbl mF arr i x) mF mB r)) i where
   data Elm (ls :!: (Backtrack (ITbl mF arr i x) mF mB r)) i = ElmBtITbl !x !(mB (Stream mB r)) !i !i !(Elm ls i)
   type Arg (ls :!: (Backtrack (ITbl mF arr i x) mF mB r))   = Arg ls :. (x, mB (Stream mB r))
@@ -57,6 +59,9 @@ instance Element ls i => Element (ls :!: (Backtrack (ITbl mF arr i x) mF mB r)) 
   {-# Inline getArg #-}
   {-# Inline getIdx #-}
   {-# Inline getOmx #-}
+
+instance (Show x, Show i, Show (Elm ls i)) => Show (Elm (ls :!: (Backtrack (ITbl mF arr i x) mF mB r)) i) where
+  show (ElmBtITbl x _ i o s) = show (x,i,o) ++ " " ++ show s
 
 instance
   ( Monad m
@@ -114,7 +119,7 @@ instance
   , Show (is:.i)
   ) => MkStream mB (ls :!: Backtrack (ITbl mF arr (Outside (is:.i)) x) mF mB r) (Outside (is:.i)) where
   mkStream (ls :!: BtITbl c t bt) vs us is
-    = map (\(S5 s _ _ i o) -> traceShow ("2",i,o) $ ElmBtITbl (t ! o) (bt us i) i o s)
+    = map (\(S5 s _ _ i o) -> ElmBtITbl (t ! o) (bt us o) i o s)
     . tableIndices c vs is
     . map (\s -> S5 s Z Z (getIdx s) (getOmx s))
     $ mkStream ls (tableStaticVar vs is) us (tableStreamIndex c vs is)
