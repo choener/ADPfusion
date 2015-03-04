@@ -1,9 +1,10 @@
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE GADTs #-}
+
+{-# Language BangPatterns #-}
+{-# Language RecordWildCards #-}
+{-# Language ScopedTypeVariables #-}
+{-# Language TemplateHaskell #-}
+{-# Language TypeOperators #-}
+{-# Language GADTs #-}
 
 -- | The Needleman-Wunsch global alignment algorithm. This algorithm is
 -- extremely simple but provides a good showcase for what ADPfusion offers.
@@ -207,7 +208,8 @@ sPretty = Signature
   , h = return . id
   }
 
--- * This is the new way how to handle table-filling
+-- | The inside grammar, with efficient table-filling (via
+-- 'nwInsideForward') and backtracking.
 
 runNeedlemanWunsch :: Int -> String -> String -> (Int,[[String]])
 runNeedlemanWunsch k i1' i2' = (d, take k . S.toList . unId $ axiom b) where
@@ -215,14 +217,34 @@ runNeedlemanWunsch k i1' i2' = (d, take k . S.toList . unId $ axiom b) where
   i2 = VU.fromList i2'
   n1 = VU.length i1
   n2 = VU.length i2
-  !(Z:.t) = mutateTablesDefault
-          $ grammar sScore
-              (ITbl (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n1:.PointL n2) (-999999) []))
-              i1 i2
-              :: Z:.ITbl Id Unboxed (Z:.PointL:.PointL) Int
+  !(Z:.t) = nwInsideForward i1 i2
   d = let (ITbl _ arr _) = t in arr PA.! (Z:.PointL n1:.PointL n2)
   !(Z:.b) = grammar (sScore <** sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
 {-# Noinline runNeedlemanWunsch #-}
+
+-- | The forward or table-filling phase. It is possible to inline this code
+-- directly into 'runNeedlemanWunsch'. Here, this phase is separated. If
+-- you use @ghc-core@ to examine the @GHC Core@ language, you can search
+-- for @nwInsideForward@ and check wether the inside code is optimized
+-- well. This is normally /not/ required, and only done here, because these
+-- algorithms are used to gauge efficiency of the fusion framework as well.
+--
+-- For your own code, you can write as done here, or in the way of
+-- 'runOutsideNeedlemanWunsch'.
+
+nwInsideForward :: VU.Vector Char -> VU.Vector Char -> Z:.ITbl Id Unboxed (Z:.PointL:.PointL) Int
+nwInsideForward i1 i2 = mutateTablesDefault $
+                          grammar sScore
+                          (ITbl (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n1:.PointL n2) (-999999) []))
+                          i1 i2
+  where n1 = VU.length i1
+        n2 = VU.length i2
+{-# NoInline nwInsideForward #-}
+
+-- | The outside version of the Needleman-Wunsch alignment algorithm. The
+-- outside grammar is identical to the inside grammar! This is not
+-- generally the case, but here it is. Hence we may just use outside tables
+-- and the grammar from above.
 
 runOutsideNeedlemanWunsch :: Int -> String -> String -> (Int,[[String]])
 runOutsideNeedlemanWunsch k i1' i2' = (d, take k . S.toList . unId $ axiom b) where -- ,gogo) where
@@ -237,13 +259,6 @@ runOutsideNeedlemanWunsch k i1' i2' = (d, take k . S.toList . unId $ axiom b) wh
               :: Z:.ITbl Id Unboxed (Outside (Z:.PointL:.PointL)) Int
   d = let (ITbl _ arr _) = t in arr PA.! (O (Z:.PointL 0:.PointL 0))
   !(Z:.b) = grammar (sScore <** sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
-  {-
-  (BtITbl _ bta btf) = b
-  gogo = forM_ [n1,n1-1 .. 0] $ \i -> forM_ [n2,n2-1 .. 0] $ \j -> do
-    print (n1,n2,i,j)
-    let xs = S.toList . unId $ btf (O (Z:.PointL n1:.PointL n2)) (O (Z:.PointL i:.PointL j))
-    print xs
-  -}
 {-# Noinline runOutsideNeedlemanWunsch #-}
 
 --kkk x y = let (a,b,c) = runOutsideNeedlemanWunsch 1 x y in c >> print b

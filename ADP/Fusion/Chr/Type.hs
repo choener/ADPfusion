@@ -31,7 +31,7 @@ data Chr r x where
 -- | smart constructor for regular 1-character parsers
 
 --chr xs = Chr VG.unsafeIndex xs
-chr xs = Chr (VG.!) xs
+chr xs = Chr (VG.unsafeIndex) xs
 {-# Inline chr #-}
 
 -- | Smart constructor for Maybe Peeking, followed by a character.

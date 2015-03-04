@@ -49,11 +49,14 @@ instance TableIndices is => TableIndices (is:.Subword) where
   {-# INLINE tableIndices #-}
 -}
 
+-- | TODO I think we need to check @cs:.c@ here
+
 instance TableIndices is => TableIndices (is:.PointL) where
-  tableIndices (cs:.c) (vs:.IStatic) (is:.PointL j)
+  tableIndices (cs:._) (vs:.IStatic) (is:.PointL j)
     = map (\(S5 s (zi:.PointL _) (zo:.PointL _) is os) -> S5 s zi zo (is:.PointL j) (os:.PointL 0)) -- constraint handled: tableStreamIndex
     . tableIndices cs vs is
     . map (\(S5 s zi zo (is:.i) (os:.o)) -> S5 s (zi:.i) (zo:.o) is os)
+  {-  TODO re-add later
   tableIndices (cs:.OnlyZero) _ _ = error "write me"
   tableIndices (cs:.c) (vs:.IVariable) (is:.PointL j)
     = flatten mk step Unknown
@@ -65,6 +68,7 @@ instance TableIndices is => TableIndices (is:.PointL) where
             | otherwise = return $ Done
           {-# Inline [1] mk   #-}
           {-# Inline [1] step #-}
+  -}
   {-# Inline tableIndices #-}
 
 instance TableIndices (Outside is) => TableIndices (Outside (is:.PointL)) where
@@ -72,6 +76,7 @@ instance TableIndices (Outside is) => TableIndices (Outside (is:.PointL)) where
     = map (\(S5 s (zi:.PointL i) (zo:.PointL o) (O is) (O os)) -> S5 s zi zo (O (is:.PointL i)) (O (os:.PointL o))) -- constraint handled: tableStreamIndex
     . tableIndices cs vs (O is)
     . map (\(S5 s zi zo (O (is:.i)) (O (os:.o))) -> S5 s (zi:.i) (zo:.o) (O is) (O os))
+  {-# Inline tableIndices #-}
 
 {-
 instance TableIndices is => TableIndices (is:.PointR) where
