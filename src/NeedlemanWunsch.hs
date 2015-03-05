@@ -19,6 +19,12 @@
 -- dynamic programs.
 --
 -- Don't forget to inline basically everything!
+--
+-- One note on performance: Needleman-Wunsch is actually one of the worst
+-- cases for ADPfusion. Low-level implementations can get away with a very
+-- small number of code steps for each cell to be filled. We can't /quite/
+-- do this. The relative overhead for each cell to be written into goes
+-- down with more complex grammars and algebras.
 
 module Main where
 
@@ -37,7 +43,15 @@ import           System.Environment (getArgs)
 import           System.IO.Unsafe (unsafePerformIO)
 import           Text.Printf
 
+-- @Data.PrimitiveArray@ contains data structures, and index structures for
+-- dynamic programming. Notably, the primitive arrays holding the cell data
+-- with Boxed and Unboxed tables. In addition, linear, context-free, and
+-- set data structures are made available.
+
 import           Data.PrimitiveArray as PA hiding (map)
+
+-- @ADP.Fusion@ exposes everything necessary for higher-level DP
+-- algorithms.
 
 import           ADP.Fusion
 
@@ -77,10 +91,10 @@ import           ADP.Fusion
 -- nowhere to come from, so we need to inititialize (or terminate depending
 -- on your view point) using the @nil_nil@ case. That one is the base case.
 --
--- Now, we also want to know which of the three cases is the best case
--- (coming from @d,l,u@), this requires a "choice" function or @h@.
+-- We also want to know which of the three cases is the best case (coming
+-- from @d,l,u@), this requires a "choice" function or @h@.
 --
--- Now, we take a close look at the type signatures. @step_step :: x ->
+-- We take a close look at the type signatures. @step_step :: x ->
 -- (Z:.c:.c) -> x@ tells us that @step_step@ requires the score from the
 -- non-terminal, typed @x@ for the alignment up to @d@, then we get the two
 -- characters with type @c@ and produce a new non-terminal typed score @x@.
@@ -136,12 +150,12 @@ makeAlgebraProductH ['h] ''Signature
 -- terminal for @i1@ and @i2@.
 --
 -- Multi-dimensional terminals are built up from the zero-dimension @M@,
--- separated by @:>@ symbols and just bind the input. In this case we want
+-- separated by @:|@ symbols and just bind the input. In this case we want
 -- individual characters from @i1@ and @i2@, so we write @chr i1@ or @chr
 -- i2@.
 --
 -- Different rules are combined with @(|||)@ and the optimal case is
--- selected via @...h@. Rules can, of course, be co-recursive, each rule
+-- selected via @... h@. Rules can, of course, be co-recursive, each rule
 -- can request all terminal and non-terminal symbols.
 --
 -- Due to the way @nil_nil@ works on @Empty@, @nil_nil@ is actually /only/
@@ -209,7 +223,9 @@ sPretty = Signature
   }
 
 -- | The inside grammar, with efficient table-filling (via
--- 'nwInsideForward') and backtracking.
+-- 'nwInsideForward') and backtracking. Requests @k@ co-optimal
+-- backtrackings, given the inputs @i1@ and @i2@. The @fst@ element
+-- returned is the score, the @snd@ are the co-optimal parses.
 
 runNeedlemanWunsch :: Int -> String -> String -> (Int,[[String]])
 runNeedlemanWunsch k i1' i2' = (d, take k . S.toList . unId $ axiom b) where
@@ -257,6 +273,9 @@ runOutsideNeedlemanWunsch k i1' i2' = (d, take k . S.toList . unId $ axiom b) wh
   !(Z:.b) = grammar (sScore <** sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
 {-# Noinline runOutsideNeedlemanWunsch #-}
 
+-- | Again, to be able to observe performance, we have extracted the
+-- outside-table-filling part.
+
 nwOutsideForward :: VU.Vector Char -> VU.Vector Char -> Z:.ITbl Id Unboxed (Outside (Z:.PointL:.PointL)) Int
 nwOutsideForward i1 i2 = mutateTablesDefault $
                            grammar sScore
@@ -266,11 +285,17 @@ nwOutsideForward i1 i2 = mutateTablesDefault $
         n2 = VU.length i2
 {-# Noinline nwOutsideForward #-}
 
---kkk x y = let (a,b,c) = runOutsideNeedlemanWunsch 1 x y in c >> print b
-
 -- | This wrapper takes a list of input sequences and aligns each odd
 -- sequence with the next even sequence. We want one alignment for each
 -- such pair.
+--
+-- Since we use basic lists during backtracking, the resulting lists have
+-- to be reversed for inside-backtracking. Note that because the Outside
+-- grammar is quasi-right-linear, it does not require reversing the two
+-- strings.
+--
+-- For real applications, consider using @Data.Sequence@ which has @O(1)@
+-- append and prepend.
 
 align _ [] = return ()
 align _ [c] = error "single last line"
@@ -287,8 +312,9 @@ align k (a:b:xs) = do
 -- | And finally have a minimal main that reads from stdio.
 --
 -- If you are brave enough then put this through @ghc-core@ and look for
--- @needlemanWunsch@ in the CORE. Everything coming from the forward phase
--- should be beautifully optimized and the algorithm should run quite fast.
+-- @nwInsideForward@ or @nwOutsideForward@ in the CORE. Everything coming
+-- from the forward phase should be beautifully optimized and the algorithm
+-- should run quite fast.
 
 main = do
   as <- getArgs
