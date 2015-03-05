@@ -252,14 +252,19 @@ runOutsideNeedlemanWunsch k i1' i2' = (d, take k . S.toList . unId $ axiom b) wh
   i2 = VU.fromList i2'
   n1 = VU.length i1
   n2 = VU.length i2
-  !(Z:.t) = mutateTablesDefault
-          $ grammar sScore
-              (ITbl (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (O (Z:.PointL 0:.PointL 0)) (O (Z:.PointL n1:.PointL n2)) (-999999) []))
-              i1 i2
-              :: Z:.ITbl Id Unboxed (Outside (Z:.PointL:.PointL)) Int
+  !(Z:.t) = nwOutsideForward i1 i2
   d = let (ITbl _ arr _) = t in arr PA.! (O (Z:.PointL 0:.PointL 0))
   !(Z:.b) = grammar (sScore <** sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
 {-# Noinline runOutsideNeedlemanWunsch #-}
+
+nwOutsideForward :: VU.Vector Char -> VU.Vector Char -> Z:.ITbl Id Unboxed (Outside (Z:.PointL:.PointL)) Int
+nwOutsideForward i1 i2 = mutateTablesDefault $
+                           grammar sScore
+                           (ITbl (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (O (Z:.PointL 0:.PointL 0)) (O (Z:.PointL n1:.PointL n2)) (-999999) []))
+                           i1 i2
+  where n1 = VU.length i1
+        n2 = VU.length i2
+{-# Noinline nwOutsideForward #-}
 
 --kkk x y = let (a,b,c) = runOutsideNeedlemanWunsch 1 x y in c >> print b
 
