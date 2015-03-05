@@ -69,7 +69,7 @@ instance
   -- @flatten@ and how we modify @is@. Apparently, once we demand to know
   -- about @i@, fusion breaks down.
   mkStream S (vs:.IVariable ) (lus:.PointL u) (is:.PointL i)
-    = id -- staticCheck (i>=0 && i<=u)
+    = staticCheck (i>=0 && i<=u)
     $ map (\(ElmS zi zo) -> ElmS (zi:.PointL i) (zo:.PointL 0))
     $ mkStream S vs lus is
   {-# INLINE mkStream #-}
@@ -91,15 +91,14 @@ instance
 
 instance TableStaticVar PointL where
   tableStaticVar     _ _                = IVariable
-  -- TODO this code destroys fusion. If I do 'tableStreamIndex EmptyOk
-  -- _ (PointL j) = PointL j' then everything works, but case'ing on the
-  -- table state, makes fusion go away.
+  -- NOTE this code used to destroy fusion. If we inline tableStreamIndex
+  -- very late (after 'mkStream', probably) then everything works out.
   tableStreamIndex c _ (PointL j)
     | c==EmptyOk  = PointL j
     | c==NonEmpty = PointL $ j-1
     | c==OnlyZero = PointL j -- this should then actually request a size in 'tableStaticVar' ...
-  {-# INLINE tableStaticVar   #-}
-  {-# INLINE tableStreamIndex #-}
+  {-# INLINE [0] tableStaticVar   #-}
+  {-# INLINE [0] tableStreamIndex #-}
 
 instance TableStaticVar (Outside PointL) where
   tableStaticVar     (OStatic d) _ = OVariable FarLeft d
@@ -107,6 +106,6 @@ instance TableStaticVar (Outside PointL) where
     | c==EmptyOk  = O (PointL j)
     | c==NonEmpty = O (PointL $ j-1)
     | c==OnlyZero = O (PointL j) -- this should then actually request a size in 'tableStaticVar' ...
-  {-# INLINE tableStaticVar   #-}
-  {-# INLINE tableStreamIndex #-}
+  {-# INLINE [0] tableStaticVar   #-}
+  {-# INLINE [0] tableStreamIndex #-}
 

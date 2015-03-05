@@ -163,20 +163,20 @@ class TableStaticVar i where
 instance TableStaticVar Z where
   tableStaticVar     _ _ = Z
   tableStreamIndex _ _ _ = Z
-  {-# INLINE tableStaticVar   #-}
-  {-# INLINE tableStreamIndex #-}
+  {-# INLINE [0] tableStaticVar   #-}
+  {-# INLINE [0] tableStreamIndex #-}
 
 instance TableStaticVar (Outside Z) where
   tableStaticVar     _ _ = Z
   tableStreamIndex _ _ _ = O Z
-  {-# INLINE tableStaticVar   #-}
-  {-# INLINE tableStreamIndex #-}
+  {-# INLINE [0] tableStaticVar   #-}
+  {-# INLINE [0] tableStreamIndex #-}
 
 instance (TableStaticVar is, TableStaticVar i) => TableStaticVar (is:.i) where
   tableStaticVar           (vs:.v) (is:.i) = tableStaticVar      vs is :. tableStaticVar     v i
   tableStreamIndex (cs:.c) (vs:.v) (is:.i) = tableStreamIndex cs vs is :. tableStreamIndex c v i
-  {-# INLINE tableStaticVar   #-}
-  {-# INLINE tableStreamIndex #-}
+  {-# INLINE [0] tableStaticVar   #-}
+  {-# INLINE [0] tableStreamIndex #-}
 
 instance (TableStaticVar (Outside is), TableStaticVar (Outside i)) => TableStaticVar (Outside (is:.i)) where
   tableStaticVar           (vs:.v) (O (is:.i)) = tableStaticVar      vs (O is) :. tableStaticVar     v (O i)
@@ -184,6 +184,6 @@ instance (TableStaticVar (Outside is), TableStaticVar (Outside i)) => TableStati
     let (O js) = tableStreamIndex cs vs (O is)
         (O j)  = tableStreamIndex c  v  (O i)
     in O (js:.j)
-  {-# INLINE tableStaticVar   #-}
-  {-# INLINE tableStreamIndex #-}
+  {-# INLINE [0] tableStaticVar   #-}
+  {-# INLINE [0] tableStreamIndex #-}
 
