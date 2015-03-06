@@ -200,33 +200,34 @@ executable NeedlemanWunsch
       -optlo-O3 -optlo-std-compile-opts
       -fllvm-tbaa
 
---executable Nussinov
---  if flag(examples)
---    buildable:
---      True
---    build-depends:
---      ADPfusion         ,
---      PrimitiveArray    ,
---      template-haskell  ,
---      vector            ,
---      base
---  else
---    buildable:
---      False
---  hs-source-dirs:
---    src
---  main-is:
---    Nussinov.hs
---  ghc-options:
---    -O2
---    -funbox-strict-fields
---    -funfolding-use-threshold1000
---    -funfolding-keeness-factor1000
---  if flag(llvm)
---    ghc-options:
---      -fllvm
---      -optlo-O3 -optlo-std-compile-opts
---      -fllvm-tbaa
+executable Nussinov
+  if flag(examples)
+    buildable:
+      True
+    build-depends:
+      ADPfusion         ,
+      PrimitiveArray    ,
+      template-haskell  ,
+      vector            ,
+      base
+  else
+    buildable:
+      False
+  hs-source-dirs:
+    src
+  main-is:
+    Nussinov.hs
+  default-language: Haskell2010
+  ghc-options:
+    -O2
+    -funbox-strict-fields
+    -funfolding-use-threshold1000
+    -funfolding-keeness-factor1000
+  if flag(llvm)
+    ghc-options:
+      -fllvm
+      -optlo-O3 -optlo-std-compile-opts
+      -fllvm-tbaa
 
 --executable TwoNussinov
 --  if flag(examples)
