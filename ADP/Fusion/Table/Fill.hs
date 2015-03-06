@@ -102,7 +102,7 @@ instance
   , PrimMonad om
   , Show x, Show i
   ) => MutateCell (ts:.ITbl im arr i x) im om i where
-  mutateCell mrph (ts:.ITbl (!c) arr f) lu i = do
+  mutateCell mrph (ts:.ITbl c arr f) lu i = do
     marr <- unsafeThaw arr
     z <- (inline mrph) $ f lu i
     writeM marr i z

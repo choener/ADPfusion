@@ -96,8 +96,8 @@ pretty = Nussinov
 
 -- grammar :: Nussinov m Char () x r -> c' -> t' -> (t', Subword -> m r)
 grammar Nussinov{..} c t' =
-  let t = t'  ( unp <<< t % c           |||
-                jux <<< t % c % t % c   |||
+  let t = t'  ( -- unp <<< t % c           |||
+                -- jux <<< t % c % t % c   |||
                 nil <<< Empty           ... h
               )
   in Z:.t
@@ -118,15 +118,18 @@ runNussinov :: Int -> String -> (Int,[String])
 runNussinov k inp = (d, take k . S.toList . unId $ axiom b) where
   i = VU.fromList . Prelude.map toUpper $ inp
   n = VU.length i
-  -- NOTE we need to fix the types at least once (@Subword@ and others),
-  -- this we do here
-  !(Z:.t) = mutateTablesDefault
-          $ grammar bpmax
-              (chr i)
-              (ITbl EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-999999) [])) :: Z:.ITbl Id Unboxed Subword Int
+  !(Z:.t) = runInsideForward i
   d = let (ITbl _ arr _) = t in arr PA.! subword 0 n
   !(Z:.b) = grammar (bpmax <** pretty) (chr i) (toBacktrack t (undefined :: Id a -> Id a))
 {-# NOINLINE runNussinov #-}
+
+runInsideForward :: VU.Vector Char -> Z:.ITbl Id Unboxed Subword Int
+runInsideForward i = mutateTablesDefault
+                   $ grammar bpmax
+                       (chr i)
+                       (ITbl EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-999999) []))
+  where n = VU.length i
+{-# NoInline runInsideForward #-}
 
 {-
 runPartitionNussinov :: String -> [(Subword,Double,Double,Double)]

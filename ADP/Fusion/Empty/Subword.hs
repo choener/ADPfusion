@@ -9,6 +9,8 @@ import           Data.PrimitiveArray
 import           ADP.Fusion.Base
 import           ADP.Fusion.Empty.Type
 
+import Data.Vector.Fusion.Util
+
 
 
 instance

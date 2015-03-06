@@ -40,7 +40,7 @@ chrLeft xs = Chr f xs where
   f xs k = ( xs VG.!? (k-1)
            , VG.unsafeIndex xs k
            )
-  {-# Inline [1] f #-}
+  {-# Inline [0] f #-}
 {-# Inline chrLeft #-}
 
 instance Build (Chr r x)
