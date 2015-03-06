@@ -1,8 +1,8 @@
 name:           ADPfusion
 version:        0.4.0.0
-author:         Christian Hoener zu Siederdissen, 2011-2014
-copyright:      Christian Hoener zu Siederdissen, 2011-2014
-homepage:       http://www.bioinf.uni-leipzig.de/~choener/adpfusion
+author:         Christian Hoener zu Siederdissen, 2011-2015
+copyright:      Christian Hoener zu Siederdissen, 2011-2015
+homepage:       http://www.bioinf.uni-leipzig.de/Software/gADP/
 maintainer:     choener@bioinf.uni-leipzig.de
 category:       Algorithms, Data Structures, Bioinformatics
 license:        BSD3
@@ -126,11 +126,14 @@ library
     ADP.Fusion.Base.Classes
     ADP.Fusion.Base.Multi
     ADP.Fusion.Base.Point
+    ADP.Fusion.Base.Subword
     ADP.Fusion.Chr
     ADP.Fusion.Chr.Point
+    ADP.Fusion.Chr.Subword
     ADP.Fusion.Chr.Type
     ADP.Fusion.Empty
     ADP.Fusion.Empty.Point
+    ADP.Fusion.Empty.Subword
     ADP.Fusion.Empty.Type
     ADP.Fusion.None
     ADP.Fusion.None.Point
@@ -138,6 +141,7 @@ library
     ADP.Fusion.Table
     ADP.Fusion.Table.Array
     ADP.Fusion.Table.Array.Point
+    ADP.Fusion.Table.Array.Subword
     ADP.Fusion.Table.Array.Type
     ADP.Fusion.Table.Axiom
     ADP.Fusion.Table.Backtrack

@@ -1,10 +1,12 @@
 
 module ADP.Fusion.Empty
   ( module ADP.Fusion.Empty.Type
+  , module ADP.Fusion.Empty.Subword
   , module ADP.Fusion.Empty.Point
   ) where
 
 import ADP.Fusion.Empty.Point
+import ADP.Fusion.Empty.Subword
 import ADP.Fusion.Empty.Type
 
 {-

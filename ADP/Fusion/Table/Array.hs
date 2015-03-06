@@ -2,9 +2,11 @@
 module ADP.Fusion.Table.Array
   ( module ADP.Fusion.Table.Array.Type
   , module ADP.Fusion.Table.Array.Point
+  , module ADP.Fusion.Table.Array.Subword
   ) where
 
 import ADP.Fusion.Table.Array.Point
+import ADP.Fusion.Table.Array.Subword
 import ADP.Fusion.Table.Array.Type
 
 {-

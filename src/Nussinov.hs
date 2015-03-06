@@ -26,9 +26,7 @@ import qualified Data.Vector.Unboxed as VU
 import           System.Environment (getArgs)
 import           Text.Printf
 
-import           Data.Array.Repa.Index.Subword
 import           Data.PrimitiveArray as PA
-import           Data.PrimitiveArray.Zero as PA
 
 import           ADP.Fusion
 
@@ -105,6 +103,7 @@ grammar Nussinov{..} c t' =
   in Z:.t
 {-# INLINE grammar #-}
 
+{-
 outsideGrammar Nussinov{..} c s t' =
   let t = t'  ( unp <<< t % c         |||
                 -- jux <<< t % c % s % c |||
@@ -113,6 +112,7 @@ outsideGrammar Nussinov{..} c s t' =
               )
   in Z:.t
 {-# INLINE outsideGrammar #-}
+-}
 
 runNussinov :: Int -> String -> (Int,[String])
 runNussinov k inp = (d, take k . S.toList . unId $ axiom b) where
@@ -125,9 +125,10 @@ runNussinov k inp = (d, take k . S.toList . unId $ axiom b) where
               (chr i)
               (ITbl EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-999999) [])) :: Z:.ITbl Id Unboxed Subword Int
   d = let (ITbl _ arr _) = t in arr PA.! subword 0 n
-  !(Z:.b) = grammar (bpmax <** pretty) (chr i) (toBT t (undefined :: Id a -> Id a))
+  !(Z:.b) = grammar (bpmax <** pretty) (chr i) (toBacktrack t (undefined :: Id a -> Id a))
 {-# NOINLINE runNussinov #-}
 
+{-
 runPartitionNussinov :: String -> [(Subword,Double,Double,Double)]
 runPartitionNussinov inp
   = Data.List.map (\(sh,a) -> let b = iTblArray t PA.! (O sh)
@@ -151,6 +152,7 @@ runPartitionNussinov inp
               s
               (ITbl EmptyOk (PA.fromAssocs (O $ subword 0 0) (O $ subword 0 n) (-1) []))
 {-# NOINLINE runPartitionNussinov #-}
+-}
 
 main = do
   as <- getArgs

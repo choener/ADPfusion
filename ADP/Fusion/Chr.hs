@@ -2,9 +2,11 @@
 module ADP.Fusion.Chr
   ( module ADP.Fusion.Chr.Type
   , module ADP.Fusion.Chr.Point
+  , module ADP.Fusion.Chr.Subword
   ) where
 
 import ADP.Fusion.Chr.Point
+import ADP.Fusion.Chr.Subword
 import ADP.Fusion.Chr.Type
 
 

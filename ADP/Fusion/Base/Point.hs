@@ -32,6 +32,8 @@ instance RuleContext (Complement PointL) where
   initialContext _ = Complemented
   {-# Inline initialContext #-}
 
+
+
 instance (Monad m) => MkStream m S PointL where
   mkStream S IStatic (PointL u) (PointL j)
     = staticCheck (0==j) . singleton $ ElmS (PointL 0) (PointL 0)
@@ -45,6 +47,8 @@ instance (Monad m) => MkStream m S (Outside PointL) where
   mkStream S (OVariable FarLeft d) (O (PointL u)) (O (PointL i))
     = staticCheck (i>=0 && i+d<=u) . singleton $ ElmS (O $ PointL i) (O . PointL $ i+d)
   {-# Inline mkStream #-}
+
+
 
 instance
   ( Monad m
