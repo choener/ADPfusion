@@ -11,6 +11,8 @@ import           ADP.Fusion.Base
 import           ADP.Fusion.Table.Array.Type
 import           ADP.Fusion.Table.Backtrack
 
+import           Data.Vector.Fusion.Util
+
 
 
 -- TODO delay inline @(subword i $ j - minSize c)@ or face fusion-breakage.
@@ -25,10 +27,10 @@ instance
   mkStream (ls :!: ITbl c t _) IStatic hh ij@(Subword (i:.j))
     = S.map (\s -> let (Subword (_:.l)) = getIdx s
                    in  ElmITbl (t ! subword l j) (subword l j) (subword 0 0) s)
-    $ mkStream ls IVariable hh (subword i $ j - minSize c)
+    $ mkStream ls IVariable hh (delay_inline subword i $ j - minSize c)
   mkStream (ls :!: ITbl c t _) IVariable hh ij@(Subword (i:.j))
     = S.flatten mk step Unknown $ mkStream ls IVariable hh (subword i j)
-    where mk s = let Subword (_:.l) = getIdx s in return (s :. j - l - minSize c)
+    where mk s = let Subword (_:.l) = getIdx s in return (s :. delay_inline id (j - l - minSize c))
           step (s:.z) | z >= 0 = do let Subword (_:.k) = getIdx s
                                         l              = j - z
                                         kl             = subword k l

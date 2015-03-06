@@ -96,8 +96,8 @@ pretty = Nussinov
 
 -- grammar :: Nussinov m Char () x r -> c' -> t' -> (t', Subword -> m r)
 grammar Nussinov{..} c t' =
-  let t = t'  ( -- unp <<< t % c           |||
-                -- jux <<< t % c % t % c   |||
+  let t = t'  ( unp <<< t % c           |||
+                jux <<< t % c % t % c   |||
                 nil <<< Empty           ... h
               )
   in Z:.t
