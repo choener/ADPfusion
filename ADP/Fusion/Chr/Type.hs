@@ -32,6 +32,7 @@ data Chr r x where
 
 --chr xs = Chr VG.unsafeIndex xs
 chr xs = Chr (VG.unsafeIndex) xs
+--chr xs = Chr (VG.!) xs
 {-# Inline chr #-}
 
 -- | Smart constructor for Maybe Peeking, followed by a character.

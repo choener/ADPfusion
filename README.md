@@ -1,8 +1,8 @@
 
 ADPfusion
-(c) 2012, Christian Hoener zu Siederdissen
-University of Vienna, Vienna, Austria
-choener@tbi.univie.ac.at
+(c) 2012-2015, Christian Hoener zu Siederdissen
+Leipzig University, Leipzig, Germany
+choener@bioinf.uni-leipzig.de
 LICENSE: BSD3
 
 
@@ -83,35 +83,17 @@ functions in many cases.
 
 
 
-VERSION HISTORY
-===============
+IMPLEMENTORS NOTES
+==================
 
-- 0.0.0.3:
-  - initial version, together with submitted paper
+- The general inlining scheme is: (i) mkStream is {-# INLINE mkStream #-},
+  inner functions like mk, step, worker functions, and index-modifying
+  functions get an {-# INLINE [0] funName #-}. Where there is no function to
+  annotate, use delay_inline.
 
-- 0.0.0.4:
-  - based most combinators on just two generalized Box creators
-  - cleaned up and simplified RNAfold example
-  - RNAfold execution now a bit slower. Simplified energy functions typically
-    only have three arguments now, which can be of 'Primary' type. While this
-    reduces speed because we will repeatedly ask for the same value, it is much
-    easier to handle the different functions and ``play'' with fusion
-    properties.
-  - RNAfold compilation massively faster: execution/compilation tradoff is
-    worth it for experimenting with ADPfusion; still faster than anything
-    except RNAfold itself. We are now now 2.8x times slower, but 3.5x times
-    slower
-  - Quickcheck properties for many combinators
-  - Unit tests for RNAfold functions
-  - will soon split off RNAfold and Nussinov and publish three hackage
-    libraries
-  - this version was never available, after being done, a split into library
-    and examples was performed.
+- If you implement a new kind of memoizing table, like the dense Table.Array
+  ones, you will have to implement mkStream code. When you hand to the left,
+  the (i,j) indices and modify their extend (by, say, having NonEmpty table
+  constaints), you have to delay_inline this (until inliner phase 0). Otherwise
+  you will break fusion for mkStream.
 
-- 0.0.1.0
-  - providing just the library. Examples are found in different libraries.
-
-- 0.0.1.1
-  - this version should be compatible with GHC-7.4, at least GHC-7,4.2-rc1.
-  - a type family (TF) version has not been able to show the same performance
-    as fundeps. This means that fundeps for Internal.hs stay alive, for now.

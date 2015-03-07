@@ -18,6 +18,7 @@ import           Control.Monad.ST
 import           Data.Char (toUpper,toLower)
 import           Data.List
 import           Data.Vector.Fusion.Util
+import           Debug.Trace
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Syntax
 import qualified Data.Vector.Fusion.Stream as S
@@ -97,6 +98,7 @@ pretty = Nussinov
 -- grammar :: Nussinov m Char () x r -> c' -> t' -> (t', Subword -> m r)
 grammar Nussinov{..} c t' =
   let t = t'  ( unp <<< t % c           |||
+--                unp <<< t % c |||
                 jux <<< t % c % t % c   |||
                 nil <<< Empty           ... h
               )

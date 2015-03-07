@@ -4,7 +4,7 @@
 
 module ADP.Fusion.Base.Subword where
 
-import Data.Vector.Fusion.Stream.Monadic (singleton)
+import Data.Vector.Fusion.Stream.Monadic (singleton,filter)
 import Data.Vector.Fusion.Stream.Size
 import Debug.Trace
 import Prelude hiding (map,filter)
@@ -34,9 +34,14 @@ instance RuleContext (Outside Subword) where
 
 instance (Monad m) => MkStream m S Subword where
   mkStream S IStatic (Subword (_:.h)) (Subword (i:.j))
-    = staticCheck (0==i && i==j) . singleton $ ElmS (subword 0 0) (subword 0 0)
+    = staticCheck (i>=0 && i==j && j<=h) . singleton $ ElmS (subword i i) (subword 0 0)
+  -- NOTE it seems that a static check within an @IVariable@ context
+  -- destroys fusion; maybe because of the outer flatten? We don't actually
+  -- need a static check anyway because the next flatten takes care of
+  -- conditional checks. @filter@ on the other hand, does work.
+  -- TODO test with and without filter using quickcheck
   mkStream S IVariable (Subword (_:.h)) (Subword (i:.j))
-    = staticCheck (0<=i && i<=j && j<=h) . singleton $ ElmS (subword i j) (subword 0 0)
+    = filter (const $ 0<=i && i<=j && j<=h) . singleton $ ElmS (subword i i) (subword 0 0)
   {-# Inline mkStream #-}
 
 -- TODO write instance
