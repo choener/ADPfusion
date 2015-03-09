@@ -23,3 +23,10 @@ instance
     $ mkStream ls IStatic hh (subword i j)
   {-# Inline mkStream #-}
 
+
+
+instance
+  ( Monad m
+  , MkStream m ls (Outside Subword)
+  ) => MkStream m (ls :!: Empty) (Outside Subword) where
+

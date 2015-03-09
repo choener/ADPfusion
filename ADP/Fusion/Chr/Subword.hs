@@ -28,3 +28,11 @@ instance
     $ mkStream ls IVariable hh (delay_inline subword i (j-1))
   {-# Inline mkStream #-}
 
+
+
+instance
+  ( Monad m
+  , Element ls (Outside Subword)
+  , MkStream m ls (Outside Subword)
+  ) => MkStream m (ls :!: Chr r x) (Outside Subword) where
+

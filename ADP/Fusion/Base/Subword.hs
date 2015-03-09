@@ -22,8 +22,8 @@ instance RuleContext Subword where
   {-# Inline initialContext #-}
 
 instance RuleContext (Outside Subword) where
-  type Context (Outside Subword) = OutsideContext Subword
-  initialContext = OStatic . unO
+  type Context (Outside Subword) = OutsideContext (Int:.Int)
+  initialContext = OStatic . fromSubword . unO
   {-# Inline  initialContext #-}
 
 -- TODO write instance
@@ -46,4 +46,8 @@ instance (Monad m) => MkStream m S Subword where
 
 -- TODO write instance
 
--- instance (Monad m) => MkStream m S (Outside Subword) where
+instance (Monad m) => MkStream m S (Outside Subword) where
+  mkStream S (OStatic (di:.dj)) (O (Subword (_:.h))) (O (Subword (i:.j)))
+    = staticCheck (i==0 && j==h) . singleton $ ElmS (O $ subword i j) (O $ subword i (j+dj))
+  {-# Inline mkStream #-}
+

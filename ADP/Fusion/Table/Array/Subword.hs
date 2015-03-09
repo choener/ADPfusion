@@ -24,7 +24,6 @@ instance
   , Element ls Subword
   , PrimArrayOps arr Subword x
   , MkStream m ls Subword
-  , Show x
   ) => MkStream m (ls :!: ITbl m arr Subword x) Subword where
   mkStream (ls :!: ITbl c t _) IStatic hh ij@(Subword (i:.j))
     = S.map (\s -> let (Subword (_:.l)) = getIdx s
@@ -62,4 +61,21 @@ instance
                                     return $ S.Yield (ElmBtITbl (t ! kl) (bt hh kl) kl (subword 0 0) s) (s:.z-1)
                       | otherwise = return $ S.Done
   {-# Inline mkStream #-}
+
+
+instance
+  ( Monad m
+  , Element ls (Outside Subword)
+  , PrimArrayOps arr (Outside Subword) x
+  , MkStream m ls (Outside Subword)
+  ) => MkStream m (ls :!: ITbl m arr (Outside Subword) x) (Outside Subword) where
+
+
+
+instance
+  ( Monad m
+  , Element ls (Outside Subword)
+  , PrimArrayOps arr Subword x
+  , MkStream m ls (Outside Subword)
+  ) => MkStream m (ls :!: ITbl m arr Subword x) (Outside Subword) where
 
