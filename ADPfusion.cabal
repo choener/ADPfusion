@@ -208,12 +208,11 @@ executable Nussinov
   if flag(examples)
     buildable:
       True
-    build-depends:
-      ADPfusion         ,
-      PrimitiveArray    ,
-      template-haskell  ,
-      vector            ,
-      base
+    build-depends:  base
+                 ,  ADPfusion
+                 ,  PrimitiveArray
+                 ,  template-haskell
+                 ,  vector
   else
     buildable:
       False
@@ -239,12 +238,12 @@ executable PartNussinov
   if flag(examples)
     buildable:
       True
-    build-depends:
-      ADPfusion         ,
-      PrimitiveArray    ,
-      template-haskell  ,
-      vector            ,
-      base
+    build-depends:  base
+                 ,  ADPfusion
+                 ,  log-domain        == 0.10.*
+                 ,  PrimitiveArray
+                 ,  template-haskell
+                 ,  vector
   else
     buildable:
       False

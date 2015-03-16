@@ -17,10 +17,10 @@ instance
   ( Monad m
   , MkStream m ls Subword
   ) => MkStream m (ls :!: Empty) Subword where
-  mkStream (ls :!: Empty) IStatic hh (Subword (i:.j))
+  mkStream (ls :!: Empty) IStatic hh ij@(Subword (i:.j))
     = staticCheck (i==j)
     $ S.map (ElmEmpty (subword i j) (subword 0 0))
-    $ mkStream ls IStatic hh (subword i j)
+    $ mkStream ls IStatic hh ij
   {-# Inline mkStream #-}
 
 

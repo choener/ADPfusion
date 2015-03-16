@@ -25,12 +25,12 @@ instance
   , PrimArrayOps arr Subword x
   , MkStream m ls Subword
   ) => MkStream m (ls :!: ITbl m arr Subword x) Subword where
-  mkStream (ls :!: ITbl c t _) IStatic hh ij@(Subword (i:.j))
+  mkStream (ls :!: ITbl c t _) IStatic hh (Subword (i:.j))
     = S.map (\s -> let (Subword (_:.l)) = getIdx s
                    in  ElmITbl (t ! subword l j) (subword l j) (subword 0 0) s)
-    $ mkStream ls IVariable hh (delay_inline subword i $ j - minSize c)
-  mkStream (ls :!: ITbl c t _) IVariable hh ij@(Subword (i:.j))
-    = S.flatten mk step Unknown $ mkStream ls IVariable hh (delay_inline subword i $ j - minSize c)
+    $ mkStream ls IVariable hh (delay_inline Subword (i:.j - minSize c))
+  mkStream (ls :!: ITbl c t _) IVariable hh (Subword (i:.j))
+    = S.flatten mk step Unknown $ mkStream ls IVariable hh (delay_inline Subword (i:.j - minSize c))
     where mk s = let Subword (_:.l) = getIdx s in return (s :. j - l - minSize c)
           step (s:.z) | z >= 0 = do let Subword (_:.k) = getIdx s
                                         l              = j - z
