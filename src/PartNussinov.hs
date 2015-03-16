@@ -21,6 +21,7 @@ import           Data.Vector.Fusion.Util
 import           Debug.Trace
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Syntax
+import           Numeric.Log
 import qualified Data.Vector.Fusion.Stream as S
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
@@ -53,7 +54,7 @@ bpmax = Nussinov
   }
 {-# INLINE bpmax #-}
 
-prob :: Monad m => Nussinov m Char () Double Double
+prob :: Monad m => Nussinov m Char () (Log Double) (Log Double)
 prob = Nussinov
   { unp = \ x c     -> 0.3 * x                                -- 'any'
   , jux = \ x y     -> 0.6 * x * y                            -- 'any'
@@ -124,7 +125,7 @@ outsideGrammar Nussinov{..} c a p b' q' =
   in Z:.b:.q
 {-# INLINE outsideGrammar #-}
 
-runNussinov :: String -> (Double,Double)
+runNussinov :: String -> (Log Double, Log Double)
 runNussinov inp = (d, e) where
   i = VU.fromList . Prelude.map toUpper $ inp
   n = VU.length i
@@ -135,8 +136,8 @@ runNussinov inp = (d, e) where
 --  !(Z:.b:.q) = insideGrammar (prob <** pretty) (chr i) (toBacktrack a (undefined :: Id a -> Id a)) (toBacktrack p (undefined :: Id a -> Id a))
 {-# NOINLINE runNussinov #-}
 
-type TblI = ITbl Id Unboxed          Subword  Double
-type TblO = ITbl Id Unboxed (Outside Subword) Double
+type TblI = ITbl Id Unboxed          Subword  (Log Double)
+type TblO = ITbl Id Unboxed (Outside Subword) (Log Double)
 
 runInsideForward :: VU.Vector Char -> Z:.TblI:.TblI
 runInsideForward i = mutateTablesDefault
