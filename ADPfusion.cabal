@@ -291,34 +291,34 @@ executable PartNussinov
 --      -optlo-O3 -optlo-std-compile-opts
 --      -fllvm-tbaa
 
---executable Durbin
---  if flag(examples)
---    buildable:
---      True
---    build-depends:
---      ADPfusion         ,
---      PrimitiveArray    ,
---      template-haskell  ,
---      vector            ,
---      base
---  else
---    buildable:
---      False
---  hs-source-dirs:
---    src
---  main-is:
---    Durbin.hs
---  ghc-options:
---    -Odph
---    -fcpr-off
---    -funbox-strict-fields
---    -funfolding-use-threshold1000
---    -funfolding-keeness-factor1000
---  if flag(llvm)
---    ghc-options:
---      -fllvm
---      -optlo-O3 -optlo-std-compile-opts
---      -fllvm-tbaa
+executable Durbin
+  if flag(examples)
+    buildable:
+      True
+    build-depends:  base
+                 ,  ADPfusion
+                 ,  PrimitiveArray
+                 ,  template-haskell
+                 ,  vector
+  else
+    buildable:
+      False
+  hs-source-dirs:
+    src
+  main-is:
+    Durbin.hs
+  default-language: Haskell2010
+  ghc-options:
+    -Odph
+    -fcpr-off
+    -funbox-strict-fields
+    -funfolding-use-threshold1000
+    -funfolding-keeness-factor1000
+  if flag(llvm)
+    ghc-options:
+      -fllvm
+      -optlo-O3 -optlo-std-compile-opts
+      -fllvm-tbaa
 
 --executable DishonestCasino
 --  if flag(examples)

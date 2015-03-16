@@ -82,22 +82,6 @@ import           Debug.Trace
 
 
 
-{-
-instance ModifyConstraint (ITbl m arr Subword x) where
-  toNonEmpty (ITbl _ arr f) = ITbl NonEmpty arr f
-  toEmpty    (ITbl _ arr f) = ITbl EmptyOk  arr f
-  {-# INLINE toNonEmpty #-}
-  {-# INLINE toEmpty #-}
--}
-
-{-
-instance ModifyConstraint (BT (ITbl mF arr Subword x) mF mB r) where
-  toNonEmpty (BtITbl _ arr bt) = BtITbl NonEmpty arr bt
-  toEmpty    (BtITbl _ arr bt) = BtITbl EmptyOk  arr bt
-  {-# INLINE toNonEmpty #-}
-  {-# INLINE toEmpty #-}
--}
-
 -- TODO empty table @ms@ stuff
 
 instance

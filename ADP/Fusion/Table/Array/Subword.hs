@@ -79,3 +79,17 @@ instance
   , MkStream m ls (Outside Subword)
   ) => MkStream m (ls :!: ITbl m arr Subword x) (Outside Subword) where
 
+
+
+instance ModifyConstraint (ITbl m arr Subword x) where
+  toNonEmpty (ITbl _ arr f) = ITbl NonEmpty arr f
+  toEmpty    (ITbl _ arr f) = ITbl EmptyOk  arr f
+  {-# Inline toNonEmpty #-}
+  {-# Inline toEmpty #-}
+
+instance ModifyConstraint (Backtrack (ITbl mF arr Subword x) mF mB r) where
+  toNonEmpty (BtITbl _ arr bt) = BtITbl NonEmpty arr bt
+  toEmpty    (BtITbl _ arr bt) = BtITbl EmptyOk  arr bt
+  {-# Inline toNonEmpty #-}
+  {-# Inline toEmpty #-}
+
