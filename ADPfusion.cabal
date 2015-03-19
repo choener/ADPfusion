@@ -17,7 +17,15 @@ description:
                 provided by the vector library) and type-level programming to
                 provide highly efficient dynamic programming combinators.
                 .
-                This library is described in:
+                ADPfusion allows writing dynamic programs for single- and
+                multi-tape problems. Inputs can be sequences, or sets. And new
+                input types can be defined, without having to rewrite this
+                library thanks to the open-world assumption of ADPfusion.
+                .
+                The homepage provides a number of tutorial-style examples, with
+                linear and context-free grammars over sequence and set inputs.
+                .
+                Ideas implemented here are described in a couple of papers:
                 .
                 @
                 Christian Hoener zu Siederdissen
@@ -26,8 +34,6 @@ description:
                 <http://doi.acm.org/10.1145/2364527.2364559> preprint: <http://www.tbi.univie.ac.at/newpapers/pdfs/TBI-p-2012-2.pdf>
                 @
                 .
-                Additional optimizations learned from the paper below have been integrated:
-                .
                 @
                 Andrew Farmer, Christian Höner zu Siederdissen, and Andy Gill.
                 The HERMIT in the stream: fusing stream fusion’s concatMap.
@@ -35,58 +41,19 @@ description:
                 <http://dl.acm.org/citation.cfm?doid=2543728.2543736>
                 @
                 .
-                From the programmers' viewpoint, ADPfusion behaves very much
-                like the original ADP implementation
-                <http://bibiserv.techfak.uni-bielefeld.de/adp/> developed by
-                Robert Giegerich and colleagues, though both combinator
-                semantics and backtracking are different.
+                @
+                Christian Höner zu Siederdissen, Ivo L. Hofacker, and Peter F. Stadler.
+                Product Grammars for Alignment and Folding.
+                2014. IEEE/ACM Transactions on Computational Biology and Bioinformatics. 99.
+                <http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=6819790>
+                @
                 .
-                The library internals, however, are designed not only to speed
-                up ADP by a large margin (which this library does), but also to
-                provide further runtime improvements by allowing the programmer
-                to switch over to other kinds of data structures with better
-                time and space behaviour. Most importantly, dynamic programming
-                tables can be strict, removing indirections present in lazy,
-                boxed tables.
+                @
+                Christian Höner zu Siederdissen, Sonja J. Prohaska, and Peter F. Stadler.
+                Algebraic Dynamic Programming over General Data Structures.
+                2015. submitted.
+                @
                 .
-                As a simple benchmark, consider the Nussinov78 algorithm which
-                translates to three nested for loops (for C). In the figure,
-                four different approaches are compared using inputs with size
-                100 characters to 1000 characters in increments of 100
-                characters. "C" is an implementation (@./C/@ directory) in "C"
-                using "gcc -O3". "ADP" is the original ADP approach (see link
-                above), while "GAPC" uses the "GAP" language
-                (<http://gapc.eu/>).
-                .
-                Performance comparison figure:
-                <http://www.bioinf.uni-leipzig.de/~choener/adpfusion/gaplike-nussinov-runtime.jpg>
-                .
-                Please note that actual performance will depend much on table
-                layout and data structures accessed during calculations, but in
-                general performance is very good: close to C and better than
-                other high-level approaches (that I know of).
-                .
-                .
-                .
-                Even complex ADP code tends to be completely optimized to loops
-                that use only unboxed variables (Int# and others,
-                indexIntArray# and others).
-                .
-                Completely novel (compared to ADP), is the idea of allowing
-                efficient monadic combinators. This facilitates writing code
-                that performs backtracking, or samples structures
-                stochastically, among others things.
-                .
-                .
-                .
-                Two algorithms from the realm of computational biology are
-                provided as examples on how to write dynamic programming
-                algorithms using this library:
-                <http://hackage.haskell.org/package/Nussinov78> and
-                <http://hackage.haskell.org/package/RNAFold>. In addition, this
-                library comes with three examples in the ADP/Fusion/Examples/
-                directory. They are built if @-fexamples@ is set during
-                configuration.
 
 
 
@@ -104,7 +71,10 @@ flag llvm
   default:      False
   manual:       True
 
+
+
 library
+
   build-depends:  base              == 4.*
                ,  mmorph            == 1.0.*
                ,  monad-primitive   == 0.1
@@ -113,12 +83,13 @@ library
                ,  primitive         == 0.5.*
                ,  PrimitiveArray    == 0.6.*
                ,  QuickCheck        == 2.*
-               ,  repa
+               ,  repa              == 3.3.*
                ,  strict            == 0.3.*
                ,  template-haskell  == 2.*
                ,  transformers      == 0.3.*
                ,  tuple             == 0.3.*
                ,  vector            == 0.10.*
+
   exposed-modules:
     ADP.Fusion
     ADP.Fusion.Apply
@@ -166,14 +137,18 @@ library
                     , TypeFamilies
                     , TypeOperators
                     , TypeSynonymInstances
+
   default-language: Haskell2010
 
   ghc-options:
     -O2 -funbox-strict-fields
 
+
+
 -- Very simple two-sequence alignment.
 
 executable NeedlemanWunsch
+
   if flag(examples)
     buildable:
       True
@@ -186,11 +161,15 @@ executable NeedlemanWunsch
   else
     buildable:
       False
+
   hs-source-dirs:
     src
+
   main-is:
     NeedlemanWunsch.hs
+
   default-language: Haskell2010
+
   ghc-options:
     -Odph
     -funbox-strict-fields
@@ -202,9 +181,12 @@ executable NeedlemanWunsch
       -optlo-O3 -optlo-std-compile-opts
       -fllvm-tbaa
 
+
+
 -- Basic RNA secondary structure folding
 
 executable Nussinov
+
   if flag(examples)
     buildable:
       True
@@ -216,11 +198,15 @@ executable Nussinov
   else
     buildable:
       False
+
   hs-source-dirs:
     src
+
   main-is:
     Nussinov.hs
+
   default-language: Haskell2010
+
   ghc-options:
     -O2
     -funbox-strict-fields
@@ -232,9 +218,12 @@ executable Nussinov
       -optlo-O3 -optlo-std-compile-opts
       -fllvm-tbaa
 
+
+
 -- Basic RNA secondary structure folding with partition function calculations
 
 executable PartNussinov
+
   if flag(examples)
     buildable:
       True
@@ -247,11 +236,15 @@ executable PartNussinov
   else
     buildable:
       False
+
   hs-source-dirs:
     src
+
   main-is:
     PartNussinov.hs
+
   default-language: Haskell2010
+
   ghc-options:
     -O2
     -funbox-strict-fields
@@ -262,6 +255,8 @@ executable PartNussinov
       -fllvm
       -optlo-O3 -optlo-std-compile-opts
       -fllvm-tbaa
+
+
 
 --executable MemoRecNussinov
 --  if flag(examples)
@@ -291,7 +286,10 @@ executable PartNussinov
 --      -optlo-O3 -optlo-std-compile-opts
 --      -fllvm-tbaa
 
+
+
 executable Durbin
+
   if flag(examples)
     buildable:
       True
@@ -303,11 +301,15 @@ executable Durbin
   else
     buildable:
       False
+
   hs-source-dirs:
     src
+
   main-is:
     Durbin.hs
+
   default-language: Haskell2010
+
   ghc-options:
     -Odph
     -fcpr-off
@@ -319,6 +321,8 @@ executable Durbin
       -fllvm
       -optlo-O3 -optlo-std-compile-opts
       -fllvm-tbaa
+
+
 
 --executable DishonestCasino
 --  if flag(examples)
@@ -353,6 +357,8 @@ executable Durbin
 --      -optlo-O3 -optlo-std-compile-opts
 --      -fllvm-tbaa
 
+
+
 --executable SHP
 --  if flag(examples)
 --    buildable:
@@ -385,6 +391,8 @@ executable Durbin
 --      -fllvm
 --      -optlo-O3 -optlo-std-compile-opts
 --      -fllvm-tbaa
+
+
 
 source-repository head
   type: git
