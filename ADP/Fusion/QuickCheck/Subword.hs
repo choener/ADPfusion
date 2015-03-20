@@ -131,7 +131,7 @@ prop_cOcIc ox@(O (Subword (i:.k))) = {- tr zs ls $ -} zs == ls where
          , csS VU.! (j-1) )
        | i > 0, j <- [ k+2 .. highest ] ]
 
-prop_cIcOc ox@(O (Subword (k:.j))) = tr zs ls $ zs == ls where
+prop_cIcOc ox@(O (Subword (k:.j))) = {- tr zs ls $ -} zs == ls where
   tib = ITbl EmptyOk xsS (\ _ _ -> Id (1,1))
   toa = ITbl EmptyOk xoS (\ _ _ -> Id (1,1))
   zs = ((,,,,) <<< chr csS % tib % chr csS % toa % chr csS ... S.toList) (O $ subword 0 highest) ox
@@ -144,7 +144,7 @@ prop_cIcOc ox@(O (Subword (k:.j))) = tr zs ls $ zs == ls where
 
 
 
-highest = 4
+highest = 20
 
 csS :: VU.Vector (Int,Int)
 csS = VU.fromList [ (i,i+1) | i <- [0 .. highest] ] -- this should be @highest -1@, we should die if we see @(highest,highest+1)@
