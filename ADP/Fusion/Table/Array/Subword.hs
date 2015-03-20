@@ -78,12 +78,12 @@ instance
                      kj = O $ Subword (k:.j+dj)
                  in  ElmITbl (t ! kj) (O $ Subword (i:.j+dj)) kj s) -- @ij@ or s.th. else shouldn't matter?
     $ mkStream ls (OFirstLeft (di:.dj)) u ij
-  mkStream (ls :!: ITbl c t _) (ORightOf d) u@(O (Subword (_:.h))) ij@(O (Subword (i:.j)))
-    = flatten mk step Unknown $ mkStream ls (OFirstLeft d) u ij
-      where mk s = return (s:.j)
+  mkStream (ls :!: ITbl c t _) (ORightOf (di:.dj)) u@(O (Subword (_:.h))) ij@(O (Subword (i:.j)))
+    = flatten mk step Unknown $ mkStream ls (OFirstLeft (di:.dj)) u ij
+      where mk s = return (s:.j+dj)
             step (s:.l) | l <= h = do let (O (Subword (k:._))) = getIdx s
                                           kl = O $ Subword (k:.l)
-                                      return $ Yield (ElmITbl (t ! kl) (O (Subword (j:.j))) kl s) (s:.l+1)
+                                      return $ Yield (ElmITbl (t ! kl) (O (Subword (j+dj:.j+dj))) kl s) (s:.l+1)
                         | otherwise = return $ Done
             {-# Inline [0] mk   #-}
             {-# Inline [0] step #-}
@@ -103,8 +103,8 @@ instance
   mkStream (ls :!: ITbl c t _) (OStatic (di:.dj)) u ij@(O (Subword (i:.j)))
     = map (\s -> let O (Subword (_:.k))     = getIdx s
                      o@(O (Subword (_:.l))) = getOmx s
-                     kl = Subword (k:.l)
-                 in ElmITbl (t ! kl) (O kl) o s)
+                     kl = Subword (k-dj:.l-dj)
+                 in ElmITbl (t ! kl) (O (Subword (k:.l))) o s)
     $ mkStream ls (ORightOf (di:.dj)) u ij
   mkStream (ls :!: ITbl c t _) (ORightOf d) u@(O (Subword (_:.h))) ij@(O (Subword (i:.j)))
     = flatten mk step Unknown $ mkStream ls (ORightOf d) u ij

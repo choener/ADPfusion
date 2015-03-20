@@ -43,7 +43,10 @@ instance
                  in  ElmChr (f xs k) (O $ subword (k'-1) k') (getOmx s) s)
     $ mkStream ls (OStatic (di:.dj+1)) u ij
   mkStream (ls :!: Chr f xs) (ORightOf (di:.dj)) u ij
-    = error "Chr, ORightOf"
+    = map (\s -> let (O (Subword (_:.k'))) = getIdx s
+                     k = k'-dj-1
+                 in  ElmChr (f xs k) (O $ subword (k'-1) k') (getOmx s) s)
+    $ mkStream ls (ORightOf (di:.dj+1)) u ij
   mkStream (ls :!: Chr f xs) (OFirstLeft (di:.dj)) u ij
     = id
     $ map (\s -> let (O (Subword (_:.k))) = getIdx s
@@ -52,3 +55,4 @@ instance
   mkStream (ls :!: Chr f xs) (OLeftOf (di:.dj)) u ij
     = error "Chr, OLeftOf"
   {-# Inline mkStream #-}
+
