@@ -44,7 +44,7 @@ instance (Monad m) => MkStream m S PointL where
 instance (Monad m) => MkStream m S (Outside PointL) where
   mkStream S (OStatic d) (O (PointL u)) (O (PointL i))
     = staticCheck (i>=0 && i+d<=u && u == i) . singleton $ ElmS (O $ PointL i) (O . PointL $ i+d)
-  mkStream S (OVariable FarLeft d) (O (PointL u)) (O (PointL i))
+  mkStream S (OFirstLeft d) (O (PointL u)) (O (PointL i))
     = staticCheck (i>=0 && i+d<=u) . singleton $ ElmS (O $ PointL i) (O . PointL $ i+d)
   {-# Inline mkStream #-}
 
@@ -87,7 +87,7 @@ instance
     = staticCheck (i>=0 && i+d == u)
     . map (\(ElmS (O zi) (O zo)) -> ElmS (O (zi:.PointL i)) (O (zo:.(PointL $ i+d))))
     $ mkStream S vs (O lus) (O is)
-  mkStream S (vs:.OVariable FarLeft d) (O (us:.PointL u)) (O (is:.PointL i))
+  mkStream S (vs:.OFirstLeft d) (O (us:.PointL u)) (O (is:.PointL i))
     = staticCheck (i>=0 && i+d<=u)
     . map (\(ElmS (O zi) (O zo)) -> ElmS (O (zi:.PointL i)) (O (zo:.(PointL $ i+d))))
     $ mkStream S vs (O us) (O is)
@@ -105,7 +105,7 @@ instance TableStaticVar PointL where
   {-# INLINE [0] tableStreamIndex #-}
 
 instance TableStaticVar (Outside PointL) where
-  tableStaticVar     (OStatic d) _ = OVariable FarLeft d
+  tableStaticVar     (OStatic d) _ = OFirstLeft d
   tableStreamIndex c _ (O (PointL j))
     | c==EmptyOk  = O (PointL j)
     | c==NonEmpty = O (PointL $ j-1)

@@ -4,7 +4,7 @@
 
 module ADP.Fusion.Base.Subword where
 
-import Data.Vector.Fusion.Stream.Monadic (singleton,filter)
+import Data.Vector.Fusion.Stream.Monadic (singleton,filter,enumFromStepN,map)
 import Data.Vector.Fusion.Stream.Size
 import Debug.Trace
 import Prelude hiding (map,filter)
@@ -48,6 +48,11 @@ instance (Monad m) => MkStream m S Subword where
 
 instance (Monad m) => MkStream m S (Outside Subword) where
   mkStream S (OStatic (di:.dj)) (O (Subword (_:.h))) (O (Subword (i:.j)))
-    = staticCheck (i==0 && j==h) . singleton $ ElmS (O $ subword i j) (O $ subword i (j+dj))
+    = error "write me" -- staticCheck (i==0 && j==h) . singleton $ ElmS (O $ subword i j) (O $ subword i (j+dj))
+  -- TODO @di@ @dj@ not considered yet
+  mkStream S (OFirstLeft (di:.dj)) (O (Subword (_:.h))) (O (Subword (i:.j)))
+    = map elm $ enumFromStepN j 1 (h-j+1)
+      where elm k = ElmS (O $ subword j j) (O $ subword i k)
+            {-# Inline [0] elm #-}
   {-# Inline mkStream #-}
 
