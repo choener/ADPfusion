@@ -103,10 +103,10 @@ instance
   , Show x, Show i
   ) => MutateCell (ts:.ITbl im arr i x) im om i where
   mutateCell mrph (ts:.ITbl c arr f) lu i = do
+    mutateCell mrph ts lu i
     marr <- unsafeThaw arr
     z <- (inline mrph) $ f lu i
     writeM marr i z
-    mutateCell mrph ts lu i
   {-# INLINE mutateCell #-}
 
 {-
