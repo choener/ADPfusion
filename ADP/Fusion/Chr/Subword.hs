@@ -53,6 +53,8 @@ instance
                  in  ElmChr (f xs k) (O $ subword k (k+1)) (getOmx s) s)
     $ mkStream ls (OFirstLeft (di+1:.dj)) u ij
   mkStream (ls :!: Chr f xs) (OLeftOf (di:.dj)) u ij
-    = error "Chr, OLeftOf"
+    = map (\s -> let (O (Subword (_:.k))) = getIdx s
+                 in  ElmChr (f xs k) (O $ subword k (k+1)) (getOmx s) s)
+    $ mkStream ls (OLeftOf (di+1:.dj)) u ij
   {-# Inline mkStream #-}
 

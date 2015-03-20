@@ -43,7 +43,7 @@ prop_sv_IO ox@(O (Subword (k:.j))) = zs == ls where
   zs = ((,) <<< tib % toa ... S.toList) (O $ subword 0 highest) ox
   ls = [ ( unsafeIndex xsS (    subword i k)
          , unsafeIndex xoS (O $ subword i j) )
-       | i <- [ 0 .. k ], j <= highest ]
+       | j <= highest, i <- [ 0 .. k ] ]
 
 -- ** three non-terminals on the r.h.s. (this provides situations where two
 -- syntactic terminals are on the same side)
@@ -82,7 +82,7 @@ prop_sv_IIO ox@(O (Subword (l:.j))) = zs == ls where
   ls = [ ( unsafeIndex xsS (    subword i k)
          , unsafeIndex xsS (    subword k l)
          , unsafeIndex xoS (O $ subword i j) )
-       | i <- [ 0 .. l ], j <= highest, k <- [ i .. l ] ]
+       | j <= highest, i <- [ 0 .. l ], k <- [ i .. l ] ]
 
 -- ** four non-terminals on the r.h.s. ?
 
@@ -120,7 +120,7 @@ prop_cOccc ox@(O(Subword (i:.j))) = zs == ls where
 
 -- ** Terminals, syntactic terminals, and non-terminals
 
-prop_sv_cOcIc ox@(O (Subword (i:.k))) = {- tr zs ls $ -} zs == ls where
+prop_cOcIc ox@(O (Subword (i:.k))) = {- tr zs ls $ -} zs == ls where
   toa = ITbl EmptyOk xoS (\ _ _ -> Id (1,1))
   tic = ITbl EmptyOk xsS (\ _ _ -> Id (1,1))
   zs = ((,,,,) <<< chr csS % toa % chr csS % tic % chr csS ... S.toList) (O $ subword 0 highest) ox
@@ -131,8 +131,20 @@ prop_sv_cOcIc ox@(O (Subword (i:.k))) = {- tr zs ls $ -} zs == ls where
          , csS VU.! (j-1) )
        | i > 0, j <- [ k+2 .. highest ] ]
 
+prop_cIcOc ox@(O (Subword (k:.j))) = tr zs ls $ zs == ls where
+  tib = ITbl EmptyOk xsS (\ _ _ -> Id (1,1))
+  toa = ITbl EmptyOk xoS (\ _ _ -> Id (1,1))
+  zs = ((,,,,) <<< chr csS % tib % chr csS % toa % chr csS ... S.toList) (O $ subword 0 highest) ox
+  ls = [ ( csS VU.! (i  )
+         , unsafeIndex xsS (    subword (i+1) (k-1))
+         , csS VU.! (k-1)
+         , unsafeIndex xoS (O $ subword  i    (j+1))
+         , csS VU.! (j  ) )
+       | j+1 <= highest, k>1, i <- [ 0 .. k-2 ] ]
 
-highest = 3
+
+
+highest = 4
 
 csS :: VU.Vector (Int,Int)
 csS = VU.fromList [ (i,i+1) | i <- [0 .. highest] ] -- this should be @highest -1@, we should die if we see @(highest,highest+1)@

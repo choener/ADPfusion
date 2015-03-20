@@ -53,9 +53,10 @@ instance (Monad m) => MkStream m S (Outside Subword) where
   mkStream S (OFirstLeft (di:.dj)) (O (Subword (_:.h))) (O (Subword (i:.j)))
     = let i' = i-di
       in  staticCheck (0 <= i' && i<=j && j+dj<=h) . singleton $ ElmS (O $ subword i' i') (O $ subword i' i')
-  mkStream S (OLeftOf d) (O (Subword (_:.h))) (O (Subword (i:.j)))
-    = staticCheck (i<=j && j<=h)
+  mkStream S (OLeftOf (di:.dj)) (O (Subword (_:.h))) (O (Subword (i:.j)))
+    = let i' = i-di
+      in staticCheck (i<=j && j<=h)
     $ map (\k -> ElmS (O $ subword 0 k) (O $ subword k j))
-    $ enumFromStepN 0 1 (i+1)
+    $ enumFromStepN 0 1 (i'+1)
   {-# Inline mkStream #-}
 

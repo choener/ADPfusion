@@ -117,12 +117,12 @@ instance
             | otherwise = return $ Done
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
-  mkStream (ls :!: ITbl c t _) (OFirstLeft d) u ij@(O (Subword (i:.j)))
+  mkStream (ls :!: ITbl c t _) (OFirstLeft (di:.dj)) u ij@(O (Subword (i:.j)))
     = map (\s -> let O (Subword (l:._)) = getOmx s
                      O (Subword (_:.k)) = getIdx s
-                     kl = Subword (k:.i)
+                     kl = Subword (k:.i-di)
                  in  ElmITbl (t ! kl) (O kl) (getOmx s) s)
-    $ mkStream ls (OLeftOf d) u ij
+    $ mkStream ls (OLeftOf (di:.dj)) u ij
   mkStream (ls :!: ITbl c t _) (OLeftOf d) u ij@(O (Subword (i:.j)))
     = flatten mk step Unknown $ mkStream ls (OLeftOf d) u ij
     where mk s = let O (Subword (_:.l)) = getIdx s in return (s:.l)
