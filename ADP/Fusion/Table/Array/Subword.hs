@@ -35,7 +35,7 @@ instance
           step (s:.z) | z >= 0 = do let Subword (_:.k) = getIdx s
                                         l              = j - z
                                         kl             = subword k l
-                                    return $ S.Yield (ElmITbl (t ! kl) kl (subword 0 0) s) (s:. z-1)
+                                    return $ S.Yield (ElmITbl (t ! kl) kl (subword 0 0) s) (s:.z-1)
                       | otherwise = return $ S.Done
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
@@ -51,15 +51,17 @@ instance
     = S.map (\s -> let Subword (_:.l) = getIdx s
                        lj             = subword l j
                    in  ElmBtITbl (t ! lj) (bt hh lj) lj (subword 0 0) s)
-    $ mkStream ls IVariable hh (delay_inline subword i $ j - minSize c)
+    $ mkStream ls IVariable hh (delay_inline Subword (i:.j - minSize c))
   mkStream (ls :!: BtITbl c t bt) IVariable hh ij@(Subword (i:.j))
-    = S.flatten mk step Unknown $ mkStream ls IVariable hh (delay_inline subword i j)
+    = S.flatten mk step Unknown $ mkStream ls IVariable hh (delay_inline Subword (i:.j - minSize c))
     where mk s = let Subword (_:.l) = getIdx s in return (s :. j - l - minSize c)
           step (s:.z) | z >= 0 = do let Subword (_:.k) = getIdx s
                                         l              = j - z
                                         kl             = subword k l
                                     return $ S.Yield (ElmBtITbl (t ! kl) (bt hh kl) kl (subword 0 0) s) (s:.z-1)
                       | otherwise = return $ S.Done
+          {-# Inline [0] mk   #-}
+          {-# Inline [0] step #-}
   {-# Inline mkStream #-}
 
 
