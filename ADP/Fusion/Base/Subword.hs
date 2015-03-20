@@ -23,7 +23,7 @@ instance RuleContext Subword where
 
 instance RuleContext (Outside Subword) where
   type Context (Outside Subword) = OutsideContext (Int:.Int)
-  initialContext = OStatic . fromSubword . unO
+  initialContext _ = OStatic (0:.0)
   {-# Inline  initialContext #-}
 
 -- TODO write instance
@@ -50,11 +50,12 @@ instance (Monad m) => MkStream m S (Outside Subword) where
   mkStream S (OStatic (di:.dj)) (O (Subword (_:.h))) (O (Subword (i:.j)))
     = error "write me, reached for Empty terminals" -- staticCheck (i==0 && j==h) . singleton $ ElmS (O $ subword i j) (O $ subword i (j+dj))
   -- TODO @di@ @dj@ not considered yet
-  mkStream S (OFirstLeft _) (O (Subword (_:.h))) (O (Subword (i:.j)))
-    = staticCheck (i<=j && j<=h) . singleton $ ElmS (O $ subword i i) (O $ subword i i)
+  mkStream S (OFirstLeft (di:.dj)) (O (Subword (_:.h))) (O (Subword (i:.j)))
+    = let i' = i-di
+      in  staticCheck (0 <= i' && i<=j && j+dj<=h) . singleton $ ElmS (O $ subword i' i') (O $ subword i' i')
   mkStream S (OLeftOf d) (O (Subword (_:.h))) (O (Subword (i:.j)))
-    = staticCheck (i<=j && j<=h) $ map elm $ enumFromStepN 0 1 (i+1)
-      where elm k = ElmS (O $ subword 0 k) (O $ subword k j)
-            {-# Inline [0] elm #-}
+    = staticCheck (i<=j && j<=h)
+    $ map (\k -> ElmS (O $ subword 0 k) (O $ subword k j))
+    $ enumFromStepN 0 1 (i+1)
   {-# Inline mkStream #-}
 

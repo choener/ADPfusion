@@ -73,11 +73,11 @@ instance
   , MkStream m ls (Outside Subword)
   ) => MkStream m (ls :!: ITbl m arr (Outside Subword) x) (Outside Subword) where
   -- TODO what about @c / minSize@
-  mkStream (ls :!: ITbl c t _) (OStatic d) u ij@(O (Subword (i:.j)))
+  mkStream (ls :!: ITbl c t _) (OStatic (di:.dj)) u ij@(O (Subword (i:.j)))
     = map (\s -> let O (Subword (k:._)) = getOmx s
-                     kj = O $ Subword (k:.j)
-                 in  ElmITbl (t ! kj) ij kj s) -- @ij@ or s.th. else shouldn't matter?
-    $ mkStream ls (OFirstLeft d) u ij
+                     kj = O $ Subword (k:.j+dj)
+                 in  ElmITbl (t ! kj) (O $ Subword (i:.j+dj)) kj s) -- @ij@ or s.th. else shouldn't matter?
+    $ mkStream ls (OFirstLeft (di:.dj)) u ij
   mkStream (ls :!: ITbl c t _) (ORightOf d) u@(O (Subword (_:.h))) ij@(O (Subword (i:.j)))
     = flatten mk step Unknown $ mkStream ls (OFirstLeft d) u ij
       where mk s = return (s:.j)
@@ -100,12 +100,12 @@ instance
   , MkStream m ls (Outside Subword)
   ) => MkStream m (ls :!: ITbl m arr Subword x) (Outside Subword) where
   -- TODO what about @c / minSize@
-  mkStream (ls :!: ITbl c t _) (OStatic d) u ij@(O (Subword (i:.j)))
+  mkStream (ls :!: ITbl c t _) (OStatic (di:.dj)) u ij@(O (Subword (i:.j)))
     = map (\s -> let O (Subword (_:.k))     = getIdx s
                      o@(O (Subword (_:.l))) = getOmx s
                      kl = Subword (k:.l)
                  in ElmITbl (t ! kl) (O kl) o s)
-    $ mkStream ls (ORightOf d) u ij
+    $ mkStream ls (ORightOf (di:.dj)) u ij
   mkStream (ls :!: ITbl c t _) (ORightOf d) u@(O (Subword (_:.h))) ij@(O (Subword (i:.j)))
     = flatten mk step Unknown $ mkStream ls (ORightOf d) u ij
     where mk s = let O (Subword (_:.l)) = getIdx s
