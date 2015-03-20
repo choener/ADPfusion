@@ -16,7 +16,7 @@ import qualified Data.Vector.Fusion.Stream.Monadic as S
 import           Data.PrimitiveArray
 
 
-
+{-
 data Star
   = FarRight
   | FarLeft
@@ -25,6 +25,13 @@ data Star
 data OutsideContext s
   = OStatic s
   | OVariable Star s
+-}
+
+data OutsideContext s
+  = OStatic     s
+  | ORightOf    s
+  | OFirstLeft  s
+  | OLeftOf     s
 
 data InsideContext
   = IStatic

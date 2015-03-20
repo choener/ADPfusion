@@ -46,7 +46,7 @@ instance
     = let ms = minSize c in ms `seq`
     S.map (\z -> let o = getOmx z
                  in  ElmITbl (t ! o) o o z)
-    $ mkStream ls (OVariable FarLeft d) u (O $ PointL $ pj - ms)
+    $ mkStream ls (OFirstLeft d) u (O $ PointL $ pj - ms)
   {-# Inline mkStream #-}
 
 instance
@@ -58,6 +58,6 @@ instance
   mkStream (ls :!: BtITbl c t bt) (OStatic d) u (O (PointL pj))
     = let ms = minSize c in ms `seq`
     S.map (\s -> let o = getOmx s in ElmBtITbl (t!o) (bt u o) o o s)
-    $ mkStream ls (OVariable FarLeft d) u (O $ PointL $ pj - ms)
+    $ mkStream ls (OFirstLeft d) u (O $ PointL $ pj - ms)
   {-# INLINE mkStream #-}
 

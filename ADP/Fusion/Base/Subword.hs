@@ -4,7 +4,7 @@
 
 module ADP.Fusion.Base.Subword where
 
-import Data.Vector.Fusion.Stream.Monadic (singleton,filter)
+import Data.Vector.Fusion.Stream.Monadic (singleton,filter,enumFromStepN,map)
 import Data.Vector.Fusion.Stream.Size
 import Debug.Trace
 import Prelude hiding (map,filter)
@@ -48,6 +48,13 @@ instance (Monad m) => MkStream m S Subword where
 
 instance (Monad m) => MkStream m S (Outside Subword) where
   mkStream S (OStatic (di:.dj)) (O (Subword (_:.h))) (O (Subword (i:.j)))
-    = staticCheck (i==0 && j==h) . singleton $ ElmS (O $ subword i j) (O $ subword i (j+dj))
+    = error "write me, reached for Empty terminals" -- staticCheck (i==0 && j==h) . singleton $ ElmS (O $ subword i j) (O $ subword i (j+dj))
+  -- TODO @di@ @dj@ not considered yet
+  mkStream S (OFirstLeft _) (O (Subword (_:.h))) (O (Subword (i:.j)))
+    = staticCheck (i<=j && j<=h) . singleton $ ElmS (O $ subword i i) (O $ subword i i)
+  mkStream S (OLeftOf d) (O (Subword (_:.h))) (O (Subword (i:.j)))
+    = staticCheck (i<=j && j<=h) $ map elm $ enumFromStepN 0 1 (i+1)
+      where elm k = ElmS (O $ subword 0 k) (O $ subword k j)
+            {-# Inline [0] elm #-}
   {-# Inline mkStream #-}
 
