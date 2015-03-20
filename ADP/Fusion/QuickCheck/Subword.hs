@@ -81,13 +81,13 @@ prop_sv_IIO ox@(O (Subword (l:.j))) = zs == ls where
   ls = [ ( unsafeIndex xsS (    subword i k)
          , unsafeIndex xsS (    subword k l)
          , unsafeIndex xoS (O $ subword i j) )
-       | i <- [ 0 .. l ], k <- [ i .. l ] ]
+       | i <- [ 0 .. l ], j <= highest, k <- [ i .. l ] ]
 
 -- ** four non-terminals on the r.h.s. ?
 
 -- ** five non-terminals on the r.h.s. ?
 
-highest = 3
+highest = 20
 
 xsS :: Unboxed Subword (Int,Int)
 xsS = fromList (subword 0 0) (subword 0 highest) [ (i,j) | i <- [ 0 .. highest ] , j <- [ i .. highest ] ]

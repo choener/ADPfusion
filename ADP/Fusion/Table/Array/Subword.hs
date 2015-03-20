@@ -76,12 +76,6 @@ instance
                      kj = O $ Subword (k:.j)
                  in  ElmITbl (t ! kj) ij kj s) -- @ij@ or s.th. else shouldn't matter?
     $ mkStream ls (OFirstLeft d) u ij
-    {-
-  mkStream (ls :!: ITbl c t _) (ORightOf d) u ij@(O (Subword (i:.j)))
-    = map (\s -> let kl@(O (Subword (_:.l))) = getOmx s
-                 in  ElmITbl (t ! kl) (O (Subword (j:.j))) kl s)
-    $ mkStream ls (OFirstLeft d) u ij
-    -}
   mkStream (ls :!: ITbl c t _) (ORightOf d) u@(O (Subword (_:.h))) ij@(O (Subword (i:.j)))
     = flatten mk step Unknown $ mkStream ls (OFirstLeft d) u ij
       where mk s = return (s:.j)
@@ -91,8 +85,8 @@ instance
                         | otherwise = return $ Done
             {-# Inline [0] mk   #-}
             {-# Inline [0] step #-}
-  mkStream (ls :!: ITbl c t _) (OFirstLeft d) u ij = error "syn / firstleft"
-  mkStream (ls :!: ITbl c t _) (OLeftOf d) u ij = error "syn / leftof"
+  mkStream (ls :!: ITbl c t _) (OFirstLeft d) u ij = error "Array/Outside Subword : OFirstLeft : should never be reached!"
+  mkStream (ls :!: ITbl c t _) (OLeftOf d) u ij = error "Array/Outside Subword : OLeftOf : should never be reached!"
   {-# Inline mkStream #-}
 
 
@@ -121,13 +115,21 @@ instance
             | otherwise = return $ Done
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
-  mkStream (ls :!: ITbl c t _) (OFirstLeft d) u ij
-    = map (\s -> let O (Subword (k:._)) = getOmx s
-                     O (Subword (_:.l)) = getIdx s
-                     kl = Subword (k:.l)
+  mkStream (ls :!: ITbl c t _) (OFirstLeft d) u ij@(O (Subword (i:.j)))
+    = map (\s -> let O (Subword (l:._)) = getOmx s
+                     O (Subword (_:.k)) = getIdx s
+                     kl = Subword (k:.i)
                  in  ElmITbl (t ! kl) (O kl) (getOmx s) s)
     $ mkStream ls (OLeftOf d) u ij
-  mkStream (ls :!: ITbl c t _) (OLeftOf d) u ij = error "trm / leftof"
+  mkStream (ls :!: ITbl c t _) (OLeftOf d) u ij@(O (Subword (i:.j)))
+    = flatten mk step Unknown $ mkStream ls (OLeftOf d) u ij
+    where mk s = let O (Subword (_:.l)) = getIdx s in return (s:.l)
+          step (s:.l) | l <= i = do let O (Subword (_:.k)) = getIdx s
+                                        kl = Subword (k:.l)
+                                    return $ Yield (ElmITbl (t ! kl) (O kl) (getOmx s) s) (s:.l+1)
+                      | otherwise = return $ Done
+          {-# Inline [0] mk   #-}
+          {-# Inline [0] step #-}
   {-# Inline mkStream #-}
 
 
