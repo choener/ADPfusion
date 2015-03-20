@@ -142,9 +142,15 @@ prop_cIcOc ox@(O (Subword (k:.j))) = zs == ls where
          , csS VU.! (j  ) )
        | j+1 <= highest, k>1, i <- [ 0 .. k-2 ] ]
 
+-- ** Emptyness
+
+prop_Empty ox@(O (Subword (i:.j))) = zs == ls where
+  zs = (id <<< Empty ... S.toList) (O $ subword 0 highest) ox
+  ls = [ () | i==0 && j==highest ]
 
 
-highest = 20
+
+highest = 2
 
 csS :: VU.Vector (Int,Int)
 csS = VU.fromList [ (i,i+1) | i <- [0 .. highest] ] -- this should be @highest -1@, we should die if we see @(highest,highest+1)@
@@ -157,7 +163,7 @@ xoS = fromList (O $ subword 0 0) (O $ subword 0 highest) [ (i,j) | i <- [ 0 .. h
 
 -- * general quickcheck stuff
 
-options = stdArgs {maxSuccess = 1000}
+options = stdArgs {maxSuccess = 10000}
 
 customCheck = quickCheckWithResult options
 

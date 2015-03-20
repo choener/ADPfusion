@@ -48,8 +48,7 @@ instance (Monad m) => MkStream m S Subword where
 
 instance (Monad m) => MkStream m S (Outside Subword) where
   mkStream S (OStatic (di:.dj)) (O (Subword (_:.h))) (O (Subword (i:.j)))
-    = error "write me, reached for Empty terminals" -- staticCheck (i==0 && j==h) . singleton $ ElmS (O $ subword i j) (O $ subword i (j+dj))
-  -- TODO @di@ @dj@ not considered yet
+    = staticCheck (i==0 && j+dj==h) . singleton $ ElmS (O $ subword i j) (O $ Subword (i:.j+dj))
   mkStream S (OFirstLeft (di:.dj)) (O (Subword (_:.h))) (O (Subword (i:.j)))
     = let i' = i-di
       in  staticCheck (0 <= i' && i<=j && j+dj<=h) . singleton $ ElmS (O $ subword i' i') (O $ subword i' i')

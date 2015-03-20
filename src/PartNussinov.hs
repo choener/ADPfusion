@@ -21,7 +21,7 @@ import           Data.Vector.Fusion.Util
 import           Debug.Trace
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Syntax
-import           Numeric.Log
+import           Numeric.Log as Log
 import qualified Data.Vector.Fusion.Stream as S
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
@@ -56,10 +56,10 @@ bpmax = Nussinov
 
 prob :: Monad m => Nussinov m Char () (Log Double) (Log Double)
 prob = Nussinov
-  { unp = \ x c     -> 0.3 * x                                -- 'any'
-  , jux = \ x y     -> 0.6 * x * y                            -- 'any'
+  { unp = \ x c     -> 0.1 * x                                -- 'any'
+  , jux = \ x y     -> 0.9 * x * y                            -- 'any'
   , pai = \ c x d   -> 1.0 * if c `pairs` d then x else 0     -- 'paired'
-  , nil = \ ()      -> 0.1                                    -- 'any'
+  , nil = \ ()      -> 1.0                                    -- 'any'
   , h   = SM.foldl' (+) 0
   }
 
@@ -101,7 +101,7 @@ insideGrammar Nussinov{..} c a' p' =
               )
       p = p'  ( pai <<< c % a % c ... h
               )
-  in Z:.a:.p
+  in Z:.p:.a
 {-# INLINE insideGrammar #-}
 
 -- | Given the inside grammar, the outside grammar is:
@@ -125,16 +125,49 @@ outsideGrammar Nussinov{..} c a p b' q' =
   in Z:.b:.q
 {-# INLINE outsideGrammar #-}
 
-runNussinov :: String -> (Log Double, Log Double)
-runNussinov inp = (d, e) where
+runNussinov :: String -> (Log Double, [(Int,Int, Log Double, Log Double, Log Double, Log Double)])
+runNussinov inp = (z,ys) where
   i = VU.fromList . Prelude.map toUpper $ inp
   n = VU.length i
-  !(Z:.a:.p) = runInsideForward i
+  !(Z:.p:.a) = runInsideForward i
   !(Z:.b:.q) = runOutsideForward i a p
-  d = let (ITbl _ arr _) = a in arr PA.! subword 0 n
-  e = let (ITbl _ arr _) = b in arr PA.! (O $ subword 0 n)  -- TODO this is wrong, because we need to sum up over all (i,i) pairs
---  !(Z:.b:.q) = insideGrammar (prob <** pretty) (chr i) (toBacktrack a (undefined :: Id a -> Id a)) (toBacktrack p (undefined :: Id a -> Id a))
+  za = let (ITbl _ arr _) = a in arr PA.! subword 0 n
+  zp = let (ITbl _ arr _) = p in arr PA.! subword 0 n
+  z  = za
+  e = let (ITbl _ arr _) = b in Log.sum [ arr PA.! (O $ subword k k) | k <- [0 .. n] ]
+  ys =  [ ( k
+          , l
+          , fwda PA.! subword k l
+          , fwdp PA.! subword k l
+          , bwdb PA.! (O $ subword k l)
+          , bwdq PA.! (O $ subword k l)
+          )
+        | let (ITbl _ fwda _) = a
+        , let (ITbl _ fwdp _) = p
+        , let (ITbl _ bwdb _) = b
+        , let (ITbl _ bwdq _) = q
+        , k <- [0 .. n]
+        , l <- [k .. n]
+        ]
 {-# NOINLINE runNussinov #-}
+
+neat :: String -> IO ()
+neat i = do let (z,ys) = runNussinov i
+            forM_ ys $ \ (k,_,_,_,_,_) -> printf " %6d" k
+            putStrLn ""
+            forM_ ys $ \ (_,l,_,_,_,_) -> printf " %6d" l
+            putStrLn ""
+            forM_ ys $ \ (_,_,a,_,_,_) -> printf " %0.4f" (exp $ ln a)
+            putStrLn ""
+            forM_ ys $ \ (_,_,_,p,_,_) -> printf " %0.4f" (exp $ ln p)
+            putStrLn ""
+            forM_ ys $ \ (_,_,_,_,b,_) -> printf " %0.4f" (exp $ ln b)
+            putStrLn ""
+            forM_ ys $ \ (_,_,_,_,_,q) -> printf " %0.4f" (exp $ ln q)
+            putStrLn ""
+            printf "%0.4f\n" $ exp $ ln z
+            forM_ ys $ \ (_,_,_,p,_,q) -> printf " %0.4f" ((exp $ ln p) * (exp $ ln q) / (exp $ ln z))
+            putStrLn ""
 
 type TblI = ITbl Id Unboxed          Subword  (Log Double)
 type TblO = ITbl Id Unboxed (Outside Subword) (Log Double)
