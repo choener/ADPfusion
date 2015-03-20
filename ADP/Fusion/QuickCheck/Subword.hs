@@ -29,7 +29,7 @@ tr zs ls b = traceShow (zs," ",ls,length zs,length ls) b
 -- B*_ik -> A*_ij C_kj
 -- C*_kj -> B_ik  A*_ij
 
-prop_sv_OI ox@(O (Subword (i:.k))) = {-tr zs ls $ -} zs == ls where
+prop_sv_OI ox@(O (Subword (i:.k))) = zs == ls where
   toa = ITbl EmptyOk xoS (\ _ _ -> Id (1,1))
   tic = ITbl EmptyOk xsS (\ _ _ -> Id (1,1))
   zs = ((,) <<< toa % tic ... S.toList) (O $ subword 0 highest) ox
@@ -120,7 +120,7 @@ prop_cOccc ox@(O(Subword (i:.j))) = zs == ls where
 
 -- ** Terminals, syntactic terminals, and non-terminals
 
-prop_cOcIc ox@(O (Subword (i:.k))) = {- tr zs ls $ -} zs == ls where
+prop_cOcIc ox@(O (Subword (i:.k))) = zs == ls where
   toa = ITbl EmptyOk xoS (\ _ _ -> Id (1,1))
   tic = ITbl EmptyOk xsS (\ _ _ -> Id (1,1))
   zs = ((,,,,) <<< chr csS % toa % chr csS % tic % chr csS ... S.toList) (O $ subword 0 highest) ox
@@ -131,7 +131,7 @@ prop_cOcIc ox@(O (Subword (i:.k))) = {- tr zs ls $ -} zs == ls where
          , csS VU.! (j-1) )
        | i > 0, j <- [ k+2 .. highest ] ]
 
-prop_cIcOc ox@(O (Subword (k:.j))) = {- tr zs ls $ -} zs == ls where
+prop_cIcOc ox@(O (Subword (k:.j))) = zs == ls where
   tib = ITbl EmptyOk xsS (\ _ _ -> Id (1,1))
   toa = ITbl EmptyOk xoS (\ _ _ -> Id (1,1))
   zs = ((,,,,) <<< chr csS % tib % chr csS % toa % chr csS ... S.toList) (O $ subword 0 highest) ox
