@@ -50,11 +50,17 @@ instance (Monad m) => MkStream m S (Outside Subword) where
   mkStream S (OStatic (di:.dj)) (O (Subword (_:.h))) (O (Subword (i:.j)))
     = error "write me" -- staticCheck (i==0 && j==h) . singleton $ ElmS (O $ subword i j) (O $ subword i (j+dj))
   -- TODO @di@ @dj@ not considered yet
+  {-
   mkStream S (OFirstLeft (di:.dj)) (O (Subword (_:.h))) (O (Subword (i:.j)))
     = map elm $ enumFromStepN j 1 (h-j+1)
       where elm k = ElmS (O $ subword j j) (O $ subword i k)
             {-# Inline [0] elm #-}
-  mkStream S (OLeftOf d) u ij
-    = error "S / leftof"
+  -}
+  mkStream S (OFirstLeft _) (O (Subword (_:.h))) (O (Subword (i:.j)))
+    = staticCheck (i<=j && j<=h) . singleton $ ElmS (O $ subword i i) (O $ subword i i)
+  mkStream S (OLeftOf d) (O (Subword (_:.h))) (O (Subword (i:.j)))
+    = staticCheck (i<=j && j<=h) $ map elm $ enumFromStepN 0 1 (i+1)
+      where elm k = ElmS (O $ subword k i) (O $ subword k j)
+            {-# Inline [0] elm #-}
   {-# Inline mkStream #-}
 

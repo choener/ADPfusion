@@ -76,10 +76,21 @@ instance
                      kj = O $ Subword (k:.j)
                  in  ElmITbl (t ! kj) ij kj s) -- @ij@ or s.th. else shouldn't matter?
     $ mkStream ls (OFirstLeft d) u ij
+    {-
   mkStream (ls :!: ITbl c t _) (ORightOf d) u ij@(O (Subword (i:.j)))
     = map (\s -> let kl@(O (Subword (_:.l))) = getOmx s
                  in  ElmITbl (t ! kl) (O (Subword (j:.j))) kl s)
     $ mkStream ls (OFirstLeft d) u ij
+    -}
+  mkStream (ls :!: ITbl c t _) (ORightOf d) u@(O (Subword (_:.h))) ij@(O (Subword (i:.j)))
+    = flatten mk step Unknown $ mkStream ls (OFirstLeft d) u ij
+      where mk s = return (s:.j)
+            step (s:.l) | l <= h = do let (O (Subword (k:._))) = getIdx s
+                                          kl = O $ Subword (k:.l)
+                                      return $ Yield (ElmITbl (t ! kl) (O (Subword (j:.j))) kl s) (s:.l+1)
+                        | otherwise = return $ Done
+            {-# Inline [0] mk   #-}
+            {-# Inline [0] step #-}
   mkStream (ls :!: ITbl c t _) (OFirstLeft d) u ij = error "syn / firstleft"
   mkStream (ls :!: ITbl c t _) (OLeftOf d) u ij = error "syn / leftof"
   {-# Inline mkStream #-}

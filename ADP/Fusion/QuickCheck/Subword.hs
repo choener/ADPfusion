@@ -17,6 +17,8 @@ import           ADP.Fusion
 
 
 
+tr zs ls b = traceShow (zs," ",ls,length zs,length ls) b
+
 -- * Outside checks
 
 -- ** two non-terminals on the r.h.s.
@@ -40,7 +42,7 @@ prop_sv_IO ox@(O (Subword (k:.j))) = zs == ls where
   zs = ((,) <<< tib % toa ... S.toList) (O $ subword 0 highest) ox
   ls = [ ( unsafeIndex xsS (    subword i k)
          , unsafeIndex xoS (O $ subword i j) )
-       | i <- [ 0 .. k ] ]
+       | i <- [ 0 .. k ], j <= highest ]
 
 -- ** three non-terminals on the r.h.s. (this provides situations where two
 -- syntactic terminals are on the same side)
@@ -67,7 +69,7 @@ prop_sv_IOI ox@(O (Subword (k:.l))) = zs == ls where
   tid = ITbl EmptyOk xsS (\ _ _ -> Id (1,1))
   zs = ((,,) <<< tib % toa % tid ... S.toList) (O $ subword 0 highest) ox
   ls = [ ( unsafeIndex xsS (    subword i k)
-         , unsafeIndex xoS (O $ subword k l)
+         , unsafeIndex xoS (O $ subword i j)
          , unsafeIndex xsS (    subword l j) )
        | i <- [ 0 .. k ], j <- [ l .. highest ] ]
 
@@ -85,7 +87,7 @@ prop_sv_IIO ox@(O (Subword (l:.j))) = zs == ls where
 
 -- ** five non-terminals on the r.h.s. ?
 
-highest = 5
+highest = 3
 
 xsS :: Unboxed Subword (Int,Int)
 xsS = fromList (subword 0 0) (subword 0 highest) [ (i,j) | i <- [ 0 .. highest ] , j <- [ i .. highest ] ]
