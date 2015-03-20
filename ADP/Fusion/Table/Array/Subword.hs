@@ -80,7 +80,8 @@ instance
     = map (\s -> let kl@(O (Subword (_:.l))) = getOmx s
                  in  ElmITbl (t ! kl) (O (Subword (j:.j))) kl s)
     $ mkStream ls (OFirstLeft d) u ij
-  mkStream _ _ _ _ = error "bam"
+  mkStream (ls :!: ITbl c t _) (OFirstLeft d) u ij = error "syn / firstleft"
+  mkStream (ls :!: ITbl c t _) (OLeftOf d) u ij = error "syn / leftof"
   {-# Inline mkStream #-}
 
 
@@ -92,12 +93,12 @@ instance
   , MkStream m ls (Outside Subword)
   ) => MkStream m (ls :!: ITbl m arr Subword x) (Outside Subword) where
   -- TODO what about @c / minSize@
-  mkStream (ls :!: ITbl c t _) (OStatic d) u (O (Subword (i:.j)))
+  mkStream (ls :!: ITbl c t _) (OStatic d) u ij@(O (Subword (i:.j)))
     = map (\s -> let O (Subword (_:.k))     = getIdx s
                      o@(O (Subword (_:.l))) = getOmx s
                      kl = Subword (k:.l)
                  in ElmITbl (t ! kl) (O kl) o s)
-    $ mkStream ls (ORightOf d) u (O (Subword (i:.j)))
+    $ mkStream ls (ORightOf d) u ij
   mkStream (ls :!: ITbl c t _) (ORightOf d) u@(O (Subword (_:.h))) ij@(O (Subword (i:.j)))
     = flatten mk step Unknown $ mkStream ls (ORightOf d) u ij
     where mk s = let O (Subword (_:.l)) = getIdx s
@@ -109,7 +110,13 @@ instance
             | otherwise = return $ Done
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
-  mkStream _ _ _ _ = error "bom"
+  mkStream (ls :!: ITbl c t _) (OFirstLeft d) u ij
+    = map (\s -> let O (Subword (k:._)) = getOmx s
+                     O (Subword (_:.l)) = getIdx s
+                     kl = Subword (k:.l)
+                 in  ElmITbl (t ! kl) (O kl) (getOmx s) s)
+    $ mkStream ls (OLeftOf d) u ij
+  mkStream (ls :!: ITbl c t _) (OLeftOf d) u ij = error "trm / leftof"
   {-# Inline mkStream #-}
 
 

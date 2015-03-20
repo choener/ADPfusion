@@ -54,5 +54,7 @@ instance (Monad m) => MkStream m S (Outside Subword) where
     = map elm $ enumFromStepN j 1 (h-j+1)
       where elm k = ElmS (O $ subword j j) (O $ subword i k)
             {-# Inline [0] elm #-}
+  mkStream S (OLeftOf d) u ij
+    = error "S / leftof"
   {-# Inline mkStream #-}
 
