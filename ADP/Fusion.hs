@@ -27,11 +27,8 @@ module ADP.Fusion
   , module ADP.Fusion.Empty
   , module ADP.Fusion.None
   , module ADP.Fusion.PeekIndex
-  , module ADP.Fusion.Table
+  , module ADP.Fusion.SynVar
   , module ADP.Fusion.TH
---  , module ADP.Fusion.Table.Axiom
---  , module ADP.Fusion.Table.Fill
---  , module ADP.Fusion.TH
   ) where
 
 import           Data.Strict.Tuple
@@ -44,16 +41,9 @@ import           ADP.Fusion.Chr
 import           ADP.Fusion.Empty
 import           ADP.Fusion.None
 import           ADP.Fusion.PeekIndex
-import           ADP.Fusion.Table
+import           ADP.Fusion.SynVar
 import           ADP.Fusion.TH
 
---import           ADP.Fusion.Classes
---import           ADP.Fusion.Multi.Classes
---import           ADP.Fusion.Table.Axiom (axiom)
---import           ADP.Fusion.Table.Fill
---import           ADP.Fusion.TH
-
---import           Data.Array.Repa.Index.Subword
 import qualified Data.Vector.Unboxed as VU
 
 import           Data.PrimitiveArray

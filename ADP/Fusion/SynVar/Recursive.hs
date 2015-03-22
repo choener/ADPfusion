@@ -1,13 +1,13 @@
 
-module ADP.Fusion.Table.Recursive
-  ( module ADP.Fusion.Table.Recursive.Type
-  , module ADP.Fusion.Table.Recursive.Point
-  , module ADP.Fusion.Table.Recursive.Subword
+module ADP.Fusion.SynVar.Recursive
+  ( module ADP.Fusion.SynVar.Recursive.Type
+  , module ADP.Fusion.SynVar.Recursive.Point
+  , module ADP.Fusion.SynVar.Recursive.Subword
   ) where
 
-import ADP.Fusion.Table.Recursive.Point
-import ADP.Fusion.Table.Recursive.Subword
-import ADP.Fusion.Table.Recursive.Type
+import ADP.Fusion.SynVar.Recursive.Point
+import ADP.Fusion.SynVar.Recursive.Subword
+import ADP.Fusion.SynVar.Recursive.Type
 
 
 {-

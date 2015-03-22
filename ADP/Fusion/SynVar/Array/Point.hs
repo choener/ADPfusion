@@ -1,5 +1,5 @@
 
-module ADP.Fusion.Table.Array.Point where
+module ADP.Fusion.SynVar.Array.Point where
 
 import           Data.Strict.Tuple
 import qualified Data.Vector.Fusion.Stream.Monadic as S
@@ -7,8 +7,8 @@ import qualified Data.Vector.Fusion.Stream.Monadic as S
 import           Data.PrimitiveArray
 
 import           ADP.Fusion.Base
-import           ADP.Fusion.Table.Array.Type
-import           ADP.Fusion.Table.Backtrack
+import           ADP.Fusion.SynVar.Array.Type
+import           ADP.Fusion.SynVar.Backtrack
 
 
 

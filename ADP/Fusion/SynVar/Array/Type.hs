@@ -1,5 +1,5 @@
 
-module ADP.Fusion.Table.Array.Type where
+module ADP.Fusion.SynVar.Array.Type where
 
 import Data.Strict.Tuple hiding (uncurry,snd)
 import Data.Vector.Fusion.Stream.Monadic (map,Stream,head)
@@ -9,9 +9,9 @@ import Prelude hiding (map,head)
 import Data.PrimitiveArray hiding (map)
 
 import ADP.Fusion.Base
-import ADP.Fusion.Table.Backtrack
-import ADP.Fusion.Table.Axiom
-import ADP.Fusion.Table.Indices
+import ADP.Fusion.SynVar.Backtrack
+import ADP.Fusion.SynVar.Axiom
+import ADP.Fusion.SynVar.Indices
 
 
 

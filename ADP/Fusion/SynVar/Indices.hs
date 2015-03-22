@@ -6,7 +6,7 @@
 -- need 'tableIndices' in multi-dimensional tables as the type of the
 -- multi-dimensional indices is generic.
 
-module ADP.Fusion.Table.Indices where
+module ADP.Fusion.SynVar.Indices where
 
 import Data.Vector.Fusion.Stream.Size (Size(Unknown))
 import Data.Vector.Fusion.Stream.Monadic (flatten,map,Stream, Step(..))

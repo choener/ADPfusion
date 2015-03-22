@@ -9,7 +9,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ADP.Fusion.Table.Fill where
+module ADP.Fusion.SynVar.Fill where
 
 import           Control.Monad.Morph (hoist, MFunctor (..))
 import           Control.Monad.Primitive (PrimMonad (..))
@@ -22,7 +22,7 @@ import           System.IO.Unsafe
 
 import           Data.PrimitiveArray
 
-import           ADP.Fusion.Table.Array -- TODO we want to keep only classes in here, move instances to the corresponding modules
+import           ADP.Fusion.SynVar.Array -- TODO we want to keep only classes in here, move instances to the corresponding modules
 
 import           Debug.Trace
 

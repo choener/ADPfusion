@@ -1,13 +1,13 @@
 
-module ADP.Fusion.Table.Array
-  ( module ADP.Fusion.Table.Array.Type
-  , module ADP.Fusion.Table.Array.Point
-  , module ADP.Fusion.Table.Array.Subword
+module ADP.Fusion.SynVar.Array
+  ( module ADP.Fusion.SynVar.Array.Type
+  , module ADP.Fusion.SynVar.Array.Point
+  , module ADP.Fusion.SynVar.Array.Subword
   ) where
 
-import ADP.Fusion.Table.Array.Point
-import ADP.Fusion.Table.Array.Subword
-import ADP.Fusion.Table.Array.Type
+import ADP.Fusion.SynVar.Array.Point
+import ADP.Fusion.SynVar.Array.Subword
+import ADP.Fusion.SynVar.Array.Type
 
 {-
 

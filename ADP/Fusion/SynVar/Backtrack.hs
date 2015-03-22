@@ -7,7 +7,7 @@
 -- | Wrap forward tables in such a way as to allow backtracking via
 -- algebras.
 
-module ADP.Fusion.Table.Backtrack where
+module ADP.Fusion.SynVar.Backtrack where
 
 import Data.Vector.Fusion.Stream.Monadic (Stream)
 

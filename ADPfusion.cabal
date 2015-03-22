@@ -111,19 +111,19 @@ library
     ADP.Fusion.None.Type
     ADP.Fusion.PeekIndex.Subword
     ADP.Fusion.PeekIndex.Type
-    ADP.Fusion.Table
-    ADP.Fusion.Table.Array
-    ADP.Fusion.Table.Array.Point
-    ADP.Fusion.Table.Array.Subword
-    ADP.Fusion.Table.Array.Type
-    ADP.Fusion.Table.Axiom
-    ADP.Fusion.Table.Backtrack
-    ADP.Fusion.Table.Fill
-    ADP.Fusion.Table.Indices
-    ADP.Fusion.Table.Recursive
-    ADP.Fusion.Table.Recursive.Point
-    ADP.Fusion.Table.Recursive.Subword
-    ADP.Fusion.Table.Recursive.Type
+    ADP.Fusion.SynVar
+    ADP.Fusion.SynVar.Array
+    ADP.Fusion.SynVar.Array.Point
+    ADP.Fusion.SynVar.Array.Subword
+    ADP.Fusion.SynVar.Array.Type
+    ADP.Fusion.SynVar.Axiom
+    ADP.Fusion.SynVar.Backtrack
+    ADP.Fusion.SynVar.Fill
+    ADP.Fusion.SynVar.Indices
+    ADP.Fusion.SynVar.Recursive
+    ADP.Fusion.SynVar.Recursive.Point
+    ADP.Fusion.SynVar.Recursive.Subword
+    ADP.Fusion.SynVar.Recursive.Type
     ADP.Fusion.TH
 --    ADP.Fusion.Edge
 ------    ADP.Fusion.Multi.Empty
