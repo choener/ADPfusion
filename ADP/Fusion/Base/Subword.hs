@@ -4,7 +4,7 @@
 
 module ADP.Fusion.Base.Subword where
 
-import Data.Vector.Fusion.Stream.Monadic (singleton,filter,enumFromStepN,map)
+import Data.Vector.Fusion.Stream.Monadic (singleton,filter,enumFromStepN,map,unfoldr)
 import Data.Vector.Fusion.Stream.Size
 import Debug.Trace
 import Prelude hiding (map,filter)
@@ -26,6 +26,11 @@ instance RuleContext (Outside Subword) where
   initialContext _ = OStatic (0:.0)
   {-# Inline  initialContext #-}
 
+instance RuleContext (Complement Subword) where
+  type Context (Complement Subword) = ComplementContext
+  initialContext _ = Complemented
+  {-# Inline initialContext #-}
+
 -- TODO write instance
 
 -- instance RuleContext (Complement Subword)
@@ -44,8 +49,6 @@ instance (Monad m) => MkStream m S Subword where
     = filter (const $ 0<=i && i<=j && j<=h) . singleton $ ElmS (subword i i) (subword 0 0)
   {-# Inline mkStream #-}
 
--- TODO write instance
-
 instance (Monad m) => MkStream m S (Outside Subword) where
   mkStream S (OStatic (di:.dj)) (O (Subword (_:.h))) (O (Subword (i:.j)))
     = staticCheck (i==0 && j+dj==h) . singleton $ ElmS (O $ subword i j) (O $ Subword (i:.j+dj))
@@ -57,5 +60,16 @@ instance (Monad m) => MkStream m S (Outside Subword) where
       in  staticCheck (0 <= i' && i<=j && j+dj<=h)
     $ map (\k -> ElmS (O $ subword 0 k) (O $ subword k j))
     $ enumFromStepN 0 1 (i'+1)
+  {-# Inline mkStream #-}
+
+instance (Monad m) => MkStream m S (Complement Subword) where
+  mkStream S Complemented (C (Subword (_:.h))) (C (Subword (i:.j)))
+    = map (\(k,l) -> ElmS (C $ subword k l) (C $ subword k l))
+    $ unfoldr go (i,i)
+    where go (k,l)
+            | k >h || k >j = Nothing
+            | l==h || l==j = Just ( (k,l) , (k+1,k+1) )
+            | otherwise    = Just ( (k,l) , (k  ,l+1) )
+          {-# Inline [0] go #-}
   {-# Inline mkStream #-}
 

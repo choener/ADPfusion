@@ -134,6 +134,30 @@ instance
           {-# Inline [0] step #-}
   {-# Inline mkStream #-}
 
+instance
+  ( Monad m
+  , Element ls (Complement Subword)
+  , PrimArrayOps arr Subword x
+  , MkStream m ls (Complement Subword)
+  ) => MkStream m (ls :!: ITbl m arr Subword x) (Complement Subword) where
+  mkStream (ls :!: ITbl c t _) Complemented u ij
+    = map (\s -> let (C ix) = getIdx s
+                 in  ElmITbl (t ! ix) (C ix) (getOmx s) s)
+    $ mkStream ls Complemented u ij
+  {-# Inline mkStream #-}
+
+instance
+  ( Monad m
+  , Element ls (Complement Subword)
+  , PrimArrayOps arr (Outside Subword) x
+  , MkStream m ls (Complement Subword)
+  ) => MkStream m (ls :!: ITbl m arr (Outside Subword) x) (Complement Subword) where
+  mkStream (ls :!: ITbl c t _) Complemented u ij
+    = map (\s -> let (C ox) = getOmx s
+                 in  ElmITbl (t ! (O ox)) (getIdx s) (C ox) s)
+    $ mkStream ls Complemented u ij
+  {-# Inline mkStream #-}
+
 
 
 instance ModifyConstraint (ITbl m arr Subword x) where

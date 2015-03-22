@@ -26,6 +26,7 @@ module ADP.Fusion
   , module ADP.Fusion.Chr
   , module ADP.Fusion.Empty
   , module ADP.Fusion.None
+  , module ADP.Fusion.PeekIndex
   , module ADP.Fusion.Table
   , module ADP.Fusion.TH
 --  , module ADP.Fusion.Table.Axiom
@@ -42,6 +43,7 @@ import           ADP.Fusion.Base
 import           ADP.Fusion.Chr
 import           ADP.Fusion.Empty
 import           ADP.Fusion.None
+import           ADP.Fusion.PeekIndex
 import           ADP.Fusion.Table
 import           ADP.Fusion.TH
 

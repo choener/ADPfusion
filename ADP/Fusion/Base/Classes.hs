@@ -16,16 +16,6 @@ import qualified Data.Vector.Fusion.Stream.Monadic as S
 import           Data.PrimitiveArray
 
 
-{-
-data Star
-  = FarRight
-  | FarLeft
-  | Middle
-
-data OutsideContext s
-  = OStatic s
-  | OVariable Star s
--}
 
 data OutsideContext s
   = OStatic     s
@@ -37,7 +27,7 @@ data InsideContext
   = IStatic
   | IVariable
 
-data Complemented
+data ComplementContext
   = Complemented
 
 class RuleContext i where
@@ -147,9 +137,10 @@ class ModifyConstraint t where
 
 type family   TblConstraint x       :: *
 
-type instance TblConstraint (is:.i)     =  TblConstraint is :. TblConstraint i
-type instance TblConstraint Z           = Z
-type instance TblConstraint (Outside o) = TblConstraint o
+type instance TblConstraint (is:.i)        =  TblConstraint is :. TblConstraint i
+type instance TblConstraint Z              = Z
+type instance TblConstraint (Outside o)    = TblConstraint o
+type instance TblConstraint (Complement o) = TblConstraint o
 
 type instance TblConstraint PointL      = TableConstraint
 type instance TblConstraint PointR      = TableConstraint

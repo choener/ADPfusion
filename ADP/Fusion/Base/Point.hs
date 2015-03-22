@@ -28,7 +28,7 @@ instance RuleContext (Outside PointL) where
   {-# Inline initialContext #-}
 
 instance RuleContext (Complement PointL) where
-  type Context (Complement PointL) = Complemented
+  type Context (Complement PointL) = ComplementContext
   initialContext _ = Complemented
   {-# Inline initialContext #-}
 

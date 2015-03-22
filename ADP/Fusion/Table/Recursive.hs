@@ -1,35 +1,16 @@
 
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeSynonymInstances #-}
-
--- | Bind a non-terminal to a non-memoizing, and hence recursive, table.
-
 module ADP.Fusion.Table.Recursive
-  ( IRec (..)
+  ( module ADP.Fusion.Table.Recursive.Type
+  , module ADP.Fusion.Table.Recursive.Point
+  , module ADP.Fusion.Table.Recursive.Subword
   ) where
 
-import           Control.Exception(assert)
-import           Data.Strict.Tuple
-import           Data.Vector.Fusion.Stream.Size (Size(Unknown))
-import qualified Data.Vector.Fusion.Stream.Monadic as S
-
---import           Data.Array.Repa.ExtShape (topmostIndex, ExtShape)
---import           Data.Array.Repa.Index.Subword
-import           Data.PrimitiveArray -- ((:.)(..))
-
-import           ADP.Fusion.Classes
-import           ADP.Fusion.Table.Axiom
-import           ADP.Fusion.Table.Backtrack
-
-import           Debug.Trace
+import ADP.Fusion.Table.Recursive.Point
+import ADP.Fusion.Table.Recursive.Subword
+import ADP.Fusion.Table.Recursive.Type
 
 
-
+{-
 data IRec m i x where
   IRec :: { iRecConstraint  :: !(TblConstraint i)
           , iRecFrom        :: !i
@@ -126,4 +107,5 @@ instance Axiom (IRec m i x) where
     let top = h -- topmostIndex l h -- TODO need topmostIndex in 'Index' in PrimitiveArray to figure this out for inside/outside selection
     in  f top top -- the first @h@ are the total bounds, the second the call to the biggest index
   {-# INLINE axiom #-}
+-}
 

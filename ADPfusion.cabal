@@ -109,6 +109,8 @@ library
     ADP.Fusion.None
     ADP.Fusion.None.Point
     ADP.Fusion.None.Type
+    ADP.Fusion.PeekIndex.Subword
+    ADP.Fusion.PeekIndex.Type
     ADP.Fusion.Table
     ADP.Fusion.Table.Array
     ADP.Fusion.Table.Array.Point
@@ -118,6 +120,10 @@ library
     ADP.Fusion.Table.Backtrack
     ADP.Fusion.Table.Fill
     ADP.Fusion.Table.Indices
+    ADP.Fusion.Table.Recursive
+    ADP.Fusion.Table.Recursive.Point
+    ADP.Fusion.Table.Recursive.Subword
+    ADP.Fusion.Table.Recursive.Type
     ADP.Fusion.TH
 --    ADP.Fusion.Edge
 ------    ADP.Fusion.Multi.Empty
@@ -126,7 +132,6 @@ library
 --    ADP.Fusion.QuickCheck.Point
 ------    ADP.Fusion.QuickCheck
 ------    ADP.Fusion.Region
---    ADP.Fusion.Table.Recursive
 
   default-extensions: BangPatterns
                     , FlexibleContexts
