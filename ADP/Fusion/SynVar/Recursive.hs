@@ -11,40 +11,9 @@ import ADP.Fusion.SynVar.Recursive.Type
 
 
 {-
-data IRec m i x where
-  IRec :: { iRecConstraint  :: !(TblConstraint i)
-          , iRecFrom        :: !i
-          , iRecTo          :: !i
-          , iRecFun         :: !(i -> i -> m x)
-          } -> IRec m i x
-
-instance ToBT (IRec mF i x) mF mB r where
-  data BT   (IRec mF i x) mF mB r = BtIRec !(TblConstraint i) i i (i -> i -> mB x) (i -> i -> mB (S.Stream mB r))
-  type BtIx (IRec mF i x)         = i
-  toBT (IRec c iF iT f) mrph bt = BtIRec c iF iT (\lu i -> mrph $ f lu i) bt
-  {-# INLINE toBT #-}
-
 
 
 -- * Instances
-
-instance Build (IRec m i x)
-
-instance Element ls i => Element (ls :!: IRec m i x) i where
-  data Elm (ls :!: IRec m i x) i = ElmIRec !x !i !(Elm ls i)
-  type Arg (ls :!: IRec m i x)   = Arg ls :. x
-  getArg (ElmIRec x _ ls) = getArg ls :. x
-  getIdx (ElmIRec _ k _ ) = k
-  {-# INLINE getArg #-}
-  {-# INLINE getIdx #-}
-
-instance Element ls i => Element (ls :!: (BT (IRec mF i x) mF mB r)) i where
-  data Elm (ls :!: (BT (IRec mF i x) mF mB r)) i = ElmBtIRec !x !(mB (S.Stream mB r)) !i !(Elm ls i)
-  type Arg (ls :!: (BT (IRec mF i x) mF mB r))   = Arg ls :. (x, mB (S.Stream mB r))
-  getArg (ElmBtIRec x s _ ls) = getArg ls :. (x,s)
-  getIdx (ElmBtIRec _ _ i _ ) = i
-  {-# INLINE getArg #-}
-  {-# INLINE getIdx #-}
 
 {-
 instance ModifyConstraint (IRec m Subword x) where
@@ -101,11 +70,5 @@ instance
   {-# INLINE mkStream #-}
 -}
 
-instance Axiom (IRec m i x) where
-  type S (IRec m i x) = m x
-  axiom (IRec c l h f) =
-    let top = h -- topmostIndex l h -- TODO need topmostIndex in 'Index' in PrimitiveArray to figure this out for inside/outside selection
-    in  f top top -- the first @h@ are the total bounds, the second the call to the biggest index
-  {-# INLINE axiom #-}
 -}
 

@@ -31,7 +31,22 @@ instance GenBacktrackTable (ITbl mF arr i x) mF mB r where
   toBacktrack (ITbl c arr _) _ bt = BtITbl c arr bt
   {-# Inline toBacktrack #-}
 
-instance (Show i, PrimArrayOps arr i x, Monad mB, IndexStream i) => Axiom (Backtrack (ITbl mF arr i x) mF mB r) where
+instance
+  ( Monad m
+  , PrimArrayOps arr i x
+  , IndexStream i
+  ) => Axiom (ITbl m arr i x) where
+  type AxiomStream (ITbl m arr i x) = m x
+  axiom (ITbl c arr _) = do
+    k <- (head . uncurry streamDown) $ bounds arr
+    return $ arr ! k
+  {-# Inline axiom #-}
+
+instance
+  ( Monad mB
+  , PrimArrayOps arr i x
+  , IndexStream i
+  ) => Axiom (Backtrack (ITbl mF arr i x) mF mB r) where
   type AxiomStream (Backtrack (ITbl mF arr i x) mF mB r) = mB (Stream mB r)
   axiom (BtITbl c arr bt) = do
     h <- (head . uncurry streamDown) $ bounds arr
