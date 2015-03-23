@@ -207,7 +207,9 @@ neat i = do let (es,z,ys) = runNussinov i
             printf "%0.4f\n" $ exp $ ln z
             forM_ ys $ \ (_,_,_,p,_,q) -> printf " %0.4f" ((exp $ ln p) * (exp $ ln q) / (exp $ ln z))
             putStrLn ""
-            print es
+            putStrLn ""
+            forM_ es $ \ (Subword (i:.j),v) -> printf "%3d %3d  %0.4f\n" i j (exp $ ln v)
+            putStrLn ""
 
 type TblI = ITbl Id Unboxed          Subword  (Log Double)
 type TblO = ITbl Id Unboxed (Outside Subword) (Log Double)
