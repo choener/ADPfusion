@@ -8,11 +8,11 @@ import Data.Vector.Fusion.Stream.Monadic
 import Debug.Trace
 import Prelude hiding (map)
 
-import           Data.PrimitiveArray hiding (map)
+import Data.PrimitiveArray hiding (map)
 
-import           ADP.Fusion.Base
-import           ADP.Fusion.SynVar.Array.Type
-import           ADP.Fusion.SynVar.Backtrack
+import ADP.Fusion.Base
+import ADP.Fusion.SynVar.Array.Type
+import ADP.Fusion.SynVar.Backtrack
 
 
 
