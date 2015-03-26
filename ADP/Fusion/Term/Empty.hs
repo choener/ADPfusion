@@ -1,13 +1,13 @@
 
-module ADP.Fusion.Empty
-  ( module ADP.Fusion.Empty.Type
-  , module ADP.Fusion.Empty.Subword
-  , module ADP.Fusion.Empty.Point
+module ADP.Fusion.Term.Empty
+  ( module ADP.Fusion.Term.Empty.Type
+  , module ADP.Fusion.Term.Empty.Subword
+  , module ADP.Fusion.Term.Empty.Point
   ) where
 
-import ADP.Fusion.Empty.Point
-import ADP.Fusion.Empty.Subword
-import ADP.Fusion.Empty.Type
+import ADP.Fusion.Term.Empty.Point
+import ADP.Fusion.Term.Empty.Subword
+import ADP.Fusion.Term.Empty.Type
 
 {-
 
@@ -31,15 +31,15 @@ import ADP.Fusion.Empty.Type
 -- This choice is currently a bit of a "hunch" but we do have algorithms in
 -- mind, where this could be useful.
 
-module ADP.Fusion.Empty where
+module ADP.Fusion.Term.Empty where
 
 import           Data.Strict.Maybe
 import           Prelude hiding (Maybe(..))
 
 import           Data.PrimitiveArray -- (Z(..), (:.)(..), Subword(..), subword, PointL(..), pointL, PointR(..), pointR, Outside(..))
 
-import           ADP.Fusion.Classes
-import           ADP.Fusion.Multi.Classes
+import           ADP.Fusion.Term.Classes
+import           ADP.Fusion.Term.Multi.Classes
 
 import           Debug.Trace
 

@@ -23,10 +23,7 @@ module ADP.Fusion
   ( module ADP.Fusion
   , module ADP.Fusion.Apply
   , module ADP.Fusion.Base
-  , module ADP.Fusion.Chr
-  , module ADP.Fusion.Empty
-  , module ADP.Fusion.None
-  , module ADP.Fusion.PeekIndex
+  , module ADP.Fusion.Term
   , module ADP.Fusion.SynVar
   , module ADP.Fusion.TH
   ) where
@@ -37,11 +34,8 @@ import qualified Data.Vector.Fusion.Stream.Monadic as S
 
 import           ADP.Fusion.Apply
 import           ADP.Fusion.Base
-import           ADP.Fusion.Chr
-import           ADP.Fusion.Empty
-import           ADP.Fusion.None
-import           ADP.Fusion.PeekIndex
 import           ADP.Fusion.SynVar
+import           ADP.Fusion.Term
 import           ADP.Fusion.TH
 
 import qualified Data.Vector.Unboxed as VU

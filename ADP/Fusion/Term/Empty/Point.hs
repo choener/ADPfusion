@@ -1,5 +1,5 @@
 
-module ADP.Fusion.Empty.Point where
+module ADP.Fusion.Term.Empty.Point where
 
 import           Data.Strict.Tuple
 import qualified Data.Vector.Fusion.Stream.Monadic as S
@@ -7,7 +7,7 @@ import qualified Data.Vector.Fusion.Stream.Monadic as S
 import           Data.PrimitiveArray
 
 import           ADP.Fusion.Base
-import           ADP.Fusion.Empty.Type
+import           ADP.Fusion.Term.Empty.Type
 
 
 

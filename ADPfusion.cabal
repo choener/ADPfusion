@@ -99,22 +99,23 @@ library
     ADP.Fusion.Base.Point
     ADP.Fusion.Base.Set
     ADP.Fusion.Base.Subword
-    ADP.Fusion.Chr
-    ADP.Fusion.Chr.Point
-    ADP.Fusion.Chr.Subword
-    ADP.Fusion.Chr.Type
-    ADP.Fusion.Edge
-    ADP.Fusion.Edge.Set
-    ADP.Fusion.Edge.Type
-    ADP.Fusion.Empty
-    ADP.Fusion.Empty.Point
-    ADP.Fusion.Empty.Subword
-    ADP.Fusion.Empty.Type
-    ADP.Fusion.None
-    ADP.Fusion.None.Point
-    ADP.Fusion.None.Type
-    ADP.Fusion.PeekIndex.Subword
-    ADP.Fusion.PeekIndex.Type
+    ADP.Fusion.Term
+    ADP.Fusion.Term.Chr
+    ADP.Fusion.Term.Chr.Point
+    ADP.Fusion.Term.Chr.Subword
+    ADP.Fusion.Term.Chr.Type
+    ADP.Fusion.Term.Edge
+    ADP.Fusion.Term.Edge.Set
+    ADP.Fusion.Term.Edge.Type
+    ADP.Fusion.Term.Empty
+    ADP.Fusion.Term.Empty.Point
+    ADP.Fusion.Term.Empty.Subword
+    ADP.Fusion.Term.Empty.Type
+    ADP.Fusion.Term.None
+    ADP.Fusion.Term.None.Point
+    ADP.Fusion.Term.None.Type
+    ADP.Fusion.Term.PeekIndex.Subword
+    ADP.Fusion.Term.PeekIndex.Type
     ADP.Fusion.SynVar
     ADP.Fusion.SynVar.Array
     ADP.Fusion.SynVar.Array.Point

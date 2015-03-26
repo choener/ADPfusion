@@ -1,11 +1,11 @@
 
-module ADP.Fusion.None
-  ( module ADP.Fusion.None.Type
-  , module ADP.Fusion.None.Point
+module ADP.Fusion.Term.None
+  ( module ADP.Fusion.Term.None.Type
+  , module ADP.Fusion.Term.None.Point
   ) where
 
-import ADP.Fusion.None.Point
-import ADP.Fusion.None.Type
+import ADP.Fusion.Term.None.Point
+import ADP.Fusion.Term.None.Type
 
 
 {-
@@ -16,8 +16,8 @@ import qualified Data.Vector.Fusion.Stream.Monadic as S
 
 import           Data.PrimitiveArray -- (Z(..), (:.)(..), Subword(..), subword, PointL(..), pointL, PointR(..), pointR)
 
-import           ADP.Fusion.Classes
-import           ADP.Fusion.Multi.Classes
+import           ADP.Fusion.Term.Classes
+import           ADP.Fusion.Term.Multi.Classes
 
 
 

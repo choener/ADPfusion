@@ -1,13 +1,13 @@
 
-module ADP.Fusion.Chr
-  ( module ADP.Fusion.Chr.Type
-  , module ADP.Fusion.Chr.Point
-  , module ADP.Fusion.Chr.Subword
+module ADP.Fusion.Term.Chr
+  ( module ADP.Fusion.Term.Chr.Type
+  , module ADP.Fusion.Term.Chr.Point
+  , module ADP.Fusion.Term.Chr.Subword
   ) where
 
-import ADP.Fusion.Chr.Point
-import ADP.Fusion.Chr.Subword
-import ADP.Fusion.Chr.Type
+import ADP.Fusion.Term.Chr.Point
+import ADP.Fusion.Term.Chr.Subword
+import ADP.Fusion.Term.Chr.Type
 
 
 
@@ -32,7 +32,7 @@ import ADP.Fusion.Chr.Type
 --
 -- TODO PointL , PointR need sanity checks for boundaries
 
-module ADP.Fusion.Chr where
+module ADP.Fusion.Term.Chr where
 
 import           Control.Exception(assert)
 import qualified Data.Vector.Fusion.Stream.Monadic as S

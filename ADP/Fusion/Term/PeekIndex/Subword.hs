@@ -1,5 +1,5 @@
 
-module ADP.Fusion.PeekIndex.Subword where
+module ADP.Fusion.Term.PeekIndex.Subword where
 
 import Data.Strict.Tuple
 import Data.Vector.Fusion.Stream.Monadic (map)
@@ -8,7 +8,7 @@ import Prelude hiding (map)
 import Data.PrimitiveArray hiding (map)
 
 import ADP.Fusion.Base
-import ADP.Fusion.PeekIndex.Type
+import ADP.Fusion.Term.PeekIndex.Type
 
 
 

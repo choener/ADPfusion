@@ -1,5 +1,5 @@
 
-module ADP.Fusion.Edge.Set where
+module ADP.Fusion.Term.Edge.Set where
 
 import Data.Bits
 import Data.Strict.Tuple
@@ -11,7 +11,7 @@ import Data.PrimitiveArray hiding (map)
 import Data.Bits.Ordered
 
 import ADP.Fusion.Base
-import ADP.Fusion.Edge.Type
+import ADP.Fusion.Term.Edge.Type
 
 
 

@@ -5,7 +5,7 @@
 {-# Language TypeOperators #-}
 {-# Language TypeSynonymInstances #-}
 
-module ADP.Fusion.Chr.Point where
+module ADP.Fusion.Term.Chr.Point where
 
 import           Data.Strict.Tuple
 import           Debug.Trace
@@ -15,7 +15,7 @@ import qualified Data.Vector.Generic as VG
 import           Data.PrimitiveArray
 
 import           ADP.Fusion.Base
-import           ADP.Fusion.Chr.Type
+import           ADP.Fusion.Term.Chr.Type
 
 
 instance

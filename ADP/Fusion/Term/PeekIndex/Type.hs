@@ -1,5 +1,5 @@
 
-module ADP.Fusion.PeekIndex.Type where
+module ADP.Fusion.Term.PeekIndex.Type where
 
 import Data.Strict.Tuple
 

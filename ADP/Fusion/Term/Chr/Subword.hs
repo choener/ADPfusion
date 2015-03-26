@@ -1,5 +1,5 @@
 
-module ADP.Fusion.Chr.Subword where
+module ADP.Fusion.Term.Chr.Subword where
 
 import           Data.Strict.Tuple
 import           Data.Vector.Fusion.Util (delay_inline)
@@ -11,7 +11,7 @@ import           Prelude hiding (map)
 import           Data.PrimitiveArray hiding (map)
 
 import           ADP.Fusion.Base
-import           ADP.Fusion.Chr.Type
+import           ADP.Fusion.Term.Chr.Type
 
 
 

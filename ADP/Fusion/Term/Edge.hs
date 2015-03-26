@@ -1,11 +1,11 @@
 
-module ADP.Fusion.Edge
-  ( module ADP.Fusion.Edge.Type
-  , module ADP.Fusion.Edge.Set
+module ADP.Fusion.Term.Edge
+  ( module ADP.Fusion.Term.Edge.Type
+  , module ADP.Fusion.Term.Edge.Set
   ) where
 
-import ADP.Fusion.Edge.Set
-import ADP.Fusion.Edge.Type
+import ADP.Fusion.Term.Edge.Set
+import ADP.Fusion.Term.Edge.Type
 
 
 

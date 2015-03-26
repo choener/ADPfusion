@@ -1,5 +1,5 @@
 
-module ADP.Fusion.Edge.Type where
+module ADP.Fusion.Term.Edge.Type where
 
 import Data.Strict.Tuple
 

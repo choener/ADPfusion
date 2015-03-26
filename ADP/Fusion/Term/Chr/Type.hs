@@ -6,7 +6,7 @@
 {-# Language TypeOperators #-}
 {-# Language TypeSynonymInstances #-}
 
-module ADP.Fusion.Chr.Type where
+module ADP.Fusion.Term.Chr.Type where
 
 import           Data.Strict.Tuple
 import qualified Data.Vector.Generic as VG

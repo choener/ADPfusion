@@ -1,5 +1,5 @@
 
-module ADP.Fusion.Empty.Type where
+module ADP.Fusion.Term.Empty.Type where
 
 import Data.Strict.Tuple
 

@@ -1,5 +1,5 @@
 
-module ADP.Fusion.Empty.Subword where
+module ADP.Fusion.Term.Empty.Subword where
 
 import Data.Strict.Tuple
 import Data.Vector.Fusion.Stream.Monadic as S
@@ -8,7 +8,7 @@ import Prelude hiding (map)
 import Data.PrimitiveArray hiding (map)
 
 import ADP.Fusion.Base
-import ADP.Fusion.Empty.Type
+import ADP.Fusion.Term.Empty.Type
 
 --import Data.Vector.Fusion.Util
 
