@@ -1,30 +1,15 @@
 
-{-# Language BangPatterns #-}
-{-# Language ExistentialQuantification #-}
-{-# Language FlexibleContexts #-}
-{-# Language FlexibleInstances #-}
-{-# Language GADTs #-}
-{-# Language MultiParamTypeClasses #-}
-{-# Language PatternGuards #-}
-{-# Language TypeFamilies #-}
-{-# Language TypeOperators #-}
-{-# Language TypeSynonymInstances #-}
-{-# Language UndecidableInstances #-}
+module ADP.Fusion.Edge
+  ( module ADP.Fusion.Edge.Type
+  , module ADP.Fusion.Edge.Set
+  ) where
 
-module ADP.Fusion.Edge where
-
-import           Data.Strict.Tuple
-import           Data.Vector.Fusion.Stream.Size
-import qualified Data.Vector.Fusion.Stream.Monadic as S
-import           Data.Bits
-
-import           Data.PrimitiveArray
-import           Data.Bits.Ordered
-
-import           ADP.Fusion.Classes
+import ADP.Fusion.Edge.Set
+import ADP.Fusion.Edge.Type
 
 
 
+{-
 -- | An edge terminal returns the pair of indices forming the edge.
 
 data Edge e where
@@ -75,4 +60,5 @@ instance
             {-# Inline [0] mk   #-}
             {-# Inline [0] step #-}
     {-# Inline mkStream #-}
+-}
 

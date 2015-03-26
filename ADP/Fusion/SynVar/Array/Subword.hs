@@ -153,7 +153,7 @@ instance
   , MkStream m ls (Complement Subword)
   ) => MkStream m (ls :!: ITbl m arr (Outside Subword) x) (Complement Subword) where
   mkStream (ls :!: ITbl c t _) Complemented u ij
-    = map (\s -> let (C ox) = getOmx s
+    = map (\s -> let (C ox) = getOmx s      -- TODO shouldn't this be @getIdx@ as well? on the count of everything being terminals in Complement?
                  in  ElmITbl (t ! (O ox)) (getIdx s) (C ox) s)
     $ mkStream ls Complemented u ij
   {-# Inline mkStream #-}

@@ -14,6 +14,7 @@ import           ADP.Fusion.Base
 import           ADP.Fusion.Chr.Type
 
 
+
 instance
   ( Monad m
   , Element ls Subword

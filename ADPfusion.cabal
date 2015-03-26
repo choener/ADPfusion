@@ -97,11 +97,15 @@ library
     ADP.Fusion.Base.Classes
     ADP.Fusion.Base.Multi
     ADP.Fusion.Base.Point
+    ADP.Fusion.Base.Set
     ADP.Fusion.Base.Subword
     ADP.Fusion.Chr
     ADP.Fusion.Chr.Point
     ADP.Fusion.Chr.Subword
     ADP.Fusion.Chr.Type
+    ADP.Fusion.Edge
+    ADP.Fusion.Edge.Set
+    ADP.Fusion.Edge.Type
     ADP.Fusion.Empty
     ADP.Fusion.Empty.Point
     ADP.Fusion.Empty.Subword
@@ -125,7 +129,6 @@ library
     ADP.Fusion.SynVar.Recursive.Subword
     ADP.Fusion.SynVar.Recursive.Type
     ADP.Fusion.TH
---    ADP.Fusion.Edge
 ------    ADP.Fusion.Multi.Empty
 ------    ADP.Fusion.Multi.GChr
 ------    ADP.Fusion.Multi.None
