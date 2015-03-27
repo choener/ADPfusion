@@ -35,3 +35,15 @@ instance
   ( Monad m
   ) => MkStream m S (Complement (BS2I First Last)) where
 
+
+
+-- | An undefined bitset with 2 interfaces.
+
+undefbs2i :: BS2I f l
+undefbs2i = BitSet (-1) :> Interface (-1) :> Interface (-1)
+{-# Inline undefbs2i #-}
+
+undefi :: Interface i
+undefi = Interface (-1)
+{-# Inline undefi #-}
+

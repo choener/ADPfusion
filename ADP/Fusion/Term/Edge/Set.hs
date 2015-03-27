@@ -70,14 +70,6 @@ instance
   {-# Inline mkStream #-}
 
 
-undefbs2i :: BS2I f l
-undefbs2i = BitSet (-1) :> Interface (-1) :> Interface (-1)
-{-# Inline undefbs2i #-}
-
-undefi :: Interface i
-undefi = Interface (-1)
-{-# Inline undefi #-}
-
 {-
 instance
   ( Monad m
