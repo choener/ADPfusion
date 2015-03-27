@@ -1,10 +1,11 @@
 
 {-# Language BangPatterns #-}
+{-# Language FlexibleContexts #-}
+{-# Language GADTs #-}
 {-# Language RecordWildCards #-}
 {-# Language ScopedTypeVariables #-}
 {-# Language TemplateHaskell #-}
 {-# Language TypeOperators #-}
-{-# Language GADTs #-}
 
 -- | The Needleman-Wunsch global alignment algorithm. This algorithm is
 -- extremely simple but provides a good showcase for what ADPfusion offers.
@@ -30,7 +31,6 @@ module Main where
 
 import           Control.Applicative
 import           Control.Monad
-import           Control.Monad.Primitive
 import           Data.Vector.Fusion.Stream.Monadic (Stream (..))
 import           Data.Vector.Fusion.Util
 import           Debug.Trace

@@ -16,7 +16,7 @@ import ADP.Fusion.SynVar.Array.Type
 import ADP.Fusion.SynVar.Backtrack
 
 
-
+{-
 instance
   ( Monad m
   , PrimArrayOps arr (BS2I First Last) x
@@ -48,4 +48,5 @@ instance
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline mkStream #-}
+-}
 

@@ -1,5 +1,7 @@
 
 {-# LANGUAGE BangPatterns #-}
+{-# Language FlexibleContexts #-}
+{-# Language GADTs #-}
 {-# LANGUAGE MonadComprehensions #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
