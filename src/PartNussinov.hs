@@ -94,7 +94,7 @@ pretty = Nussinov
 -- @
 -- A -> A c
 -- A -> A P
--- A -> empty
+-- A -> ε
 -- P -> c A c
 -- @
 
@@ -114,7 +114,7 @@ insideGrammar Nussinov{..} c a' p' =
 -- @
 -- B -> B c
 -- B -> B P
--- B -> empty
+-- B -> ε
 -- B -> c Q c
 -- Q -> A B
 -- @
