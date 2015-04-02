@@ -7,6 +7,7 @@ import Data.Vector.Fusion.Util (delay_inline)
 import Data.Vector.Fusion.Stream.Monadic
 import Prelude hiding (map)
 import Data.Bits
+import Data.Bits.Extras
 import Data.Bits.Ordered
 
 import Data.PrimitiveArray hiding (map)
@@ -14,6 +15,34 @@ import Data.PrimitiveArray hiding (map)
 import ADP.Fusion.Base
 import ADP.Fusion.SynVar.Array.Type
 import ADP.Fusion.SynVar.Backtrack
+
+
+
+instance
+  ( Monad m
+  , Element ls BitSet
+  , PrimArrayOps arr BitSet x
+  , MkStream m ls BitSet
+  ) => MkStream m (ls :!: ITbl m arr BitSet x) BitSet where
+  mkStream (ls :!: ITbl c t _) IStatic u s
+    = map (\z -> let k = getIdx z
+                 in  ElmITbl (t ! (s `xor` k)) k 0 z)
+    $ mkStream ls IVariable u s
+  mkStream (ls :!: ITbl c t _) IVariable u s
+    = flatten mk step Unknown $ mkStream ls IVariable u s
+    where mk z
+            | cm == 0     = return (z , mask , cm , Nothing)
+            | c==EmptyOk  = return (z , mask , cm , Just 0 )
+            | c==NonEmpty = return (z , mask , cm , Just 1 )
+            where mask = s `xor` (getIdx z) -- bits that are still free
+                  cm   = popCount mask
+          step (z,mask,cm,Nothing) = return $ Done
+          step (z,mask,cm,Just k ) = let kk = movePopulation mask k
+                                     in  return $ Yield (ElmITbl (t!kk) kk (BitSet 0) z) (z,mask,cm,setSucc (BitSet 0) (2^cm -1) k)
+          {-# Inline [0] mk   #-}
+          {-# Inline [0] step #-}
+  {-# Inline mkStream #-}
+
 
 
 {-

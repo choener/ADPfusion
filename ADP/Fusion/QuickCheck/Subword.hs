@@ -15,10 +15,9 @@ import qualified Data.Vector.Unboxed as VU
 import           Data.PrimitiveArray
 
 import           ADP.Fusion
+import           ADP.Fusion.QuickCheck.Common
 
 
-
-tr zs ls b = traceShow (zs," ",ls,length zs,length ls) b
 
 -- * Outside checks
 

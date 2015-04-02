@@ -2,10 +2,12 @@
 module ADP.Fusion.SynVar.Array
   ( module ADP.Fusion.SynVar.Array.Type
   , module ADP.Fusion.SynVar.Array.Point
+  , module ADP.Fusion.SynVar.Array.Set
   , module ADP.Fusion.SynVar.Array.Subword
   ) where
 
 import ADP.Fusion.SynVar.Array.Point
+import ADP.Fusion.SynVar.Array.Set
 import ADP.Fusion.SynVar.Array.Subword
 import ADP.Fusion.SynVar.Array.Type
 
