@@ -26,12 +26,12 @@ instance
   , PrimArrayOps arr Subword x
   , MkStream m ls Subword
   ) => MkStream m (ls :!: ITbl m arr Subword x) Subword where
-  mkStream (ls :!: ITbl c t _) IStatic hh (Subword (i:.j))
+  mkStream (ls :!: ITbl c t _) (IStatic ()) hh (Subword (i:.j))
     = map (\s -> let (Subword (_:.l)) = getIdx s
                  in  ElmITbl (t ! subword l j) (subword l j) (subword 0 0) s)
-    $ mkStream ls IVariable hh (delay_inline Subword (i:.j - minSize c))
-  mkStream (ls :!: ITbl c t _) IVariable hh (Subword (i:.j))
-    = flatten mk step Unknown $ mkStream ls IVariable hh (delay_inline Subword (i:.j - minSize c))
+    $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j - minSize c))
+  mkStream (ls :!: ITbl c t _) (IVariable ()) hh (Subword (i:.j))
+    = flatten mk step Unknown $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j - minSize c))
     where mk s = let Subword (_:.l) = getIdx s in return (s :. j - l - minSize c)
           step (s:.z) | z >= 0 = do let Subword (_:.k) = getIdx s
                                         l              = j - z
@@ -48,13 +48,13 @@ instance
   , MkStream mB ls Subword
   , PrimArrayOps arr Subword x
   ) => MkStream mB (ls :!: Backtrack (ITbl mF arr Subword x) mF mB r) Subword where
-  mkStream (ls :!: BtITbl c t bt) IStatic hh ij@(Subword (i:.j))
+  mkStream (ls :!: BtITbl c t bt) (IStatic ()) hh ij@(Subword (i:.j))
     = map (\s -> let Subword (_:.l) = getIdx s
                      lj             = subword l j
                  in  ElmBtITbl (t ! lj) (bt hh lj) lj (subword 0 0) s)
-    $ mkStream ls IVariable hh (delay_inline Subword (i:.j - minSize c))
-  mkStream (ls :!: BtITbl c t bt) IVariable hh ij@(Subword (i:.j))
-    = flatten mk step Unknown $ mkStream ls IVariable hh (delay_inline Subword (i:.j - minSize c))
+    $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j - minSize c))
+  mkStream (ls :!: BtITbl c t bt) (IVariable ()) hh ij@(Subword (i:.j))
+    = flatten mk step Unknown $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j - minSize c))
     where mk s = let Subword (_:.l) = getIdx s in return (s :. j - l - minSize c)
           step (s:.z) | z >= 0 = do let Subword (_:.k) = getIdx s
                                         l              = j - z

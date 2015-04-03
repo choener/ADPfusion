@@ -20,14 +20,14 @@ instance
   , Element ls Subword
   , MkStream m ls Subword
   ) => MkStream m (ls :!: Chr r x) Subword where
-  mkStream (ls :!: Chr f xs) IStatic hh (Subword (i:.j))
+  mkStream (ls :!: Chr f xs) (IStatic ()) hh (Subword (i:.j))
     = staticCheck (i>=0 && i<j && j<= VG.length xs)
     $ map (ElmChr (f xs $ j-1) (subword (j-1) j) (subword 0 0))
-    $ mkStream ls IStatic hh (delay_inline Subword (i:.j-1))
-  mkStream (ls :!: Chr f xs) IVariable hh (Subword (i:.j))
+    $ mkStream ls (IStatic ()) hh (delay_inline Subword (i:.j-1))
+  mkStream (ls :!: Chr f xs) (IVariable ()) hh (Subword (i:.j))
     = map (\s -> let Subword (_:.l) = getIdx s
                  in  ElmChr (f xs l) (subword l (l+1)) (subword 0 0) s)
-    $ mkStream ls IVariable hh (delay_inline Subword (i:.j-1))
+    $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j-1))
   {-# Inline mkStream #-}
 
 

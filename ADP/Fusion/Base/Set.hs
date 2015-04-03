@@ -1,10 +1,15 @@
 
+-- | The @Context@ for a @BitSet@ is the number of bits we should reserve
+-- for the more right-most symbols, which request a number of reserved
+-- bits.
+
 module ADP.Fusion.Base.Set where
 
 import Data.Vector.Fusion.Stream.Monadic (singleton,filter,enumFromStepN,map,unfoldr)
 import Data.Vector.Fusion.Stream.Size
 import Debug.Trace
 import Prelude hiding (map,filter)
+import Data.Bits
 
 import Data.PrimitiveArray
 
@@ -14,8 +19,8 @@ import ADP.Fusion.Base.Multi
 
 
 instance RuleContext BitSet where
-  type Context BitSet = InsideContext
-  initialContext _ = IStatic
+  type Context BitSet = InsideContext Int
+  initialContext _ = IStatic 0
   {-# Inline initialContext #-}
 
 instance RuleContext (Outside BitSet) where
@@ -29,8 +34,8 @@ instance RuleContext (Complement BitSet) where
   {-# Inline initialContext #-}
 
 instance RuleContext (BS2I First Last) where
-  type Context (BS2I First Last) = InsideContext
-  initialContext _ = IStatic
+  type Context (BS2I First Last) = InsideContext Int
+  initialContext _ = IStatic 0
   {-# Inline initialContext #-}
 
 instance RuleContext (Outside (BS2I First Last)) where
@@ -48,10 +53,10 @@ instance RuleContext (Complement (BS2I First Last)) where
 instance
   ( Monad m
   ) => MkStream m S BitSet where
-  mkStream S IStatic u s
-    = staticCheck (True) . singleton $ ElmS s 0
-  mkStream S IVariable u s
-    = singleton $ ElmS 0 0
+  mkStream S (IStatic c) u s
+    = staticCheck (c <= popCount s) . singleton $ ElmS s 0
+  mkStream S (IVariable c) u s
+    = staticCheck (c <= popCount s) . singleton $ ElmS 0 0
   {-# Inline mkStream #-}
 
 

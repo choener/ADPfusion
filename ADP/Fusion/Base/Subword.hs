@@ -17,8 +17,8 @@ import ADP.Fusion.Base.Multi
 
 
 instance RuleContext Subword where
-  type Context Subword = InsideContext
-  initialContext _ = IStatic
+  type Context Subword = InsideContext ()
+  initialContext _ = IStatic ()
   {-# Inline initialContext #-}
 
 instance RuleContext (Outside Subword) where
@@ -38,14 +38,14 @@ instance RuleContext (Complement Subword) where
 
 
 instance (Monad m) => MkStream m S Subword where
-  mkStream S IStatic (Subword (_:.h)) (Subword (i:.j))
+  mkStream S (IStatic ()) (Subword (_:.h)) (Subword (i:.j))
     = staticCheck (i>=0 && i==j && j<=h) . singleton $ ElmS (subword i i) (subword 0 0)
   -- NOTE it seems that a static check within an @IVariable@ context
   -- destroys fusion; maybe because of the outer flatten? We don't actually
   -- need a static check anyway because the next flatten takes care of
   -- conditional checks. @filter@ on the other hand, does work.
   -- TODO test with and without filter using quickcheck
-  mkStream S IVariable (Subword (_:.h)) (Subword (i:.j))
+  mkStream S (IVariable ()) (Subword (_:.h)) (Subword (i:.j))
     = filter (const $ 0<=i && i<=j && j<=h) . singleton $ ElmS (subword i i) (subword 0 0)
   {-# Inline mkStream #-}
 

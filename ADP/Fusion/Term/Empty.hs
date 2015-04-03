@@ -1,8 +1,8 @@
 
 module ADP.Fusion.Term.Empty
   ( module ADP.Fusion.Term.Empty.Type
-  , module ADP.Fusion.Term.Empty.Subword
   , module ADP.Fusion.Term.Empty.Point
+  , module ADP.Fusion.Term.Empty.Subword
   ) where
 
 import ADP.Fusion.Term.Empty.Point

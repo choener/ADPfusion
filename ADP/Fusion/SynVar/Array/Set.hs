@@ -28,12 +28,12 @@ instance
   , PrimArrayOps arr BitSet x
   , MkStream m ls BitSet
   ) => MkStream m (ls :!: ITbl m arr BitSet x) BitSet where
-  mkStream (ls :!: ITbl c t _) IStatic u s
+  mkStream (ls :!: ITbl c t _) (IStatic rp) u s
     = map (\z -> let k = getIdx z
                  in  ElmITbl (t ! (s `xor` k)) k 0 z)
-    $ mkStream ls IVariable u s
-  mkStream (ls :!: ITbl c t _) IVariable u s
-    = flatten mk step Unknown $ mkStream ls IVariable u s
+    $ mkStream ls (IVariable rp) u s
+  mkStream (ls :!: ITbl c t _) (IVariable rp) u s
+    = flatten mk step Unknown $ mkStream ls (IVariable rp) u s
     where mk z
 --            | cm == 0     = return (z , mask , cm , Nothing)
             | c==EmptyOk  = return (z , mask , cm , Just 0 )

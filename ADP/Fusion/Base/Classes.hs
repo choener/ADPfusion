@@ -23,9 +23,9 @@ data OutsideContext s
   | OFirstLeft  s
   | OLeftOf     s
 
-data InsideContext
-  = IStatic
-  | IVariable
+data InsideContext s
+  = IStatic   s
+  | IVariable s
 
 data ComplementContext
   = Complemented

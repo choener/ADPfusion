@@ -52,7 +52,7 @@ instance TableIndices is => TableIndices (is:.Subword) where
 -- | TODO I think we need to check @cs:.c@ here
 
 instance TableIndices is => TableIndices (is:.PointL) where
-  tableIndices (cs:._) (vs:.IStatic) (is:.PointL j)
+  tableIndices (cs:._) (vs:.IStatic ()) (is:.PointL j)
     = map (\(S5 s (zi:.PointL _) (zo:.PointL _) is os) -> S5 s zi zo (is:.PointL j) (os:.PointL 0)) -- constraint handled: tableStreamIndex
     . tableIndices cs vs is
     . map (\(S5 s zi zo (is:.i) (os:.o)) -> S5 s (zi:.i) (zo:.o) is os)
