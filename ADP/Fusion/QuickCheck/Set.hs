@@ -9,7 +9,7 @@ import           Debug.Trace
 import qualified Data.List as L
 import qualified Data.Vector.Fusion.Stream as S
 import qualified Data.Vector.Unboxed as VU
-import           Test.QuickCheck
+import           Test.QuickCheck hiding (NonEmpty)
 import           Test.QuickCheck.All
 import           Test.QuickCheck.Monadic
 
@@ -32,6 +32,17 @@ prop_ii ix@(BitSet _) = zs == ls where
        , let kk = movePopulation ix (BitSet k)
        ]
 
+prop_ii_nn ix@(BitSet _) = zs == ls where
+  tia = ITbl NonEmpty xsS (\ _ _ -> Id 1)
+  tib = ITbl NonEmpty xsS (\ _ _ -> Id 1)
+  zs = ((,) <<< tia % tib ... S.toList) highest ix
+  ls = [ ( xsS ! kk , xsS ! (ix `xor` kk) )
+       | k <- VU.toList . popCntSorted $ popCount ix -- [ 0 .. 2^(popCount ix) -1 ]
+       , let kk = movePopulation ix (BitSet k)
+       , popCount kk > 0
+       , popCount (ix `xor` kk) > 0
+       ]
+
 prop_iii ix@(BitSet _) = zs == ls where
   tia = ITbl EmptyOk xsS (\ _ _ -> Id 1)
   tib = ITbl EmptyOk xsS (\ _ _ -> Id 1)
@@ -43,6 +54,20 @@ prop_iii ix@(BitSet _) = zs == ls where
        , let kk = movePopulation ix          (BitSet k)
        , let ll = movePopulation (ix `xor` kk) (BitSet l)
        , let mm = (ix `xor` (kk .|. ll))
+       ]
+
+prop_iii_nnn ix@(BitSet _) = zs == ls where
+  tia = ITbl NonEmpty xsS (\ _ _ -> Id 1)
+  tib = ITbl NonEmpty xsS (\ _ _ -> Id 1)
+  tic = ITbl NonEmpty xsS (\ _ _ -> Id 1)
+  zs = ((,,) <<< tia % tib % tic ... S.toList) highest ix
+  ls = [ ( xsS ! kk , xsS ! ll , xsS ! mm )
+       | k <- VU.toList . popCntSorted $ popCount ix
+       , l <- VU.toList . popCntSorted $ popCount ix - popCount k
+       , let kk = movePopulation ix          (BitSet k)
+       , let ll = movePopulation (ix `xor` kk) (BitSet l)
+       , let mm = (ix `xor` (kk .|. ll))
+       , popCount kk > 0, popCount ll > 0, popCount mm > 0
        ]
 
 

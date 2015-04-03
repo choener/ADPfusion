@@ -21,6 +21,10 @@ import ADP.Fusion.SynVar.Backtrack
 -- NOTE that we have to give as the filled index elements all bits that are
 -- set in total, not just those we set right here. Otherwise the next
 -- element will try a wrong set of indices.
+--
+-- NOTE even in the @IStatic@ case, we need to use flatten. If a node
+-- requested a reserved bit, we need to free each reserved bit at least
+-- once.
 
 instance
   ( Monad m
@@ -29,20 +33,36 @@ instance
   , MkStream m ls BitSet
   ) => MkStream m (ls :!: ITbl m arr BitSet x) BitSet where
   mkStream (ls :!: ITbl c t _) (IStatic rp) u s
-    = map (\z -> let k = getIdx z
-                 in  ElmITbl (t ! (s `xor` k)) k 0 z)
-    $ mkStream ls (IVariable rp) u s
+    = flatten mk step Unknown $ mkStream ls (delay_inline IVariable $ rp - csize) u s
+    where mk z
+            | cm < csize = return (z , mask , Nothing)
+            | otherwise  = return (z , mask , Just k )
+            where k  = (BitSet $ 2^cm-1)
+                  cm = popCount mask - rp
+                  mask = s `xor` (getIdx z)
+          step (_,_,Nothing) = return $ Done
+          step (z,mask,Just k)
+            | pk > popCount s - rp = return $ Done
+            | otherwise            = let kk = movePopulation mask k
+                                     in  return $ Yield (ElmITbl (t!kk) (kk .|. getIdx z) (BitSet 0) z) (z,mask,setSucc (BitSet 0) (2^pk -1) k)
+            where pk = popCount k
+          !csize | c==EmptyOk  = 0
+                 | c==NonEmpty = 1
+          {-# Inline [0] mk   #-}
+          {-# Inline [0] step #-}
   mkStream (ls :!: ITbl c t _) (IVariable rp) u s
     = flatten mk step Unknown $ mkStream ls (IVariable rp) u s
     where mk z
---            | cm == 0     = return (z , mask , cm , Nothing)
             | c==EmptyOk  = return (z , mask , cm , Just 0 )
+            | cm == 0     = return (z , mask , cm , Nothing) -- we are non-empty but have no free bits left
             | c==NonEmpty = return (z , mask , cm , Just 1 )
             where mask = s `xor` (getIdx z) -- bits that are still free
                   cm   = popCount mask
           step (z,mask,cm,Nothing) = return $ Done
-          step (z,mask,cm,Just k ) = let kk = movePopulation mask k
-                                     in  return $ Yield (ElmITbl (t!kk) (kk .|. getIdx z) (BitSet 0) z) (z,mask,cm,setSucc (BitSet 0) (2^cm -1) k)
+          step (z,mask,cm,Just k )
+            | popCount s < popCount (kk .|. getIdx z) + rp = return $ Done
+            | otherwise = return $ Yield (ElmITbl (t!kk) (kk .|. getIdx z) (BitSet 0) z) (z,mask,cm,setSucc (BitSet 0) (2^cm -1) k)
+            where kk = movePopulation mask k
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline mkStream #-}
