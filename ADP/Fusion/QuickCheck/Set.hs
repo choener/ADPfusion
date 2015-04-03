@@ -23,15 +23,27 @@ import           ADP.Fusion.QuickCheck.Common
 
 -- * Inside checks
 
-prop_ii ix@(BitSet _) = tr zs ls $ zs == ls where
+prop_ii ix@(BitSet _) = zs == ls where
   tia = ITbl EmptyOk xsS (\ _ _ -> Id 1)
   tib = ITbl EmptyOk xsS (\ _ _ -> Id 1)
   zs = ((,) <<< tia % tib ... S.toList) highest ix
-  ls = [ (unsafeIndex xsS kk, unsafeIndex xsS (ix `xor` kk))
+  ls = [ ( xsS ! kk , xsS ! (ix `xor` kk) )
        | k <- VU.toList . popCntSorted $ popCount ix -- [ 0 .. 2^(popCount ix) -1 ]
        , let kk = movePopulation ix (BitSet k)
        ]
 
+prop_iii ix@(BitSet _) = zs == ls where
+  tia = ITbl EmptyOk xsS (\ _ _ -> Id 1)
+  tib = ITbl EmptyOk xsS (\ _ _ -> Id 1)
+  tic = ITbl EmptyOk xsS (\ _ _ -> Id 1)
+  zs = ((,,) <<< tia % tib % tic ... S.toList) highest ix
+  ls = [ ( xsS ! kk , xsS ! ll , xsS ! mm )
+       | k <- VU.toList . popCntSorted $ popCount ix
+       , l <- VU.toList . popCntSorted $ popCount ix - popCount k
+       , let kk = movePopulation ix          (BitSet k)
+       , let ll = movePopulation (ix `xor` kk) (BitSet l)
+       , let mm = (ix `xor` (kk .|. ll))
+       ]
 
 
 -- * Outside checks
@@ -75,7 +87,7 @@ prop_c_OI x@(C (BitSet s)) = zs == ls where
 
 -- * Helper functions
 
-highBit = 14 -- should be the same as the highest bit in Index.Set.arbitrary
+highBit = arbitraryBitSetMax -- should be the same as the highest bit in Index.Set.arbitrary
 highest = BitSet $ 2^(highBit+1) -1
 
 xsS :: Unboxed BitSet Int
@@ -83,4 +95,13 @@ xsS = fromList (BitSet 0) highest [ 0 .. ]
 
 xoS :: Unboxed (Outside BitSet) Int
 xoS = fromList (O (BitSet 0)) (O highest) [ 0 .. ]
+
+-- * general quickcheck stuff
+
+options = stdArgs {maxSuccess = 10000}
+
+customCheck = quickCheckWithResult options
+
+return []
+allProps = $forAllProperties customCheck
 

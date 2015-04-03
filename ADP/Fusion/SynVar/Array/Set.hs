@@ -18,6 +18,10 @@ import ADP.Fusion.SynVar.Backtrack
 
 
 
+-- NOTE that we have to give as the filled index elements all bits that are
+-- set in total, not just those we set right here. Otherwise the next
+-- element will try a wrong set of indices.
+
 instance
   ( Monad m
   , Element ls BitSet
@@ -31,14 +35,14 @@ instance
   mkStream (ls :!: ITbl c t _) IVariable u s
     = flatten mk step Unknown $ mkStream ls IVariable u s
     where mk z
-            | cm == 0     = return (z , mask , cm , Nothing)
+--            | cm == 0     = return (z , mask , cm , Nothing)
             | c==EmptyOk  = return (z , mask , cm , Just 0 )
             | c==NonEmpty = return (z , mask , cm , Just 1 )
             where mask = s `xor` (getIdx z) -- bits that are still free
                   cm   = popCount mask
           step (z,mask,cm,Nothing) = return $ Done
           step (z,mask,cm,Just k ) = let kk = movePopulation mask k
-                                     in  return $ Yield (ElmITbl (t!kk) kk (BitSet 0) z) (z,mask,cm,setSucc (BitSet 0) (2^cm -1) k)
+                                     in  return $ Yield (ElmITbl (t!kk) (kk .|. getIdx z) (BitSet 0) z) (z,mask,cm,setSucc (BitSet 0) (2^cm -1) k)
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline mkStream #-}
