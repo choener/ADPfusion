@@ -71,8 +71,8 @@ instance
 instance
   ( Monad m
   ) => MkStream m S (BS2I First Last) where
-  mkStream S (IStatic rp) u sij@(s:>i:>j)
-    = staticCheck (popCount s >= rp) . singleton $ ElmS sij undefbs2i
+  mkStream S (IStatic rp) u sij@(s:>Iter i:>j)
+    = staticCheck (popCount s == 0 && rp == 0) . singleton $ ElmS (0:>Iter i:>Iter i) undefbs2i
   mkStream S (IVariable rp) u sij@(s:>Iter i:>j)
     = staticCheck (popCount s >= rp) . singleton $ ElmS (0:>Iter i:>Iter i) undefbs2i
   {-# Inline mkStream #-}
