@@ -141,6 +141,20 @@ prop_bii_ie ix@(s:>i:>Iter j) = zs == ls where
        | let t = s `clearBit` j
        , k <- activeBitsL t ]
 
+prop_bii_iee :: BS2I First Last -> Bool
+prop_bii_iee ix@(s:>i:>Iter j) = tr zs ls $ zs == ls where
+  tia = ITbl EmptyOk xsBII (\ _ _ -> Id 1)
+  e   = Edge (\ i j -> (i,j)) :: Edge (Int,Int)
+  zs = ((,,) <<< tia % e % e ... S.toList) highestBII ix
+  ls = [ ( xsBII ! (t:>i:>kk) , (k,l) , (l,j) )
+       | let tmp = (s `clearBit` j)
+       , l <- activeBitsL tmp
+       , l /= getIter i
+       , let t = tmp `clearBit` l
+       , k <- activeBitsL t
+       , let kk = Iter k
+       ]
+
 prop_bii_ie_n :: BS2I First Last -> Bool
 prop_bii_ie_n ix@(s:>i:>Iter j) = zs == ls where
   tia = ITbl NonEmpty xsBII (\ _ _ -> Id 1)

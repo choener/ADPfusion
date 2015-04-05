@@ -10,6 +10,7 @@ import Data.Vector.Fusion.Stream.Size
 import Data.Vector.Fusion.Util (delay_inline)
 import Debug.Trace
 import Prelude hiding (map)
+import Control.Applicative ((<$>))
 
 import Data.PrimitiveArray hiding (map)
 
@@ -88,22 +89,30 @@ instance
           rpn | jj == -1
               && c == NonEmpty = rp+1
               | otherwise      = rp
+          nec | c == NonEmpty = 1
+              | c == EmptyOk  = 0
           mk z
-            | popCount bits < 1 && c == NonEmpty = return $ Naught
-            | j >= 0                             = return $ This (z,bits,Just zk)
-            | j < 0                              = return $ That (z,bits,bk)
-            | otherwise = error $ show ("e",sij)
+            | popCount bits < rp + nec           = return $ Naught
+            | j >= 0                             = return $ This (z,mask,Just zk)
+            | j < 0                              = traceShow (sij,zs,bits,bk) . return $ That (z,mask,Just bits,bk)
+            | otherwise = error $ show ("Array",sij)
             where (zs:>_:>Iter zk) = getIdx z
-                  bits             = s `xor` zs
+                  mask             = s `xor` zs
+                  bits             = 2^(popCount mask - rp) -1
                   bk | popCount bits == 0 = Just 0
                      | popCount bits == 1 = Just zk
                      | otherwise          = maybeLsb bits
           step Naught = return Done
           step (This (z,bits,Just k')) = let (zs:>_:>_) = getIdx z ; k = Iter k'
                                          in  return $ Yield (ElmITbl (t!(bits:>k:>j)) ((zs .|. bits):>i:>j) undefbs2i z) Naught
-          step (That (z,bits,Nothing)) = return $ Done
-          step (That (z,bits,Just l')) = let (zs:>_:>Iter zk') = getIdx z ; zk = Iter zk' ; l = Iter l'
-                                         in  return $ Yield (ElmITbl (t!(bits:>zk:>l)) ((zs .|. bits):>i:>l) undefbs2i z) (That (z,bits,succActive l' bits))
+          step (That (z,mask,Nothing,_)) = return $ Done
+          step (That (z,mask,Just bits,Nothing)) = let nbst = popPermutation (popCount mask) bits
+                                                       nlsb = maybeLsb =<< nbst
+                                                   in  traceShow ' ' . return $ Skip (That (z,mask,nbst,nlsb))
+          step (That (z,mask,Just bits,Just l')) = let (zs:>_:>Iter zk') = getIdx z ; zk = Iter zk' ; l = Iter l'
+                                                   in  return $ Yield (ElmITbl (t!(bits:>zk:>l)) 
+                                                                               ((zs .|. bits):>i:>l) undefbs2i z)
+                                                                      (That (z,mask,Just bits,succActive l' bits))
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline mkStream #-}

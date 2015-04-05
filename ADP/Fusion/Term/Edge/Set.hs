@@ -36,14 +36,21 @@ instance
               | otherwise = sij
           mk z
             | j >= 0 && popCount s >= 2 = return $ This z
+            | j <  0                    = return $ That (z,bits,maybeLsb bits)
             | popCount s <= rp          = return $ Naught
             | popCount s <= 1           = return $ Naught
-            | otherwise                 = error $ show (s,i,j)
+            | otherwise                 = error $ show ("Edge",s,i,j)
+            where (zs:>_:>zk) = getIdx z
+                  bits        = s `xor` zs
           step Naught   = return Done
           step (This z)
             | popCount zs == 0 = return $ Done
             | otherwise = return $ Yield (ElmEdge (f (getIter zk) (getIter j)) sij undefbs2i z) Naught
             where (zs:>_:>zk) = getIdx z
+          step (That (z,bits,Nothing)) = return $ Done
+          step (That (z,bits,Just j')) = let (zs:>_:>Iter zk) = getIdx z
+                                             tij'            = (zs .|. bits) :> Iter zk :> Iter j'
+                                         in  return $ Yield (ElmEdge (f zk j') tij' undefbs2i z) (That (z,bits,succActive j' bits))
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-
