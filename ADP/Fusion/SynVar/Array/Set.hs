@@ -74,6 +74,9 @@ instance
 
 
 -- * Bitsets with two interfaces.
+--
+-- NOTE These are annoying to get right, if you also want to have good
+-- performance.
 
 instance
   ( Monad m
@@ -84,37 +87,71 @@ instance
   ) => MkStream m (ls :!: ITbl m arr (BS2I First Last) x) (BS2I First Last) where
   mkStream (ls :!: ITbl c t _) (IStatic rp) u sij@(s:>i:>j@(Iter jj))
     = flatten mk step Unknown $ mkStream ls (delay_inline IVariable rpn) u (delay_inline id $ tij)
+          -- calculate new index. if we don't know the right-most interface
+          -- anymore, than someone has taken it already. Also, if this
+          -- synvar may be empty, do not modify the index. Otherwise, if
+          -- @j@ is still known, remove it from the index set.
     where tij | jj == -1       = sij
               | c  == EmptyOk  = sij
               | c  == NonEmpty = s `clearBit` jj :> i :> Iter (-1)
+          -- In case we do not know the rightmost interface, we instead
+          -- increase the number of reserved bits.
           rpn | jj == -1
               && c == NonEmpty = rp+1
               | otherwise      = rp
           nec | c == NonEmpty = 1
               | c == EmptyOk  = 0
           mk z
+            -- in case we have a non-empty synvar but not enough bits, we
+            -- shall have nothing. We only need one extra mask bit, because
+            -- @j@ is still known.
             | popCount mask < 1 && c == NonEmpty && j >= 0 = return $ Naught
+            -- If @j@ is not known we need two bits to be non-empty.
             | popCount mask < 2 && c == NonEmpty && j <  0 = return $ Naught
+            -- Not enough bits to reserve.
             | popCount mask - rp < 0                       = return $ Naught
+            -- @j@ is still known, just create the sets ending in @j@
             | j >= 0                                       = return $ This (z,mask)
+            -- @j@ is not known, we have a lot of work to do. Create the
+            -- required @bits@ and prepare a @mask@ which will set the
+            -- correct bits.
             | j <  0                                       = return $ That (z,mask,Just bits,maybeLsb bits)
+            -- we somehow ended up with an improper state
             | otherwise                                    = error $ show (sij,mask,bits)
             where (zs:>_:>Iter zk) = getIdx z
                   mask             = s `xor` zs
                   bits             = BitSet $ 2 ^ (popCount mask - rp - nec) - 1
           step Naught          = return $ Done
+          -- In case @j@ is known, we calculate the bits @msk@ that are not
+          -- filled yet. We grab the previous right interface @zk@ and use
+          -- it as the new left interface. We also use @j@ as the right
+          -- interface. @ix@ holds everything that is now covered, withe
+          -- the interface @i@ and @j@.
           step (This (z,mask)) = return $ Yield (ElmITbl (t!(msk:>k:>j)) ix undefbs2i z) Naught
             where (zs:>_:>zk) = getIdx z
                   k           = Iter $ getIter zk
                   ix          = (zs .|. msk) :> i :> j
                   msk         = if popCount mask == 0 then mask else mask `setBit` getIter k `setBit` jj
+          -- whenever there is nothing more to do in the variable case.
           step (That (z,mask,Nothing,_)) = return $ Done
+          -- We need to permute our population a bit. Once done, we grab
+          -- the lowest significant bit.
           step (That (z,mask,Just bits,Nothing)) = return $ Skip (That (z,mask,nbts, maybeLsb =<< nbts))
             where nbts = popPermutation (popCount mask) bits
+          -- The variable case.
           step (That (z,mask,Just bits,Just y))
+            -- we do not have enough bits to be non-empty.
             |  popCount bb < 2 && c == NonEmpty
+            -- our two interfaces are the same, but we are non-empty in
+            -- which case this shouldn't happen.
             || getIter kk == getIter yy && c == NonEmpty
+            -- our pop-count plus reserved count doesn't match up with the
+            -- mask. We skip this as well.
             || popCount bb + rp /= popCount mask = return $ Skip (That (z,mask,Just bits, succActive y bits))
+            -- finally, we can create the index for the current stuff
+            -- @bb:>kk:>yy@ and prepare the full index, going from @i@ to
+            -- @yy@, because someone grabbed @j@ already. Must have been
+            -- an @Edge@ or s.th. similar.
             | otherwise = return $ Yield (ElmITbl (t!(bb:>kk:>yy)) ((zs .|. bb):>i:>yy) undefbs2i z)
                                                                  (That (z,mask,Just bits, succActive y bits))
             where (zs:>_:>zk) = getIdx z
