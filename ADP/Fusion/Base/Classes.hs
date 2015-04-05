@@ -147,5 +147,4 @@ type instance TblConstraint (Complement o) = TblConstraint o
 type instance TblConstraint PointL      = TableConstraint
 type instance TblConstraint PointR      = TableConstraint
 type instance TblConstraint Subword     = TableConstraint
-type instance TblConstraint BitSet      = TableConstraint
 

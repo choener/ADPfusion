@@ -28,21 +28,41 @@ instance
   , Element    ls (BS2I First Last)
   , MkStream m ls (BS2I First Last)
   ) => MkStream m (ls :!: Edge e) (BS2I First Last) where
-  mkStream (ls :!: Edge f) IStatic u sij@(s:>i:>Interface j)
-    = map (\z -> let (_:>_:>Interface k) = getIdx z
-                 in  ElmEdge (f k j) (s:>Interface k:>Interface j) undefbs2i z)
-    $ mkStream ls IStatic u ((s `clearBit` j):>i:>undefi)
-  mkStream (ls :!: Edge f) IVariable u sij@(s:>i:>_)
-    = flatten mk step Unknown
-    $ mkStream ls IVariable u sij
+  mkStream (ls :!: Edge f) (IStatic rp) u sij@(s:>i:>j)
+    = flatten mk step Unknown $ mkStream ls (IStatic rpn) u tik
+    where rpn | j >= 0    = rp
+              | otherwise = rp+1
+          tik | j >= 0    = s `clearBit` (getIter j) :> i :> undefi
+              | otherwise = sij
+          mk z
+            | j >= 0 && popCount s >= 2 = return $ This z
+            | popCount s <= rp          = return $ Naught
+            | popCount s <= 1           = return $ Naught
+            | otherwise                 = error $ show (s,i,j)
+          step Naught   = return Done
+          step (This z)
+            | popCount zs == 0 = return $ Done
+            | otherwise = return $ Yield (ElmEdge (f (getIter zk) (getIter j)) sij undefbs2i z) Naught
+            where (zs:>_:>zk) = getIdx z
+          {-# Inline [0] mk   #-}
+          {-# Inline [0] step #-}
+  {-
+    = map (\z -> let (_:>_:>Iter k) = getIdx z
+                 in  ElmEdge (f k j) (s:>Iter k:>Iter j) undefbs2i z)
+    $ mkStream ls (IStatic undefined) u ((s `clearBit` j):>i:>undefi)
+    -}
+  {-
+  mkStream (ls :!: Edge f) (IVariable _) u sij@(s:>i:>_)
+    = flatten mk step Unknown $ mkStream ls (IVariable undefined) u sij
     where mk z = let (t:>_:>_) = getIdx z; u = s `xor` t in return (z :. u :. lsbActive u)
           step (z :. u :. l)
             | l == (-1) = return $ Done
-            | otherwise = do let (t:>_:>Interface k) = getIdx z
-                             let tkl = (t `setBit` l :> Interface k :> Interface l)
+            | otherwise = do let (t:>_:>Iter k) = getIdx z
+                             let tkl = (t `setBit` l :> Iter k :> Iter l)
                              return $ Yield (ElmEdge (f k l) tkl undefbs2i z) (z:.u:.nextActive l u)
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
+          -}
   {-# Inline mkStream #-}
 
 

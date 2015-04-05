@@ -1,14 +1,15 @@
 
 module ADP.Fusion.SynVar.Array.Set where
 
-import Data.Strict.Tuple
-import Data.Vector.Fusion.Stream.Size
-import Data.Vector.Fusion.Util (delay_inline)
-import Data.Vector.Fusion.Stream.Monadic
-import Prelude hiding (map)
 import Data.Bits
 import Data.Bits.Extras
 import Data.Bits.Ordered
+import Data.Strict.Tuple
+import Data.Vector.Fusion.Stream.Monadic
+import Data.Vector.Fusion.Stream.Size
+import Data.Vector.Fusion.Util (delay_inline)
+import Debug.Trace
+import Prelude hiding (map)
 
 import Data.PrimitiveArray hiding (map)
 
@@ -17,6 +18,8 @@ import ADP.Fusion.SynVar.Array.Type
 import ADP.Fusion.SynVar.Backtrack
 
 
+
+-- * Bitsets without any interfaces.
 
 -- NOTE that we have to give as the filled index elements all bits that are
 -- set in total, not just those we set right here. Otherwise the next
@@ -69,37 +72,95 @@ instance
 
 
 
-{-
+-- * Bitsets with two interfaces.
+
 instance
   ( Monad m
+  , Element ls (BS2I First Last)
   , PrimArrayOps arr (BS2I First Last) x
-  , Element    ls (BS2I First Last)
   , MkStream m ls (BS2I First Last)
   ) => MkStream m (ls :!: ITbl m arr (BS2I First Last) x) (BS2I First Last) where
-  mkStream (ls :!: ITbl c t _) IStatic u sij@(s:>i:>j)
-    -- (@vik@ is already filled, we fill the difference to @sij@ with @wkj@ and
-    -- set as the new "combined" index @sij@ (this is the static case, so it is
-    -- indeed @sij@.
-    = map (\z -> let (v:>_:>Interface k) = getIdx z
-                     w = s `xor` v
-                     wkj = (w:>Interface k:>j)
-                 in  ElmITbl (t!wkj) (s:>i:>j) undefbs2i z)
-    $ mkStream ls IVariable u sij
-  mkStream (ls :!: ITbl c t _) IVariable u sij@(s:>i:>k)
-    = flatten mk step Unknown
-    $ mkStream ls IVariable u sij
-    where mk z = let (v:>_:>k) = getIdx z
-                     ful       = (s `xor` v)
-                     lsba      = lsbActive ful
-                     initial   = (BitSet lsba :> Interface lsba)
-                 in  return (z :. ful :. Just initial)
-          step (z :. ful :. Just (w:>l) )
-            = let (_:>_:>k) = getIdx z
-              in  return $ Yield (ElmITbl (t!(w:>k:.l)) undefined undefined undefined) undefined
-          step (_ :. _   :. Nothing )
-            = return $ Done
+  mkStream (ls :!: ITbl c t _) (IStatic rp) u sij@(s:>i:>j@(Iter jj))
+    = flatten mk step Unknown $ mkStream ls (delay_inline IVariable rpn) u (delay_inline id $ tij)
+    where tij | jj == -1       = sij
+              | c  == EmptyOk  = sij
+              | c  == NonEmpty = s `clearBit` jj :> i :> Iter (-1)
+          rpn | jj == -1
+              && c == NonEmpty = rp+1
+              | otherwise      = rp
+          mk z
+            | popCount bits < 1 && c == NonEmpty = return $ Naught
+            | j >= 0                             = return $ This (z,bits,Just zk)
+            | j < 0                              = return $ That (z,bits,bk)
+            | otherwise = error $ show ("e",sij)
+            where (zs:>_:>Iter zk) = getIdx z
+                  bits             = s `xor` zs
+                  bk | popCount bits == 0 = Just 0
+                     | popCount bits == 1 = Just zk
+                     | otherwise          = maybeLsb bits
+          step Naught = return Done
+          step (This (z,bits,Just k')) = let (zs:>_:>_) = getIdx z ; k = Iter k'
+                                         in  return $ Yield (ElmITbl (t!(bits:>k:>j)) ((zs .|. bits):>i:>j) undefbs2i z) Naught
+          step (That (z,bits,Nothing)) = return $ Done
+          step (That (z,bits,Just l')) = let (zs:>_:>Iter zk') = getIdx z ; zk = Iter zk' ; l = Iter l'
+                                         in  return $ Yield (ElmITbl (t!(bits:>zk:>l)) ((zs .|. bits):>i:>l) undefbs2i z) (That (z,bits,succActive l' bits))
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
+  {-# Inline mkStream #-}
+
+
+
+
+
+
+
+
+
+
+{-  
+    = flatten mk step Unknown $ mkStream ls (delay_inline IVariable rpn) u (delay_inline id $ tij)
+    where mk z | j >= 0 && c == EmptyOk = return $ This (z,zk,bits)
+               | j <  0 && c == EmptyOk = return $ That (z,Iter zk,Just (bits:>Iter (lsbActive bits)))
+               | c == NonEmpty && popCount bits == 0 = return $ Naught
+               | otherwise = error $ show ("X ",sij,zs,zk)
+               where (zs:>_:>Iter zk) = getIdx z
+                     bits                  = s `xor` zs
+          -- in case @Interface Last@ is still fixed
+          step (This  (z,k,bits)) = return $ Yield (ElmITbl (t!(bits:>k:>j)) sij undefbs2i z) Naught
+          -- in case @Interface Last@ is already variable
+          step (That (z,k,Nothing        )) = return $ Done
+          step (That (z,k,Just (bits:>j'))) = return $ Yield (ElmITbl (t!(bits:>Iter k:>j'))
+                                                              (s:>i:>j') undefbs2i z) (That (z,k,setSucc (bits:>j') (bits:>j') (bits:>j')))
+          -- we have nothing left to do
+          step Naught = return Done
+          {-# Inline [0] mk   #-}
+          {-# Inline [0] step #-}
+          tij | jj == -1       = sij
+              | c  == EmptyOk  = sij
+              | c  == NonEmpty = s `clearBit` jj :> i :> Iter (-1)
+          rpn | jj == -1
+              && c == NonEmpty = rp+1
+              | otherwise      = rp
+  mkStream (ls :!: ITbl c t _) (IVariable rp) u sij@(s:>i:>j)
+    = flatten mk step Unknown $ mkStream ls (delay_inline IVariable rpn) u sij
+    where mk z
+            | c == EmptyOk  = return (z, mask `clearBit` zk, Just (0:>Iter 0))
+            | c == NonEmpty = return (z, mask `clearBit` zk, Just (1:>Iter 0))
+            where (zs:>_:>Iter zk) = getIdx z
+                  mask                  = s `xor` zs
+          step (z,mask,Nothing      ) = return $ Done
+          step (z,mask,Just (ys:>yl))
+            | cm == 0   = return $ Yield (ElmITbl (t!(0:>0:>0)) (zs:>i:>Iter zki) undefbs2i z) (z,mask,Nothing)
+            | otherwise = return $ Yield (ElmITbl (t!(ys':>zk:>yl)) ((zs .&. ys):>i:>yl) undefbs2i z)
+                                                   (z,mask,setSucc (0:>Iter 0) (2^(cm-1)-1:>Iter 0) (ys:>yl))
+            where (zs:>_:>Iter zki) = getIdx z
+                  zk                     = Iter zki
+                  cm                     = popCount mask
+                  ys'                    = movePopulation mask ys .|. BitSet zki
+          {-# Inline [0] mk   #-}
+          {-# Inline [0] step #-}
+          rpn | c == NonEmpty = rp+1
+              | c == EmptyOk  = rp
   {-# Inline mkStream #-}
 -}
 

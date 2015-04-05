@@ -18,6 +18,11 @@ import ADP.Fusion.Base.Multi
 
 
 
+type instance TblConstraint BitSet                              = TableConstraint
+type instance TblConstraint (BitSet:>Interface i:>Interface j)  = TableConstraint
+
+
+
 instance RuleContext BitSet where
   type Context BitSet = InsideContext Int
   initialContext _ = IStatic 0
@@ -32,6 +37,8 @@ instance RuleContext (Complement BitSet) where
   type Context (Complement BitSet) = ComplementContext
   initialContext _ = Complemented
   {-# Inline initialContext #-}
+
+
 
 instance RuleContext (BS2I First Last) where
   type Context (BS2I First Last) = InsideContext Int
@@ -60,9 +67,15 @@ instance
   {-# Inline mkStream #-}
 
 
+
 instance
   ( Monad m
   ) => MkStream m S (BS2I First Last) where
+  mkStream S (IStatic rp) u sij@(s:>i:>j)
+    = staticCheck (popCount s >= rp) . singleton $ ElmS sij undefbs2i
+  mkStream S (IVariable rp) u sij@(s:>Iter i:>j)
+    = staticCheck (popCount s >= rp) . singleton $ ElmS (0:>Iter i:>Iter i) undefbs2i
+  {-# Inline mkStream #-}
 
 instance
   ( Monad m
@@ -77,10 +90,14 @@ instance
 -- | An undefined bitset with 2 interfaces.
 
 undefbs2i :: BS2I f l
-undefbs2i = BitSet (-1) :> Interface (-1) :> Interface (-1)
+undefbs2i = (-1) :> (-1) :> (-1)
 {-# Inline undefbs2i #-}
 
 undefi :: Interface i
-undefi = Interface (-1)
+undefi = (-1)
 {-# Inline undefi #-}
+
+-- | We sometimes need 
+
+data ThisThatNaught a b = This a | That b | Naught
 
