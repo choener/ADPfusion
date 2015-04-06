@@ -156,7 +156,7 @@ prop_bii_iee ix@(s:>i:>Iter j) = L.sort zs == L.sort ls where
        ]
 
 prop_bii_ieee :: BS2I First Last -> Bool
-prop_bii_ieee ix@(s:>i:>Iter j) = tr zs ls $ L.sort zs == L.sort ls where
+prop_bii_ieee ix@(s:>i:>Iter j) = L.sort zs == L.sort ls where
   tia = ITbl EmptyOk xsBII (\ _ _ -> Id 1)
   e   = Edge (\ i j -> (i,j)) :: Edge (Int,Int)
   zs = ((,,,) <<< tia % e % e % e ... S.toList) highestBII ix
@@ -182,6 +182,25 @@ prop_bii_iee_n ix@(s:>i:>Iter j) = L.sort zs == L.sort ls where
        , l <- activeBitsL tmp
        , l /= getIter i
        , let t = tmp `clearBit` l
+       , popCount t >= 2
+       , k <- activeBitsL t
+       , k /= getIter i
+       , let kk = Iter k
+       ]
+
+prop_bii_ieee_n :: BS2I First Last -> Bool
+prop_bii_ieee_n ix@(s:>i:>Iter j) = L.sort zs == L.sort ls where
+  tia = ITbl NonEmpty xsBII (\ _ _ -> Id 1)
+  e   = Edge (\ i j -> (i,j)) :: Edge (Int,Int)
+  zs = ((,,,) <<< tia % e % e % e ... S.toList) highestBII ix
+  ls = [ ( xsBII ! (t:>i:>kk) , (k,l) , (l,m) , (m,j) )
+       | let tmpM = (s `clearBit` j)
+       , m <- activeBitsL tmpM
+       , m /= getIter i
+       , let tmpL = (tmpM `clearBit` m)
+       , l <- activeBitsL tmpL
+       , l /= getIter i
+       , let t = tmpL `clearBit` l
        , popCount t >= 2
        , k <- activeBitsL t
        , k /= getIter i

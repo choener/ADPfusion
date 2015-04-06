@@ -5,6 +5,7 @@ import Data.Bits
 import Data.Strict.Tuple
 import Data.Vector.Fusion.Stream.Monadic
 import Data.Vector.Fusion.Stream.Size
+import Debug.Trace
 import Prelude hiding (map)
 
 import Data.PrimitiveArray hiding (map)
@@ -40,7 +41,7 @@ instance
             where (zs:>_:>zk) = getIdx z
           step (That (z,bits,Nothing)) = return $ Done
           step (That (z,bits,Just j')) = let (zs:>_:>Iter zk) = getIdx z
-                                             tij'            = (zs .|. bits) :> Iter zk :> Iter j'
+                                             tij'            = (zs .|. bit j') :> Iter zk :> Iter j'
                                          in  return $ Yield (ElmEdge (f zk j') tij' undefbs2i z) (That (z,bits,succActive j' bits))
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
