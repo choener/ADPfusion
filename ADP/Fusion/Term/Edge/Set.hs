@@ -42,7 +42,7 @@ instance
           step (That (z,bits,Nothing)) = return $ Done
           step (That (z,bits,Just j')) = let (zs:>_:>Iter zk) = getIdx z
                                              tij'            = (zs .|. bit j') :> Iter zk :> Iter j'
-                                         in  return $ Yield (ElmEdge (f zk j') tij' undefbs2i z) (That (z,bits,succActive j' bits))
+                                         in  return $ Yield (ElmEdge (f zk j') tij' undefbs2i z) (That (z,bits,maybeNextActive j' bits))
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline mkStream #-}
