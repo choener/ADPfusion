@@ -131,11 +131,11 @@ library
     ADP.Fusion.SynVar.Recursive.Subword
     ADP.Fusion.SynVar.Recursive.Type
     ADP.Fusion.TH
+    ADP.Fusion.QuickCheck.Subword
 ------    ADP.Fusion.Multi.Empty
 ------    ADP.Fusion.Multi.GChr
 ------    ADP.Fusion.Multi.None
 --    ADP.Fusion.QuickCheck.Point
-------    ADP.Fusion.QuickCheck
 ------    ADP.Fusion.Region
 
   default-extensions: BangPatterns
@@ -400,6 +400,28 @@ executable Durbin
 --      -fllvm
 --      -optlo-O3 -optlo-std-compile-opts
 --      -fllvm-tbaa
+
+
+
+test-suite properties
+  type:
+    exitcode-stdio-1.0
+  main-is:
+    properties.hs
+--  other-modules: ADP.Fusion.QuickCheck.Subword
+  ghc-options:
+    -threaded -rtsopts -with-rtsopts=-N
+  hs-source-dirs:
+    tests
+  default-language:
+    Haskell2010
+  default-extensions: TemplateHaskell
+  build-depends: base
+               , ADPfusion
+               , QuickCheck
+               , test-framework               >= 0.8  && < 0.9
+               , test-framework-quickcheck2   >= 0.3  && < 0.4
+               , test-framework-th            >= 0.2  && < 0.3
 
 
 
