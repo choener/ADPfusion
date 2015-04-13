@@ -49,7 +49,7 @@ instance
           step (_,_,Nothing) = return $ Done
           step (z,mask,Just k)
             | pk > popCount s - rp = return $ Done
-            | otherwise            = let kk = popMove mask k
+            | otherwise            = let kk = popShiftL mask k
                                      in  return $ Yield (ElmITbl (t!kk) (kk .|. getIdx z) (BitSet 0) z) (z,mask,setSucc (BitSet 0) (2^pk -1) k)
             where pk = popCount k
           {-# Inline [0] mk   #-}
@@ -66,7 +66,7 @@ instance
           step (z,mask,cm,Just k )
             | popCount s < popCount (kk .|. getIdx z) + rp = return $ Done
             | otherwise = return $ Yield (ElmITbl (t!kk) (kk .|. getIdx z) (BitSet 0) z) (z,mask,cm,setSucc (BitSet 0) (2^cm -1) k)
-            where kk = popMove mask k
+            where kk = popShiftL mask k
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline mkStream #-}
@@ -156,8 +156,8 @@ instance
                                                                  (That (z,mask,Just bits, maybeNextActive y bits))
             where (zs:>_:>zk) = getIdx z
                   kk          = Iter $ getIter zk
-                  yy          = Iter . lsb $ popMove mask (bit y)
-                  bb          = popMove mask bits `setBit` getIter kk `setBit` getIter yy
+                  yy          = Iter . lsb $ popShiftL mask (bit y)
+                  bb          = popShiftL mask bits `setBit` getIter kk `setBit` getIter yy
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline mkStream #-}

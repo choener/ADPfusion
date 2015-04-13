@@ -35,7 +35,7 @@ prop_b_ii ix@(BitSet _) = zs == ls where
   zs = ((,) <<< tia % tib ... S.toList) highestB ix
   ls = [ ( xsB ! kk , xsB ! (ix `xor` kk) )
        | k <- VU.toList . popCntSorted $ popCount ix -- [ 0 .. 2^(popCount ix) -1 ]
-       , let kk = popMove ix (BitSet k)
+       , let kk = popShiftL ix (BitSet k)
        ]
 
 prop_b_ii_nn ix@(BitSet _) = zs == ls where
@@ -44,7 +44,7 @@ prop_b_ii_nn ix@(BitSet _) = zs == ls where
   zs = ((,) <<< tia % tib ... S.toList) highestB ix
   ls = [ ( xsB ! kk , xsB ! (ix `xor` kk) )
        | k <- VU.toList . popCntSorted $ popCount ix -- [ 0 .. 2^(popCount ix) -1 ]
-       , let kk = popMove ix (BitSet k)
+       , let kk = popShiftL ix (BitSet k)
        , popCount kk > 0
        , popCount (ix `xor` kk) > 0
        ]
@@ -57,8 +57,8 @@ prop_b_iii ix@(BitSet _) = zs == ls where
   ls = [ ( xsB ! kk , xsB ! ll , xsB ! mm )
        | k <- VU.toList . popCntSorted $ popCount ix
        , l <- VU.toList . popCntSorted $ popCount ix - popCount k
-       , let kk = popMove ix          (BitSet k)
-       , let ll = popMove (ix `xor` kk) (BitSet l)
+       , let kk = popShiftL ix          (BitSet k)
+       , let ll = popShiftL (ix `xor` kk) (BitSet l)
        , let mm = (ix `xor` (kk .|. ll))
        ]
 
@@ -70,8 +70,8 @@ prop_b_iii_nnn ix@(BitSet _) = zs == ls where
   ls = [ ( xsB ! kk , xsB ! ll , xsB ! mm )
        | k <- VU.toList . popCntSorted $ popCount ix
        , l <- VU.toList . popCntSorted $ popCount ix - popCount k
-       , let kk = popMove ix          (BitSet k)
-       , let ll = popMove (ix `xor` kk) (BitSet l)
+       , let kk = popShiftL ix          (BitSet k)
+       , let ll = popShiftL (ix `xor` kk) (BitSet l)
        , let mm = (ix `xor` (kk .|. ll))
        , popCount kk > 0, popCount ll > 0, popCount mm > 0
        ]
