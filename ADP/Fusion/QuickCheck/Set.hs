@@ -1,4 +1,6 @@
 
+{-# Options_GHC -O0 #-}
+
 {-# Language TemplateHaskell #-}
 {-# Language ScopedTypeVariables #-}
 {-# Language MultiWayIf #-}

@@ -1,4 +1,6 @@
 
+{-# Options_GHC -O0 #-}
+
 {-# Language TemplateHaskell #-}
 
 module ADP.Fusion.QuickCheck.Subword where

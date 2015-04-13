@@ -1,4 +1,6 @@
 
+{-# Options_GHC -O0 #-}
+
 module ADP.Fusion.QuickCheck.Common where
 
 import Debug.Trace

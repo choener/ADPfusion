@@ -131,11 +131,13 @@ library
     ADP.Fusion.SynVar.Recursive.Subword
     ADP.Fusion.SynVar.Recursive.Type
     ADP.Fusion.TH
+    ADP.Fusion.QuickCheck.Common
+    ADP.Fusion.QuickCheck.Point
+    ADP.Fusion.QuickCheck.Set
     ADP.Fusion.QuickCheck.Subword
 ------    ADP.Fusion.Multi.Empty
 ------    ADP.Fusion.Multi.GChr
 ------    ADP.Fusion.Multi.None
---    ADP.Fusion.QuickCheck.Point
 ------    ADP.Fusion.Region
 
   default-extensions: BangPatterns
@@ -408,7 +410,6 @@ test-suite properties
     exitcode-stdio-1.0
   main-is:
     properties.hs
---  other-modules: ADP.Fusion.QuickCheck.Subword
   ghc-options:
     -threaded -rtsopts -with-rtsopts=-N
   hs-source-dirs:
