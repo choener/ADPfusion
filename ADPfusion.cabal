@@ -4,7 +4,7 @@ author:         Christian Hoener zu Siederdissen, 2011-2015
 copyright:      Christian Hoener zu Siederdissen, 2011-2015
 homepage:       http://www.bioinf.uni-leipzig.de/Software/gADP/
 maintainer:     choener@bioinf.uni-leipzig.de
-category:       Algorithms, Data Structures, Bioinformatics
+category:       Algorithms, Data Structures, Bioinformatics, Formal Languages
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
