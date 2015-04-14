@@ -172,10 +172,10 @@ runNussinov inp = (es,z,ys) where
   !(Z:.p:.a) = runInsideForward i
   !(Z:.b:.q) = runOutsideForward i a p
   es = runEnsembleForward z p q
-  za = let (ITbl _ arr _) = a in arr PA.! subword 0 n
-  zp = let (ITbl _ arr _) = p in arr PA.! subword 0 n
+  za = let (ITbl _ _ _ arr _) = a in arr PA.! subword 0 n
+  zp = let (ITbl _ _ _ arr _) = p in arr PA.! subword 0 n
   z  = za
-  e = let (ITbl _ arr _) = b in Log.sum [ arr PA.! (O $ subword k k) | k <- [0 .. n] ]
+  e = let (ITbl _ _ _ arr _) = b in Log.sum [ arr PA.! (O $ subword k k) | k <- [0 .. n] ]
   ys =  [ ( k
           , l
           , fwda PA.! subword k l
@@ -183,10 +183,10 @@ runNussinov inp = (es,z,ys) where
           , bwdb PA.! (O $ subword k l)
           , bwdq PA.! (O $ subword k l)
           )
-        | let (ITbl _ fwda _) = a
-        , let (ITbl _ fwdp _) = p
-        , let (ITbl _ bwdb _) = b
-        , let (ITbl _ bwdq _) = q
+        | let (ITbl _ _ _ fwda _) = a
+        , let (ITbl _ _ _ fwdp _) = p
+        , let (ITbl _ _ _ bwdb _) = b
+        , let (ITbl _ _ _ bwdq _) = q
         , k <- [0 .. n]
         , l <- [k .. n]
         ]
@@ -220,8 +220,8 @@ runInsideForward :: VU.Vector Char -> Z:.TblI:.TblI
 runInsideForward i = mutateTablesDefault
                    $ insideGrammar prob
                        (chr i)
-                       (ITbl EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) 0 []))
-                       (ITbl EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) 0 []))
+                       (ITbl 0 0 EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) 0 []))
+                       (ITbl 0 0 EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) 0 []))
   where n = VU.length i
 {-# NoInline runInsideForward #-}
 
@@ -230,8 +230,8 @@ runOutsideForward i a p = mutateTablesDefault
                         $ outsideGrammar prob
                             (chr i)
                             a p
-                            (ITbl EmptyOk (PA.fromAssocs (O $ subword 0 0) (O $ subword 0 n) 0 []))
-                            (ITbl EmptyOk (PA.fromAssocs (O $ subword 0 0) (O $ subword 0 n) 0 []))
+                            (ITbl 0 0 EmptyOk (PA.fromAssocs (O $ subword 0 0) (O $ subword 0 n) 0 []))
+                            (ITbl 0 1 EmptyOk (PA.fromAssocs (O $ subword 0 0) (O $ subword 0 n) 0 []))
   where n = VU.length i
 {-# NoInline runOutsideForward #-}
 
@@ -241,7 +241,7 @@ runEnsembleForward z i o = unId $ axiom g
                    i o
                    (IRec EmptyOk (C l) (C h))
                  :: Z :. IRec Id (Complement Subword) [(Subword, Log Double)]
-        (l,h) = let (ITbl _ arr _) = i in bounds arr
+        (l,h) = let (ITbl _ _ _ arr _) = i in bounds arr
 {-# NoInline runEnsembleForward #-}
 
 {-

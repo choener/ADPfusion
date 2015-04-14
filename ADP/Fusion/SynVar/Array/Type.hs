@@ -18,9 +18,11 @@ import ADP.Fusion.SynVar.Indices
 -- | Immutable table.
 
 data ITbl m arr i x where
-  ITbl :: { iTblConstraint :: !(TblConstraint i)
-          , iTblArray      :: !(arr i x)
-          , iTblFun        :: !(i -> i -> m x)
+  ITbl :: { iTblBigOrder    :: !Int
+          , iTblLittleOrder :: !Int
+          , iTblConstraint  :: !(TblConstraint i)
+          , iTblArray       :: !(arr i x)
+          , iTblFun         :: !(i -> i -> m x)
           } -> ITbl m arr i x
 
 instance Build (ITbl m arr i x)
@@ -28,7 +30,7 @@ instance Build (ITbl m arr i x)
 instance GenBacktrackTable (ITbl mF arr i x) mF mB r where
   data Backtrack (ITbl mF arr i x) mF mB r = BtITbl !(TblConstraint i) !(arr i x) (i -> i -> mB (Stream mB r))
   type BacktrackIndex (ITbl mF arr i x) = i
-  toBacktrack (ITbl c arr _) _ bt = BtITbl c arr bt
+  toBacktrack (ITbl _ _ c arr _) _ bt = BtITbl c arr bt
   {-# Inline toBacktrack #-}
 
 instance
@@ -37,7 +39,7 @@ instance
   , IndexStream i
   ) => Axiom (ITbl m arr i x) where
   type AxiomStream (ITbl m arr i x) = m x
-  axiom (ITbl c arr _) = do
+  axiom (ITbl _ _ c arr _) = do
     k <- (head . uncurry streamDown) $ bounds arr
     return $ arr ! k
   {-# Inline axiom #-}
@@ -86,7 +88,7 @@ instance
   , MkStream m ls (is:.i)
   , PrimArrayOps arr (is:.i) x
   ) => MkStream m (ls :!: ITbl m arr (is:.i) x) (is:.i) where
-  mkStream (ls :!: ITbl c t _) vs lu is
+  mkStream (ls :!: ITbl _ _ c t _) vs lu is
     = map (\(S5 s _ _ i o) -> ElmITbl (t ! i) i o s)
     . tableIndices c vs is
     . map (\s -> S5 s Z Z (getIdx s) (getOmx s))
@@ -117,7 +119,7 @@ instance
   , PrimArrayOps arr (Outside (is:.i)) x
   , Show (is:.i)
   ) => MkStream m (ls :!: ITbl m arr (Outside (is:.i)) x) (Outside (is:.i)) where
-  mkStream (ls :!: ITbl c t _) vs lu is
+  mkStream (ls :!: ITbl _ _ c t _) vs lu is
     = map (\(S5 s _ _ i o) -> ElmITbl (t ! o) i o s)
     . tableIndices c vs is
     . map (\s -> S5 s Z Z (getIdx s) (getOmx s))

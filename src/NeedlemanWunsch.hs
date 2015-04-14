@@ -234,7 +234,8 @@ runNeedlemanWunsch k i1' i2' = (d, take k . S.toList . unId $ axiom b) where
   n1 = VU.length i1
   n2 = VU.length i2
   !(Z:.t) = nwInsideForward i1 i2
-  d = let (ITbl _ arr _) = t in arr PA.! (Z:.PointL n1:.PointL n2)
+  -- d = let (ITbl _ _ arr _) = t in arr PA.! (Z:.PointL n1:.PointL n2)
+  d = iTblArray t PA.! (Z:.PointL n1:.PointL n2)
   !(Z:.b) = grammar (sScore <** sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
 {-# Noinline runNeedlemanWunsch #-}
 
@@ -251,7 +252,7 @@ runNeedlemanWunsch k i1' i2' = (d, take k . S.toList . unId $ axiom b) where
 nwInsideForward :: VU.Vector Char -> VU.Vector Char -> Z:.ITbl Id Unboxed (Z:.PointL:.PointL) Int
 nwInsideForward i1 i2 = mutateTablesDefault $
                           grammar sScore
-                          (ITbl (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n1:.PointL n2) (-999999) []))
+                          (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n1:.PointL n2) (-999999) []))
                           i1 i2
   where n1 = VU.length i1
         n2 = VU.length i2
@@ -269,7 +270,8 @@ runOutsideNeedlemanWunsch k i1' i2' = (d, take k . S.toList . unId $ axiom b) wh
   n1 = VU.length i1
   n2 = VU.length i2
   !(Z:.t) = nwOutsideForward i1 i2
-  d = let (ITbl _ arr _) = t in arr PA.! (O (Z:.PointL 0:.PointL 0))
+  -- d = let (ITbl _ _ arr _) = t in arr PA.! (O (Z:.PointL 0:.PointL 0))
+  d = iTblArray t PA.! (O (Z:.PointL 0:.PointL 0))
   !(Z:.b) = grammar (sScore <** sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
 {-# Noinline runOutsideNeedlemanWunsch #-}
 
@@ -279,7 +281,7 @@ runOutsideNeedlemanWunsch k i1' i2' = (d, take k . S.toList . unId $ axiom b) wh
 nwOutsideForward :: VU.Vector Char -> VU.Vector Char -> Z:.ITbl Id Unboxed (Outside (Z:.PointL:.PointL)) Int
 nwOutsideForward i1 i2 = mutateTablesDefault $
                            grammar sScore
-                           (ITbl (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (O (Z:.PointL 0:.PointL 0)) (O (Z:.PointL n1:.PointL n2)) (-999999) []))
+                           (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (O (Z:.PointL 0:.PointL 0)) (O (Z:.PointL n1:.PointL n2)) (-999999) []))
                            i1 i2
   where n1 = VU.length i1
         n2 = VU.length i2

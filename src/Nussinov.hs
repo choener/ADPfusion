@@ -122,7 +122,8 @@ runNussinov k inp = (d, take k . S.toList . unId $ axiom b) where
   i = VU.fromList . Prelude.map toUpper $ inp
   n = VU.length i
   !(Z:.t) = runInsideForward i
-  d = let (ITbl _ arr _) = t in arr PA.! subword 0 n
+  -- d = let (ITbl _ _ arr _) = t in arr PA.! subword 0 n
+  d = iTblArray t PA.! subword 0 n
   !(Z:.b) = grammar (bpmax <** pretty) (chr i) (toBacktrack t (undefined :: Id a -> Id a))
 {-# NOINLINE runNussinov #-}
 
@@ -130,7 +131,7 @@ runInsideForward :: VU.Vector Char -> Z:.ITbl Id Unboxed Subword Int
 runInsideForward i = mutateTablesDefault
                    $ grammar bpmax
                        (chr i)
-                       (ITbl EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-999999) []))
+                       (ITbl 0 0 EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-999999) []))
   where n = VU.length i
 {-# NoInline runInsideForward #-}
 

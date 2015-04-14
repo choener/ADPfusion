@@ -19,6 +19,8 @@ import           Data.Vector.Fusion.Util (Id(..))
 import           GHC.Exts (inline)
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import           System.IO.Unsafe
+import           Control.Monad (when,forM_)
+import           Data.List (nub,sort)
 
 import           Data.PrimitiveArray
 
@@ -86,12 +88,28 @@ instance ExposeTables Z where
 -- be made deterministic, or we'll break Bellman)
 
 class MutateCell (s :: *) (im :: * -> *) (om :: * -> *) i where
-  mutateCell :: (forall a . im a -> om a) -> s -> i -> i -> om ()
+  mutateCell :: Int -> Int -> (forall a . im a -> om a) -> s -> i -> i -> om ()
 
 -- |
 
 class MutateTables (s :: *) (im :: * -> *) (om :: * -> *) where
   mutateTables :: (forall a . im a -> om a) -> s -> om s
+
+class TableOrder (s :: *) where
+  tableLittleOrder :: s -> [Int]
+  tableBigOrder :: s -> [Int]
+
+instance TableOrder Z where
+  tableLittleOrder Z = []
+  tableBigOrder Z = []
+  {-# Inline tableLittleOrder #-}
+  {-# Inline tableBigOrder #-}
+
+instance (TableOrder ts) => TableOrder (ts:.ITbl im arr i x) where
+  tableLittleOrder (ts:.ITbl _ tlo _ _ _) = tlo : tableLittleOrder ts
+  tableBigOrder    (ts:.ITbl tbo _ _ _ _) = tbo : tableBigOrder ts
+  {-# Inline tableLittleOrder #-}
+  {-# Inline tableBigOrder #-}
 
 -- ** individual instances for filling a *single cell*
 
@@ -102,11 +120,12 @@ instance
   , PrimMonad om
   , Show x, Show i
   ) => MutateCell (ts:.ITbl im arr i x) im om i where
-  mutateCell mrph (ts:.ITbl c arr f) lu i = do
-    mutateCell mrph ts lu i
-    marr <- unsafeThaw arr
-    z <- (inline mrph) $ f lu i
-    writeM marr i z
+  mutateCell bo lo mrph (ts:.ITbl tbo tlo c arr f) lu i = do
+    mutateCell bo lo mrph ts lu i
+    when (bo==tbo && lo==tlo) $ do
+      marr <- unsafeThaw arr
+      z <- (inline mrph) $ f lu i
+      writeM marr i z
   {-# INLINE mutateCell #-}
 
 {-
@@ -127,11 +146,18 @@ instance
   , PrimArrayOps arr i x
   , Show i
   , IndexStream i
+  , TableOrder (ts:.ITbl im arr i x)
   ) => MutateTables (ts:.ITbl im arr i x) im om where
-  mutateTables mrph tt@(_:.ITbl _ arr _) = do
+  mutateTables mrph tt@(_:.ITbl _ _ _ arr _) = do
     let (from,to) = bounds arr
-    -- SM.mapM_ (mutateCell (inline mrph) tt to) $ PA.rangeStream from to -- TODO check the @to@ part
-    SM.mapM_ (mutateCell (inline mrph) tt to) $ streamUp from to -- TODO check the @to@ part
+    -- TODO (1) find the set of orders for the synvars
+    let tbos = nub . sort $ tableBigOrder tt
+    let tlos = nub . sort $ tableLittleOrder tt
+    forM_ tbos $ \bo ->
+      SM.mapM_ (\ k -> do
+        forM_ tlos $ \lo -> do
+          mutateCell bo lo (inline mrph) tt to k
+      ) $ streamUp from to -- TODO check the @to@ part
     return tt
   {-# INLINE mutateTables #-}
 
@@ -151,7 +177,7 @@ instance
 instance
   ( Monad om
   ) => MutateCell Z im om i where
-  mutateCell _ Z _ _ = return ()
+  mutateCell _ _ _ Z _ _ = return ()
   {-# INLINE mutateCell #-}
 
 -- | Default table filling, assuming that the forward monad is just @IO@.

@@ -30,8 +30,8 @@ import           ADP.Fusion.QuickCheck.Common
 -- ** Inside checks
 
 prop_b_ii ix@(BitSet _) = zs == ls where
-  tia = ITbl EmptyOk xsB (\ _ _ -> Id 1)
-  tib = ITbl EmptyOk xsB (\ _ _ -> Id 1)
+  tia = ITbl 0 0 EmptyOk xsB (\ _ _ -> Id 1)
+  tib = ITbl 0 0 EmptyOk xsB (\ _ _ -> Id 1)
   zs = ((,) <<< tia % tib ... S.toList) highestB ix
   ls = [ ( xsB ! kk , xsB ! (ix `xor` kk) )
        | k <- VU.toList . popCntSorted $ popCount ix -- [ 0 .. 2^(popCount ix) -1 ]
@@ -39,8 +39,8 @@ prop_b_ii ix@(BitSet _) = zs == ls where
        ]
 
 prop_b_ii_nn ix@(BitSet _) = zs == ls where
-  tia = ITbl NonEmpty xsB (\ _ _ -> Id 1)
-  tib = ITbl NonEmpty xsB (\ _ _ -> Id 1)
+  tia = ITbl 0 0 NonEmpty xsB (\ _ _ -> Id 1)
+  tib = ITbl 0 0 NonEmpty xsB (\ _ _ -> Id 1)
   zs = ((,) <<< tia % tib ... S.toList) highestB ix
   ls = [ ( xsB ! kk , xsB ! (ix `xor` kk) )
        | k <- VU.toList . popCntSorted $ popCount ix -- [ 0 .. 2^(popCount ix) -1 ]
@@ -50,9 +50,9 @@ prop_b_ii_nn ix@(BitSet _) = zs == ls where
        ]
 
 prop_b_iii ix@(BitSet _) = zs == ls where
-  tia = ITbl EmptyOk xsB (\ _ _ -> Id 1)
-  tib = ITbl EmptyOk xsB (\ _ _ -> Id 1)
-  tic = ITbl EmptyOk xsB (\ _ _ -> Id 1)
+  tia = ITbl 0 0 EmptyOk xsB (\ _ _ -> Id 1)
+  tib = ITbl 0 0 EmptyOk xsB (\ _ _ -> Id 1)
+  tic = ITbl 0 0 EmptyOk xsB (\ _ _ -> Id 1)
   zs = ((,,) <<< tia % tib % tic ... S.toList) highestB ix
   ls = [ ( xsB ! kk , xsB ! ll , xsB ! mm )
        | k <- VU.toList . popCntSorted $ popCount ix
@@ -63,9 +63,9 @@ prop_b_iii ix@(BitSet _) = zs == ls where
        ]
 
 prop_b_iii_nnn ix@(BitSet _) = zs == ls where
-  tia = ITbl NonEmpty xsB (\ _ _ -> Id 1)
-  tib = ITbl NonEmpty xsB (\ _ _ -> Id 1)
-  tic = ITbl NonEmpty xsB (\ _ _ -> Id 1)
+  tia = ITbl 0 0 NonEmpty xsB (\ _ _ -> Id 1)
+  tib = ITbl 0 0 NonEmpty xsB (\ _ _ -> Id 1)
+  tic = ITbl 0 0 NonEmpty xsB (\ _ _ -> Id 1)
   zs = ((,,) <<< tia % tib % tic ... S.toList) highestB ix
   ls = [ ( xsB ! kk , xsB ! ll , xsB ! mm )
        | k <- VU.toList . popCntSorted $ popCount ix
@@ -101,13 +101,13 @@ prop_b_iii_nnn ix@(BitSet _) = zs == ls where
 
 prop_bii_i :: BS2I First Last -> Bool
 prop_bii_i ix@(s:>i:>j) = zs == ls where
-  tia = ITbl EmptyOk xsBII (\ _ _ -> Id 1)
+  tia = ITbl 0 0 EmptyOk xsBII (\ _ _ -> Id 1)
   zs = (id <<< tia ... S.toList) highestBII ix
   ls = [ xsBII ! ix ]
 
 prop_bii_i_n :: BS2I First Last -> Bool
 prop_bii_i_n ix@(s:>i:>j) = zs == ls where
-  tia = ITbl NonEmpty xsBII (\ _ _ -> Id 1)
+  tia = ITbl 0 0 NonEmpty xsBII (\ _ _ -> Id 1)
   zs = (id <<< tia ... S.toList) highestBII ix
   ls = [ xsBII ! ix | popCount s > 0 ]
 
@@ -124,7 +124,7 @@ prop_bii_e ix@(s:>Iter i:>Iter j) = zs == ls where
 
 prop_bii_ie :: BS2I First Last -> Bool
 prop_bii_ie ix@(s:>i:>Iter j) = zs == ls where
-  tia = ITbl EmptyOk xsBII (\ _ _ -> Id 1)
+  tia = ITbl 0 0 EmptyOk xsBII (\ _ _ -> Id 1)
   e   = Edge (\ i j -> (i,j)) :: Edge (Int,Int)
   zs = ((,) <<< tia % e ... S.toList) highestBII ix
   ls = [ ( xsBII ! (t:>i:>(Iter k :: Interface Last)) , (k,j) )
@@ -133,7 +133,7 @@ prop_bii_ie ix@(s:>i:>Iter j) = zs == ls where
 
 prop_bii_ie_n :: BS2I First Last -> Bool
 prop_bii_ie_n ix@(s:>i:>Iter j) = zs == ls where
-  tia = ITbl NonEmpty xsBII (\ _ _ -> Id 1)
+  tia = ITbl 0 0 NonEmpty xsBII (\ _ _ -> Id 1)
   e   = Edge (\ i j -> (i,j)) :: Edge (Int,Int)
   zs = ((,) <<< tia % e ... S.toList) highestBII ix
   ls = [ ( xsBII ! (t:>i:>(Iter k :: Interface Last)) , (k,j) )
@@ -145,7 +145,7 @@ prop_bii_ie_n ix@(s:>i:>Iter j) = zs == ls where
 
 prop_bii_iee :: BS2I First Last -> Bool
 prop_bii_iee ix@(s:>i:>Iter j) = L.sort zs == L.sort ls where
-  tia = ITbl EmptyOk xsBII (\ _ _ -> Id 1)
+  tia = ITbl 0 0 EmptyOk xsBII (\ _ _ -> Id 1)
   e   = Edge (\ i j -> (i,j)) :: Edge (Int,Int)
   zs = ((,,) <<< tia % e % e ... S.toList) highestBII ix
   ls = [ ( xsBII ! (t:>i:>kk) , (k,l) , (l,j) )
@@ -159,7 +159,7 @@ prop_bii_iee ix@(s:>i:>Iter j) = L.sort zs == L.sort ls where
 
 prop_bii_ieee :: BS2I First Last -> Bool
 prop_bii_ieee ix@(s:>i:>Iter j) = L.sort zs == L.sort ls where
-  tia = ITbl EmptyOk xsBII (\ _ _ -> Id 1)
+  tia = ITbl 0 0 EmptyOk xsBII (\ _ _ -> Id 1)
   e   = Edge (\ i j -> (i,j)) :: Edge (Int,Int)
   zs = ((,,,) <<< tia % e % e % e ... S.toList) highestBII ix
   ls = [ ( xsBII ! (t:>i:>kk) , (k,l) , (l,m) , (m,j) )
@@ -176,7 +176,7 @@ prop_bii_ieee ix@(s:>i:>Iter j) = L.sort zs == L.sort ls where
 
 prop_bii_iee_n :: BS2I First Last -> Bool
 prop_bii_iee_n ix@(s:>i:>Iter j) = L.sort zs == L.sort ls where
-  tia = ITbl NonEmpty xsBII (\ _ _ -> Id 1)
+  tia = ITbl 0 0 NonEmpty xsBII (\ _ _ -> Id 1)
   e   = Edge (\ i j -> (i,j)) :: Edge (Int,Int)
   zs = ((,,) <<< tia % e % e ... S.toList) highestBII ix
   ls = [ ( xsBII ! (t:>i:>kk) , (k,l) , (l,j) )
@@ -192,7 +192,7 @@ prop_bii_iee_n ix@(s:>i:>Iter j) = L.sort zs == L.sort ls where
 
 prop_bii_ieee_n :: BS2I First Last -> Bool
 prop_bii_ieee_n ix@(s:>i:>Iter j) = L.sort zs == L.sort ls where
-  tia = ITbl NonEmpty xsBII (\ _ _ -> Id 1)
+  tia = ITbl 0 0 NonEmpty xsBII (\ _ _ -> Id 1)
   e   = Edge (\ i j -> (i,j)) :: Edge (Int,Int)
   zs = ((,,,) <<< tia % e % e % e ... S.toList) highestBII ix
   ls = [ ( xsBII ! (t:>i:>kk) , (k,l) , (l,m) , (m,j) )
@@ -210,8 +210,8 @@ prop_bii_ieee_n ix@(s:>i:>Iter j) = L.sort zs == L.sort ls where
        ]
 
 -- prop_bii_ii (ix@(s:>i:>j) :: (BitSet:>Interface First:>Interface Last)) = tr zs ls $ zs == ls where
---   tia = ITbl EmptyOk xsBII (\ _ _ -> Id 1)
---   tib = ITbl EmptyOk xsBII (\ _ _ -> Id 1)
+--   tia = ITbl 0 0 EmptyOk xsBII (\ _ _ -> Id 1)
+--   tib = ITbl 0 0 EmptyOk xsBII (\ _ _ -> Id 1)
 --   zs = ((,) <<< tia % tib ... S.toList) highestBII ix
 --   ls = [ ( xsBII ! kk , xsBII ! ll )
 --        | k  <- VU.toList . popCntSorted $ popCount s

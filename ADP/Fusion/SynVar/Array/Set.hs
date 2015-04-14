@@ -36,7 +36,7 @@ instance
   , PrimArrayOps arr BitSet x
   , MkStream m ls BitSet
   ) => MkStream m (ls :!: ITbl m arr BitSet x) BitSet where
-  mkStream (ls :!: ITbl c t _) (IStatic rp) u s
+  mkStream (ls :!: ITbl _ _ c t _) (IStatic rp) u s
     = flatten mk step Unknown $ mkStream ls (delay_inline IVariable $ rp - csize) u s
     where !csize | c==EmptyOk  = 0
                  | c==NonEmpty = 1
@@ -54,7 +54,7 @@ instance
             where pk = popCount k
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
-  mkStream (ls :!: ITbl c t _) (IVariable rp) u s
+  mkStream (ls :!: ITbl _ _ c t _) (IVariable rp) u s
     = flatten mk step Unknown $ mkStream ls (IVariable rp) u s
     where mk z
             | c==EmptyOk  = return (z , mask , cm , Just 0 )
@@ -85,7 +85,7 @@ instance
   , MkStream m ls (BS2I First Last)
   , Show x
   ) => MkStream m (ls :!: ITbl m arr (BS2I First Last) x) (BS2I First Last) where
-  mkStream (ls :!: ITbl c t _) (IStatic rp) u sij@(s:>i:>j@(Iter jj))
+  mkStream (ls :!: ITbl _ _ c t _) (IStatic rp) u sij@(s:>i:>j@(Iter jj))
     = flatten mk step Unknown $ mkStream ls (delay_inline IVariable rpn) u (delay_inline id $ tij)
           -- calculate new index. if we don't know the right-most interface
           -- anymore, than someone has taken it already. Also, if this

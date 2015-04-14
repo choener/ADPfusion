@@ -31,16 +31,16 @@ import           ADP.Fusion.QuickCheck.Common
 -- C*_kj -> B_ik  A*_ij
 
 prop_sv_OI ox@(O (Subword (i:.k))) = zs == ls where
-  toa = ITbl EmptyOk xoS (\ _ _ -> Id (1,1))
-  tic = ITbl EmptyOk xsS (\ _ _ -> Id (1,1))
+  toa = ITbl 0 0 EmptyOk xoS (\ _ _ -> Id (1,1))
+  tic = ITbl 0 0 EmptyOk xsS (\ _ _ -> Id (1,1))
   zs = ((,) <<< toa % tic ... S.toList) (O $ subword 0 highest) ox
   ls = [ ( unsafeIndex xoS (O $ subword i j)
          , unsafeIndex xsS (    subword k j) )
        | j <- [ k .. highest ] ]
 
 prop_sv_IO ox@(O (Subword (k:.j))) = zs == ls where
-  tib = ITbl EmptyOk xsS (\ _ _ -> Id (1,1))
-  toa = ITbl EmptyOk xoS (\ _ _ -> Id (1,1))
+  tib = ITbl 0 0 EmptyOk xsS (\ _ _ -> Id (1,1))
+  toa = ITbl 0 0 EmptyOk xoS (\ _ _ -> Id (1,1))
   zs = ((,) <<< tib % toa ... S.toList) (O $ subword 0 highest) ox
   ls = [ ( unsafeIndex xsS (    subword i k)
          , unsafeIndex xoS (O $ subword i j) )
@@ -56,9 +56,9 @@ prop_sv_IO ox@(O (Subword (k:.j))) = zs == ls where
 -- D*_lj -> B_ik  C_kl  A*_ij
 
 prop_sv_OII ox@(O (Subword (i:.k))) = zs == ls where
-  toa = ITbl EmptyOk xoS (\ _ _ -> Id (1,1))
-  tic = ITbl EmptyOk xsS (\ _ _ -> Id (1,1))
-  tid = ITbl EmptyOk xsS (\ _ _ -> Id (1,1))
+  toa = ITbl 0 0 EmptyOk xoS (\ _ _ -> Id (1,1))
+  tic = ITbl 0 0 EmptyOk xsS (\ _ _ -> Id (1,1))
+  tid = ITbl 0 0 EmptyOk xsS (\ _ _ -> Id (1,1))
   zs = ((,,) <<< toa % tic % tid ... S.toList) (O $ subword 0 highest) ox
   ls = [ ( unsafeIndex xoS (O $ subword i j)
          , unsafeIndex xsS (    subword k l)
@@ -66,9 +66,9 @@ prop_sv_OII ox@(O (Subword (i:.k))) = zs == ls where
        | j <- [ k .. highest ], l <- [ k .. j ] ]
 
 prop_sv_IOI ox@(O (Subword (k:.l))) = zs == ls where
-  tib = ITbl EmptyOk xsS (\ _ _ -> Id (1,1))
-  toa = ITbl EmptyOk xoS (\ _ _ -> Id (1,1))
-  tid = ITbl EmptyOk xsS (\ _ _ -> Id (1,1))
+  tib = ITbl 0 0 EmptyOk xsS (\ _ _ -> Id (1,1))
+  toa = ITbl 0 0 EmptyOk xoS (\ _ _ -> Id (1,1))
+  tid = ITbl 0 0 EmptyOk xsS (\ _ _ -> Id (1,1))
   zs = ((,,) <<< tib % toa % tid ... S.toList) (O $ subword 0 highest) ox
   ls = [ ( unsafeIndex xsS (    subword i k)
          , unsafeIndex xoS (O $ subword i j)
@@ -76,9 +76,9 @@ prop_sv_IOI ox@(O (Subword (k:.l))) = zs == ls where
        | i <- [ 0 .. k ], j <- [ l .. highest ] ]
 
 prop_sv_IIO ox@(O (Subword (l:.j))) = zs == ls where
-  tib = ITbl EmptyOk xsS (\ _ _ -> Id (1,1))
-  tic = ITbl EmptyOk xsS (\ _ _ -> Id (1,1))
-  toa = ITbl EmptyOk xoS (\ _ _ -> Id (1,1))
+  tib = ITbl 0 0 EmptyOk xsS (\ _ _ -> Id (1,1))
+  tic = ITbl 0 0 EmptyOk xsS (\ _ _ -> Id (1,1))
+  toa = ITbl 0 0 EmptyOk xoS (\ _ _ -> Id (1,1))
   zs = ((,,) <<< tib % tic % toa ... S.toList) (O $ subword 0 highest) ox
   ls = [ ( unsafeIndex xsS (    subword i k)
          , unsafeIndex xsS (    subword k l)
@@ -92,7 +92,7 @@ prop_sv_IIO ox@(O (Subword (l:.j))) = zs == ls where
 -- ** Non-terminal and terminal combinations
 
 prop_cOc ox@(O( Subword (i:.j))) = zs == ls where
-  toa = ITbl EmptyOk xoS (\ _ _ -> Id (1,1))
+  toa = ITbl 0 0 EmptyOk xoS (\ _ _ -> Id (1,1))
   zs  = ((,,) <<< chr csS % toa % chr csS ... S.toList) (O $ subword 0 highest) ox
   ls  = [ ( csS VU.! (i-1)
           , unsafeIndex xoS (O $ subword (i-1) (j+1))
@@ -100,7 +100,7 @@ prop_cOc ox@(O( Subword (i:.j))) = zs == ls where
         | i > 0 && j < highest ]
 
 prop_ccOcc ox@(O(Subword (i:.j))) = zs == ls where
-  toa = ITbl EmptyOk xoS (\ _ _ -> Id (1,1))
+  toa = ITbl 0 0 EmptyOk xoS (\ _ _ -> Id (1,1))
   zs  = ((,,,,) <<< chr csS % chr csS % toa % chr csS % chr csS ... S.toList) (O $ subword 0 highest) ox
   ls  = [ ( csS VU.! (i-2)
           , csS VU.! (i-1)
@@ -110,7 +110,7 @@ prop_ccOcc ox@(O(Subword (i:.j))) = zs == ls where
         | i > 1 && j < highest -1 ]
 
 prop_cOccc ox@(O(Subword (i:.j))) = zs == ls where
-  toa = ITbl EmptyOk xoS (\ _ _ -> Id (1,1))
+  toa = ITbl 0 0 EmptyOk xoS (\ _ _ -> Id (1,1))
   zs  = ((,,,,) <<< chr csS % toa % chr csS % chr csS % chr csS ... S.toList) (O $ subword 0 highest) ox
   ls  = [ ( csS VU.! (i-1)
           , unsafeIndex xoS (O $ subword (i-1) (j+3))
@@ -122,8 +122,8 @@ prop_cOccc ox@(O(Subword (i:.j))) = zs == ls where
 -- ** Terminals, syntactic terminals, and non-terminals
 
 prop_cOcIc ox@(O (Subword (i:.k))) = zs == ls where
-  toa = ITbl EmptyOk xoS (\ _ _ -> Id (1,1))
-  tic = ITbl EmptyOk xsS (\ _ _ -> Id (1,1))
+  toa = ITbl 0 0 EmptyOk xoS (\ _ _ -> Id (1,1))
+  tic = ITbl 0 0 EmptyOk xsS (\ _ _ -> Id (1,1))
   zs = ((,,,,) <<< chr csS % toa % chr csS % tic % chr csS ... S.toList) (O $ subword 0 highest) ox
   ls = [ ( csS VU.! (i-1)
          , unsafeIndex xoS (O $ subword (i-1)  j    )
@@ -133,8 +133,8 @@ prop_cOcIc ox@(O (Subword (i:.k))) = zs == ls where
        | i > 0, j <- [ k+2 .. highest ] ]
 
 prop_cIcOc ox@(O (Subword (k:.j))) = zs == ls where
-  tib = ITbl EmptyOk xsS (\ _ _ -> Id (1,1))
-  toa = ITbl EmptyOk xoS (\ _ _ -> Id (1,1))
+  tib = ITbl 0 0 EmptyOk xsS (\ _ _ -> Id (1,1))
+  toa = ITbl 0 0 EmptyOk xoS (\ _ _ -> Id (1,1))
   zs = ((,,,,) <<< chr csS % tib % chr csS % toa % chr csS ... S.toList) (O $ subword 0 highest) ox
   ls = [ ( csS VU.! (i  )
          , unsafeIndex xsS (    subword (i+1) (k-1))

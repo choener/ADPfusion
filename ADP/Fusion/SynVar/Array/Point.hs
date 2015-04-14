@@ -18,7 +18,7 @@ instance
   , PrimArrayOps arr PointL x
   , MkStream m ls PointL
   ) => MkStream m (ls :!: ITbl m arr PointL x) PointL where
-  mkStream (ls :!: ITbl c t _) (IStatic ()) u j@(PointL pj)
+  mkStream (ls :!: ITbl _ _ c t _) (IStatic ()) u j@(PointL pj)
     = let ms = minSize c in ms `seq`
     S.map (ElmITbl (t!j) j (PointL 0))
     $ mkStream ls (IVariable ()) u (PointL $ pj - ms)
@@ -42,7 +42,7 @@ instance
   , PrimArrayOps arr (Outside PointL) x
   , MkStream m ls (Outside PointL)
   ) => MkStream m (ls :!: ITbl m arr (Outside PointL) x) (Outside PointL) where
-  mkStream (ls :!: ITbl c t _) (OStatic d) u (O (PointL pj))
+  mkStream (ls :!: ITbl _ _ c t _) (OStatic d) u (O (PointL pj))
     = let ms = minSize c in ms `seq`
     S.map (\z -> let o = getOmx z
                  in  ElmITbl (t ! o) o o z)

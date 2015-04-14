@@ -26,11 +26,11 @@ instance
   , PrimArrayOps arr Subword x
   , MkStream m ls Subword
   ) => MkStream m (ls :!: ITbl m arr Subword x) Subword where
-  mkStream (ls :!: ITbl c t _) (IStatic ()) hh (Subword (i:.j))
+  mkStream (ls :!: ITbl _ _ c t _) (IStatic ()) hh (Subword (i:.j))
     = map (\s -> let (Subword (_:.l)) = getIdx s
                  in  ElmITbl (t ! subword l j) (subword l j) (subword 0 0) s)
     $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j - minSize c))
-  mkStream (ls :!: ITbl c t _) (IVariable ()) hh (Subword (i:.j))
+  mkStream (ls :!: ITbl _ _ c t _) (IVariable ()) hh (Subword (i:.j))
     = flatten mk step Unknown $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j - minSize c))
     where mk s = let Subword (_:.l) = getIdx s in return (s :. j - l - minSize c)
           step (s:.z) | z >= 0 = do let Subword (_:.k) = getIdx s
@@ -73,12 +73,12 @@ instance
   , MkStream m ls (Outside Subword)
   ) => MkStream m (ls :!: ITbl m arr (Outside Subword) x) (Outside Subword) where
   -- TODO what about @c / minSize@
-  mkStream (ls :!: ITbl c t _) (OStatic (di:.dj)) u ij@(O (Subword (i:.j)))
+  mkStream (ls :!: ITbl _ _ c t _) (OStatic (di:.dj)) u ij@(O (Subword (i:.j)))
     = map (\s -> let O (Subword (k:._)) = getOmx s
                      kj = O $ Subword (k:.j+dj)
                  in  ElmITbl (t ! kj) (O $ Subword (i:.j+dj)) kj s) -- @ij@ or s.th. else shouldn't matter?
     $ mkStream ls (OFirstLeft (di:.dj)) u ij
-  mkStream (ls :!: ITbl c t _) (ORightOf (di:.dj)) u@(O (Subword (_:.h))) ij@(O (Subword (i:.j)))
+  mkStream (ls :!: ITbl _ _ c t _) (ORightOf (di:.dj)) u@(O (Subword (_:.h))) ij@(O (Subword (i:.j)))
     = flatten mk step Unknown $ mkStream ls (OFirstLeft (di:.dj)) u ij
       where mk s = return (s:.j+dj)
             step (s:.l) | l <= h = do let (O (Subword (k:._))) = getIdx s
@@ -87,8 +87,8 @@ instance
                         | otherwise = return $ Done
             {-# Inline [0] mk   #-}
             {-# Inline [0] step #-}
-  mkStream (ls :!: ITbl c t _) (OFirstLeft d) u ij = error "Array/Outside Subword : OFirstLeft : should never be reached!"
-  mkStream (ls :!: ITbl c t _) (OLeftOf d) u ij = error "Array/Outside Subword : OLeftOf : should never be reached!"
+  mkStream (ls :!: ITbl _ _ c t _) (OFirstLeft d) u ij = error "Array/Outside Subword : OFirstLeft : should never be reached!"
+  mkStream (ls :!: ITbl _ _ c t _) (OLeftOf d) u ij = error "Array/Outside Subword : OLeftOf : should never be reached!"
   {-# Inline mkStream #-}
 
 
@@ -100,13 +100,13 @@ instance
   , MkStream m ls (Outside Subword)
   ) => MkStream m (ls :!: ITbl m arr Subword x) (Outside Subword) where
   -- TODO what about @c / minSize@
-  mkStream (ls :!: ITbl c t _) (OStatic (di:.dj)) u ij@(O (Subword (i:.j)))
+  mkStream (ls :!: ITbl _ _ c t _) (OStatic (di:.dj)) u ij@(O (Subword (i:.j)))
     = map (\s -> let O (Subword (_:.k))     = getIdx s
                      o@(O (Subword (_:.l))) = getOmx s
                      kl = Subword (k-dj:.l-dj)
                  in ElmITbl (t ! kl) (O (Subword (k:.l))) o s)
     $ mkStream ls (ORightOf (di:.dj)) u ij
-  mkStream (ls :!: ITbl c t _) (ORightOf d) u@(O (Subword (_:.h))) ij@(O (Subword (i:.j)))
+  mkStream (ls :!: ITbl _ _ c t _) (ORightOf d) u@(O (Subword (_:.h))) ij@(O (Subword (i:.j)))
     = flatten mk step Unknown $ mkStream ls (ORightOf d) u ij
     where mk s = let O (Subword (_:.l)) = getIdx s
                  in  return (s :.l:.l + minSize c)
@@ -117,13 +117,13 @@ instance
             | otherwise = return $ Done
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
-  mkStream (ls :!: ITbl c t _) (OFirstLeft (di:.dj)) u ij@(O (Subword (i:.j)))
+  mkStream (ls :!: ITbl _ _ c t _) (OFirstLeft (di:.dj)) u ij@(O (Subword (i:.j)))
     = map (\s -> let O (Subword (l:._)) = getOmx s
                      O (Subword (_:.k)) = getIdx s
                      kl = Subword (k:.i-di)
                  in  ElmITbl (t ! kl) (O kl) (getOmx s) s)
     $ mkStream ls (OLeftOf (di:.dj)) u ij
-  mkStream (ls :!: ITbl c t _) (OLeftOf d) u ij@(O (Subword (i:.j)))
+  mkStream (ls :!: ITbl _ _ c t _) (OLeftOf d) u ij@(O (Subword (i:.j)))
     = flatten mk step Unknown $ mkStream ls (OLeftOf d) u ij
     where mk s = let O (Subword (_:.l)) = getIdx s in return (s:.l)
           step (s:.l) | l <= i = do let O (Subword (_:.k)) = getIdx s
@@ -140,7 +140,7 @@ instance
   , PrimArrayOps arr Subword x
   , MkStream m ls (Complement Subword)
   ) => MkStream m (ls :!: ITbl m arr Subword x) (Complement Subword) where
-  mkStream (ls :!: ITbl c t _) Complemented u ij
+  mkStream (ls :!: ITbl _ _ c t _) Complemented u ij
     = map (\s -> let (C ix) = getIdx s
                  in  ElmITbl (t ! ix) (C ix) (getOmx s) s)
     $ mkStream ls Complemented u ij
@@ -152,7 +152,7 @@ instance
   , PrimArrayOps arr (Outside Subword) x
   , MkStream m ls (Complement Subword)
   ) => MkStream m (ls :!: ITbl m arr (Outside Subword) x) (Complement Subword) where
-  mkStream (ls :!: ITbl c t _) Complemented u ij
+  mkStream (ls :!: ITbl _ _ c t _) Complemented u ij
     = map (\s -> let (C ox) = getOmx s      -- TODO shouldn't this be @getIdx@ as well? on the count of everything being terminals in Complement?
                  in  ElmITbl (t ! (O ox)) (getIdx s) (C ox) s)
     $ mkStream ls Complemented u ij
@@ -161,8 +161,8 @@ instance
 
 
 instance ModifyConstraint (ITbl m arr Subword x) where
-  toNonEmpty (ITbl _ arr f) = ITbl NonEmpty arr f
-  toEmpty    (ITbl _ arr f) = ITbl EmptyOk  arr f
+  toNonEmpty (ITbl b l _ arr f) = ITbl b l NonEmpty arr f
+  toEmpty    (ITbl b l _ arr f) = ITbl b l EmptyOk  arr f
   {-# Inline toNonEmpty #-}
   {-# Inline toEmpty #-}
 
