@@ -21,6 +21,7 @@ import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import           System.IO.Unsafe
 import           Control.Monad (when,forM_)
 import           Data.List (nub,sort)
+import qualified Data.Vector.Unboxed as VU
 
 import           Data.PrimitiveArray
 
@@ -151,13 +152,12 @@ instance
   mutateTables mrph tt@(_:.ITbl _ _ _ arr _) = do
     let (from,to) = bounds arr
     -- TODO (1) find the set of orders for the synvars
-    let tbos = nub . sort $ tableBigOrder tt
-    let tlos = nub . sort $ tableLittleOrder tt
-    forM_ tbos $ \bo ->
-      SM.mapM_ (\ k -> do
-        forM_ tlos $ \lo -> do
+    let !tbos = VU.fromList . nub . sort $ tableBigOrder tt
+    let !tlos = VU.fromList . nub . sort $ tableLittleOrder tt
+    VU.forM_ tbos $ \bo ->
+      flip SM.mapM_ (streamUp from to) $ \k ->
+        VU.forM_ tlos $ \lo ->
           mutateCell bo lo (inline mrph) tt to k
-      ) $ streamUp from to -- TODO check the @to@ part
     return tt
   {-# INLINE mutateTables #-}
 
