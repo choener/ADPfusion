@@ -158,7 +158,7 @@ makeAlgebraProductH ['h] ''Signature
 -- selected via @... h@. Rules can, of course, be co-recursive, each rule
 -- can request all terminal and non-terminal symbols.
 --
--- Due to the way @nil_nil@ works on @Empty@, @nil_nil@ is actually /only/
+-- Due to the way @nil_nil@ works on @Epsilon@, @nil_nil@ is actually /only/
 -- called once, when we start the alignment, not for every cell!
 --
 -- /However/, due to this being a high-performance library, we do not
@@ -171,10 +171,10 @@ makeAlgebraProductH ['h] ''Signature
 -- Giegerichs @ADP@, we hide the actual index calculations.
 
 grammar Signature{..} a' i1 i2 =
-  let a = a'  ( step_step <<< a % (M:|chr i1:|chr i2) |||
-                step_loop <<< a % (M:|chr i1:|None  ) |||
-                loop_step <<< a % (M:|None  :|chr i2) |||
-                nil_nil   <<< (M:|Empty:|Empty)       ... h
+  let a = a'  ( step_step <<< a % (M:|chr i1:|chr i2)     |||
+                step_loop <<< a % (M:|chr i1:|Deletion  ) |||
+                loop_step <<< a % (M:|Deletion  :|chr i2) |||
+                nil_nil   <<< (M:|Epsilon:|Epsilon)       ... h
               )
   in Z:.a
 {-# INLINE grammar #-}

@@ -101,7 +101,7 @@ pretty = Nussinov
 grammar Nussinov{..} c t' =
   let t = t'  ( unp <<< t % c           |||
                 jux <<< t % c % t % c   |||
-                nil <<< Empty           ... h
+                nil <<< Epsilon         ... h
               )
   in Z:.t
 {-# INLINE grammar #-}
@@ -111,7 +111,7 @@ outsideGrammar Nussinov{..} c s t' =
   let t = t'  ( unp <<< t % c         |||
                 -- jux <<< t % c % s % c |||
                 -- jux <<< s % c % t % c |||
-                nil <<< Empty         ... h
+                nil <<< Epsilon         ... h
               )
   in Z:.t
 {-# INLINE outsideGrammar #-}

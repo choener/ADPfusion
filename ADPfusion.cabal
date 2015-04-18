@@ -107,13 +107,13 @@ library
     ADP.Fusion.Term.Edge
     ADP.Fusion.Term.Edge.Set
     ADP.Fusion.Term.Edge.Type
-    ADP.Fusion.Term.Empty
-    ADP.Fusion.Term.Empty.Point
-    ADP.Fusion.Term.Empty.Subword
-    ADP.Fusion.Term.Empty.Type
-    ADP.Fusion.Term.None
-    ADP.Fusion.Term.None.Point
-    ADP.Fusion.Term.None.Type
+    ADP.Fusion.Term.Epsilon
+    ADP.Fusion.Term.Epsilon.Point
+    ADP.Fusion.Term.Epsilon.Subword
+    ADP.Fusion.Term.Epsilon.Type
+    ADP.Fusion.Term.Deletion
+    ADP.Fusion.Term.Deletion.Point
+    ADP.Fusion.Term.Deletion.Type
     ADP.Fusion.Term.PeekIndex.Subword
     ADP.Fusion.Term.PeekIndex.Type
     ADP.Fusion.SynVar

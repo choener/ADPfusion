@@ -1,13 +1,13 @@
 
-module ADP.Fusion.Term.Empty
-  ( module ADP.Fusion.Term.Empty.Type
-  , module ADP.Fusion.Term.Empty.Point
-  , module ADP.Fusion.Term.Empty.Subword
+module ADP.Fusion.Term.Epsilon
+  ( module ADP.Fusion.Term.Epsilon.Type
+  , module ADP.Fusion.Term.Epsilon.Point
+  , module ADP.Fusion.Term.Epsilon.Subword
   ) where
 
-import ADP.Fusion.Term.Empty.Point
-import ADP.Fusion.Term.Empty.Subword
-import ADP.Fusion.Term.Empty.Type
+import ADP.Fusion.Term.Epsilon.Point
+import ADP.Fusion.Term.Epsilon.Subword
+import ADP.Fusion.Term.Epsilon.Type
 
 {-
 

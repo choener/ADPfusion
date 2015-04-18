@@ -1,11 +1,11 @@
 
-module ADP.Fusion.Term.None
-  ( module ADP.Fusion.Term.None.Type
-  , module ADP.Fusion.Term.None.Point
+module ADP.Fusion.Term.Deletion
+  ( module ADP.Fusion.Term.Deletion.Type
+  , module ADP.Fusion.Term.Deletion.Point
   ) where
 
-import ADP.Fusion.Term.None.Point
-import ADP.Fusion.Term.None.Type
+import ADP.Fusion.Term.Deletion.Point
+import ADP.Fusion.Term.Deletion.Type
 
 
 {-

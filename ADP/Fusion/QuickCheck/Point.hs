@@ -25,35 +25,35 @@ import ADP.Fusion
 
 
 
--- * Empty cases
+-- * Epsilon cases
 
-prop_Empty ix@(PointL j) = zs == ls where
-  zs = (id <<< Empty ... S.toList) (PointL 100) ix
+prop_Epsilon ix@(PointL j) = zs == ls where
+  zs = (id <<< Epsilon ... S.toList) (PointL 100) ix
   ls = [ () | j == 0 ]
 
-prop_O_Empty ix@(O (PointL j)) = zs == ls where
-  zs = (id <<< Empty ... S.toList) (O (PointL 100)) ix
+prop_O_Epsilon ix@(O (PointL j)) = zs == ls where
+  zs = (id <<< Epsilon ... S.toList) (O (PointL 100)) ix
   ls = [ () | j == 100 ]
 
-prop_ZEmpty ix@(Z:.PointL j) = zs == ls where
-  zs = (id <<< (M:|Empty) ... S.toList) (Z:.PointL 100) ix
+prop_ZEpsilon ix@(Z:.PointL j) = zs == ls where
+  zs = (id <<< (M:|Epsilon) ... S.toList) (Z:.PointL 100) ix
   ls = [ Z:.() | j == 0 ]
 
-prop_O_ZEmpty ix@(O (Z:.PointL j)) = zs == ls where
-  zs = (id <<< (M:|Empty) ... S.toList) (O (Z:.PointL 100)) ix
+prop_O_ZEpsilon ix@(O (Z:.PointL j)) = zs == ls where
+  zs = (id <<< (M:|Epsilon) ... S.toList) (O (Z:.PointL 100)) ix
   ls = [ Z:.() | j == 100 ]
 
-prop_O_ZEmptyEmpty ix@(O (Z:.PointL j:.PointL l)) = zs == ls where
-  zs = (id <<< (M:|Empty:|Empty) ... S.toList) (O (Z:.PointL 100:.PointL 100)) ix
+prop_O_ZEpsilonEpsilon ix@(O (Z:.PointL j:.PointL l)) = zs == ls where
+  zs = (id <<< (M:|Epsilon:|Epsilon) ... S.toList) (O (Z:.PointL 100:.PointL 100)) ix
   ls = [ Z:.():.() | j == 100, l == 100 ]
 
 
 
--- * None cases
+-- * Deletion cases
 
 prop_O_ItNC ix@(O (PointL j)) = zs == ls where
   t = ITbl 0 0 EmptyOk xsPo (\ _ _ -> Id 1)
-  zs = ((,,) <<< t % None % chr xs ... S.toList) (O $ PointL 100) ix
+  zs = ((,,) <<< t % Deletion % chr xs ... S.toList) (O $ PointL 100) ix
   ls = [ ( unsafeIndex xsPo (O $ PointL $ j+1)
          , ()
          , xs VU.! (j+0)
@@ -62,7 +62,7 @@ prop_O_ItNC ix@(O (PointL j)) = zs == ls where
 
 prop_O_ZItNC ix@(O (Z:.PointL j)) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk) xsZPo (\ _ _ -> Id 1)
-  zs = ((,,) <<< t % (M:|None) % (M:|chr xs) ... S.toList) (O (Z:.PointL 100)) ix
+  zs = ((,,) <<< t % (M:|Deletion) % (M:|chr xs) ... S.toList) (O (Z:.PointL 100)) ix
   ls = [ ( unsafeIndex xsZPo (O (Z:.PointL (j+1)))
          , Z:.()
          , Z:.xs VU.! (j+0)
@@ -70,7 +70,7 @@ prop_O_ZItNC ix@(O (Z:.PointL j)) = zs == ls where
 
 prop_O_2dimIt_NC_CN ix@(O (Z:.PointL j:.PointL l)) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsPPo (\ _ _ -> Id 1)
-  zs = ((,,) <<< t % (M:|None:|chr xs) % (M:|chr xs:|None) ... S.toList) (O (Z:.PointL 100:.PointL 100)) ix
+  zs = ((,,) <<< t % (M:|Deletion:|chr xs) % (M:|chr xs:|Deletion) ... S.toList) (O (Z:.PointL 100:.PointL 100)) ix
   ls = [ ( unsafeIndex xsPPo (O (Z:.PointL (j+1):.PointL (l+1)))
          , Z:.()           :.xs VU.! (l+0)
          , Z:.xs VU.! (j+0):.()
@@ -78,7 +78,7 @@ prop_O_2dimIt_NC_CN ix@(O (Z:.PointL j:.PointL l)) = zs == ls where
 
 prop_2dimIt_NC_CN ix@(Z:.PointL j:.PointL l) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsPP (\ _ _ -> Id 1)
-  zs = ((,,) <<< t % (M:|None:|chr xs) % (M:|chr xs:|None) ... S.toList) (Z:.PointL 100:.PointL 100) ix
+  zs = ((,,) <<< t % (M:|Deletion:|chr xs) % (M:|chr xs:|Deletion) ... S.toList) (Z:.PointL 100:.PointL 100) ix
   ls = [ ( unsafeIndex xsPP (Z:.PointL (j-1):.PointL (l-1))
          , Z:.()           :.xs VU.! (l-1)
          , Z:.xs VU.! (j-1):.()

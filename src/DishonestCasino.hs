@@ -57,7 +57,7 @@ makeAlgebraProductH ['h] ''Signature
 -- don't plan on doing anything with the candidates here.
 
 forwardGrammar Signature{..} c th' td' st' =
-  let th = th'  ( nil <<< Empty   |||
+  let th = th'  ( nil <<< Epsilon |||
                   h_h <<< th % c  |||
                   h_d <<< td % c  ... h
                 )
@@ -79,11 +79,11 @@ forwardGrammar Signature{..} c th' td' st' =
 
 backwardGrammar Signature{..} (!c) th' td' st' = Z:.th:.td:.st
   where
-  th = th'  ( nil <<< Empty   |||
+  th = th'  ( nil <<< Epsilon |||
               h_h <<< th % c  |||
               d_h <<< td % c  ... h   -- rotated @h_d@ to @d_h@ (simpler example code)
             )
-  td = td'  ( nil <<< Empty   |||
+  td = td'  ( nil <<< Epsilon |||
               h_d <<< th % c  |||     -- rotation @d_h@ to @h_d@
               d_d <<< td % c  ... h
             )

@@ -143,10 +143,10 @@ prop_cIcOc ox@(O (Subword (k:.j))) = zs == ls where
          , csS VU.! (j  ) )
        | j+1 <= highest, k>1, i <- [ 0 .. k-2 ] ]
 
--- ** Emptyness
+-- ** Epsilonness
 
-prop_Empty ox@(O (Subword (i:.j))) = zs == ls where
-  zs = (id <<< Empty ... S.toList) (O $ subword 0 highest) ox
+prop_Epsilon ox@(O (Subword (i:.j))) = zs == ls where
+  zs = (id <<< Epsilon ... S.toList) (O $ subword 0 highest) ox
   ls = [ () | i==0 && j==highest ]
 
 

@@ -99,7 +99,7 @@ pretty = Durbin
 
 -- grammar :: Durbin m Char () x r -> c' -> t' -> (t', Subword -> m r)
 grammar Durbin{..} c t' =
-  let t = t'  ( nil <<< Empty       |||
+  let t = t'  ( nil <<< Epsilon     |||
                 lef <<< c  % t      |||
                 rig <<< t  % c      |||
                 pai <<< c  % t  % c |||

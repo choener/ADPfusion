@@ -102,7 +102,7 @@ pretty = Nussinov
 insideGrammar Nussinov{..} c a' p' =
   let a = a'  ( unp <<< a % c     |||
                 jux <<< a % p     |||
-                nil <<< Empty     ... h
+                nil <<< Epsilon   ... h
               )
       p = p'  ( pai <<< c % a % c ... h
               )
@@ -123,7 +123,7 @@ outsideGrammar Nussinov{..} c a p b' q' =
   let b = b'  ( unp <<< b % c         |||
                 jux <<< b % p         |||
                 pai <<< c % q % c     |||
-                nil <<< Empty         ... h
+                nil <<< Epsilon       ... h
               )
       q = q'  ( jux <<< a % b         ... h
               )
