@@ -35,10 +35,10 @@ import           ADP.Fusion
 
 
 
-data Nussinov m c e x r = Nussinov
+data Nussinov m c x r = Nussinov
   { unp :: x -> c -> x
   , jux :: x -> c -> x -> c -> x
-  , nil :: e -> x
+  , nil :: () -> x
   , h   :: SM.Stream m x -> m r
   }
 
@@ -60,7 +60,7 @@ makeAlgebraProductH ['h] ''Nussinov
     hS phfs
 -}
 
-bpmax :: Monad m => Nussinov m Char () Int Int
+bpmax :: Monad m => Nussinov m Char Int Int
 bpmax = Nussinov
   { unp = \ x c     -> x
   , jux = \ x c y d -> if c `pairs` d then x + y + 1 else -999999
@@ -69,7 +69,7 @@ bpmax = Nussinov
   }
 {-# INLINE bpmax #-}
 
-prob :: Monad m => Nussinov m Char () Double Double
+prob :: Monad m => Nussinov m Char Double Double
 prob = Nussinov
   { unp = \ x c     -> 0.3 * x
   , jux = \ x c y d -> 0.6 * if c `pairs` d then x * y else 0
@@ -88,7 +88,7 @@ pairs !c !d
   || c=='U' && d=='G'
 {-# INLINE pairs #-}
 
-pretty :: Monad m => Nussinov m Char () String (SM.Stream m String)
+pretty :: Monad m => Nussinov m Char String (SM.Stream m String)
 pretty = Nussinov
   { unp = \ x c     -> x ++ "."
   , jux = \ x c y d -> x ++ "(" ++ y ++ ")"

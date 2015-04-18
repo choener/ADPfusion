@@ -119,12 +119,13 @@ buildChoice hL' hR' = do
 -- | Gets the names used in the evaluation function.
 
 getNames :: Type -> [[Name]]
-getNames t = go t where
+getNames t' = go t' where
   go t
     | VarT x <- t = [[x]]
     | AppT (AppT ArrowT (VarT x  )) y <- t = [x] : go y
     | AppT (AppT ArrowT (AppT _ _)) y <- t = []  : go y  -- later on, grab all terminal names in a multi-dim case
-    | otherwise            = error $ "getNames error: " ++ show t
+    | AppT (AppT ArrowT (TupleT 0)) y <- t = []  : go y   -- this case captures things like @nil :: () -> x@ for rules like @nil <<< Epsilon@.
+    | otherwise            = error $ "getNames error: " ++ show t ++ "    in:    " ++ show t'
 
 -- AppT (AppT ArrowT (AppT (AppT (ConT Data.Array.Repa.Index.:.) (AppT (AppT (ConT Data.Array.Repa.Index.:.) (ConT Data.Array.Repa.Index.Z)) (VarT c_1627675270))) (VarT c_1627675270))) (VarT x_1627675265)
 
