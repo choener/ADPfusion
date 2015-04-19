@@ -115,6 +115,8 @@ genAttributeFunction nts fL fR (name,_,t) = do
 
 recBuildLamPat :: [Name] -> Name -> Name -> [Name] -> Q ([Pat], Exp, Exp)
 recBuildLamPat nts fL' fR' ts = do
+  -- here we just run through all arguments, either creating an @x@ and
+  -- a @ys@ for a non-term or a @t@ for a term.
   ps <- sequence [ if t `elem` nts then tupP [newName "x" >>= varP, newName "ys" >>= varP] else (newName "t" >>= varP) | t<-ts]
   let buildLfun f (TupP [VarP v,_]) = appE f (varE v)
       buildLfun f (VarP v         ) = appE f (varE v)
@@ -148,7 +150,15 @@ buildBacktrackingChoice hL' hR' = do
                $(varE hR') phfs |]
 
 
--- | Gets the names used in the evaluation function.
+-- | Gets the names used in the evaluation function. This returns one
+-- 'Name' for each variable.
+--
+-- In case of @TupleT 0@ the type is @()@ and there isn't a name to go with
+-- it. We just @mkName "()"@ a name, but this might be slightly dangerous?
+-- (Not really sure if it indeed is)
+--
+-- With @AppT _ _@ we have a multidim terminal and produce another hackish
+-- name to be consumed above.
 --
 -- @
 -- AppT (AppT ArrowT (AppT (AppT (ConT Data.Array.Repa.Index.:.) (AppT (AppT (ConT Data.Array.Repa.Index.:.) (ConT Data.Array.Repa.Index.Z)) (VarT c_1627675270))) (VarT c_1627675270))) (VarT x_1627675265)
@@ -159,8 +169,8 @@ getRuleSynVarNames t' = go t' where
   go t
     | VarT x <- t = [x]
     | AppT (AppT ArrowT (VarT x  )) y <- t = x : go y   -- this is a syntactic variable, return the name that the incoming data is bound to
-    | AppT (AppT ArrowT (AppT _ _)) y <- t =     go y   -- this is a terminal
-    | AppT (AppT ArrowT (TupleT 0)) y <- t =     go y   -- this case captures things like @nil :: () -> x@ for rules like @nil <<< Epsilon@.
+    | AppT (AppT ArrowT (AppT _ _)) y <- t = mkName "[]" : go y   -- this captures that we have a multi-dim terminal.
+    | AppT (AppT ArrowT (TupleT 0)) y <- t = mkName "()" : go y   -- this case captures things like @nil :: () -> x@ for rules like @nil <<< Epsilon@.
     | otherwise            = error $ "getRuleSynVarNames error: " ++ show t ++ "    in:    " ++ show t'
 
 
