@@ -6,7 +6,7 @@ import Data.Vector.Fusion.Stream.Size
 import Data.Vector.Fusion.Util (delay_inline)
 import Data.Vector.Fusion.Stream.Monadic
 import Debug.Trace
-import Prelude hiding (map)
+import Prelude hiding (map,mapM)
 
 import Data.PrimitiveArray hiding (map)
 
@@ -49,9 +49,9 @@ instance
   , PrimArrayOps arr Subword x
   ) => MkStream mB (ls :!: Backtrack (ITbl mF arr Subword x) mF mB r) Subword where
   mkStream (ls :!: BtITbl c t bt) (IStatic ()) hh ij@(Subword (i:.j))
-    = map (\s -> let Subword (_:.l) = getIdx s
-                     lj             = subword l j
-                 in  ElmBtITbl (t ! lj) (bt hh lj) lj (subword 0 0) s)
+    = mapM (\s -> let Subword (_:.l) = getIdx s
+                      lj             = subword l j
+                  in  bt hh lj >>= \ ~bb -> return $ ElmBtITbl (t ! lj) (bb {-bt hh lj-}) lj (subword 0 0) s)
     $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j - minSize c))
   mkStream (ls :!: BtITbl c t bt) (IVariable ()) hh ij@(Subword (i:.j))
     = flatten mk step Unknown $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j - minSize c))
@@ -59,7 +59,7 @@ instance
           step (s:.z) | z >= 0 = do let Subword (_:.k) = getIdx s
                                         l              = j - z
                                         kl             = subword k l
-                                    return $ Yield (ElmBtITbl (t ! kl) (bt hh kl) kl (subword 0 0) s) (s:.z-1)
+                                    bt hh kl >>= \ ~bb -> return $ Yield (ElmBtITbl (t ! kl) (bb {-bt hh kl-}) kl (subword 0 0) s) (s:.z-1)
                       | otherwise = return $ Done
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}

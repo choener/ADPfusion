@@ -25,7 +25,7 @@ data IRec m i x where
 instance Build (IRec m i x)
 
 instance GenBacktrackTable (IRec mF i x) mF mB r where
-  data Backtrack (IRec mF i x) mF mB r = BtIRec !(TblConstraint i) !i !i (i -> i -> mB x) (i -> i -> mB (Stream mB r))
+  data Backtrack (IRec mF i x) mF mB r = BtIRec !(TblConstraint i) !i !i (i -> i -> mB x) (i -> i -> mB [r]) -- (Stream mB r))
   type BacktrackIndex (IRec mF i x)         = i
   toBacktrack (IRec c iF iT f) mrph bt = BtIRec c iF iT (\lu i -> mrph $ f lu i) bt
   {-# INLINE toBacktrack #-}
@@ -46,7 +46,7 @@ instance
   ( Monad mB
   , IndexStream i
   ) => Axiom (Backtrack (IRec mF i x) mF mB r) where
-  type AxiomStream (Backtrack (IRec mF i x) mF mB r) = mB (Stream mB r)
+  type AxiomStream (Backtrack (IRec mF i x) mF mB r) = mB [r] -- (Stream mB r)
   axiom (BtIRec c l h fun btfun) = do
     k <- (head . uncurry streamDown) (l,h)
     btfun h k

@@ -44,24 +44,32 @@ makeAlgebraProductH hns nm = do
         let (fs,hs) = partition ((`notElem` hns) . sel1) fs'
         -- the result types of the @fs@ are the types of the non-terminal symbols
         let synTypes = nub . map getRuleResultType $ fs
-        fun <- funD (mkName "<**") [genClause dataConName fs' fs hs]
+        funStream <- funD (mkName "<**") [genClauseStream dataConName fs' fs hs]
+--        funList   <- funD (mkName "<||") [genClauseList   dataConName fs' fs hs]
         return
-          [ fun
+          [ funStream
+--          , funList
           ]
       _   -> fail "more than one data ctor"
     _          -> fail "unsupported data type"
 
 
+
+-- * Build a backtracking function which uses @Stream@s internally.
+-- Efficient fusion of these streams requires @HERMIT@! For most
+-- backtracking cases, this is less of a problem since the backtracking
+-- running time is much less than the forward case requires.
+
 -- | Build the single clause of our function. We shall need the functions bound
 -- in the where part to create the joined functions we need to return.
 
-genClause
+genClauseStream
   :: Name
   -> [VarStrictType]
   -> [VarStrictType]
   -> [VarStrictType]
   -> Q Clause
-genClause conName allFunNames evalFunNames choiceFunNames = do
+genClauseStream conName allFunNames evalFunNames choiceFunNames = do
   let nonTermNames = nub . map getRuleResultType $ evalFunNames
   -- bind the l'eft and r'ight variable of the two algebras we want to join,
   -- also create unique names for the function names we shall bind later.
@@ -183,4 +191,12 @@ getRuleResultType vst = go $ sel3 vst where
     | AppT _ (VarT x) <- t = x
     | AppT _ x        <- t = go x
     | otherwise            = error $ "undetermined error:" ++ show vst
+
+
+
+-- * Backtracking which uses lists internally. The basic idea is to convert
+-- each @Stream@ into a list. The consumer consumes the stream lazily, but
+-- allows for fusion to happen. The hope is that this improves total
+-- performance in those cases, where backtracking has significant costs.
+
 

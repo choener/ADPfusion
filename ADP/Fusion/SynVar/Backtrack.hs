@@ -27,7 +27,7 @@ import ADP.Fusion.Base
 class GenBacktrackTable t (mF :: * -> *) (mB :: * -> *) r where
   data Backtrack t (mF :: * -> *) (mB :: * -> *) r :: *
   type BacktrackIndex t :: *
-  toBacktrack :: t -> (forall a . mF a -> mB a) -> (BacktrackIndex t -> BacktrackIndex t -> mB (Stream mB r)) -> Backtrack t mF mB r
+  toBacktrack :: t -> (forall a . mF a -> mB a) -> (BacktrackIndex t -> BacktrackIndex t -> mB [r]) -> Backtrack t mF mB r
 
 instance Build (Backtrack t mF mB r)
 

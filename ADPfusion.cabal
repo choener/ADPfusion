@@ -223,6 +223,9 @@ executable Nussinov
     -funbox-strict-fields
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000
+    -ddump-to-file
+    -ddump-simpl
+    -dsuppress-all
   if flag(llvm)
     ghc-options:
       -fllvm

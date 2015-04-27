@@ -2,9 +2,9 @@
 module ADP.Fusion.SynVar.Array.Type where
 
 import Data.Strict.Tuple hiding (uncurry,snd)
-import Data.Vector.Fusion.Stream.Monadic (map,Stream,head)
+import Data.Vector.Fusion.Stream.Monadic (map,Stream,head,mapM)
 import Debug.Trace
-import Prelude hiding (map,head)
+import Prelude hiding (map,head,mapM)
 
 import Data.PrimitiveArray hiding (map)
 
@@ -28,7 +28,7 @@ data ITbl m arr i x where
 instance Build (ITbl m arr i x)
 
 instance GenBacktrackTable (ITbl mF arr i x) mF mB r where
-  data Backtrack (ITbl mF arr i x) mF mB r = BtITbl !(TblConstraint i) !(arr i x) (i -> i -> mB (Stream mB r))
+  data Backtrack (ITbl mF arr i x) mF mB r = BtITbl !(TblConstraint i) !(arr i x) (i -> i -> mB [r])
   type BacktrackIndex (ITbl mF arr i x) = i
   toBacktrack (ITbl _ _ c arr _) _ bt = BtITbl c arr bt
   {-# Inline toBacktrack #-}
@@ -49,7 +49,7 @@ instance
   , PrimArrayOps arr i x
   , IndexStream i
   ) => Axiom (Backtrack (ITbl mF arr i x) mF mB r) where
-  type AxiomStream (Backtrack (ITbl mF arr i x) mF mB r) = mB (Stream mB r)
+  type AxiomStream (Backtrack (ITbl mF arr i x) mF mB r) = mB [r]
   axiom (BtITbl c arr bt) = do
     h <- (head . uncurry streamDown) $ bounds arr
     bt (snd $ bounds arr) h
@@ -68,8 +68,8 @@ instance Element ls i => Element (ls :!: ITbl m arr j x) i where
 deriving instance (Show i, Show (Elm ls i), Show x) => Show (Elm (ls :!: ITbl m arr j x) i)
 
 instance Element ls i => Element (ls :!: (Backtrack (ITbl mF arr i x) mF mB r)) i where
-  data Elm (ls :!: (Backtrack (ITbl mF arr i x) mF mB r)) i = ElmBtITbl !x !(mB (Stream mB r)) !i !i !(Elm ls i)
-  type Arg (ls :!: (Backtrack (ITbl mF arr i x) mF mB r))   = Arg ls :. (x, mB (Stream mB r))
+  data Elm (ls :!: (Backtrack (ITbl mF arr i x) mF mB r)) i = ElmBtITbl !x [r] !i !i !(Elm ls i)
+  type Arg (ls :!: (Backtrack (ITbl mF arr i x) mF mB r))   = Arg ls :. (x, [r])
   getArg (ElmBtITbl x s _ _ ls) = getArg ls :. (x,s)
   getIdx (ElmBtITbl _ _ i _ _ ) = i
   getOmx (ElmBtITbl _ _ _ o _ ) = o
@@ -104,7 +104,7 @@ instance
   , PrimArrayOps arr (is:.i) x
   ) => MkStream mB (ls :!: Backtrack (ITbl mF arr (is:.i) x) mF mB r) (is:.i) where
   mkStream (ls :!: BtITbl c t bt) vs us is
-    = map (\(S5 s _ _ i o) -> ElmBtITbl (t ! i) (bt us i) i o s)
+    = mapM (\(S5 s _ _ i o) -> bt us i >>= \ ~bb -> return $ ElmBtITbl (t ! i) (bb {-bt us i-}) i o s)
     . tableIndices c vs is
     . map (\s -> S5 s Z Z (getIdx s) (getOmx s))
     $ mkStream ls (tableStaticVar vs is) us (tableStreamIndex c vs is)
@@ -136,7 +136,7 @@ instance
   , Show (is:.i)
   ) => MkStream mB (ls :!: Backtrack (ITbl mF arr (Outside (is:.i)) x) mF mB r) (Outside (is:.i)) where
   mkStream (ls :!: BtITbl c t bt) vs us is
-    = map (\(S5 s _ _ i o) -> ElmBtITbl (t ! o) (bt us o) i o s)
+    = mapM (\(S5 s _ _ i o) -> bt us o >>= \bb -> return $ ElmBtITbl (t ! o) (bb {-bt us o-}) i o s)
     . tableIndices c vs is
     . map (\s -> S5 s Z Z (getIdx s) (getOmx s))
     $ mkStream ls (tableStaticVar vs is) us (tableStreamIndex c vs is)

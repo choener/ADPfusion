@@ -32,7 +32,7 @@ instance
   ) => MkStream mB (ls :!: Backtrack (ITbl mF arr PointL x) mF mB r) PointL where
   mkStream (ls :!: BtITbl c t bt) (IStatic ()) u j@(PointL pj)
     = let ms = minSize c in ms `seq`
-    S.map (\s -> ElmBtITbl (t!j) (bt u j) j (PointL 0) s)
+    S.mapM (\s -> bt u j >>= \bb -> return $ ElmBtITbl (t!j) (bb {-bt u j-}) j (PointL 0) s)
     $ mkStream ls (IVariable ()) u (PointL $ pj - ms)
   {-# INLINE mkStream #-}
 
@@ -57,7 +57,7 @@ instance
   ) => MkStream mB (ls :!: Backtrack (ITbl mF arr (Outside PointL) x) mF mB r) (Outside PointL) where
   mkStream (ls :!: BtITbl c t bt) (OStatic d) u (O (PointL pj))
     = let ms = minSize c in ms `seq`
-    S.map (\s -> let o = getOmx s in ElmBtITbl (t!o) (bt u o) o o s)
+    S.mapM (\s -> let o = getOmx s in bt u o >>= \bb -> return $ ElmBtITbl (t!o) (bb{-bt u o-}) o o s)
     $ mkStream ls (OFirstLeft d) u (O $ PointL $ pj - ms)
   {-# INLINE mkStream #-}
 
