@@ -60,6 +60,7 @@ makeAlgebraProductH ['h] ''Nussinov
     let phfs = SM.concatMapM snd . SM.filter ((hfs==) . fst) $ xs
     hS phfs
 -}
+{-
 (<||) f s = Nussinov unp jux nil h where
   Nussinov unpF juxF nilF hF = f
   Nussinov unpS juxS nilS hS = s
@@ -75,6 +76,7 @@ makeAlgebraProductH ['h] ''Nussinov
     --let tmp1 = L.map snd $ L.filter ((hfs==) . fst) ys
     -- _ $ hS $ SM.fromList $ SM.concatMap snd $ SM.filter ((hfs==) . fst) $ xs
     hS $ SM.concatMap (SM.fromList . snd) $ SM.filter ((hfs==) . fst) $ SM.fromList $ ys
+-}
 {-# Inline (<||) #-}
 
 {-

@@ -131,6 +131,9 @@ library
     ADP.Fusion.SynVar.Recursive.Subword
     ADP.Fusion.SynVar.Recursive.Type
     ADP.Fusion.TH
+    ADP.Fusion.TH.Common
+    ADP.Fusion.TH.List
+    ADP.Fusion.TH.Stream
     ADP.Fusion.QuickCheck.Common
     ADP.Fusion.QuickCheck.Point
     ADP.Fusion.QuickCheck.Set
@@ -186,6 +189,9 @@ executable NeedlemanWunsch
     -funbox-strict-fields
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000
+    -ddump-to-file
+    -ddump-simpl
+    -dsuppress-all
   if flag(llvm)
     ghc-options:
       -fllvm
@@ -264,6 +270,9 @@ executable PartNussinov
     -funbox-strict-fields
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000
+    -ddump-to-file
+    -ddump-simpl
+    -dsuppress-all
   if flag(llvm)
     ghc-options:
       -fllvm
@@ -325,11 +334,14 @@ executable Durbin
   default-language: Haskell2010
 
   ghc-options:
-    -Odph
+    -O2
     -fcpr-off
     -funbox-strict-fields
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000
+    -ddump-to-file
+    -ddump-simpl
+    -dsuppress-all
   if flag(llvm)
     ghc-options:
       -fllvm

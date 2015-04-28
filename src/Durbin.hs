@@ -86,14 +86,14 @@ pairs !c !d
   || c=='U' && d=='G'
 {-# INLINE pairs #-}
 
-pretty :: Monad m => Durbin m Char () String (SM.Stream m String)
+pretty :: Monad m => Durbin m Char () String [String]
 pretty = Durbin
   { nil = \ ()      -> ""
   , lef = \ _  x    -> "." ++ x
   , rig = \ x  _    -> x ++ "."
   , pai = \ _  x  _ -> "(" ++ x ++ ")"
   , spl = \ x  y    -> x ++ y
-  , h   = return . id
+  , h   = SM.toList
   }
 {-# INLINE pretty #-}
 
@@ -110,7 +110,7 @@ grammar Durbin{..} c t' =
 {-# INLINE grammar #-}
 
 runDurbin :: Int -> String -> (Int,[String])
-runDurbin k inp = (d, take k . S.toList . unId $ axiom b) where
+runDurbin k inp = (d, take k . unId $ axiom b) where
   i = VU.fromList . Prelude.map toUpper $ inp
   n = VU.length i
   !(Z:.t) = mutateTablesDefault
@@ -119,7 +119,7 @@ runDurbin k inp = (d, take k . S.toList . unId $ axiom b) where
               (ITbl 0 0 EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-999999) [])) :: Z:.ITbl Id Unboxed Subword Int
   -- d = let (ITbl _ _ arr _) = t in arr PA.! subword 0 n
   d = iTblArray t PA.! subword 0 n
-  !(Z:.b) = grammar (bpmax <** pretty) (chr i) (toBacktrack t (undefined :: Id a -> Id a))
+  !(Z:.b) = grammar (bpmax <|| pretty) (chr i) (toBacktrack t (undefined :: Id a -> Id a))
 
 main = do
   as <- getArgs

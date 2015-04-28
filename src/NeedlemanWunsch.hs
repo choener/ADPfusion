@@ -213,17 +213,14 @@ sScore = Signature
 -- rather returns all alignments. You already heard about @<**@, we'll use
 -- it below.
 
-sPretty :: Monad m => Signature m [String] [[String]] {- (SM.Stream m [String]) -} Char
-sPretty = undefined
-{-
+sPretty :: Monad m => Signature m [String] [[String]] Char
 sPretty = Signature
   { step_step = \[x,y] (Z:.a :.b ) -> [a  :x, b  :y]
   , step_loop = \[x,y] (Z:.a :.()) -> [a  :x, '-':y]
   , loop_step = \[x,y] (Z:.():.b ) -> ['-':x, b  :y]
   , nil_nil   = const ["",""]
-  , h = return . id
+  , h = SM.toList
   }
--}
 
 -- | The inside grammar, with efficient table-filling (via
 -- 'nwInsideForward') and backtracking. Requests @k@ co-optimal
@@ -231,7 +228,7 @@ sPretty = Signature
 -- returned is the score, the @snd@ are the co-optimal parses.
 
 runNeedlemanWunsch :: Int -> String -> String -> (Int,[[String]])
-runNeedlemanWunsch k i1' i2' = (d, take k . S.toList . unId $ axiom b) where
+runNeedlemanWunsch k i1' i2' = (d, take k . unId $ axiom b) where
   i1 = VU.fromList i1'
   i2 = VU.fromList i2'
   n1 = VU.length i1
@@ -239,7 +236,7 @@ runNeedlemanWunsch k i1' i2' = (d, take k . S.toList . unId $ axiom b) where
   !(Z:.t) = nwInsideForward i1 i2
   -- d = let (ITbl _ _ arr _) = t in arr PA.! (Z:.PointL n1:.PointL n2)
   d = iTblArray t PA.! (Z:.PointL n1:.PointL n2)
-  !(Z:.b) = grammar (sScore <** sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
+  !(Z:.b) = grammar (sScore <|| sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
 {-# Noinline runNeedlemanWunsch #-}
 
 -- | The forward or table-filling phase. It is possible to inline this code
@@ -267,7 +264,7 @@ nwInsideForward i1 i2 = mutateTablesDefault $
 -- and the grammar from above.
 
 runOutsideNeedlemanWunsch :: Int -> String -> String -> (Int,[[String]])
-runOutsideNeedlemanWunsch k i1' i2' = (d, take k $ axiom b) where -- . S.toList . unId $ axiom b) where -- ,gogo) where
+runOutsideNeedlemanWunsch k i1' i2' = (d, take k . unId $ axiom b) where -- . S.toList . unId $ axiom b) where -- ,gogo) where
   i1 = VU.fromList i1'
   i2 = VU.fromList i2'
   n1 = VU.length i1
