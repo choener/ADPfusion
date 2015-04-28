@@ -130,6 +130,7 @@ data Signature m x r c = Signature
 -- the only TemplateHaskell we need).
 
 makeAlgebraProductH ['h] ''Signature
+{-# Inline (<||) #-}
 
 -- | This is the linear grammar in two dimensions describing the
 -- "Needleman-Wunsch" search space. It will, in principle, enumerate the
@@ -221,6 +222,7 @@ sPretty = Signature
   , nil_nil   = const ["",""]
   , h = SM.toList
   }
+{-# Inline sPretty #-}
 
 -- | The inside grammar, with efficient table-filling (via
 -- 'nwInsideForward') and backtracking. Requests @k@ co-optimal
