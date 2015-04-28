@@ -130,7 +130,6 @@ data Signature m x r c = Signature
 -- the only TemplateHaskell we need).
 
 makeAlgebraProductH ['h] ''Signature
-{-# Inline (<||) #-}
 
 -- | This is the linear grammar in two dimensions describing the
 -- "Needleman-Wunsch" search space. It will, in principle, enumerate the

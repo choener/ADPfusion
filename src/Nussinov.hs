@@ -77,7 +77,6 @@ makeAlgebraProductH ['h] ''Nussinov
     -- _ $ hS $ SM.fromList $ SM.concatMap snd $ SM.filter ((hfs==) . fst) $ xs
     hS $ SM.concatMap (SM.fromList . snd) $ SM.filter ((hfs==) . fst) $ SM.fromList $ ys
 -}
-{-# Inline (<||) #-}
 
 {-
  - due to backtracking schemes, we need a bunch of combintors

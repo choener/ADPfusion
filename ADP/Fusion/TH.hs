@@ -49,11 +49,12 @@ makeAlgebraProductH hns nm = do
         let (fs,hs) = partition ((`notElem` hns) . sel1) fs'
         -- the result types of the @fs@ are the types of the non-terminal symbols
         let synTypes = nub . map getRuleResultType $ fs
-        funStream <- funD (mkName "<**") [genClauseStream dataConName fs' fs hs]
+--        funStream <- funD (mkName "<**") [genClauseStream dataConName fs' fs hs]
         funList   <- funD (mkName "<||") [genClauseList   dataConName fs' fs hs]
         return
-          [ funStream
-          , funList
+--          [ funStream
+          [ funList
+          , PragmaD $ InlineP (mkName "<||") Inline FunLike AllPhases
           ]
       _   -> fail "more than one data ctor"
     _          -> fail "unsupported data type"
