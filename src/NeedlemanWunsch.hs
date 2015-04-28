@@ -228,15 +228,14 @@ sPretty = Signature
 -- returned is the score, the @snd@ are the co-optimal parses.
 
 runNeedlemanWunsch :: Int -> String -> String -> (Int,[[String]])
-runNeedlemanWunsch k i1' i2' = (d, take k . unId $ axiom b) where
+runNeedlemanWunsch k i1' i2' = (d, take k bs) where
   i1 = VU.fromList i1'
   i2 = VU.fromList i2'
   n1 = VU.length i1
   n2 = VU.length i2
   !(Z:.t) = nwInsideForward i1 i2
-  -- d = let (ITbl _ _ arr _) = t in arr PA.! (Z:.PointL n1:.PointL n2)
-  d = iTblArray t PA.! (Z:.PointL n1:.PointL n2)
-  !(Z:.b) = grammar (sScore <|| sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
+  d = unId $ axiom t
+  bs = nwInsideBacktrack i1 i2 t
 {-# Noinline runNeedlemanWunsch #-}
 
 -- | The forward or table-filling phase. It is possible to inline this code
@@ -257,6 +256,11 @@ nwInsideForward i1 i2 = mutateTablesDefault $
   where n1 = VU.length i1
         n2 = VU.length i2
 {-# NoInline nwInsideForward #-}
+
+nwInsideBacktrack :: VU.Vector Char -> VU.Vector Char -> ITbl Id Unboxed (Z:.PointL:.PointL) Int -> [[String]]
+nwInsideBacktrack i1 i2 t = unId $ axiom b
+  where !(Z:.b) = grammar (sScore <|| sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
+{-# NoInline nwInsideBacktrack #-}
 
 -- | The outside version of the Needleman-Wunsch alignment algorithm. The
 -- outside grammar is identical to the inside grammar! This is not
