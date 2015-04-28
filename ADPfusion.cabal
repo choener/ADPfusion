@@ -22,6 +22,10 @@ description:
                 input types can be defined, without having to rewrite this
                 library thanks to the open-world assumption of ADPfusion.
                 .
+                The library provides the machinery for Outside and Ensemble
+                algorithms as well. Ensemble algorithms combine Inside and
+                Outside calculations.
+                .
                 The homepage provides a number of tutorial-style examples, with
                 linear and context-free grammars over sequence and set inputs.
                 .
@@ -86,7 +90,7 @@ library
                , monad-primitive    == 0.1
                , mtl                == 2.*
                , OrderedBits        == 0.0.0.1
-               , primitive          == 0.5.*
+               , primitive          >= 0.5.4    && < 0.7
                , PrimitiveArray     == 0.6.*
                , QuickCheck         >= 2.7      && < 2.9
                , strict             == 0.3.*
