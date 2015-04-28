@@ -8,7 +8,7 @@
 -- allows for fusion to happen. The hope is that this improves total
 -- performance in those cases, where backtracking has significant costs.
 
-module ADP.Fusion.TH.List where
+module ADP.Fusion.TH.Backtrack where
 
 import           Data.List
 import           Data.Tuple.Select
@@ -25,13 +25,13 @@ import           ADP.Fusion.TH.Common
 
 
 
-genClauseList
+genClauseBacktrack
   :: Name
   -> [VarStrictType]
   -> [VarStrictType]
   -> [VarStrictType]
   -> Q Clause
-genClauseList conName allFunNames evalFunNames choiceFunNames = do
+genClauseBacktrack conName allFunNames evalFunNames choiceFunNames = do
   let nonTermNames = nub . map getRuleResultType $ evalFunNames
   -- bind the l'eft and r'ight variable of the two algebras we want to join,
   -- also create unique names for the function names we shall bind later.
@@ -144,6 +144,8 @@ buildBacktrackingChoice hL' hR' =
                $(varE hR') $ SM.concatMap (SM.fromList . snd) $ SM.filter ((hFres==) . fst) $ vectorToStream ysM
   |]
 
+-- | Transform a monadic stream monadically into a vector.
+
 streamToVector :: (Monad m) => SM.Stream m x -> m (V.Vector x)
 streamToVector xs = do
   l <- SM.toList xs
@@ -151,16 +153,11 @@ streamToVector xs = do
   return v
 {-# Inline streamToVector #-}
 
+-- | Transform a vector into a monadic stream.
+
 vectorToStream :: (Monad m) => V.Vector x -> SM.Stream m x
 vectorToStream = SM.fromList . V.toList
 {-# Inline vectorToStream #-}
-
-{- do
-  [| \xs -> do hfs <- $(varE hL') $ SM.map fst xs
-               let phfs = SM.concatMapM snd . SM.filter ((hfs==) . fst) $ xs
-               $(varE hR') phfs |]
-               -}
-
 
 -- | Gets the names used in the evaluation function. This returns one
 -- 'Name' for each variable.
@@ -184,15 +181,4 @@ getRuleSynVarNames t' = go t' where
     | AppT (AppT ArrowT (AppT _ _)) y <- t = mkName "[]" : go y   -- this captures that we have a multi-dim terminal.
     | AppT (AppT ArrowT (TupleT 0)) y <- t = mkName "()" : go y   -- this case captures things like @nil :: () -> x@ for rules like @nil <<< Epsilon@.
     | otherwise            = error $ "getRuleSynVarNames error: " ++ show t ++ "    in:    " ++ show t'
-
-
--- | The last @Name@ of a rule is the name of the syntactic type of the
--- result.
-
-getRuleResultType :: VarStrictType -> Name
-getRuleResultType vst = go $ sel3 vst where
-  go t
-    | AppT _ (VarT x) <- t = x
-    | AppT _ x        <- t = go x
-    | otherwise            = error $ "undetermined error:" ++ show vst
 

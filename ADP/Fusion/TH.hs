@@ -22,9 +22,8 @@ import           Language.Haskell.TH
 import           Language.Haskell.TH.Syntax
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 
-import           ADP.Fusion.TH.Common
-import           ADP.Fusion.TH.List   (genClauseList)
-import           ADP.Fusion.TH.Stream (genClauseStream,getRuleResultType)
+import           ADP.Fusion.TH.Backtrack (genClauseBacktrack)
+import           ADP.Fusion.TH.Common (getRuleResultType)
 
 
 
@@ -50,7 +49,7 @@ makeAlgebraProductH hns nm = do
         -- the result types of the @fs@ are the types of the non-terminal symbols
         let synTypes = nub . map getRuleResultType $ fs
 --        funStream <- funD (mkName "<**") [genClauseStream dataConName fs' fs hs]
-        funList   <- funD (mkName "<||") [genClauseList   dataConName fs' fs hs]
+        funList   <- funD (mkName "<||") [genClauseBacktrack dataConName fs' fs hs]
         return
 --          [ funStream
           [ funList

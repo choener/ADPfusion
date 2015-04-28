@@ -82,18 +82,18 @@ library
 
   build-depends: base               >= 4.7      && < 4.9
                , bits               == 0.4.*
-               , mmorph            == 1.0.*
-               , monad-primitive   == 0.1
-               , mtl               == 2.*
-               , OrderedBits       == 0.0.0.1
-               , primitive         == 0.5.*
-               , PrimitiveArray    == 0.6.*
-               , QuickCheck        >= 2.7      && < 2.9
-               , strict            == 0.3.*
-               , template-haskell  == 2.*
-               , transformers      >= 0.3      && < 5.0
-               , tuple             == 0.3.*
-               , vector            == 0.10.*
+               , mmorph             == 1.0.*
+               , monad-primitive    == 0.1
+               , mtl                == 2.*
+               , OrderedBits        == 0.0.0.1
+               , primitive          == 0.5.*
+               , PrimitiveArray     == 0.6.*
+               , QuickCheck         >= 2.7      && < 2.9
+               , strict             == 0.3.*
+               , template-haskell   == 2.*
+               , transformers       >= 0.3      && < 0.5
+               , tuple              == 0.3.*
+               , vector             == 0.10.*
 
   exposed-modules:
     ADP.Fusion
@@ -136,9 +136,9 @@ library
     ADP.Fusion.SynVar.Recursive.Subword
     ADP.Fusion.SynVar.Recursive.Type
     ADP.Fusion.TH
+--    ADP.Fusion.TH.Stream
+    ADP.Fusion.TH.Backtrack
     ADP.Fusion.TH.Common
-    ADP.Fusion.TH.List
-    ADP.Fusion.TH.Stream
     ADP.Fusion.QuickCheck.Common
     ADP.Fusion.QuickCheck.Point
     ADP.Fusion.QuickCheck.Set
@@ -158,8 +158,8 @@ library
                     , TypeOperators
                     , TypeSynonymInstances
 
-  default-language: Haskell2010
-
+  default-language:
+    Haskell2010
   ghc-options:
     -O2 -funbox-strict-fields
 
@@ -183,11 +183,10 @@ executable NeedlemanWunsch
 
   hs-source-dirs:
     src
-
   main-is:
     NeedlemanWunsch.hs
-
-  default-language: Haskell2010
+  default-language:
+    Haskell2010
 
   ghc-options:
     -O2
@@ -225,11 +224,10 @@ executable Nussinov
 
   hs-source-dirs:
     src
-
   main-is:
     Nussinov.hs
-
-  default-language: Haskell2010
+  default-language:
+    Haskell2010
 
   ghc-options:
     -O2
@@ -268,11 +266,10 @@ executable PartNussinov
 
   hs-source-dirs:
     src
-
   main-is:
     PartNussinov.hs
-
-  default-language: Haskell2010
+  default-language:
+    Haskell2010
 
   ghc-options:
     -O2
@@ -338,11 +335,10 @@ executable Durbin
 
   hs-source-dirs:
     src
-
   main-is:
     Durbin.hs
-
-  default-language: Haskell2010
+  default-language:
+    Haskell2010
 
   ghc-options:
     -O2
@@ -384,41 +380,6 @@ executable Durbin
 --    src
 --  main-is:
 --    DishonestCasino.hs
---  ghc-options:
---    -Odph
---    -fcpr-off
---    -funbox-strict-fields
---    -funfolding-use-threshold1000
---    -funfolding-keeness-factor1000
---  if flag(llvm)
---    ghc-options:
---      -fllvm
---      -optlo-O3 -optlo-std-compile-opts
---      -fllvm-tbaa
-
-
-
---executable SHP
---  if flag(examples)
---    buildable:
---      True
---    build-depends:
---      ADPfusion                   ,
---      cmdargs           == 0.10.* ,
---      log-domain        == 0.9.*  ,
---      mwc-random        == 0.13.* ,
---      mwc-random-monad  == 0.7.*  ,
---      PrimitiveArray              ,
---      template-haskell            ,
---      vector                      ,
---      base
---  else
---    buildable:
---      False
---  hs-source-dirs:
---    src
---  main-is:
---    SHP.hs
 --  ghc-options:
 --    -Odph
 --    -fcpr-off
