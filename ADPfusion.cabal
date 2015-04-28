@@ -71,6 +71,11 @@ flag llvm
   default:      False
   manual:       True
 
+flag debug
+  description:  dump intermediate Core files
+  default:      False
+  manual:       True
+
 
 
 library
@@ -189,14 +194,16 @@ executable NeedlemanWunsch
     -funbox-strict-fields
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000
-    -ddump-to-file
-    -ddump-simpl
-    -dsuppress-all
   if flag(llvm)
     ghc-options:
       -fllvm
       -optlo-O3 -optlo-std-compile-opts
       -fllvm-tbaa
+  if flag(debug)
+    ghc-options:
+      -ddump-to-file
+      -ddump-simpl
+      -dsuppress-all
 
 
 
@@ -229,14 +236,16 @@ executable Nussinov
     -funbox-strict-fields
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000
-    -ddump-to-file
-    -ddump-simpl
-    -dsuppress-all
   if flag(llvm)
     ghc-options:
       -fllvm
       -optlo-O3 -optlo-std-compile-opts
       -fllvm-tbaa
+  if flag(debug)
+    ghc-options:
+      -ddump-to-file
+      -ddump-simpl
+      -dsuppress-all
 
 
 
@@ -270,14 +279,16 @@ executable PartNussinov
     -funbox-strict-fields
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000
-    -ddump-to-file
-    -ddump-simpl
-    -dsuppress-all
   if flag(llvm)
     ghc-options:
       -fllvm
       -optlo-O3 -optlo-std-compile-opts
       -fllvm-tbaa
+  if flag(debug)
+    ghc-options:
+      -ddump-to-file
+      -ddump-simpl
+      -dsuppress-all
 
 
 
@@ -339,14 +350,16 @@ executable Durbin
     -funbox-strict-fields
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000
-    -ddump-to-file
-    -ddump-simpl
-    -dsuppress-all
   if flag(llvm)
     ghc-options:
       -fllvm
       -optlo-O3 -optlo-std-compile-opts
       -fllvm-tbaa
+  if flag(debug)
+    ghc-options:
+      -ddump-to-file
+      -ddump-simpl
+      -dsuppress-all
 
 
 
