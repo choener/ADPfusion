@@ -250,7 +250,7 @@ runNeedlemanWunsch k i1' i2' = (d, take k bs) where
 -- 'runOutsideNeedlemanWunsch'.
 
 nwInsideForward :: VU.Vector Char -> VU.Vector Char -> Z:.ITbl Id Unboxed (Z:.PointL:.PointL) Int
-nwInsideForward i1 i2 = mutateTablesDefault $
+nwInsideForward i1 i2 = {-# SCC "nwInsideForward" #-} mutateTablesDefault $
                           grammar sScore
                           (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n1:.PointL n2) (-999999) []))
                           i1 i2
@@ -259,7 +259,7 @@ nwInsideForward i1 i2 = mutateTablesDefault $
 {-# NoInline nwInsideForward #-}
 
 nwInsideBacktrack :: VU.Vector Char -> VU.Vector Char -> ITbl Id Unboxed (Z:.PointL:.PointL) Int -> [[String]]
-nwInsideBacktrack i1 i2 t = unId $ axiom b
+nwInsideBacktrack i1 i2 t = {-# SCC "nwInsideBacktrack" #-} unId $ axiom b
   where !(Z:.b) = grammar (sScore <|| sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
 {-# NoInline nwInsideBacktrack #-}
 
@@ -269,7 +269,7 @@ nwInsideBacktrack i1 i2 t = unId $ axiom b
 -- and the grammar from above.
 
 runOutsideNeedlemanWunsch :: Int -> String -> String -> (Int,[[String]])
-runOutsideNeedlemanWunsch k i1' i2' = (d, take k . unId $ axiom b) where -- . S.toList . unId $ axiom b) where -- ,gogo) where
+runOutsideNeedlemanWunsch k i1' i2' = {-# SCC "runOutside" #-} (d, take k . unId $ axiom b) where -- . S.toList . unId $ axiom b) where -- ,gogo) where
   i1 = VU.fromList i1'
   i2 = VU.fromList i2'
   n1 = VU.length i1
@@ -284,7 +284,7 @@ runOutsideNeedlemanWunsch k i1' i2' = (d, take k . unId $ axiom b) where -- . S.
 -- outside-table-filling part.
 
 nwOutsideForward :: VU.Vector Char -> VU.Vector Char -> Z:.ITbl Id Unboxed (Outside (Z:.PointL:.PointL)) Int
-nwOutsideForward i1 i2 = mutateTablesDefault $
+nwOutsideForward i1 i2 = {-# SCC "nwOutsideForward" #-} mutateTablesDefault $
                            grammar sScore
                            (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (O (Z:.PointL 0:.PointL 0)) (O (Z:.PointL n1:.PointL n2)) (-999999) []))
                            i1 i2
@@ -305,8 +305,8 @@ nwOutsideForward i1 i2 = mutateTablesDefault $
 -- append and prepend.
 
 align _ [] = return ()
-align _ [c] = error "single last line"
-align k (a:b:xs) = do
+align _ [c] = putStrLn "single last line"
+align k (a:b:xs) = {-# SCC "align" #-} do
   putStrLn a
   putStrLn b
   putStrLn ""
