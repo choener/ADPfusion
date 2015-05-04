@@ -1,14 +1,4 @@
 
-{-# LANGUAGE BangPatterns #-}
-{-# Language FlexibleContexts #-}
-{-# Language GADTs #-}
-{-# LANGUAGE MonadComprehensions #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeOperators #-}
-
 -- | Nussinovs RNA secondary structure prediction algorithm via basepair
 -- maximization. Follow this file from top to bottom for a short tutorial
 -- on how to use @ADPfusion@.

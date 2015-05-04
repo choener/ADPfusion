@@ -1,15 +1,4 @@
 
-{-# LANGUAGE BangPatterns #-}
-{-# Language FlexibleContexts #-}
-{-# Language GADTs #-}
-{-# LANGUAGE MonadComprehensions #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE NoMonomorphismRestriction #-}
-
 -- | Nussinovs RNA secondary structure prediction algorithm via basepair
 -- maximization.
 

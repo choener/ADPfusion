@@ -191,7 +191,14 @@ executable NeedlemanWunsch
     NeedlemanWunsch.hs
   default-language:
     Haskell2010
-
+  default-extensions: BangPatterns
+                    , FlexibleContexts
+                    , FlexibleInstances
+                    , MultiParamTypeClasses
+                    , RecordWildCards
+                    , TemplateHaskell
+                    , TypeFamilies
+                    , TypeOperators
   ghc-options:
     -O2
     -funbox-strict-fields
@@ -232,7 +239,14 @@ executable Nussinov
     Nussinov.hs
   default-language:
     Haskell2010
-
+  default-extensions: BangPatterns
+                    , FlexibleContexts
+                    , FlexibleInstances
+                    , MultiParamTypeClasses
+                    , RecordWildCards
+                    , TemplateHaskell
+                    , TypeFamilies
+                    , TypeOperators
   ghc-options:
     -O2
     -funbox-strict-fields
@@ -274,7 +288,14 @@ executable PartNussinov
     PartNussinov.hs
   default-language:
     Haskell2010
-
+  default-extensions: BangPatterns
+                    , FlexibleContexts
+                    , FlexibleInstances
+                    , MultiParamTypeClasses
+                    , RecordWildCards
+                    , TemplateHaskell
+                    , TypeFamilies
+                    , TypeOperators
   ghc-options:
     -O2
     -funbox-strict-fields
@@ -343,7 +364,14 @@ executable Durbin
     Durbin.hs
   default-language:
     Haskell2010
-
+  default-extensions: BangPatterns
+                    , FlexibleContexts
+                    , FlexibleInstances
+                    , MultiParamTypeClasses
+                    , RecordWildCards
+                    , TemplateHaskell
+                    , TypeFamilies
+                    , TypeOperators
   ghc-options:
     -O2
     -fcpr-off
