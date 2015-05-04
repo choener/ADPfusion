@@ -125,6 +125,9 @@ library
     ADP.Fusion.Term.Deletion.Type
     ADP.Fusion.Term.PeekIndex.Subword
     ADP.Fusion.Term.PeekIndex.Type
+    ADP.Fusion.Term.Strng
+    ADP.Fusion.Term.Strng.Point
+    ADP.Fusion.Term.Strng.Type
     ADP.Fusion.SynVar
     ADP.Fusion.SynVar.Array
     ADP.Fusion.SynVar.Array.Point
