@@ -58,8 +58,16 @@ makeAlgebraProductH hns nm = do
       _   -> fail "more than one data ctor"
     _          -> fail "unsupported data type"
 
+-- | Creates a class for each type of product and instances for each
+-- signature.
 
-
+makeClassyProducts :: Name -> Q [Dec]
+makeClassyProducts conName = do
+  c <- lookupValueName "BacktrackingProduct"
+  case c of
+    Nothing -> error "need to create class now and add instance"
+    Just cl -> error "add instance"
+  return []
 
 
 

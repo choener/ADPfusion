@@ -33,17 +33,35 @@ import           Text.Printf
 import           Data.PrimitiveArray as PA
 
 import           ADP.Fusion
+import           ADP.Fusion.TH.Backtrack
 
 
 
-data Nussinov m c x r = Nussinov
+data Nussinov m x r c = Nussinov
   { unp :: x -> c -> x
   , jux :: x -> c -> x -> c -> x
   , nil :: () -> x
   , h   :: SM.Stream m x -> m r
   }
 
-makeAlgebraProductH ['h] ''Nussinov
+--makeAlgebraProductH ['h] ''Nussinov
+makeBacktrackingProductInstance ''Nussinov
+
+{-
+instance (Monad m1, Monad m2, Eq x, m1 ~ m2) => BacktrackingProduct (Nussinov m1 x x c) (Nussinov m2 y z c) where
+  type SigR (Nussinov m1 x x c) (Nussinov m2 y z c) = Nussinov m2 (x,[y]) z c
+  (<|||) = (<||)
+-}
+
+{-
+fufu = runQ [d|
+                instance (Monad m1, Monad m2, Eq x, m1 ~ m2) => BacktrackingProduct (Nussinov m1 x x c) (Nussinov m2 y z c) where
+                  type SigR (Nussinov m1 x x c) (Nussinov m2 y z c) = Nussinov m2 (x,[y]) z c
+                  (<|||) = (<||)
+                  {-# Inline (<|||) #-}
+                |]
+-}
+
 
 {- The code below is mainly to see how one could write the algebra product manually
  -
@@ -89,7 +107,7 @@ makeAlgebraProductH ['h] ''Nussinov
 
 -}
 
-bpmax :: Monad m => Nussinov m Char Int Int
+bpmax :: Monad m => Nussinov m Int Int Char
 bpmax = Nussinov
   { unp = \ x c     -> x
   , jux = \ x c y d -> if c `pairs` d then x + y + 1 else -999999
@@ -98,7 +116,7 @@ bpmax = Nussinov
   }
 {-# INLINE bpmax #-}
 
-prob :: Monad m => Nussinov m Char Double Double
+prob :: Monad m => Nussinov m Double Double Char
 prob = Nussinov
   { unp = \ x c     -> 0.3 * x
   , jux = \ x c y d -> 0.6 * if c `pairs` d then x * y else 0
@@ -117,7 +135,7 @@ pairs !c !d
   || c=='U' && d=='G'
 {-# INLINE pairs #-}
 
-pretty :: Monad m => Nussinov m Char String [String] -- (SM.Stream m String)
+pretty :: Monad m => Nussinov m String [String] Char -- (SM.Stream m String)
 pretty = Nussinov
   { unp = \ x c     -> x ++ "."
   , jux = \ x c y d -> x ++ "(" ++ y ++ ")"
@@ -126,7 +144,7 @@ pretty = Nussinov
   }
 {-# INLINE pretty #-}
 
-prettyL :: Monad m => Nussinov m Char String String
+prettyL :: Monad m => Nussinov m String String Char
 prettyL = Nussinov
   { unp = \ x c     -> x ++ "."
   , jux = \ x c y d -> x ++ "(" ++ y ++ ")"
