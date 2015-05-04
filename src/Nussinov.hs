@@ -22,7 +22,6 @@ import           Text.Printf
 import           Data.PrimitiveArray as PA
 
 import           ADP.Fusion
-import           ADP.Fusion.TH.Backtrack
 
 
 
@@ -33,57 +32,7 @@ data Nussinov m x r c = Nussinov
   , h   :: SM.Stream m x -> m r
   }
 
---makeAlgebraProductH ['h] ''Nussinov
-makeBacktrackingProductInstance ''Nussinov
-
-{-
-instance (Monad m1, Monad m2, Eq x, m1 ~ m2) => BacktrackingProduct (Nussinov m1 x x c) (Nussinov m2 y z c) where
-  type SigR (Nussinov m1 x x c) (Nussinov m2 y z c) = Nussinov m2 (x,[y]) z c
-  (<|||) = (<||)
--}
-
-{-
-fufu = runQ [d|
-                instance (Monad m1, Monad m2, Eq x, m1 ~ m2) => BacktrackingProduct (Nussinov m1 x x c) (Nussinov m2 y z c) where
-                  type SigR (Nussinov m1 x x c) (Nussinov m2 y z c) = Nussinov m2 (x,[y]) z c
-                  (<|||) = (<||)
-                  {-# Inline (<|||) #-}
-                |]
--}
-
-
-{- The code below is mainly to see how one could write the algebra product manually
- -
-(<<*) f s = Nussinov unp jux nil h where
-  Nussinov unpF juxF nilF hF = f
-  Nussinov unpS juxS nilS hS = s
-  --unp (x,xs) c          = (unpF x c    , xs >>= \xs' -> return $ SM.concatMap (\x -> SM.singleton $ unpS x c) xs')
-  unp (x,xs) c          = (unpF x c    , xs >>= return . SM.concatMap (\x -> SM.singleton $ unpS x c))
-  --jux (x,xs) c (y,ys) d = (juxF x c y d, xs >>= \xs' -> ys >>= \ys' -> return $ SM.concatMap (\x -> SM.concatMap (\y -> SM.singleton $ juxS x c y d) ys') xs')
-  jux (x,xs) c (y,ys) d = (juxF x c y d, xs >>= return . SM.concatMapM (\x -> ys >>= return . SM.concatMapM (\y -> return . SM.singleton $ juxS x c y d)))
-  nil e                 = (nilF e      , return $ SM.singleton (nilS e))
-  h xs = do
-    hfs <- hF $ SM.map fst xs
-    let phfs = SM.concatMapM snd . SM.filter ((hfs==) . fst) $ xs
-    hS phfs
--}
-{-
-(<||) f s = Nussinov unp jux nil h where
-  Nussinov unpF juxF nilF hF = f
-  Nussinov unpS juxS nilS hS = s
-  unp (x,xs) c          = (unpF x c    , [unpS x c     | x <- xs])
-  jux (x,xs) c (y,ys) d = (juxF x c y d, [juxS x c y d | x <- xs, y <- ys])
-  nil e                 = (nilF e      , [nilS e])
-  h xs = do
-    ys <- SM.toList xs
-    --hfs <- hF $ SM.map fst xs
-    hfs <- hF $ SM.map fst $ SM.fromList ys
-    --hfs <- hF $ SM.map fst $ SM.fromList ys
-    --tmp1 <- SM.toList $ SM.map snd $ SM.filter ((hfs==) . fst) $ xs
-    --let tmp1 = L.map snd $ L.filter ((hfs==) . fst) ys
-    -- _ $ hS $ SM.fromList $ SM.concatMap snd $ SM.filter ((hfs==) . fst) $ xs
-    hS $ SM.concatMap (SM.fromList . snd) $ SM.filter ((hfs==) . fst) $ SM.fromList $ ys
--}
+makeAlgebraProduct ''Nussinov
 
 {-
  - due to backtracking schemes, we need a bunch of combintors
@@ -142,7 +91,6 @@ prettyL = Nussinov
   }
 {-# INLINE prettyL #-}
 
--- grammar :: Nussinov m Char () x r -> c' -> t' -> (t', Subword -> m r)
 grammar Nussinov{..} c t' =
   let t = t'  ( unp <<< t % c           |||
                 jux <<< t % c % t % c   |||
@@ -151,26 +99,13 @@ grammar Nussinov{..} c t' =
   in Z:.t
 {-# INLINE grammar #-}
 
-{-
-outsideGrammar Nussinov{..} c s t' =
-  let t = t'  ( unp <<< t % c         |||
-                -- jux <<< t % c % s % c |||
-                -- jux <<< s % c % t % c |||
-                nil <<< Epsilon         ... h
-              )
-  in Z:.t
-{-# INLINE outsideGrammar #-}
--}
-
 runNussinov :: Int -> String -> (Int,[String])
 runNussinov k inp = (d, take k bs) where -- . {- . S.toList . -} unId $ axiom b) where
   i = VU.fromList . Prelude.map toUpper $ inp
   n = VU.length i
   !(Z:.t) = runInsideForward i
-  -- d = let (ITbl _ _ arr _) = t in arr PA.! subword 0 n
-  d = iTblArray t PA.! subword 0 n
+  d = unId $ axiom t
   bs = runInsideBacktrack i t
---  !(Z:.b) = grammar (bpmax <|| pretty) (chr i) (toBacktrack t (undefined :: Id a -> Id a))
 {-# NOINLINE runNussinov #-}
 
 runInsideForward :: VU.Vector Char -> Z:.ITbl Id Unboxed Subword Int
@@ -185,37 +120,6 @@ runInsideBacktrack :: VU.Vector Char -> ITbl Id Unboxed Subword Int -> [String]
 runInsideBacktrack i t = unId $ axiom b
   where !(Z:.b) = grammar (bpmax <|| pretty) (chr i) (toBacktrack t (undefined :: Id a -> Id a))
 {-# NoInline runInsideBacktrack #-}
-
---runInsideBacktrackL :: VU.Vector Char -> Z:.ITbl Id Unboxed Subword Int -> [String]
---runInsideBacktrackL i t = axiom b
---  where
---  !(Z:.b) = grammar (bpmax <|| prettyL) (chr i) (toBacktrack t (undefined :: Id a -> Id a))
-
-{-
-runPartitionNussinov :: String -> [(Subword,Double,Double,Double)]
-runPartitionNussinov inp
-  = Data.List.map (\(sh,a) -> let b = iTblArray t PA.! (O sh)
-                              in (sh, a, b, a*b/d)
-                  ) (PA.assocs $ iTblArray s)
-  where
-  i = VU.fromList . Prelude.map toUpper $ inp
-  n = VU.length i
-  s :: ITbl Id Unboxed Subword Double
-  !(Z:.s) = mutateTablesDefault
-          $ grammar prob
-              (chr i)
-              (ITbl EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) 0 []))
-              
-  d = iTblArray s PA.! subword 0 n
-  t :: ITbl Id Unboxed (Outside Subword) Double
-  !(Z:.t) = mutateTablesDefault
-          $ outsideGrammar prob
-              (chr i)
-              --(undefined :: ITbl Id Unboxed (Outside Subword) Double)
-              s
-              (ITbl EmptyOk (PA.fromAssocs (O $ subword 0 0) (O $ subword 0 n) (-1) []))
-{-# NOINLINE runPartitionNussinov #-}
--}
 
 main = do
   as <- getArgs

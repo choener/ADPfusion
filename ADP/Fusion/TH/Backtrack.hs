@@ -37,20 +37,13 @@ class BacktrackingProduct sigF sigB where
 
 makeBacktrackingProductInstance :: Name -> Q [Dec]
 makeBacktrackingProductInstance tyconName = do
---  runIO $ print ""
---  runIO $ print tyconName
   t <- reify tyconName
   case t of
     TyConI (DataD ctx tyConName args cs d) -> do
       let m = getMonadName args
---      runIO $ print m
       case cs of
         [RecC dataconName funs] -> do
           let Just (h,m',x,r) = getObjectiveNames funs
---          runIO $ print h
---          runIO $ print ""
---          runIO $ print args
---          runIO $ print ""
           mL <- newName "mL"
           xL <- newName "xL"
           mR <- newName "mR"
@@ -59,29 +52,14 @@ makeBacktrackingProductInstance tyconName = do
           let lType    = buildLeftType  tyconName (m', x, r) (mL, xL)        args
           let rType    = buildRightType tyconName (m', x, r) (mR, xR, rR)    args
           let sigRType = buildSigRType  tyconName (m', x, r) xL (mR, xR, rR) args
---          runIO $ print lType
---          runIO $ print ""
---          runIO $ print rType
---          runIO $ print ""
           let (fs,hs) = partition ((`notElem` [h]) . sel1) funs
           Clause ps (NormalB b) ds <- genClauseBacktrack dataconName funs fs hs
---          runIO $ print ""
---          runIO $ print ""
---          runIO $ print ps
---          runIO $ print ""
---          runIO $ print b
---          runIO $ print ""
---          runIO $ print ds
---          runIO $ print ""
           i <- [d| instance (Monad $(varT mL), Monad $(varT mR), Eq $(varT xL), $(varT mL) ~ $(varT mR)) => BacktrackingProduct $(return lType) $(return rType) where
                      type SigR $(return lType) $(return rType) = $(return sigRType)
                      (<||) = $(return $ LamE ps $ LetE ds b) -- $(return backtrackProduct)
                      {-# Inline (<||) #-}
                |]
---          runIO $ print i
           return i
---  runIO $ print ""
---  return []
 
 -- | Returns the 'Name' of the monad variable.
 
@@ -126,40 +104,6 @@ buildSigRType tycon (m, x, r) (xL) (mR, xR, rR) = foldl AppT (ConT tycon) . map 
           | z == x    = (AppT (AppT (TupleT 2) (VarT xL)) (AppT ListT (VarT xR)))
           | z == r    = VarT rR
           | otherwise = VarT z
-
-{-
-  [d| instance BacktrackingProduct ( $(conT tyconName) m r x c) where
-        (<|||) = error "would be instance"
-        {-# Inline (<|||) #-}
-  |]
--}
-
-{-
-fufu = runQ [d|
-                instance (Monad m1, Monad m2, Eq x, m1 ~ m2) => BacktrackingProduct (Nussinov m1 x x c) (Nussinov m2 y z c) where
-                  type SigR (Nussinov m1 x x c) (Nussinov m2 y z c) = Nussinov m2 (x,[y]) z c
-                  (<|||) = (<||)
-                  {-# Inline (<|||) #-}
-                |]
-
-[ InstanceD [AppT (ConT GHC.Base.Monad) (VarT m1_22),AppT (ConT GHC.Base.Monad) (VarT m2_25),AppT (ConT GHC.Classes.Eq) (VarT x_23),AppT (AppT EqualityT (VarT m1_22)) (VarT m2_25)
-            ]
-            (AppT (AppT (ConT ADP.Fusion.TH.Backtrack.BacktrackingProduct) (AppT (AppT (AppT (AppT (ConT Main.Nussinov) (VarT m1_22)) (VarT x_23)) (VarT x_23)) (VarT c_24))) (AppT (AppT (AppT (AppT (ConT Main.Nussinov) (VarT m2_25)) (VarT y_26)) (VarT z_27)) (VarT c_24))
-            )
-            [TySynInstD ADP.Fusion.TH.Backtrack.SigR (TySynEqn [AppT (AppT (AppT (AppT (ConT Main.Nussinov) (VarT m1_22)) (VarT x_23)) (VarT x_23))
-                                                                     (VarT c_24)
-                                                               ,AppT (AppT (AppT (AppT (ConT Main.Nussinov) (VarT m2_25)) (VarT y_26)) (VarT z_27))
-                                                                     (VarT c_24)
-                                                               ]
-                                                               (AppT (AppT (AppT (AppT (ConT Main.Nussinov) (VarT m2_25)) (AppT (AppT (TupleT 2) (VarT x_23)) (AppT ListT (VarT y_26)))) (VarT z_27))
-                                                                     (VarT c_24)
-                                                               )
-                                                     )
-            , ValD (VarP ADP.Fusion.TH.Backtrack.<|||) (NormalB (VarE Main.<||)) []
-            ,PragmaD (InlineP ADP.Fusion.TH.Backtrack.<||| Inline FunLike AllPhases)
-            ]
-]
--}
 
 -- |
 

@@ -140,7 +140,6 @@ library
     ADP.Fusion.SynVar.Recursive.Subword
     ADP.Fusion.SynVar.Recursive.Type
     ADP.Fusion.TH
---    ADP.Fusion.TH.Stream
     ADP.Fusion.TH.Backtrack
     ADP.Fusion.TH.Common
     ADP.Fusion.QuickCheck.Common
@@ -314,36 +313,6 @@ executable PartNussinov
 
 
 
---executable MemoRecNussinov
---  if flag(examples)
---    buildable:
---      True
---    build-depends:
---      ADPfusion         ,
---      PrimitiveArray    ,
---      template-haskell  ,
---      vector            ,
---      base
---  else
---    buildable:
---      False
---  hs-source-dirs:
---    src
---  main-is:
---    MemoRecNussinov.hs
---  ghc-options:
---    -O2
---    -funbox-strict-fields
---    -funfolding-use-threshold1000
---    -funfolding-keeness-factor1000
---  if flag(llvm)
---    ghc-options:
---      -fllvm
---      -optlo-O3 -optlo-std-compile-opts
---      -fllvm-tbaa
-
-
-
 executable Durbin
 
   if flag(examples)
@@ -388,41 +357,6 @@ executable Durbin
       -ddump-to-file
       -ddump-simpl
       -dsuppress-all
-
-
-
---executable DishonestCasino
---  if flag(examples)
---    buildable:
---      True
---    build-depends:
---      ADPfusion                   ,
---      cmdargs           == 0.10.* ,
---      log-domain        == 0.9.*  ,
---      mwc-random        == 0.13.* ,
---      mwc-random-monad  == 0.7.*  ,
---      PrimitiveArray              ,
---      template-haskell            ,
---      vector                      ,
---      base
---  else
---    buildable:
---      False
---  hs-source-dirs:
---    src
---  main-is:
---    DishonestCasino.hs
---  ghc-options:
---    -Odph
---    -fcpr-off
---    -funbox-strict-fields
---    -funfolding-use-threshold1000
---    -funfolding-keeness-factor1000
---  if flag(llvm)
---    ghc-options:
---      -fllvm
---      -optlo-O3 -optlo-std-compile-opts
---      -fllvm-tbaa
 
 
 

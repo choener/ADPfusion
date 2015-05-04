@@ -54,7 +54,7 @@ data Durbin m c e x r = Durbin
   , h   :: SM.Stream m x -> m r
   }
 
-makeAlgebraProductH ['h] ''Durbin
+makeAlgebraProduct ''Durbin
 
 bpmax :: Monad m => Durbin m Char () Int Int
 bpmax = Durbin

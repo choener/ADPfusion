@@ -36,7 +36,7 @@ data Nussinov m c e x r = Nussinov
   , h   :: SM.Stream m x -> m r
   }
 
-makeAlgebraProductH ['h] ''Nussinov
+makeAlgebraProduct ''Nussinov
 
 bpmax :: Monad m => Nussinov m Char () Int Int
 bpmax = Nussinov

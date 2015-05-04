@@ -14,7 +14,10 @@
 --
 -- TODO note the comments in @buildBacktrackingChoice@
 
-module ADP.Fusion.TH where
+module ADP.Fusion.TH
+  ( makeAlgebraProduct
+  , (<||)
+  ) where
 
 import           Data.List
 import           Data.Tuple.Select
@@ -22,11 +25,14 @@ import           Language.Haskell.TH
 import           Language.Haskell.TH.Syntax
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 
-import           ADP.Fusion.TH.Backtrack (genClauseBacktrack)
+import           ADP.Fusion.TH.Backtrack (makeBacktrackingProductInstance,(<||))
 import           ADP.Fusion.TH.Common (getRuleResultType)
 
 
 
+makeAlgebraProduct = makeBacktrackingProductInstance
+
+{-
 -- | Create the algebra product function from a signature type constructor.
 --
 -- TODO make the resulting function INLINE
@@ -68,6 +74,6 @@ makeClassyProducts conName = do
     Nothing -> error "need to create class now and add instance"
     Just cl -> error "add instance"
   return []
-
+-}
 
 

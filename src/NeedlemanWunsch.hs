@@ -121,7 +121,7 @@ data Signature m x r c = Signature
 -- @makeAlgebraProductH ['h] ''Signature@ (the primes are TemplateHaskell!,
 -- the only TemplateHaskell we need).
 
-makeAlgebraProductH ['h] ''Signature
+makeAlgebraProduct ''Signature
 
 -- | This is the linear grammar in two dimensions describing the
 -- "Needleman-Wunsch" search space. It will, in principle, enumerate the
