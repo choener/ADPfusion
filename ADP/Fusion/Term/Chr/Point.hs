@@ -41,6 +41,8 @@ instance
   mkStream _ _ _ _ = error "Chr.Point / mkStream / Chr / Outside.PointL can only be implemented for OStatic"
   {-# Inline mkStream #-}
 
+-- TODO @Inline [0]@ ???
+
 instance TermStaticVar (Chr r x) PointL where
   termStaticVar   _ sv _                = sv
   termStreamIndex _ _  (PointL j) = PointL $ j-1

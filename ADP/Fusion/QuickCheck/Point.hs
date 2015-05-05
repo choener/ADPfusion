@@ -185,6 +185,21 @@ xprop_O_ixZItCC ix@(O (Z:.PointL j)) = zs where
   t = ITbl 0 0 (Z:.EmptyOk) xsZPo (\ _ _ -> Id 1)
   zs = (id >>> t % (M:|chr xs) % (M:|chr xs) ... S.toList) (O (Z:.PointL 100)) ix
 
+-- * 'Strng' tests
+
+prop_ManyS ix@(PointL j) = zs == ls where
+  zs = (id <<< manyS xs ... S.toList) (PointL 100) ix
+  ls = [ (VU.slice 0 j xs) ]
+
+prop_SomeS ix@(PointL j) = zs == ls where
+  zs = (id <<< someS xs ... S.toList) (PointL 100) ix
+  ls = [ (VU.slice 0 j xs) | j>0 ]
+
+{-
+_prop_2dimS ix@(Z:.PointL i:.PointL j) = traceShow (zs,ls) $ zs == ls where
+  zs = (id <<< (M:|manyS 
+-}
+
 infixl 8 >>>
 (>>>) f xs = \lu ij -> S.map f . mkStream (build xs) (initialContext ij) lu $ ij
 

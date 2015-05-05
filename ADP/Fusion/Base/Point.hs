@@ -38,7 +38,7 @@ instance (Monad m) => MkStream m S PointL where
   mkStream S (IStatic d) (PointL u) (PointL j)
     = staticCheck (j>=0 && j<=d) . singleton $ ElmS (PointL 0) (PointL 0)
   mkStream S (IVariable _) (PointL u) (PointL j)
-    = staticCheck (0<=j) . singleton $ ElmS (PointL j) (PointL 0)
+    = staticCheck (0<=j) . singleton $ ElmS (PointL 0) (PointL 0)
   {-# Inline mkStream #-}
 
 instance (Monad m) => MkStream m S (Outside PointL) where

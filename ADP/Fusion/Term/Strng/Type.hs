@@ -22,7 +22,16 @@ data Strng v x where
         -> !(v x)                       -- ^ the actual vector
         -> Strng v x
 
-strng xs = Strng VG.unsafeSlice xs
+manyS :: VG.Vector v x => v x -> Strng v x
+manyS = \xs -> Strng VG.unsafeSlice 0 (VG.length xs) xs
+{-# Inline manyS #-}
+
+someS :: VG.Vector v x => v x -> Strng v x
+someS = \xs -> Strng VG.unsafeSlice 1 (VG.length xs) xs
+{-# Inline someS #-}
+
+strng :: VG.Vector v x => Int -> Int -> v x -> Strng v x
+strng = \minL maxL xs -> Strng VG.unsafeSlice minL maxL xs
 {-# Inline strng #-}
 
 instance Build (Strng v x)
