@@ -18,10 +18,10 @@ instance
   , PrimArrayOps arr PointL x
   , MkStream m ls PointL
   ) => MkStream m (ls :!: ITbl m arr PointL x) PointL where
-  mkStream (ls :!: ITbl _ _ c t _) (IStatic ()) u j@(PointL pj)
+  mkStream (ls :!: ITbl _ _ c t _) (IStatic d) u j@(PointL pj)
     = let ms = minSize c in ms `seq`
     S.map (ElmITbl (t!j) j (PointL 0))
-    $ mkStream ls (IVariable ()) u (PointL $ pj - ms)
+    $ mkStream ls (IVariable d) u (PointL $ pj - ms)
   {-# Inline mkStream #-}
 
 instance
@@ -30,10 +30,10 @@ instance
   , PrimArrayOps arr PointL x
   , MkStream mB ls PointL
   ) => MkStream mB (ls :!: Backtrack (ITbl mF arr PointL x) mF mB r) PointL where
-  mkStream (ls :!: BtITbl c t bt) (IStatic ()) u j@(PointL pj)
+  mkStream (ls :!: BtITbl c t bt) (IStatic d) u j@(PointL pj)
     = let ms = minSize c in ms `seq`
     S.mapM (\s -> bt u j >>= \bb -> return $ ElmBtITbl (t!j) (bb {-bt u j-}) j (PointL 0) s)
-    $ mkStream ls (IVariable ()) u (PointL $ pj - ms)
+    $ mkStream ls (IVariable d) u (PointL $ pj - ms)
   {-# INLINE mkStream #-}
 
 instance

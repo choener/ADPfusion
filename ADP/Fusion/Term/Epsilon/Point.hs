@@ -15,9 +15,9 @@ instance
   ( Monad m
   , MkStream m ls PointL
   ) => MkStream m (ls :!: Epsilon) PointL where
-  mkStream (ls :!: Epsilon) (IStatic ()) (PointL u) (PointL i)
+  mkStream (ls :!: Epsilon) (IStatic d) (PointL u) (PointL i)
     = S.map (ElmEpsilon (PointL i) (PointL 0))
-    $ mkStream ls (IStatic ()) (PointL u) (PointL i)
+    $ mkStream ls (IStatic d) (PointL u) (PointL i)
   {-# Inline mkStream #-}
 
 instance
@@ -46,7 +46,7 @@ instance
   ( Monad m
   , TerminalStream m a is
   ) => TerminalStream m (TermSymbol a Epsilon) (is:.PointL) where
-  terminalStream (a:|Epsilon) (sv:.IStatic ()) (is:.i@(PointL j))
+  terminalStream (a:|Epsilon) (sv:.IStatic _) (is:.i@(PointL j))
     = S.map (\(S6 s (zi:._) (zo:._) is os e) -> S6 s zi zo (is:.PointL j) (os:.PointL 0) (e:.()))
     . iPackTerminalStream a sv (is:.i)
   {-# Inline terminalStream #-}

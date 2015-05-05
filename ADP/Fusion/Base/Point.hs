@@ -18,8 +18,8 @@ import ADP.Fusion.Base.Multi
 
 
 instance RuleContext PointL where
-  type Context PointL = InsideContext ()
-  initialContext _ = IStatic ()
+  type Context PointL = InsideContext Int
+  initialContext _ = IStatic 0
   {-# Inline initialContext #-}
 
 instance RuleContext (Outside PointL) where
@@ -35,9 +35,9 @@ instance RuleContext (Complement PointL) where
 
 
 instance (Monad m) => MkStream m S PointL where
-  mkStream S (IStatic ()) (PointL u) (PointL j)
-    = staticCheck (0==j) . singleton $ ElmS (PointL 0) (PointL 0)
-  mkStream S (IVariable ()) (PointL u) (PointL j)
+  mkStream S (IStatic d) (PointL u) (PointL j)
+    = staticCheck (j>=0 && j<=d) . singleton $ ElmS (PointL 0) (PointL 0)
+  mkStream S (IVariable _) (PointL u) (PointL j)
     = staticCheck (0<=j) . singleton $ ElmS (PointL j) (PointL 0)
   {-# Inline mkStream #-}
 
@@ -53,10 +53,10 @@ instance (Monad m) => MkStream m S (Outside PointL) where
 instance
   ( Monad m
   , MkStream m S is
-  , Context (is:.PointL) ~ (Context is:.(InsideContext ()))
+  , Context (is:.PointL) ~ (Context is:.(InsideContext Int))
   ) => MkStream m S (is:.PointL) where
-  mkStream S (vs:.IStatic ()) (lus:.PointL u) (is:.PointL i)
-    = staticCheck (i==0)
+  mkStream S (vs:.IStatic d) (lus:.PointL u) (is:.PointL i)
+    = staticCheck (i>=0 && i<=d && i<=u)
     . map (\(ElmS zi zo) -> ElmS (zi:.PointL i) (zo:.PointL 0))
     $ mkStream S vs lus is
   {-
@@ -72,7 +72,7 @@ instance
   -- TODO here, we have a problem in the interplay of @staticCheck@ or
   -- @flatten@ and how we modify @is@. Apparently, once we demand to know
   -- about @i@, fusion breaks down.
-  mkStream S (vs:.IVariable ()) (lus:.PointL u) (is:.PointL i)
+  mkStream S (vs:.IVariable d) (lus:.PointL u) (is:.PointL i)
     = staticCheck (i>=0 && i<=u)
     $ map (\(ElmS zi zo) -> ElmS (zi:.PointL i) (zo:.PointL 0))
     $ mkStream S vs lus is
@@ -94,7 +94,8 @@ instance
   {-# Inline mkStream #-}
 
 instance TableStaticVar PointL where
-  tableStaticVar     _ _                = IVariable ()
+  tableStaticVar (IStatic   d) _ = IVariable d
+  tableStaticVar (IVariable d) _ = IVariable d
   -- NOTE this code used to destroy fusion. If we inline tableStreamIndex
   -- very late (after 'mkStream', probably) then everything works out.
   tableStreamIndex c _ (PointL j)

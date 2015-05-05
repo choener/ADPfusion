@@ -23,10 +23,10 @@ instance
   , Element ls PointL
   , MkStream m ls PointL
   ) => MkStream m (ls :!: Chr r x) PointL where
-  mkStream (ls :!: Chr f xs) (IStatic ()) (PointL u) (PointL i)
+  mkStream (ls :!: Chr f xs) (IStatic d) (PointL u) (PointL i)
     = staticCheck (i>0 && i<=u && i<= VG.length xs)
     $ S.map (ElmChr (f xs $ i-1) (PointL $ i) (PointL 0))
-    $ mkStream ls (IStatic ()) (PointL u) (PointL $ i-1)
+    $ mkStream ls (IStatic d) (PointL u) (PointL $ i-1)
   mkStream _ _ _ _ = error "mkStream / Chr / PointL can only be implemented for IStatic"
   {-# Inline mkStream #-}
 
@@ -57,7 +57,7 @@ instance
   ( Monad m
   , TerminalStream m a is
   ) => TerminalStream m (TermSymbol a (Chr r x)) (is:.PointL) where
-  terminalStream (a:|Chr f (!v)) (sv:.IStatic ()) (is:.i@(PointL j))
+  terminalStream (a:|Chr f (!v)) (sv:.IStatic _) (is:.i@(PointL j))
     = S.map (\(S6 s (zi:._) (zo:._) is os e) -> S6 s zi zo (is:.PointL j) (os:.PointL 0) (e:.f v (j-1)))
     . iPackTerminalStream a sv (is:.i)
     {-
