@@ -57,7 +57,7 @@ instance
   ) => MkStream m S (is:.PointL) where
   mkStream S (vs:.IStatic d) (lus:.PointL u) (is:.PointL i)
     = staticCheck (i>=0 && i<=d && i<=u)
-    . map (\(ElmS zi zo) -> ElmS (zi:.PointL i) (zo:.PointL 0))
+    . map (\(ElmS zi zo) -> ElmS (zi:.PointL 0) (zo:.PointL 0))
     $ mkStream S vs lus is
   {-
   mkStream S (vs:.IVariable ) (lus:.PointL u) (is:.PointL i)
@@ -74,7 +74,7 @@ instance
   -- about @i@, fusion breaks down.
   mkStream S (vs:.IVariable d) (lus:.PointL u) (is:.PointL i)
     = staticCheck (i>=0 && i<=u)
-    $ map (\(ElmS zi zo) -> ElmS (zi:.PointL i) (zo:.PointL 0))
+    $ map (\(ElmS zi zo) -> ElmS (zi:.PointL 0) (zo:.PointL 0))
     $ mkStream S vs lus is
   {-# INLINE mkStream #-}
 

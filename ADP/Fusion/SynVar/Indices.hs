@@ -50,12 +50,24 @@ instance TableIndices is => TableIndices (is:.Subword) where
 -}
 
 -- | TODO I think we need to check @cs:.c@ here
+--
+-- TODO yes, handle @Empty@ / @NonEmpty@ !!!
 
 instance TableIndices is => TableIndices (is:.PointL) where
   tableIndices (cs:._) (vs:.IStatic _) (is:.PointL j)
     = map (\(S5 s (zi:.PointL _) (zo:.PointL _) is os) -> S5 s zi zo (is:.PointL j) (os:.PointL 0)) -- constraint handled: tableStreamIndex
     . tableIndices cs vs is
     . map (\(S5 s zi zo (is:.i) (os:.o)) -> S5 s (zi:.i) (zo:.o) is os)
+  tableIndices (cs:._) (vs:.IVariable d) (is:.PointL j)
+    = flatten mk step Unknown
+    . tableIndices cs vs is
+    . map (\(S5 s zi zo (is:.i) (os:.o)) -> S5 s (zi:.i) (zo:.o) is os)
+    where mk s@(S5 _ (_:.PointL k) _ _ _) = return (s :. k)
+          step (ss@(S5 s (zi:._) (zo:._) is os) :. k)
+            | k > j     = return $ Done
+            | otherwise = return $ Yield (S5 s zi zo (is:.PointL k) (os:.PointL 0)) (ss :. k+1)
+          {-# Inline [0] mk   #-}
+          {-# Inline [0] step #-}
   {-  TODO re-add later
   tableIndices (cs:.OnlyZero) _ _ = error "write me"
   tableIndices (cs:.c) (vs:.IVariable) (is:.PointL j)

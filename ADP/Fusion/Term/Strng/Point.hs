@@ -37,8 +37,7 @@ instance
   , TerminalStream m a is
   ) => TerminalStream m (TermSymbol a (Strng v x)) (is:.PointL) where
   terminalStream (a:|Strng f minL maxL xs) (sv:.IStatic d) (is:.i@(PointL j))
-    = S.map (\(S6 s (zi:.PointL pi) (zo:._) is os e) ->
-              S6 s zi zo (is:.i) (os:.PointL 0) (e:.f pi (j-pi) xs))
+    = S.map (\(S6 s (zi:.PointL pi) (zo:._) is os e) -> S6 s zi zo (is:.i) (os:.PointL 0) (e:.f pi (j-pi) xs))
     . iPackTerminalStream a sv (is:.i)
   {-# Inline terminalStream #-}
 
