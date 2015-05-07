@@ -1,8 +1,4 @@
 
-{-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE PatternGuards #-}
-{-# LANGUAGE TemplateHaskell #-}
-
 -- | Backtracking which uses lists internally. The basic idea is to convert
 -- each @Stream@ into a list. The consumer consumes the stream lazily, but
 -- allows for fusion to happen. The hope is that this improves total

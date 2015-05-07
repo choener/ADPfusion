@@ -1,18 +1,4 @@
 
-{-# Language MultiWayIf #-}
-{-# Language GADTs #-}
-{-# Language LambdaCase #-}
-{-# Language BangPatterns #-}
-{-# Language DefaultSignatures #-}
-{-# Language FlexibleContexts #-}
-{-# Language FlexibleInstances #-}
-{-# Language MultiParamTypeClasses #-}
-{-# Language PatternGuards #-}
-{-# Language TypeFamilies #-}
-{-# Language TypeOperators #-}
-{-# Language TypeSynonymInstances #-}
-{-# Language StandaloneDeriving #-}
-
 module ADP.Fusion.Classes where
 
 import           Data.Bits

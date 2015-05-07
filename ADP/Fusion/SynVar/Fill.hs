@@ -1,14 +1,4 @@
 
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE UndecidableInstances #-}
-
 module ADP.Fusion.SynVar.Fill where
 
 import           Control.Monad.Morph (hoist, MFunctor (..))

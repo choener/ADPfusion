@@ -1,12 +1,4 @@
 
-{-# Language DefaultSignatures #-}
-{-# Language FlexibleInstances #-}
-{-# Language MultiParamTypeClasses #-}
-{-# Language StandaloneDeriving #-}
-{-# Language TypeFamilies #-}
-{-# Language TypeOperators #-}
-{-# Language FlexibleContexts #-}
-
 module ADP.Fusion.Base.Classes where
 
 import           Data.Strict.Tuple

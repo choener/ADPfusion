@@ -1,8 +1,4 @@
 
-{-# Language TypeFamilies #-}
-{-# Language MultiParamTypeClasses #-}
-{-# Language FlexibleInstances #-}
-
 module ADP.Fusion.Base.Point where
 
 import Data.Vector.Fusion.Stream.Monadic (singleton,map,filter,Step(..),flatten)

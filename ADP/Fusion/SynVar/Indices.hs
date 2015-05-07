@@ -1,7 +1,4 @@
 
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeOperators #-}
-
 -- * With 'tableIndices' we create a stream of legal indices for this table. We
 -- need 'tableIndices' in multi-dimensional tables as the type of the
 -- multi-dimensional indices is generic.

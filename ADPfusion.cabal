@@ -153,14 +153,18 @@ library
     ADP.Fusion.QuickCheck.Subword
 
   default-extensions: BangPatterns
+                    , DefaultSignatures
                     , FlexibleContexts
                     , FlexibleInstances
                     , GADTs
                     , MultiParamTypeClasses
+                    , RankNTypes
                     , StandaloneDeriving
+                    , TemplateHaskell
                     , TypeFamilies
                     , TypeOperators
                     , TypeSynonymInstances
+                    , UndecidableInstances
 
   default-language:
     Haskell2010

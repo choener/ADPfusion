@@ -1,8 +1,4 @@
 
-{-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE PatternGuards #-}
-{-# LANGUAGE TemplateHaskell #-}
-
 -- | Build a backtracking function which uses @Stream@s internally.
 -- Efficient fusion of these streams requires @HERMIT@! For most
 -- backtracking cases, this is less of a problem since the backtracking

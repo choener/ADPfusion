@@ -1,10 +1,4 @@
 
-{-# LANGUAGE FlexibleContexts #-}
-{-# Language FlexibleInstances #-}
-{-# Language MultiParamTypeClasses #-}
-{-# Language TypeOperators #-}
-{-# Language TypeSynonymInstances #-}
-
 module ADP.Fusion.Term.Chr.Point where
 
 import           Data.Strict.Tuple

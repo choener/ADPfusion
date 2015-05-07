@@ -1,11 +1,4 @@
 
-{-# Language FlexibleInstances #-}
-{-# Language GADTs #-}
-{-# Language MultiParamTypeClasses #-}
-{-# Language TypeFamilies #-}
-{-# Language TypeOperators #-}
-{-# Language TypeSynonymInstances #-}
-
 module ADP.Fusion.Term.Chr.Type where
 
 import           Data.Strict.Tuple

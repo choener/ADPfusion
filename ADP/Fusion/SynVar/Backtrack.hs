@@ -1,9 +1,4 @@
 
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE TypeFamilies #-}
-
 -- | Wrap forward tables in such a way as to allow backtracking via
 -- algebras.
 

@@ -1,6 +1,4 @@
 
-{-# LANGUAGE TypeFamilies #-}
-
 -- | The 'axiom' runs a backtracking algebra. The name comes from Robert
 -- Giegerichs @ADP@ where @axiom@ runs the fully formed algorithm.
 

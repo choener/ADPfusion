@@ -1,13 +1,3 @@
-{-# LANGUAGE PatternGuards #-}
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE GADTs #-}
 
 module ADP.Fusion.Region where
 

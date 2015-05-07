@@ -1,10 +1,6 @@
 
 {-# Options_GHC -O0 #-}
 
-{-# Language TemplateHaskell #-}
-{-# Language ScopedTypeVariables #-}
-{-# Language MultiWayIf #-}
-
 module ADP.Fusion.QuickCheck.Set where
 
 import           Data.Bits

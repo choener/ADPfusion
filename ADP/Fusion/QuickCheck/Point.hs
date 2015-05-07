@@ -1,9 +1,6 @@
 
 {-# Options_GHC -O0 #-}
 
-{-# Language TemplateHaskell #-}
-{-# Language TypeOperators #-}
-
 module ADP.Fusion.QuickCheck.Point where
 
 import           Control.Applicative

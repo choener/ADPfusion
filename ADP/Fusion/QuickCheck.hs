@@ -1,9 +1,3 @@
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 module ADP.Fusion.QuickCheck where
 

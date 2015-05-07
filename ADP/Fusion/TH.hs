@@ -1,6 +1,3 @@
-{-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE PatternGuards #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 -- | The functions in here auto-create suitable algebra product functions from
 -- a signature. Currently, functions @<**@ are supported which have scalar
