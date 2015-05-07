@@ -1,14 +1,12 @@
+# ADPfusion
 
-ADPfusion
-(c) 2012-2015, Christian Hoener zu Siederdissen
-Leipzig University, Leipzig, Germany
-choener@bioinf.uni-leipzig.de
-LICENSE: BSD3
+[![Build Status](https://travis-ci.org/choener/ADPfusion.svg?branch=master)](https://travis-ci.org/choener/ADPfusion)
 
+[*generalized ADPfusion Homepage*](http://www.bioinf.uni-leipzig.de/Software/gADP/)
 
 
-Introduction
-============
+
+# Introduction
 
 ADPfusion combines stream-fusion (using the stream interface provided by the
 vector library) and type-level programming to provide highly efficient dynamic
@@ -46,8 +44,8 @@ on how to write dynamic programming algorithms using this library:
 <http://hackage.haskell.org/package/RNAfold>.
 
 
-Installation
-============
+
+# Installation
 
 If GHC-7.2.2/GHC-7.4, LLVM and cabal-install are available, you should be all
 set. I recommend using cabal-dev as it provides a very nice sandbox (replace
@@ -66,8 +64,7 @@ all properties and should yield no errors.
 
 
 
-Notes
-=====
+# Notes
 
 If you have problems, find bugs, or want to use this library to write your own
 DP algorithms, please send me a mail. I'm very interested in hearing what is
@@ -83,8 +80,8 @@ functions in many cases.
 
 
 
-IMPLEMENTORS NOTES
-==================
+# Implementors Notes
+
 
 - The general inlining scheme is: (i) mkStream is {-# INLINE mkStream #-},
   inner functions like mk, step, worker functions, and index-modifying
@@ -96,4 +93,12 @@ IMPLEMENTORS NOTES
   the (i,j) indices and modify their extend (by, say, having NonEmpty table
   constaints), you have to delay_inline this (until inliner phase 0). Otherwise
   you will break fusion for mkStream.
+
+
+
+#### Contact
+
+Christian Hoener zu Siederdissen
+choener@bioinf.uni-leipzig.de
+Leipzig University, Leipzig, Germany
 

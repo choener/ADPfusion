@@ -1,6 +1,7 @@
 0.4.0.0
 -------
 
+- travic-ci integration
 - forward phase now operates on immutable tables that are internally thawed
 - resembles the behavior of Data.Vector.Generic.constructN
 - Empty needs to be bound to input. We require this as certain index structures

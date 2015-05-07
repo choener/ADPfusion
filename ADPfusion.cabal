@@ -10,8 +10,8 @@ license-file:   LICENSE
 build-type:     Simple
 stability:      experimental
 cabal-version:  >= 1.10.0
-synopsis:
-                Efficient, high-level dynamic programming.
+tested-with:    GHC == 7.8.4, GHC == 7.10.1
+synopsis:       Efficient, high-level dynamic programming.
 description:
                 ADPfusion combines stream-fusion (using the stream interface
                 provided by the vector library) and type-level programming to
@@ -64,6 +64,8 @@ description:
 Extra-Source-Files:
   README.md
   changelog.md
+
+
 
 flag examples
   description:  build the examples
@@ -149,10 +151,6 @@ library
     ADP.Fusion.QuickCheck.Point
     ADP.Fusion.QuickCheck.Set
     ADP.Fusion.QuickCheck.Subword
-------    ADP.Fusion.Multi.Empty
-------    ADP.Fusion.Multi.GChr
-------    ADP.Fusion.Multi.None
-------    ADP.Fusion.Region
 
   default-extensions: BangPatterns
                     , FlexibleContexts
