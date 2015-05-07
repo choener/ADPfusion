@@ -52,7 +52,7 @@ makeBacktrackingProductInstance tyconName = do
           Clause ps (NormalB b) ds <- genClauseBacktrack dataconName funs fs hs
           i <- [d| instance (Monad $(varT mL), Monad $(varT mR), Eq $(varT xL), $(varT mL) ~ $(varT mR)) => BacktrackingProduct $(return lType) $(return rType) where
                      type SigR $(return lType) $(return rType) = $(return sigRType)
-                     (<||) = $(return $ LamE ps $ LetE ds b) -- $(return backtrackProduct)
+                     (<||) = $(return $ LamE ps $ LetE ds b)
                      {-# Inline (<||) #-}
                |]
           return i

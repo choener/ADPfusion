@@ -13,13 +13,15 @@ import           ADP.Fusion.Base
 -- | 'Strng' terminals return "strings", i.e. vectors of @Chr@s. They allow
 -- the user to specify @[ 0 .. ]@ atoms to be parsed at once. It is
 -- possible to both, limit the minimal and maximal number.
+--
+-- NOTE gadt comments are not parsed by haddock?
 
 data Strng v x where
   Strng :: VG.Vector v x
-        => !(Int -> Int -> v x -> v x)  -- ^ @slice@ function
-        -> !Int                         -- ^ minimal size
-        -> !Int                         -- ^ maximal size (just use s.th. big if you don't want a limit)
-        -> !(v x)                       -- ^ the actual vector
+        => !(Int -> Int -> v x -> v x)  -- @slice@ function
+        -> !Int                         -- minimal size
+        -> !Int                         -- maximal size (just use s.th. big if you don't want a limit)
+        -> !(v x)                       -- the actual vector
         -> Strng v x
 
 manyS :: VG.Vector v x => v x -> Strng v x
