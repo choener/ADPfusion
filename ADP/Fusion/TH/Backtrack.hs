@@ -88,19 +88,21 @@ buildLeftType tycon (m, x, r) (mL, xL) = foldl AppT (ConT tycon) . map (VarT . g
 
 buildRightType :: Name -> (Name, Name, Name) -> (Name, Name, Name) -> [TyVarBndr] -> Type
 buildRightType tycon (m, x, r) (mR, xR, rR) = foldl AppT (ConT tycon) . map (VarT . go)
-  where go (KindedTV z _)
+  where go (PlainTV z)
           | z == m    = mR
           | z == x    = xR
           | z == r    = rR
           | otherwise = z
+        go (KindedTV z _) = go (PlainTV z)
 
 buildSigRType :: Name -> (Name, Name, Name) -> (Name) -> (Name, Name, Name) -> [TyVarBndr] -> Type
 buildSigRType tycon (m, x, r) (xL) (mR, xR, rR) = foldl AppT (ConT tycon) . map go
-  where go (KindedTV z _)
+  where go (PlainTV z)
           | z == m    = VarT mR
           | z == x    = (AppT (AppT (TupleT 2) (VarT xL)) (AppT ListT (VarT xR)))
           | z == r    = VarT rR
           | otherwise = VarT z
+        go (KindedTV z _) = go (PlainTV z)
 
 -- |
 
