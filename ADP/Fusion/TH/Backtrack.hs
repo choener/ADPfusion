@@ -78,12 +78,13 @@ getObjectiveNames = go
 
 buildLeftType :: Name -> (Name, Name, Name) -> (Name, Name) -> [TyVarBndr] -> Type
 buildLeftType tycon (m, x, r) (mL, xL) = foldl AppT (ConT tycon) . map (VarT . go)
-  where go (KindedTV z _)
+  where go (PlainTV z)
           | z == m        = mL  -- correct monad name
           | z == x        = xL  -- point to new x type
           | z == r        = xL  -- stream and return type are the same
           | otherwise     = z   -- everything else can stay as is
-        go s              = error $ "buildLeftType: " ++ show s
+        go (KindedTV z _) = go (PlainTV z)
+--        go s              = error $ "buildLeftType: " ++ show s
 
 buildRightType :: Name -> (Name, Name, Name) -> (Name, Name, Name) -> [TyVarBndr] -> Type
 buildRightType tycon (m, x, r) (mR, xR, rR) = foldl AppT (ConT tycon) . map (VarT . go)
