@@ -1,6 +1,6 @@
-# ADPfusion
-
 [![Build Status](https://travis-ci.org/choener/ADPfusion.svg?branch=master)](https://travis-ci.org/choener/ADPfusion)
+
+# ADPfusion
 
 [*generalized ADPfusion Homepage*](http://www.bioinf.uni-leipzig.de/Software/gADP/)
 
