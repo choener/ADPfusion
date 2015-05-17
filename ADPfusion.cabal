@@ -3,6 +3,7 @@ version:        0.4.0.2
 author:         Christian Hoener zu Siederdissen, 2011-2015
 copyright:      Christian Hoener zu Siederdissen, 2011-2015
 homepage:       http://www.bioinf.uni-leipzig.de/Software/gADP/
+bug-reports:    https://github.com/choener/ADPfusion/issues
 maintainer:     choener@bioinf.uni-leipzig.de
 category:       Algorithms, Data Structures, Bioinformatics, Formal Languages
 license:        BSD3
