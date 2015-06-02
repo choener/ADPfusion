@@ -73,7 +73,7 @@ instance
 
 instance TermStaticVar (Chr r x) Subword where
   termStaticVar _ sv _ = sv
-  termStreamIndex _ _ ij = ij
-  {-# Inline termStaticVar   #-}
-  {-# Inline termStreamIndex #-}
+  termStreamIndex _ _ (Subword (i:.j)) = subword i (j-1)
+  {-# Inline [0] termStaticVar   #-}
+  {-# Inline [0] termStreamIndex #-}
 

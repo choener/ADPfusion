@@ -35,11 +35,13 @@ class RuleContext i where
 -- show up in CORE.
 
 class Element x i where
-  data Elm x i :: *
-  type Arg x :: *
+  data Elm    x i :: *
+  type RecElm x i :: *
+  type Arg    x   :: *
   getArg :: Elm x i -> Arg x
   getIdx :: Elm x i -> i
   getOmx :: Elm x i -> i
+  getElm :: Elm x i -> RecElm x i
 
 -- | @mkStream@ creates the actual stream of elements (@Elm@) that will be fed
 -- to functions on the left of the @(<<<)@ operator. Streams work over all

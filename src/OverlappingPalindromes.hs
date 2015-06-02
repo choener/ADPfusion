@@ -49,9 +49,9 @@ grammar Signature{..} x' a' b' i =
 
 score :: Monad m => Signature m Int Int Char
 score = Signature
-  { ovrlap = \ _ a _ b -> traceShow ("oo",a,b) $ a + b -- TODO !!!
-  , brckts = \ (Z:.l:.()) a (Z:.():.r) -> traceShow ("[]",l,r) $ if l=='[' && r==']' then a+1 else -999999
-  , braces = \ (Z:.l:.()) b (Z:.():.r) -> traceShow ("()",l,r) $ if l=='(' && r==')' then b+1 else -999999
+  { ovrlap = \ a' b' a b -> traceShow ("oo",a',b',a,b) $ a + b -- TODO !!!
+  , brckts = \ (Z:.l:.()) a (Z:.():.r) -> traceShow ("[]",l,a,r) $ if l=='[' && r==']' then a+1 else -999999
+  , braces = \ (Z:.l:.()) b (Z:.():.r) -> traceShow ("()",l,b,r) $ if l=='(' && r==')' then b+1 else -999999
   , nilnil = \ _ -> 0
   , h = SM.foldl' max (-999999)
   }

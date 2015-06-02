@@ -186,16 +186,22 @@ instance
   , PrimArrayOps arr (Z:.Subword:.Subword) x
   , MkStream m ls Subword
   ) => MkStream m (ls :!: ITbl m arr (Z:.Subword:.Subword) x) Subword where
-  mkStream (ls :!: ITbl _ _ c t _) (IStatic ()) hh (Subword (i:.j))
-    = map (error "static undefined")
+  mkStream (ls :!: ITbl _ _ c t elm) (IStatic ()) hh (Subword (i:.j))
+    = map (\s -> let (Subword (_:.l)) = getIdx s
+                     ab               = if greenLight ls t
+                                          then greenIdx ls t elm
+                                          else subword 0 0
+                 in  ElmITbl (t ! (Z:.ab:.subword l j)) (subword l j) (subword 0 0) s)
     $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j - 0))
-  mkStream (ls :!: ITbl _ _ c t _) (IVariable ()) hh (Subword (i:.j))
+  mkStream (ls :!: ITbl _ _ c t elm) (IVariable ()) hh (Subword (i:.j))
     = flatten mk step Unknown $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j - 0))
-    where mk s = let Subword (_:.l) = getIdx s in return (s :. (if greenLight ls t then j - l - 0 else -1))
+    where mk s = let Subword (_:.l) = getIdx s in return (s :. j - l - 0)
           step (s:.z) | z >= 0 = do let Subword (_:.k) = getIdx s
                                         l              = j - z
                                         kl             = subword k l
-                                        ab             = error "oh god oh god"
+                                        ab             = if greenLight ls t
+                                                           then greenIdx ls t elm
+                                                           else subword 0 0
                                     return $ Yield (ElmITbl (t ! (Z:.ab:.kl)) kl (subword 0 0) s) (s:.z-1)
                       | otherwise = return $ Done
           {-# Inline [0] mk   #-}
@@ -208,22 +214,33 @@ instance
 
 class FirstSecond x k where
   greenLight :: x -> k -> Bool
---  greenIdx   :: x -> k -> Elm x i -> Subword
+
+class FirstSecondIdx x k i where
+  greenIdx :: x -> k -> RecElm x i -> Subword
 
 instance FirstSecond S k where
   greenLight S _ = False
---  greenIdx   S _ _ = error "shouldn't arrive here!"
+
+instance FirstSecondIdx x k i where
+  greenIdx S _ _ = error "shouldn't arrive here!"
 
 instance
   ( FirstSecond ls (arr (Z:.Subword:.Subword) x)
---  , Element ls Subword
   ) => FirstSecond (ls :!: ITbl m arr (Z:.Subword:.Subword) x) (arr (Z:.Subword:.Subword) x) where
-  greenLight (ls :!: ITbl _ _ _ t _) t' = case reallyUnsafePtrEquality# t t' of     -- TODO speaking of stupid ideas!
-                                            1# -> True
-                                            _  -> greenLight ls t'
---  greenIdx (ls :!: ITbl _ _ _ t _) t' e   = case reallyUnsafePtrEquality# t t' of
---                                              1# -> getIdx e
---                                              _  -> greenIdx ls t' (undefined :: Elm ls Subword)
+  greenLight (ls :!: ITbl _ _ _ t _) t' =
+    case reallyUnsafePtrEquality# t t' of
+      -- TODO speaking of stupid ideas!
+      1# -> traceShow "True" True
+      _  -> greenLight ls t'
   {-# Inline greenLight #-}
---  {-# Inline greenIdx   #-}
+
+instance
+  ( FirstSecondIdx ls (arr (Z:.Subword:.Subword) x) (Z:.Subword:.Subword)
+  , Element ls Subword
+  ) => FirstSecondIdx (ls :!: ITbl m arr (Z:.Subword:.Subword) x) (arr (Z:.Subword:.Subword) x) (Z:.Subword:.Subword) where
+  greenIdx (ls :!: ITbl _ _ _ t elm) t' e =
+    case reallyUnsafePtrEquality# t t' of
+      1# -> getIdx e
+      _  -> greenIdx ls t' (getElm elm)
+  {-# Inline greenIdx   #-}
 

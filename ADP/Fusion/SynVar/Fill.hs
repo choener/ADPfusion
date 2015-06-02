@@ -113,9 +113,9 @@ instance
   , MutateCell ts im om (Z:.Subword:.Subword)
   , PrimMonad om
   ) => MutateCell (ts:.ITbl im arr Subword x) im om (Z:.Subword:.Subword) where
-  mutateCell bo lo mrph (ts:.ITbl tbo tlo c arr f) lu@(Z:.Subword (l:._):.Subword(_:.u)) ix@(Z:.Subword (i:._):.Subword (_:.j)) = do
+  mutateCell bo lo mrph (ts:.ITbl tbo tlo c arr f) lu@(Z:.Subword (l:._):.Subword(_:.u)) ix@(Z:.Subword (i:.iii):.Subword (jjj:.j)) = do
     mutateCell bo lo mrph ts lu ix
-    when (bo==tbo && lo==tlo) $ do
+    when (bo==tbo && lo==tlo && i==iii && j==jjj) $ do
       marr <- unsafeThaw arr
       z <- (inline mrph) $ f (subword l u) (subword i j)
       writeM marr (subword i j) z
