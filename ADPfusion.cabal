@@ -1,5 +1,5 @@
 name:           ADPfusion
-version:        0.4.0.2
+version:        0.4.1.0
 author:         Christian Hoener zu Siederdissen, 2011-2015
 copyright:      Christian Hoener zu Siederdissen, 2011-2015
 homepage:       http://www.bioinf.uni-leipzig.de/Software/gADP/
@@ -89,12 +89,13 @@ library
 
   build-depends: base               >= 4.7      && < 4.9
                , bits               == 0.4.*
+               , ghc-prim           == 0.4.*
                , mmorph             == 1.0.*
                , monad-primitive    == 0.1
                , mtl                == 2.*
                , OrderedBits        == 0.0.0.*
                , primitive          >= 0.5.4    && < 0.7
-               , PrimitiveArray     == 0.6.0.*
+               , PrimitiveArray     >= 0.6.0.1  && < 0.6.1
                , QuickCheck         >= 2.7      && < 2.9
                , strict             == 0.3.*
                , template-haskell   == 2.*
@@ -125,6 +126,7 @@ library
     ADP.Fusion.Term.Epsilon.Type
     ADP.Fusion.Term.Deletion
     ADP.Fusion.Term.Deletion.Point
+    ADP.Fusion.Term.Deletion.Subword
     ADP.Fusion.Term.Deletion.Type
     ADP.Fusion.Term.PeekIndex
     ADP.Fusion.Term.PeekIndex.Subword
@@ -351,6 +353,50 @@ executable Durbin
   ghc-options:
     -O2
     -fcpr-off
+    -funbox-strict-fields
+    -funfolding-use-threshold1000
+    -funfolding-keeness-factor1000
+  if flag(llvm)
+    ghc-options:
+      -fllvm
+      -optlo-O3 -optlo-std-compile-opts
+      -fllvm-tbaa
+  if flag(debug)
+    ghc-options:
+      -ddump-to-file
+      -ddump-simpl
+      -dsuppress-all
+
+
+
+executable OverlappingPalindromes
+  if flag(examples)
+    buildable:
+      True
+    build-depends:  base
+                 ,  ADPfusion
+                 ,  PrimitiveArray
+                 ,  template-haskell
+                 ,  vector
+  else
+    buildable:
+      False
+  hs-source-dirs:
+    src
+  main-is:
+    OverlappingPalindromes.hs
+  default-language:
+    Haskell2010
+  default-extensions: BangPatterns
+                    , FlexibleContexts
+                    , FlexibleInstances
+                    , MultiParamTypeClasses
+                    , RecordWildCards
+                    , TemplateHaskell
+                    , TypeFamilies
+                    , TypeOperators
+  ghc-options:
+    -O2
     -funbox-strict-fields
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000

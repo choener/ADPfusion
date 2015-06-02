@@ -1,4 +1,6 @@
 
+{-# Language MagicHash #-}
+
 module ADP.Fusion.SynVar.Array.Subword where
 
 import Data.Strict.Tuple
@@ -13,6 +15,9 @@ import Data.PrimitiveArray hiding (map)
 import ADP.Fusion.Base
 import ADP.Fusion.SynVar.Array.Type
 import ADP.Fusion.SynVar.Backtrack
+
+-- TODO think about what we are about to do
+import GHC.Prim (reallyUnsafePtrEquality#)
 
 
 
@@ -171,4 +176,54 @@ instance ModifyConstraint (Backtrack (ITbl mF arr Subword x) mF mB r) where
   toEmpty    (BtITbl _ arr bt) = BtITbl EmptyOk  arr bt
   {-# Inline toNonEmpty #-}
   {-# Inline toEmpty #-}
+
+
+
+instance
+  ( Monad m
+  , Element ls Subword -- (Z:.Subword:.Subword)
+  , FirstSecond ls (arr (Z:.Subword:.Subword) x)
+  , PrimArrayOps arr (Z:.Subword:.Subword) x
+  , MkStream m ls Subword
+  ) => MkStream m (ls :!: ITbl m arr (Z:.Subword:.Subword) x) Subword where
+  mkStream (ls :!: ITbl _ _ c t _) (IStatic ()) hh (Subword (i:.j))
+    = map (error "static undefined")
+    $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j - 0))
+  mkStream (ls :!: ITbl _ _ c t _) (IVariable ()) hh (Subword (i:.j))
+    = flatten mk step Unknown $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j - 0))
+    where mk s = let Subword (_:.l) = getIdx s in return (s :. (if greenLight ls t then j - l - 0 else -1))
+          step (s:.z) | z >= 0 = do let Subword (_:.k) = getIdx s
+                                        l              = j - z
+                                        kl             = subword k l
+                                        ab             = error "oh god oh god"
+                                    return $ Yield (ElmITbl (t ! (Z:.ab:.kl)) kl (subword 0 0) s) (s:.z-1)
+                      | otherwise = return $ Done
+          {-# Inline [0] mk   #-}
+          {-# Inline [0] step #-}
+  {-# Inline mkStream #-}
+
+-- | Get the previous index; this should really be made generic!
+--
+-- TODO This is probably a REALLY STUPID IDEA ;-)
+
+class FirstSecond x k where
+  greenLight :: x -> k -> Bool
+--  greenIdx   :: x -> k -> Elm x i -> Subword
+
+instance FirstSecond S k where
+  greenLight S _ = False
+--  greenIdx   S _ _ = error "shouldn't arrive here!"
+
+instance
+  ( FirstSecond ls (arr (Z:.Subword:.Subword) x)
+--  , Element ls Subword
+  ) => FirstSecond (ls :!: ITbl m arr (Z:.Subword:.Subword) x) (arr (Z:.Subword:.Subword) x) where
+  greenLight (ls :!: ITbl _ _ _ t _) t' = case reallyUnsafePtrEquality# t t' of     -- TODO speaking of stupid ideas!
+                                            1# -> True
+                                            _  -> greenLight ls t'
+--  greenIdx (ls :!: ITbl _ _ _ t _) t' e   = case reallyUnsafePtrEquality# t t' of
+--                                              1# -> getIdx e
+--                                              _  -> greenIdx ls t' (undefined :: Elm ls Subword)
+  {-# Inline greenLight #-}
+--  {-# Inline greenIdx   #-}
 

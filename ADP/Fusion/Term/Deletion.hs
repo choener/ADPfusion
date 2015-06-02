@@ -2,9 +2,11 @@
 module ADP.Fusion.Term.Deletion
   ( module ADP.Fusion.Term.Deletion.Type
   , module ADP.Fusion.Term.Deletion.Point
+  , module ADP.Fusion.Term.Deletion.Subword
   ) where
 
 import ADP.Fusion.Term.Deletion.Point
+import ADP.Fusion.Term.Deletion.Subword
 import ADP.Fusion.Term.Deletion.Type
 
 

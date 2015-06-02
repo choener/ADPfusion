@@ -61,7 +61,7 @@ instance
     . S.map (\(S5 s zi zo (is:.i) (os:.o)) -> S5 s (zi:.i) (zo:.o) is os)
     -}
   terminalStream (a:|Chr f (!v)) (sv:._) (is:.i@(PointL _))
-    = S.map (\(S6 s (zi:.PointL k) (zo:.PointL l) is os e) -> S6 s zi zo (is:.PointL (k+1)) (os:.PointL 0) (e:.f v (l-1)))
+    = S.map (\(S6 s (zi:.PointL k) (zo:.PointL l) is os e) -> S6 s zi zo (is:.PointL (k+1)) (os:.PointL 0) (e:.f v (l-1))) -- TODO is the @l-1@ even right? is this part even called?
     . iPackTerminalStream a sv (is:.i)
     {-
     . terminalStream a sv is
