@@ -56,14 +56,17 @@ instance
   {-# Inline axiom #-}
 
 instance Element ls i => Element (ls :!: ITbl m arr j x) i where
-  data Elm (ls :!: ITbl m arr j x) i = ElmITbl !x !i !i !(Elm ls i)
-  type Arg (ls :!: ITbl m arr j x)   = Arg ls :. x
+  data Elm    (ls :!: ITbl m arr j x) i = ElmITbl !x !i !i !(Elm ls i)
+  type Arg    (ls :!: ITbl m arr j x)   = Arg ls :. x
+  type RecElm (ls :!: ITbl m arr j x) i = Elm ls i
   getArg (ElmITbl x _ _ ls) = getArg ls :. x
   getIdx (ElmITbl _ i _ _ ) = i
   getOmx (ElmITbl _ _ o _ ) = o
+  getElm (ElmITbl _ _ _ ls) = ls
   {-# Inline getArg #-}
   {-# Inline getIdx #-}
   {-# Inline getOmx #-}
+  {-# Inline getElm #-}
 
 deriving instance (Show i, Show (Elm ls i), Show x) => Show (Elm (ls :!: ITbl m arr j x) i)
 
