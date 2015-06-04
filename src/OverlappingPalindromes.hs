@@ -111,5 +111,11 @@ type T = ITbl Id Unboxed (Z:.Subword:.Subword) Int
 
 
 main :: IO ()
-main = return ()
+main = do
+  xs <- fmap lines $ getContents
+  forM_ xs $ \x -> do
+    let (d,bs) = overlappingPalindromes x
+    putStrLn x
+    print d
+    putStrLn $ head $ head bs
 
