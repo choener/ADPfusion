@@ -57,7 +57,7 @@ grammar Signature{..} x' a' b' i =
 score :: Monad m => Signature m Int Int Char
 score = Signature
   { ovrlap = \ a' b' a b -> {- if a>0 || b>0 then traceShow ("oo",a',b',a,b) $ a + b else -} a+b -- TODO !!!
-  , brckts = \ (Z:.l:.()) a (Z:.():.r) -> traceShow ("[]",l,a,r) $ if l=='[' && r==']' then a+1 else -999999
+  , brckts = \ (Z:.l:.()) a (Z:.():.r) -> {- traceShow ("[]",l,a,r) $ -} if l=='[' && r==']' then a+1 else -999999
   , braces = \ (Z:.l:.()) b (Z:.():.r) -> {- traceShow ("()",l,b,r) $ -} if l=='(' && r==')' then b+1 else -999999
   , nilnil = \ _ -> 0
   , h = SM.foldl' max (-999999)
@@ -83,12 +83,12 @@ pretty = Signature
 
 
 
-overlappingPalindromes :: String -> (Int,[String])
+overlappingPalindromes :: String -> (Int,[[String]])
 overlappingPalindromes inp = (d,bs) where
   i  = VU.fromList inp
   n  = VU.length i
   d  = unId $ axiom x
-  bs = []
+  bs = unId $ axiom x'
   x :: X
   a :: T
   b :: T
@@ -98,6 +98,11 @@ overlappingPalindromes inp = (d,bs) where
                    (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.subword 0 0:.subword 0 0) (Z:.subword 0 n:.subword 0 n) (-999999) []))
                    (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.subword 0 0:.subword 0 0) (Z:.subword 0 n:.subword 0 n) (-999999) []))
                    i
+  (Z:.x':.a':.b') = grammar (score <|| pretty)
+                      (toBacktrack x (undefined :: Id a -> Id a))
+                      (toBacktrack a (undefined :: Id a -> Id a))
+                      (toBacktrack b (undefined :: Id a -> Id a))
+                      i
 {-# NoInline overlappingPalindromes #-}
 
 type X = ITbl Id Unboxed Subword Int

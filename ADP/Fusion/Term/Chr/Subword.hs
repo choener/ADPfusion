@@ -64,7 +64,9 @@ instance
   , TerminalStream m a is
   ) => TerminalStream m (TermSymbol a (Chr r x)) (is:.Subword) where
   terminalStream (a:|Chr f v) (sv:.IStatic _) (is:.ix@(Subword (i:.j)))
-    = S.map (\(S6 s (zi:._) (zo:._) is os e) -> S6 s zi zo (is:.subword (j-1) j) (os:.subword 0 0) (e:.f v (j-1)))
+    -- TODO check if 'staticCheck' breaks fusion!!!
+    = staticCheck (i>=0 && i<j && j<=VG.length v)
+    . S.map (\(S6 s (zi:._) (zo:._) is os e) -> S6 s zi zo (is:.subword (j-1) j) (os:.subword 0 0) (e:.f v (j-1)))
     . iPackTerminalStream a sv (is:.ix)
   terminalStream (a:|Chr f v) (sv:.IVariable _) (is:.ix@(Subword (i:.j)))
     = S.map (\(S6 s (zi:.Subword (_:.l)) (zo:._) is os e) -> S6 s zi zo (is:.subword l (l+1)) (os:.subword 0 0) (e:.f v l))

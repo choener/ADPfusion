@@ -278,9 +278,10 @@ mxsPP = unsafePerformIO $ zzz where
   zzz :: IO (MutArr IO (Unboxed (Z:.PointL:.PointL) Int))
   zzz = fromListM (Z:.PointL 0:.PointL 0) (Z:.maxPL:.maxPL) [0 ..]
 
-maxPL = PointL 100
+maxI = 100
+maxPL = PointL maxI
 
-xs = VU.fromList [0 .. 99 :: Int]
+xs = VU.fromList [0 .. maxI - 1 :: Int]
 
 -- * general quickcheck stuff
 
