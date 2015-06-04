@@ -224,10 +224,14 @@ instance
   mkStream (ls :!: BtITbl c t bt) (IStatic ()) hh (Subword (i:.j))
     = mapM (\s -> let (Subword (_:.l)) = getIdx s
                       lj               = subword l j
-                      ab               = if greenLight ls t
+                      light            = greenLight ls t
+                      ab               = if light
                                            then greenIdx ls (undefined :: Subword) t s
                                            else lj -- subword 0 0
-                  in bt (Prelude.snd $ bounds t) (Z:.ab:.lj) >>= \ ~bb -> traceShow (ab,lj,bb) $ return $ ElmBtITbl (t ! (Z:.ab:.lj)) bb lj (subword 0 0) s)
+                      ablj             = if light
+                                           then Z:.ab:.lj
+                                           else Z:.subword 0 0:.subword 0 0 -- Z:.lj:.lj
+                  in bt (Prelude.snd $ bounds t) ablj >>= \ ~bb -> {- traceShow (ab,lj,bb) $ -} return $ ElmBtITbl (t ! ablj) bb lj (subword 0 0) s)
     $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j - 0))
   mkStream (ls :!: BtITbl c t bt) (IVariable ()) hh (Subword (i:.j))
     = flatten mk step Unknown $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j - 0))
@@ -235,10 +239,14 @@ instance
           step (s:.z) | z >= 0 = do let Subword (_:.k) = getIdx s
                                         l              = j - z
                                         kl             = subword k l
-                                        ab             = if greenLight ls t
+                                        light          = greenLight ls t
+                                        ab             = if light
                                                            then greenIdx ls (undefined :: Subword) t s
                                                            else kl -- subword 0 0
-                                    bt (Prelude.snd $ bounds t) (Z:.ab:.kl) >>= \ ~bb -> traceShow (ab,kl,bb) $ return $ Yield (ElmBtITbl (t!(Z:.ab:.kl)) bb kl (subword 0 0) s) (s:.z-1)
+                                        abkl           = if light
+                                                           then Z:.ab:.kl
+                                                           else Z:.subword 0 0:.subword 0 0 -- Z:.kl:.kl
+                                    bt (Prelude.snd $ bounds t) abkl >>= \ ~bb -> {- traceShow (ab,kl,bb) $ -} return $ Yield (ElmBtITbl (t!abkl) bb kl (subword 0 0) s) (s:.z-1)
                       | otherwise = return $ Done
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}

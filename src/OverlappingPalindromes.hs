@@ -73,7 +73,7 @@ score = Signature
 
 pretty :: Monad m => Signature m [String] [[String]] Char
 pretty = Signature
-  { ovrlap = \ _ [a,a'] _ [b,b'] -> [a ++ b ++ a' ++ b'] -- TODO !!!
+  { ovrlap = \ _ _ [a,a'] [b,b'] -> [a ++ b ++ a' ++ b'] -- TODO !!!
   , brckts = \ (Z:.l:.()) [a,a'] (Z:.():.r) -> ["a"++a , a'++"A"]
   , braces = \ (Z:.l:.()) [b,b'] (Z:.():.r) -> ["b"++b , b'++"B"]
   , nilnil = \ _ -> ["",""]

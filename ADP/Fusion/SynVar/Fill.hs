@@ -142,6 +142,7 @@ instance
     VU.forM_ tbos $ \bo ->
       flip SM.mapM_ (streamUp from to) $ \k ->
         VU.forM_ tlos $ \lo ->
+          --traceShow (bo,k,lo) $
           mutateCell bo lo (inline mrph) tt to k
     return tt
   {-# INLINE mutateTables #-}
