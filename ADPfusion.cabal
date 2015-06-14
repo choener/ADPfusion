@@ -434,6 +434,47 @@ test-suite properties
 
 
 
+benchmark performance
+  type:
+    exitcode-stdio-1.0
+  main-is:
+    performance.hs
+  ghc-options:
+    -rtsopts -with-rtsopts=-N -with-rtsopts=-T
+    -O2
+    -funbox-strict-fields
+    -funfolding-use-threshold1000
+    -funfolding-keeness-factor1000
+  if flag(llvm)
+    ghc-options:
+      -fllvm
+      -optlo-O3 -optlo-std-compile-opts
+      -fllvm-tbaa
+  if flag(debug)
+    ghc-options:
+      -ddump-to-file
+      -ddump-simpl
+      -dsuppress-all
+  hs-source-dirs:
+    tests
+  default-language:
+    Haskell2010
+  default-extensions: BangPatterns
+                    , FlexibleContexts
+                    , TemplateHaskell
+                    , RecordWildCards
+                    , TypeFamilies
+                    , TypeOperators
+                    , StandaloneDeriving
+                    , DeriveGeneric
+  build-depends: base
+               , ADPfusion
+               , BenchmarkHistory   >= 0.0.0  && < 0.0.1
+               , PrimitiveArray
+               , vector
+
+
+
 source-repository head
   type: git
   location: git://github.com/choener/ADPfusion
