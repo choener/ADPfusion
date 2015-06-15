@@ -1,3 +1,16 @@
+0.4.1.0
+-------
+
+- initial support for multi-context free grammars
+- mcfgs allow for interleaved syntactic variables
+- applications include: natural language modelling and pseudoknotted structures in RNA
+- the simplest formal language that requires this is: a^i b^j a^i b^j
+
+0.4.0.2
+-------
+
+- bugfixes
+
 0.4.0.0
 -------
 

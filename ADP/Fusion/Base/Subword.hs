@@ -73,3 +73,30 @@ instance (Monad m) => MkStream m S (Complement Subword) where
           {-# Inline [0] go #-}
   {-# Inline mkStream #-}
 
+
+
+instance
+  ( Monad m
+  , MkStream m S is
+  , Context (is:.Subword) ~ (Context is:.(InsideContext ()))
+  ) => MkStream m S (is:.Subword) where
+  mkStream S (vs:.IStatic ()) (lus:.Subword (_:.h)) (ixs:.Subword(i:.j))
+    = staticCheck (i>=0 && i==j && j<=h)
+    . map (\(ElmS zi zo) -> ElmS (zi:.subword i i) (zo:.subword 0 0))
+    $ mkStream S vs lus ixs
+  mkStream S (vs:.IVariable ()) (lus:.Subword (_:.h)) (ixs:.Subword (i:.j))
+    = map (\(ElmS zi zo) -> ElmS (zi:.subword i i) (zo:.subword 0 0))
+    . filter (const $ 0<=i && i<=j && j<=h)
+    $ mkStream S vs lus ixs
+  {-# Inline mkStream #-}
+
+instance TableStaticVar Subword where
+  tableStaticVar (IStatic   d) _ = IVariable d
+  tableStaticVar (IVariable d) _ = IVariable d
+  tableStreamIndex c _ (Subword (i:.j))
+    | c==EmptyOk  = subword i j
+    | c==NonEmpty = subword i (j-1)
+    | c==NonEmpty = error "A.F.B.Subword ???"
+  {-# INLINE [0] tableStaticVar   #-}
+  {-# INLINE [0] tableStreamIndex #-}
+

@@ -56,26 +56,32 @@ instance
   {-# Inline axiom #-}
 
 instance Element ls i => Element (ls :!: ITbl m arr j x) i where
-  data Elm (ls :!: ITbl m arr j x) i = ElmITbl !x !i !i !(Elm ls i)
-  type Arg (ls :!: ITbl m arr j x)   = Arg ls :. x
+  data Elm    (ls :!: ITbl m arr j x) i = ElmITbl !x !i !i !(Elm ls i)
+  type Arg    (ls :!: ITbl m arr j x)   = Arg ls :. x
+  type RecElm (ls :!: ITbl m arr j x) i = Elm ls i
   getArg (ElmITbl x _ _ ls) = getArg ls :. x
   getIdx (ElmITbl _ i _ _ ) = i
   getOmx (ElmITbl _ _ o _ ) = o
+  getElm (ElmITbl _ _ _ ls) = ls
   {-# Inline getArg #-}
   {-# Inline getIdx #-}
   {-# Inline getOmx #-}
+  {-# Inline getElm #-}
 
 deriving instance (Show i, Show (Elm ls i), Show x) => Show (Elm (ls :!: ITbl m arr j x) i)
 
-instance Element ls i => Element (ls :!: (Backtrack (ITbl mF arr i x) mF mB r)) i where
-  data Elm (ls :!: (Backtrack (ITbl mF arr i x) mF mB r)) i = ElmBtITbl !x [r] !i !i !(Elm ls i)
-  type Arg (ls :!: (Backtrack (ITbl mF arr i x) mF mB r))   = Arg ls :. (x, [r])
+instance Element ls i => Element (ls :!: (Backtrack (ITbl mF arr j x) mF mB r)) i where
+  data Elm    (ls :!: (Backtrack (ITbl mF arr j x) mF mB r)) i = ElmBtITbl !x [r] !i !i !(Elm ls i)
+  type Arg    (ls :!: (Backtrack (ITbl mF arr j x) mF mB r))   = Arg ls :. (x, [r])
+  type RecElm (ls :!: (Backtrack (ITbl mF arr j x) mF mB r)) i = Elm ls i
   getArg (ElmBtITbl x s _ _ ls) = getArg ls :. (x,s)
   getIdx (ElmBtITbl _ _ i _ _ ) = i
   getOmx (ElmBtITbl _ _ _ o _ ) = o
+  getElm (ElmBtITbl _ _ _ _ ls) = ls
   {-# Inline getArg #-}
   {-# Inline getIdx #-}
   {-# Inline getOmx #-}
+  {-# Inline getElm #-}
 
 instance (Show x, Show i, Show (Elm ls i)) => Show (Elm (ls :!: (Backtrack (ITbl mF arr i x) mF mB r)) i) where
   show (ElmBtITbl x _ i o s) = show (x,i,o) ++ " " ++ show s

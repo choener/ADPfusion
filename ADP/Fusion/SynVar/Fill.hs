@@ -54,18 +54,6 @@ instance ExposeTables Z where
     {-# INLINE expose #-}
     {-# INLINE onlyTables #-}
 
--- Thanks to the table being a gadt we now the internal types
---
--- TODO move to Table/Array.hs
-
---instance (ExposeTables ts) => ExposeTables (ts:.(MTbl m arr i x)) where
---    type TableFun   (ts:. MTbl m arr i x) = TableFun   ts :. (PA.MutArr m (arr i x), i -> m x)
---    type OnlyTables (ts:. MTbl m arr i x) = OnlyTables ts :. (PA.MutArr m (arr i x))
---    expose     (ts:.MTbl _ t f) = expose ts :. (t,f)
---    onlyTables (ts:.MTbl _ t _) = onlyTables ts :. t
---    {-# INLINE expose #-}
---    {-# INLINE onlyTables #-}
-
 
 
 -- * Unsafely mutate 'ITbls' and similar tables in the forward phase.
@@ -119,14 +107,21 @@ instance
       writeM marr i z
   {-# INLINE mutateCell #-}
 
-{-
 instance
-  ( MutateCell ts im om i
-  ) => MutateCell (ts:.IRec im i x) im om i where
-  mutateCell mrph (ts:.IRec (!c) _ _ f) lu i = do
-    mutateCell mrph ts lu i
-  {-# INLINE mutateCell #-}
--}
+  ( PrimArrayOps arr Subword x
+  , MPrimArrayOps arr Subword x
+  , MutateCell ts im om (Z:.Subword:.Subword)
+  , PrimMonad om
+  ) => MutateCell (ts:.ITbl im arr Subword x) im om (Z:.Subword:.Subword) where
+  mutateCell bo lo mrph (ts:.ITbl tbo tlo c arr f) lu@(Z:.Subword (l:._):.Subword(_:.u)) ix@(Z:.Subword (i:.iii):.Subword (jjj:.j)) = do
+    mutateCell bo lo mrph ts lu ix
+    when (bo==tbo && lo==tlo && i==iii && j==jjj) $ do
+      marr <- unsafeThaw arr
+      z <- (inline mrph) $ f (subword l u) (subword i j)
+      writeM marr (subword i j) z
+  {-# Inline mutateCell #-}
+
+
 
 -- ** individual instances for filling a complete table and extracting the
 -- bounds
@@ -147,22 +142,10 @@ instance
     VU.forM_ tbos $ \bo ->
       flip SM.mapM_ (streamUp from to) $ \k ->
         VU.forM_ tlos $ \lo ->
+          --traceShow (bo,k,lo) $
           mutateCell bo lo (inline mrph) tt to k
     return tt
   {-# INLINE mutateTables #-}
-
-{-
-instance
-  ( Monad om
-  , MutateCell (ts:.IRec im i x) im om i
-  , IndexStream i
-  ) => MutateTables (ts:.IRec im i x) im om where
-  mutateTables mrph tt@(_:.IRec _ from to _) = do
-    -- SM.mapM_ (mutateCell (inline mrph) tt to) $ PA.rangeStream from to
-    SM.mapM_ (mutateCell (inline mrph) tt to) $ PA.streamUp from to
-    return tt
-  {-# INLINE mutateTables #-}
--}
 
 instance
   ( Monad om

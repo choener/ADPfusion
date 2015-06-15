@@ -1,4 +1,6 @@
 
+{-# Language MagicHash #-}
+
 module ADP.Fusion.SynVar.Array.Subword where
 
 import Data.Strict.Tuple
@@ -13,6 +15,9 @@ import Data.PrimitiveArray hiding (map)
 import ADP.Fusion.Base
 import ADP.Fusion.SynVar.Array.Type
 import ADP.Fusion.SynVar.Backtrack
+
+-- TODO think about what we are about to do
+import GHC.Prim (reallyUnsafePtrEquality#)
 
 
 
@@ -171,4 +176,143 @@ instance ModifyConstraint (Backtrack (ITbl mF arr Subword x) mF mB r) where
   toEmpty    (BtITbl _ arr bt) = BtITbl EmptyOk  arr bt
   {-# Inline toNonEmpty #-}
   {-# Inline toEmpty #-}
+
+
+
+instance
+  ( Monad m
+  , Element ls Subword -- (Z:.Subword:.Subword)
+  , FirstSecond ls (arr (Z:.Subword:.Subword) x)
+  , FirstSecondIdx ls (arr (Z:.Subword:.Subword) x) Subword
+  , PrimArrayOps arr (Z:.Subword:.Subword) x
+  , MkStream m ls Subword
+  , Show x
+  ) => MkStream m (ls :!: ITbl m arr (Z:.Subword:.Subword) x) Subword where
+  mkStream (ls :!: ITbl _ _ c t elm) (IStatic ()) hh (Subword (i:.j))
+    = map (\s -> let (Subword (_:.l)) = getIdx s
+                     ab               = if greenLight ls t
+                                          then greenIdx ls (undefined :: Subword) t s
+                                          else subword 0 0
+                 in  -- traceShow ("13",ab,subword l j,t!(Z:.ab:.subword l j)) $
+                     ElmITbl (t ! (Z:.ab:.subword l j)) (subword l j) (subword 0 0) s)
+    $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j - 0))
+  mkStream (ls :!: ITbl _ _ c t elm) (IVariable ()) hh (Subword (i:.j))
+    = flatten mk step Unknown $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j - 0))
+    where mk s = let Subword (_:.l) = getIdx s in return (s :. j - l - 0)
+          step (s:.z) | z >= 0 = do let Subword (_:.k) = getIdx s
+                                        l              = j - z
+                                        kl             = subword k l
+                                        ab             = if greenLight ls t
+                                                           then greenIdx ls (undefined :: Subword) t s
+                                                           else subword 0 0
+                                    --traceShow ("02",ab,subword k l,t!(Z:.ab:.subword k l)) $
+                                    return $ Yield (ElmITbl (t ! (Z:.ab:.kl)) kl (subword 0 0) s) (s:.z-1)
+                      | otherwise = return $ Done
+          {-# Inline [0] mk   #-}
+          {-# Inline [0] step #-}
+  {-# Inline mkStream #-}
+
+instance
+  ( Monad mB
+  , FirstSecond ls (arr (Z:.Subword:.Subword) x)
+  , FirstSecondIdx ls (arr (Z:.Subword:.Subword) x) Subword
+  , PrimArrayOps arr (Z:.Subword:.Subword) x
+  , Element ls Subword
+  , MkStream mB ls Subword
+  , Show r
+  ) => MkStream mB (ls :!: Backtrack (ITbl mF arr (Z:.Subword:.Subword) x) mF mB r) Subword where
+  mkStream (ls :!: BtITbl c t bt) (IStatic ()) hh (Subword (i:.j))
+    = mapM (\s -> let (Subword (_:.l)) = getIdx s
+                      lj               = subword l j
+                      light            = greenLight ls t
+                      ab               = if light
+                                           then greenIdx ls (undefined :: Subword) t s
+                                           else lj -- subword 0 0
+                      ablj             = if light
+                                           then Z:.ab:.lj
+                                           else Z:.subword 0 0:.subword 0 0 -- Z:.lj:.lj
+                  in bt (Prelude.snd $ bounds t) ablj >>= \ ~bb -> {- traceShow (ab,lj,bb) $ -} return $ ElmBtITbl (t ! ablj) bb lj (subword 0 0) s)
+    $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j - 0))
+  mkStream (ls :!: BtITbl c t bt) (IVariable ()) hh (Subword (i:.j))
+    = flatten mk step Unknown $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j - 0))
+    where mk s = let Subword (_:.l) = getIdx s in return (s :. j - l - 0)
+          step (s:.z) | z >= 0 = do let Subword (_:.k) = getIdx s
+                                        l              = j - z
+                                        kl             = subword k l
+                                        light          = greenLight ls t
+                                        ab             = if light
+                                                           then greenIdx ls (undefined :: Subword) t s
+                                                           else kl -- subword 0 0
+                                        abkl           = if light
+                                                           then Z:.ab:.kl
+                                                           else Z:.subword 0 0:.subword 0 0 -- Z:.kl:.kl
+                                    bt (Prelude.snd $ bounds t) abkl >>= \ ~bb -> {- traceShow (ab,kl,bb) $ -} return $ Yield (ElmBtITbl (t!abkl) bb kl (subword 0 0) s) (s:.z-1)
+                      | otherwise = return $ Done
+          {-# Inline [0] mk   #-}
+          {-# Inline [0] step #-}
+  {-# Inline mkStream #-}
+
+-- | Get the previous index; this should really be made generic!
+--
+-- TODO This is probably a REALLY STUPID IDEA ;-)
+
+class FirstSecond x k where
+  greenLight :: x -> k -> Bool
+
+class FirstSecondIdx x k i where
+  greenIdx :: x -> i -> k -> Elm x i -> Subword
+
+instance FirstSecond S k where
+  greenLight S _ = False
+  {-# Inline greenLight #-}
+
+
+
+instance
+  ( FirstSecond ls (arr (Z:.Subword:.Subword) x)
+  ) => FirstSecond (ls :!: ITbl m arr (Z:.Subword:.Subword) x) (arr (Z:.Subword:.Subword) x) where
+  greenLight (ls :!: ITbl _ _ _ t _) t' =
+    case reallyUnsafePtrEquality# t t' of
+      -- TODO speaking of stupid ideas!
+      1# -> True
+      _  -> greenLight ls t'
+  {-# Inline greenLight #-}
+
+instance
+  ( FirstSecond ls (arr (Z:.Subword:.Subword) x)
+  ) => FirstSecond (ls :!: Backtrack (ITbl mF arr (Z:.Subword:.Subword) x) mF mB r) (arr (Z:.Subword:.Subword) x) where
+  greenLight (ls :!: BtITbl _ t _) t' =
+    case reallyUnsafePtrEquality# t t' of
+      -- TODO speaking of stupid ideas!
+      1# -> True
+      _  -> greenLight ls t'
+  {-# Inline greenLight #-}
+
+
+
+instance FirstSecondIdx S k i where
+  greenIdx S _ _ _ = error "shouldn't arrive here!"
+  {-# Inline greenIdx #-}
+
+instance
+  ( FirstSecondIdx ls (arr (Z:.Subword:.Subword) x) Subword
+  , Elm ls Subword ~ RecElm (ls :!: ITbl m arr (Z:.Subword:.Subword) x) Subword
+  , Element ls Subword
+  ) => FirstSecondIdx (ls :!: ITbl m arr (Z:.Subword:.Subword) x) (arr (Z:.Subword:.Subword) x) Subword where
+  greenIdx (ls :!: ITbl _ _ _ t _) _ t' e =
+    case reallyUnsafePtrEquality# t t' of
+      1# -> let ab = getIdx e in ab
+      _  -> let g = getElm e in greenIdx ls (undefined :: Subword) t' g
+  {-# Inline greenIdx   #-}
+
+instance
+  ( FirstSecondIdx ls (arr (Z:.Subword:.Subword) x) Subword
+  , Elm ls Subword ~ RecElm (ls :!: Backtrack (ITbl mF arr (Z:.Subword:.Subword) x) mF mB r) Subword
+  , Element ls Subword
+  ) => FirstSecondIdx (ls :!: Backtrack (ITbl mF arr (Z:.Subword:.Subword) x) mF mB r) (arr (Z:.Subword:.Subword) x) Subword where
+  greenIdx (ls :!: BtITbl _ t _) _ t' e =
+    case reallyUnsafePtrEquality# t t' of
+      1# -> let ab = getIdx e in ab
+      _  -> let g = getElm e in greenIdx ls (undefined :: Subword) t' g
+  {-# Inline greenIdx   #-}
 

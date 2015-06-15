@@ -26,8 +26,13 @@ instance TableIndices (Outside Z) where
   tableIndices _ _ _ = id
   {-# INLINE tableIndices #-}
 
-{-
 instance TableIndices is => TableIndices (is:.Subword) where
+  tableIndices (cs:._) (vs:.IStatic _) (ixs:.Subword (i:.j))
+    = map (\(S5 s (zi:.Subword (_:.l)) (zo:._) is os) -> S5 s zi zo (is:.subword l j) (os:.subword 0 0))
+    . tableIndices cs vs ixs
+    . map (\(S5 s zi zo (is:.i) (os:.o)) -> S5 s (zi:.i) (zo:.o) is os)
+  {-# Inline tableIndices #-}
+{-
   tableIndices (cs:.c) (vs:.Static) (is:.Subword (i:.j))
     = S.map (\(Tr s (x:.Subword (_:.l)) ys) -> Tr s x (is:.subword l j)) -- constraint handled: tableStreamIndex
     . tableIndices cs vs is

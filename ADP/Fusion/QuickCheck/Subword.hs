@@ -1,6 +1,11 @@
 
 {-# Options_GHC -O0 #-}
 
+-- |
+--
+-- TODO need to carefully check all props against boundary errors!
+-- Especially the 2-dim cases!
+
 module ADP.Fusion.QuickCheck.Subword where
 
 import           Test.QuickCheck
@@ -148,17 +153,66 @@ prop_Epsilon ox@(O (Subword (i:.j))) = zs == ls where
   ls = [ () | i==0 && j==highest ]
 
 
+-- ** Multi-tape cases
 
-highest = 2
+prop_2dimIt ix@(Z:.Subword (i:.j):.Subword (k:.l)) = zs == ls where
+  t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsSS (\ _ _ -> Id ((1,1),(1,1)))
+  zs = (id <<< t ... S.toList) (Z:.subword 0 highest:.subword 0 highest) ix
+  ls = [ ( unsafeIndex xsSS ix ) | j<=highest && l<=highest ]
+
+{-
+xprop_2dimItIt ix@(Z:.Subword (i:.j):.Subword (k:.l)) = zs == ls where
+  t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsSS (\ _ _ -> Id (1,1))
+  zs = ((,) <<< t % t ... S.toList) (Z:.subword 0 highest:.subword 0 highest) ix
+  ls = [ ( unsafeIndex xsSS (Z:.subword i m:.subword k n)
+         , unsafeIndex xsSS (Z:.subword m j:.subword n l) )
+       | j<=highest && l<=highest
+       , m <- [i..j]
+       , n <- [k..l]
+       ]
+-}
+
+prop_2dimcIt ix@(Z:.Subword(i:.j):.Subword(k:.l)) = {- traceShow (zs,ls) $ -} zs == ls where
+  t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsSS (\ _ _ -> Id ((1,1),(1,1)))
+  zs = ((,) <<< (M:|chr csS:|chr csS) % t ... S.toList) (Z:.subword 0 highest:.subword 0 highest) ix
+  ls = [ ( Z :. (csS VU.! i) :. (csS VU.! k)
+         , unsafeIndex xsSS (Z :. subword (i+1) j :. subword (k+1) l) )
+       | j<=highest && l<=highest
+       , i+1<=j && k+1<=l ]
+
+prop_2dimItc ix@(Z:.Subword(i:.j):.Subword(k:.l)) = {- traceShow (zs,ls) $ -} zs == ls where
+  t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsSS (\ _ _ -> Id ((1,1),(1,1)))
+  zs = ((,) <<< t % (M:|chr csS:|chr csS)  ... S.toList) (Z:.subword 0 highest:.subword 0 highest) ix
+  ls = [ ( unsafeIndex xsSS (Z :. subword i (j-1) :. subword k (l-1))
+         , Z :. (csS VU.! (j-1)) :. (csS VU.! (l-1)) )
+       | j<=highest && l<=highest
+       , i+1<=j && k+1<=l ]
+
+prop_2dimcItc ix@(Z:.Subword(i:.j):.Subword(k:.l)) = {- traceShow (zs,ls) $ -} zs == ls where
+  t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsSS (\ _ _ -> Id ((1,1),(1,1)))
+  zs = ((,,) <<< (M:|chr csS:|chr csS) % t % (M:|chr csS:| chr csS) ... S.toList) (Z:.subword 0 highest:.subword 0 highest) ix
+  ls = [ ( Z :. (csS VU.! i) :. (csS VU.! k)
+         , unsafeIndex xsSS (Z :. subword (i+1) (j-1) :. subword (k+1) (l-1))
+         , Z :. (csS VU.! (j-1)) :. (csS VU.! (l-1)) )
+       | j<=highest && l<=highest
+       , i+2<=j && k+2<=l ]
+
+
+
+highest = 10
 
 csS :: VU.Vector (Int,Int)
-csS = VU.fromList [ (i,i+1) | i <- [0 .. highest] ] -- this should be @highest -1@, we should die if we see @(highest,highest+1)@
+csS = VU.fromList [ (i,i+1) | i <- [0 .. highest-1] ] -- this should be @highest -1@, we should die if we see @(highest,highest+1)@
 
 xsS :: Unboxed Subword (Int,Int)
 xsS = fromList (subword 0 0) (subword 0 highest) [ (i,j) | i <- [ 0 .. highest ] , j <- [ i .. highest ] ]
 
 xoS :: Unboxed (Outside Subword) (Int,Int)
 xoS = fromList (O $ subword 0 0) (O $ subword 0 highest) [ (i,j) | i <- [ 0 .. highest ] , j <- [ i .. highest ] ]
+
+xsSS :: Unboxed (Z:.Subword:.Subword) ( (Int,Int) , (Int,Int) )
+xsSS = fromAssocs (Z:.subword 0 0:.subword 0 0) (Z:.subword 0 highest:.subword 0 highest) ((-1,-1),(-1,-1))
+        $ Prelude.map (\((i,j),(k,l)) -> (Z:.subword i j:.subword k l, ((i,j),(k,l)) )) [ ((i,j) , (k,l)) | i <- [0 .. highest], j <-[i .. highest], k <- [0 .. highest], l <- [0 .. highest] ]
 
 -- * general quickcheck stuff
 
