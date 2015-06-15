@@ -131,6 +131,7 @@ library
     ADP.Fusion.Term.PeekIndex.Type
     ADP.Fusion.Term.Strng
     ADP.Fusion.Term.Strng.Point
+    ADP.Fusion.Term.Strng.Subword
     ADP.Fusion.Term.Strng.Type
     ADP.Fusion.SynVar
     ADP.Fusion.SynVar.Array
