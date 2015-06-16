@@ -86,10 +86,10 @@ flag debug
 
 
 library
-
+-- ghc-prim: for reallyUnsafePtrEquality#
   build-depends: base               >= 4.7      && < 4.9
                , bits               == 0.4.*
-               , ghc-prim           == 0.4.*
+               , ghc-prim
                , mmorph             == 1.0.*
                , monad-primitive    == 0.1
                , mtl                == 2.*
