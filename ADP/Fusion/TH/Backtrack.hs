@@ -76,7 +76,10 @@ makeProductInstances tyconName = do
           iC <- [d| instance (Monad $(varT mL), Monad $(varT mR), Eq $(varT xL), $(varT mL) ~ $(varT mR) {- , VG.Vector $(varT vG) ($(varT rL),$(varT rR)) -} )
                       => ProductCombining $(return lType) $(return rType) where
                           type SigCombining $(return lType) $(return rType) = $(return sigPType)
-                          (***) = undefined -- $(return $ LamE psC $ LetE dsC bC)
+                          (***) = undefined
+                          {-
+                           - (***) = $(return $ LamE psC $ LetE dsC bC)
+                           - -}
                           {-# Inline (***) #-}
                 |]
           return $ iB -- ++ iC
@@ -281,7 +284,9 @@ buildBacktrackingChoice hL' hR' =
                      -- second choice on snd elements, then concat'ed up
                      -- TODO good candidate for rewriting into flatten
                      -- operation!
-               -- $(varE hR') $ SM.concatMap (SM.fromList . snd) $ SM.filter ((hFres==) . fst) $ vectorToStream ysM
+               {-
+                - $(varE hR') $ SM.concatMap (SM.fromList . snd) $ SM.filter ((hFres==) . fst) $ vectorToStream ysM
+                -}
                $(varE hR') $ SM.fromList $ concatMap snd $ filter ((hFres==) . fst) $ V.toList ysM
   |]
 
@@ -301,7 +306,10 @@ buildCombiningChoice hL' hR' =
                --        bs <- streamToVector =<< $(varE hR') $ SM.map snd $ vectorToStream $ as
                --        -- return the combined result, with @f@ attached.
                --        return $ V.map (\z -> (f,z)) bs
-               undefined -- $ V.concat $ V.toList vs
+               undefined
+               {-
+                - $ V.concat $ V.toList vs
+                -}
                -- TODO we should return a @newtype Many x = forall (G.Vector v x) => Many { v x }
                -- Together with a closed type family, this gives us a good
                -- way to encode that we have classified DP
