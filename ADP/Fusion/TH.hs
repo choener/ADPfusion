@@ -14,6 +14,7 @@
 module ADP.Fusion.TH
   ( makeAlgebraProduct
   , (<||)
+  , (***)
   ) where
 
 import           Data.List
@@ -22,7 +23,7 @@ import           Language.Haskell.TH
 import           Language.Haskell.TH.Syntax
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 
-import           ADP.Fusion.TH.Backtrack (makeBacktrackingProductInstance,(<||))
+import           ADP.Fusion.TH.Backtrack -- (makeBacktrackingProductInstance,(<||))
 import           ADP.Fusion.TH.Common (getRuleResultType)
 
 

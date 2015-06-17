@@ -30,6 +30,7 @@ import           ADP.Fusion.TH.Common
 class BacktrackingProduct sigF sigB where
   type SigR sigF sigB :: *
   (<||) :: sigF -> sigB -> SigR sigF sigB
+  (***) :: sigF -> sigB -> SigR sigF sigB
 
 makeBacktrackingProductInstance :: Name -> Q [Dec]
 makeBacktrackingProductInstance tyconName = do
@@ -49,11 +50,14 @@ makeBacktrackingProductInstance tyconName = do
           let rType    = buildRightType tyconName (m', x, r) (mR, xR, rR)    args
           let sigRType = buildSigRType  tyconName (m', x, r) xL (mR, xR, rR) args
           let (fs,hs) = partition ((`notElem` [h]) . sel1) funs
-          Clause ps (NormalB b) ds <- genClauseBacktrack dataconName funs fs hs
+          Clause ps1 (NormalB b1) ds1 <- genClauseBacktrack buildBacktrackingChoice dataconName funs fs hs
+          Clause ps2 (NormalB b2) ds2 <- genClauseBacktrack buildCombiningChoice    dataconName funs fs hs
           i <- [d| instance (Monad $(varT mL), Monad $(varT mR), Eq $(varT xL), $(varT mL) ~ $(varT mR)) => BacktrackingProduct $(return lType) $(return rType) where
                      type SigR $(return lType) $(return rType) = $(return sigRType)
-                     (<||) = $(return $ LamE ps $ LetE ds b)
+                     (<||) = $(return $ LamE ps1 $ LetE ds1 b1)
+--                     (***) = $(return $ LamE ps2 $ LetE ds2 b2)
                      {-# Inline (<||) #-}
+--                     {-# Inline (***) #-}
                |]
           return i
 
@@ -107,12 +111,13 @@ buildSigRType tycon (m, x, r) (xL) (mR, xR, rR) = foldl AppT (ConT tycon) . map 
 -- |
 
 genClauseBacktrack
-  :: Name
+  :: Choice
+  -> Name
   -> [VarStrictType]
   -> [VarStrictType]
   -> [VarStrictType]
   -> Q Clause
-genClauseBacktrack conName allFunNames evalFunNames choiceFunNames = do
+genClauseBacktrack choice conName allFunNames evalFunNames choiceFunNames = do
   let nonTermNames = nub . map getRuleResultType $ evalFunNames
   -- bind the l'eft and r'ight variable of the two algebras we want to join,
   -- also create unique names for the function names we shall bind later.
@@ -127,7 +132,7 @@ genClauseBacktrack conName allFunNames evalFunNames choiceFunNames = do
   whereL <- valD (conP conName (map varP fnmsL)) (normalB $ varE nameL) []
   whereR <- valD (conP conName (map varP fnmsR)) (normalB $ varE nameR) []
   rce <- recConE conName
-          $  zipWith3 (genChoiceFunction) (drop (length evalFunNames) fnmsL) (drop (length evalFunNames) fnmsR) choiceFunNames
+          $  zipWith3 (genChoiceFunction choice) (drop (length evalFunNames) fnmsL) (drop (length evalFunNames) fnmsR) choiceFunNames
           ++ zipWith3 (genAttributeFunction nonTermNames) fnmsL fnmsR evalFunNames
   -- build the function pairs
   -- to keep our sanity, lets print this stuff
@@ -137,12 +142,13 @@ genClauseBacktrack conName allFunNames evalFunNames choiceFunNames = do
 -- |
 
 genChoiceFunction
-  :: Name
+  :: Choice
+  -> Name
   -> Name
   -> VarStrictType
   -> Q (Name,Exp)
-genChoiceFunction hL hR (name,_,t) = do
-  exp <- buildBacktrackingChoice hL hR
+genChoiceFunction choice hL hR (name,_,t) = do
+  exp <- choice hL hR
   return (name,exp)
 
 
@@ -200,6 +206,12 @@ buildRns f ps = do
         go (TupP _ : gs) (v:ys) = v : go gs ys  -- insert new binders
         go as bs = error $ show ("not done?", as, bs)
 
+-- | Type for backtracking functions.
+--
+-- Not too interesting, mostly to keep track of @choice@.
+
+type Choice = Name -> Name -> Q Exp
+
 -- | Build up the backtracking choice function. This choice function will
 -- backtrack based on the first result, then return only the second.
 --
@@ -213,7 +225,7 @@ buildRns f ps = do
 --
 -- This means strict optimization AND lazy backtracking
 
-buildBacktrackingChoice :: Name -> Name -> Q Exp
+buildBacktrackingChoice :: Choice
 buildBacktrackingChoice hL' hR' =
   [| \xs -> do        -- first, create a boxed, mutable vector from the results
                ysM <- streamToVector xs -- VGM.unstream xs :: m (VM.MVector s (t1,[t2]))
@@ -223,6 +235,25 @@ buildBacktrackingChoice hL' hR' =
                      -- TODO good candidate for rewriting into flatten
                      -- operation!
                $(varE hR') $ SM.concatMap (SM.fromList . snd) $ SM.filter ((hFres==) . fst) $ vectorToStream ysM
+  |]
+
+buildCombiningChoice :: Choice
+buildCombiningChoice hL' hR' =
+  [| \xs -> do       -- first, create a boxed, mutable vector from the results
+               ys <- streamToVector xs
+                     -- apply first choice
+               fs <- $(varE hL') $ SM.map fst $ vectorToStream ys
+                     -- generate a vector of vectors, one for each
+                     -- surviving @f@
+               vs <- V.forM fs $ \f -> do
+                       -- keep only those @ys@ that have @f@
+                       let as = V.filter ((f==) . fst) ys
+                       -- apply @hR'@ to those, but only to the @snd@
+                       -- elements
+                       bs <- streamToVector =<< $(varE hR') $ SM.map snd $ vectorToStream $ as
+                       -- return the combined result, with @f@ attached.
+                       return $ V.map (\z -> (f,z)) bs
+               return $ V.concat $ V.toList vs
   |]
 
 -- | Transform a monadic stream monadically into a vector.
