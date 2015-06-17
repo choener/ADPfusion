@@ -100,7 +100,7 @@ grammar Nussinov{..} c t' =
 {-# INLINE grammar #-}
 
 runNussinov :: Int -> String -> (Int,[String])
-runNussinov k inp = (d, take k bs) where -- . {- . S.toList . -} unId $ axiom b) where
+runNussinov k inp = (d, take k bs) where
   i = VU.fromList . Prelude.map toUpper $ inp
   n = VU.length i
   !(Z:.t) = runInsideForward i

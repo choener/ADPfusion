@@ -6,6 +6,7 @@
 
 module ADP.Fusion.TH.Backtrack where
 
+import           Control.Monad
 import           Data.List
 import           Data.Tuple.Select
 import           Language.Haskell.TH
@@ -23,17 +24,25 @@ import           ADP.Fusion.TH.Common
 
 
 
--- | The type class of algebra products. We have the forward signature
--- @sigF@ and the backtracking signature @sigB@. Combined via @(<||)@ we
--- have a new signature @SigR@.
+-- | @Backtracking@ products of @f@ and @b@. Choice in @f@ needs to be
+-- reduced to a scalar value. It is then compared to the @fst@ values
+-- in @b@. From those, @choice b@ selects.
 
-class BacktrackingProduct sigF sigB where
-  type SigR sigF sigB :: *
-  (<||) :: sigF -> sigB -> SigR sigF sigB
-  (***) :: sigF -> sigB -> SigR sigF sigB
+class ProductBacktracking sigF sigB where
+  type SigBacktracking sigF sigB :: *
+  (<||) :: sigF -> sigB -> SigBacktracking sigF sigB
 
-makeBacktrackingProductInstance :: Name -> Q [Dec]
-makeBacktrackingProductInstance tyconName = do
+-- | The ADP-established product operation. Returns a vector of results,
+-- along the lines of what the ADP @f *** b@ provides.
+
+class ProductCombining sigF sigB where
+  type SigCombining sigF sigB :: *
+  (***) :: sigF -> sigB -> SigCombining sigF sigB
+
+-- | Creates instances for all products given a signature data type.
+
+makeProductInstances :: Name -> Q [Dec]
+makeProductInstances tyconName = do
   t <- reify tyconName
   case t of
     TyConI (DataD ctx tyConName args cs d) -> do
@@ -43,23 +52,34 @@ makeBacktrackingProductInstance tyconName = do
           let Just (h,m',x,r) = getObjectiveNames funs
           mL <- newName "mL"
           xL <- newName "xL"
+          rL <- newName "rL"
           mR <- newName "mR"
           xR <- newName "xR"
           rR <- newName "rR"
-          let lType    = buildLeftType  tyconName (m', x, r) (mL, xL)        args
+--          let lType    = buildLeftType  tyconName (m', x, r) (mL, xL)        args
+          let lType    = buildRightType tyconName (m', x, r) (mL, xL, rL)    args
           let rType    = buildRightType tyconName (m', x, r) (mR, xR, rR)    args
-          let sigRType = buildSigRType  tyconName (m', x, r) xL (mR, xR, rR) args
           let (fs,hs) = partition ((`notElem` [h]) . sel1) funs
-          Clause ps1 (NormalB b1) ds1 <- genClauseBacktrack buildBacktrackingChoice dataconName funs fs hs
-          Clause ps2 (NormalB b2) ds2 <- genClauseBacktrack buildCombiningChoice    dataconName funs fs hs
-          i <- [d| instance (Monad $(varT mL), Monad $(varT mR), Eq $(varT xL), $(varT mL) ~ $(varT mR)) => BacktrackingProduct $(return lType) $(return rType) where
-                     type SigR $(return lType) $(return rType) = $(return sigRType)
-                     (<||) = $(return $ LamE ps1 $ LetE ds1 b1)
---                     (***) = $(return $ LamE ps2 $ LetE ds2 b2)
-                     {-# Inline (<||) #-}
---                     {-# Inline (***) #-}
-               |]
-          return i
+          let sigBType = buildSigBacktrackingType  tyconName (m', x, r) xL (mR, xR, rR) args
+          Clause psB (NormalB bB) dsB <- genAlgProdFunctions buildBacktrackingChoice dataconName funs fs hs
+          iB <- [d| instance (Monad $(varT mL), Monad $(varT mR), Eq $(varT xL), $(varT mL) ~ $(varT mR), $(varT xL) ~ $(varT rL))
+                      => ProductBacktracking $(return lType) $(return rType) where
+                          type SigBacktracking $(return lType) $(return rType) = $(return sigBType)
+                          (<||) = $(return $ LamE psB $ LetE dsB bB)
+                          {-# Inline (<||) #-}
+                |]
+          -- TODO might well be that this doesn't work because we re-use
+          -- type names ...
+          vG <- newName "vG"
+          sigPType <- buildSigCombiningType tyconName vG (m', x, r) (mL, xL, rL) (mR, xR, rR) args
+          Clause psC (NormalB bC) dsC <- genAlgProdFunctions buildCombiningChoice    dataconName funs fs hs
+          iC <- [d| instance (Monad $(varT mL), Monad $(varT mR), Eq $(varT xL), $(varT mL) ~ $(varT mR) {- , VG.Vector $(varT vG) ($(varT rL),$(varT rR)) -} )
+                      => ProductCombining $(return lType) $(return rType) where
+                          type SigCombining $(return lType) $(return rType) = $(return sigPType)
+                          (***) = undefined -- $(return $ LamE psC $ LetE dsC bC)
+                          {-# Inline (***) #-}
+                |]
+          return $ iB -- ++ iC
 
 -- | Returns the 'Name' of the monad variable.
 
@@ -80,6 +100,13 @@ getObjectiveNames = go
           | otherwise             = go xs
         go ( _ : xs) = go xs
 
+
+
+-- * Constructions for the different algebra types.
+
+-- | The left algebra type. Assumes that in @choice :: Stream m x -> m r@
+-- we have that @x ~ r@.
+
 buildLeftType :: Name -> (Name, Name, Name) -> (Name, Name) -> [TyVarBndr] -> Type
 buildLeftType tycon (m, x, r) (mL, xL) = foldl AppT (ConT tycon) . map (VarT . go)
   where go (PlainTV z)
@@ -88,7 +115,8 @@ buildLeftType tycon (m, x, r) (mL, xL) = foldl AppT (ConT tycon) . map (VarT . g
           | z == r        = xL  -- stream and return type are the same
           | otherwise     = z   -- everything else can stay as is
         go (KindedTV z _) = go (PlainTV z)
---        go s              = error $ "buildLeftType: " ++ show s
+
+-- | Here, we do not set any restrictions on the types @m@ and @r@.
 
 buildRightType :: Name -> (Name, Name, Name) -> (Name, Name, Name) -> [TyVarBndr] -> Type
 buildRightType tycon (m, x, r) (mR, xR, rR) = foldl AppT (ConT tycon) . map (VarT . go)
@@ -99,8 +127,11 @@ buildRightType tycon (m, x, r) (mR, xR, rR) = foldl AppT (ConT tycon) . map (Var
           | otherwise = z
         go (KindedTV z _) = go (PlainTV z)
 
-buildSigRType :: Name -> (Name, Name, Name) -> (Name) -> (Name, Name, Name) -> [TyVarBndr] -> Type
-buildSigRType tycon (m, x, r) (xL) (mR, xR, rR) = foldl AppT (ConT tycon) . map go
+-- | Build up the type for backtracking. We want laziness in the right
+-- return type. Hence, we have @AppT ListT (VarT xR)@.
+
+buildSigBacktrackingType :: Name -> (Name, Name, Name) -> (Name) -> (Name, Name, Name) -> [TyVarBndr] -> Type
+buildSigBacktrackingType tycon (m, x, r) (xL) (mR, xR, rR) = foldl AppT (ConT tycon) . map go
   where go (PlainTV z)
           | z == m    = VarT mR
           | z == x    = (AppT (AppT (TupleT 2) (VarT xL)) (AppT ListT (VarT xR)))
@@ -108,16 +139,32 @@ buildSigRType tycon (m, x, r) (xL) (mR, xR, rR) = foldl AppT (ConT tycon) . map 
           | otherwise = VarT z
         go (KindedTV z _) = go (PlainTV z)
 
--- |
+-- | Build up the type for backtracking. We want laziness in the right
+-- return type. Hence, we have @AppT ListT (VarT xR)@.
 
-genClauseBacktrack
+buildSigCombiningType :: Name -> Name -> (Name, Name, Name) -> (Name, Name, Name) -> (Name, Name, Name) -> [TyVarBndr] -> TypeQ
+buildSigCombiningType tycon vG (m, x, r) (mL, xL, rL) (mR, xR, rR) = foldl appT (conT tycon) . map go
+  where go (PlainTV z)
+          | z == m    = varT mR
+          | z == x    = [t| ($(varT xL) , $(varT xR)) |]
+          | z == r    = [t| V.Vector ($(varT rL) , $(varT rR)) |]
+          | otherwise = varT z
+        go (KindedTV z _) = go (PlainTV z)
+
+
+
+-- *
+
+-- | Build up attribute and choice function.
+
+genAlgProdFunctions
   :: Choice
   -> Name
   -> [VarStrictType]
   -> [VarStrictType]
   -> [VarStrictType]
   -> Q Clause
-genClauseBacktrack choice conName allFunNames evalFunNames choiceFunNames = do
+genAlgProdFunctions choice conName allFunNames evalFunNames choiceFunNames = do
   let nonTermNames = nub . map getRuleResultType $ evalFunNames
   -- bind the l'eft and r'ight variable of the two algebras we want to join,
   -- also create unique names for the function names we shall bind later.
@@ -234,29 +281,35 @@ buildBacktrackingChoice hL' hR' =
                      -- second choice on snd elements, then concat'ed up
                      -- TODO good candidate for rewriting into flatten
                      -- operation!
-               $(varE hR') $ SM.concatMap (SM.fromList . snd) $ SM.filter ((hFres==) . fst) $ vectorToStream ysM
+               -- $(varE hR') $ SM.concatMap (SM.fromList . snd) $ SM.filter ((hFres==) . fst) $ vectorToStream ysM
+               $(varE hR') $ SM.fromList $ concatMap snd $ filter ((hFres==) . fst) $ V.toList ysM
   |]
 
 buildCombiningChoice :: Choice
 buildCombiningChoice hL' hR' =
   [| \xs -> do       -- first, create a boxed, mutable vector from the results
-               ys <- streamToVector xs
-                     -- apply first choice
-               fs <- $(varE hL') $ SM.map fst $ vectorToStream ys
-                     -- generate a vector of vectors, one for each
-                     -- surviving @f@
-               vs <- V.forM fs $ \f -> do
-                       -- keep only those @ys@ that have @f@
-                       let as = V.filter ((f==) . fst) ys
-                       -- apply @hR'@ to those, but only to the @snd@
-                       -- elements
-                       bs <- streamToVector =<< $(varE hR') $ SM.map snd $ vectorToStream $ as
-                       -- return the combined result, with @f@ attached.
-                       return $ V.map (\z -> (f,z)) bs
-               return $ V.concat $ V.toList vs
+               --ys <- streamToVector xs
+               --      -- apply first choice
+               --fs <- $(varE hL') $ SM.map fst $ vectorToStream ys
+               --      -- generate a vector of vectors, one for each
+               --      -- surviving @f@
+               --vs <- V.forM fs $ \f -> do
+               --        -- keep only those @ys@ that have @f@
+               --        let as = V.filter ((f==) . fst) ys
+               --        -- apply @hR'@ to those, but only to the @snd@
+               --        -- elements
+               --        bs <- streamToVector =<< $(varE hR') $ SM.map snd $ vectorToStream $ as
+               --        -- return the combined result, with @f@ attached.
+               --        return $ V.map (\z -> (f,z)) bs
+               undefined -- $ V.concat $ V.toList vs
+               -- TODO we should return a @newtype Many x = forall (G.Vector v x) => Many { v x }
+               -- Together with a closed type family, this gives us a good
+               -- way to encode that we have classified DP
   |]
 
 -- | Transform a monadic stream monadically into a vector.
+--
+-- TODO Improve code!
 
 streamToVector :: (Monad m) => SM.Stream m x -> m (V.Vector x)
 streamToVector xs = do
@@ -266,6 +319,8 @@ streamToVector xs = do
 {-# Inline streamToVector #-}
 
 -- | Transform a vector into a monadic stream.
+--
+-- TODO improve code!
 
 vectorToStream :: (Monad m) => V.Vector x -> SM.Stream m x
 vectorToStream = SM.fromList . V.toList

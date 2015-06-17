@@ -256,6 +256,7 @@ executable Nussinov
                     , TemplateHaskell
                     , TypeFamilies
                     , TypeOperators
+                    , UndecidableInstances
   ghc-options:
     -O2
     -funbox-strict-fields

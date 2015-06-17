@@ -28,7 +28,7 @@ import           ADP.Fusion.TH.Common (getRuleResultType)
 
 
 
-makeAlgebraProduct = makeBacktrackingProductInstance
+makeAlgebraProduct = makeProductInstances
 
 {-
 -- | Create the algebra product function from a signature type constructor.
