@@ -88,20 +88,20 @@ flag debug
 library
 -- ghc-prim: for reallyUnsafePtrEquality#
   build-depends: base               >= 4.7      && < 4.9
-               , bits               == 0.4.*
+               , bits               >= 0.4      && < 0.5
                , ghc-prim
-               , mmorph             == 1.0.*
-               , monad-primitive    == 0.1
-               , mtl                == 2.*
-               , OrderedBits        == 0.0.0.*
+               , mmorph             >= 1.0      && < 1.1
+               , monad-primitive    >= 0.1      && < 0.2
+               , mtl                >= 2.0      && < 2.3
+               , OrderedBits        >= 0.0.0.1  && < 0.0.1
                , primitive          >= 0.5.4    && < 0.7
                , PrimitiveArray     >= 0.6.0.1  && < 0.6.2
                , QuickCheck         >= 2.7      && < 2.9
-               , strict             == 0.3.*
-               , template-haskell   == 2.*
+               , strict             >= 0.3      && < 0.4
+               , template-haskell   >= 2.0      && < 3.0
                , transformers       >= 0.3      && < 0.5
-               , tuple              == 0.3.*
-               , vector             == 0.10.*
+               , tuple              >= 0.3      && < 0.4
+               , vector             >= 0.10     && < 0.11
 
   exposed-modules:
     ADP.Fusion
@@ -149,6 +149,9 @@ library
     ADP.Fusion.SynVar.Recursive.Point
     ADP.Fusion.SynVar.Recursive.Subword
     ADP.Fusion.SynVar.Recursive.Type
+    ADP.Fusion.SynVar.Split
+    ADP.Fusion.SynVar.Split.Subword
+    ADP.Fusion.SynVar.Split.Type
     ADP.Fusion.TH
     ADP.Fusion.TH.Backtrack
     ADP.Fusion.TH.Common
@@ -158,10 +161,12 @@ library
     ADP.Fusion.QuickCheck.Subword
 
   default-extensions: BangPatterns
+                    , DataKinds
                     , DefaultSignatures
                     , FlexibleContexts
                     , FlexibleInstances
                     , GADTs
+                    , KindSignatures
                     , MultiParamTypeClasses
                     , RankNTypes
                     , StandaloneDeriving
