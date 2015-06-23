@@ -1,4 +1,6 @@
 
+{-# Language DataKinds #-}
+
 module Main where
 
 import           Control.Applicative
@@ -19,17 +21,19 @@ import           Data.PrimitiveArray as PA hiding (map)
 
 import           ADP.Fusion
 
+import           ADP.Fusion.SynVar.Split.Type
+
 
 
 data Signature m x r c = Signature
-  { ovrlap :: x -> x -> x -> x -> x -- TODO !!!
+  { ovrlap :: () -> () -> x -> x -> x -- TODO !!!
   , brckts :: (Z:.c:.()) -> x -> (Z:.():.c) -> x
   , braces :: (Z:.c:.()) -> x -> (Z:.():.c) -> x
   , nilnil :: (Z:.():.()) -> x
   , h :: Stream m x -> m r
   }
 
-makeAlgebraProduct ''Signature
+--makeAlgebraProduct ''Signature
 
 
 
@@ -41,7 +45,10 @@ makeAlgebraProduct ''Signature
 -- @
 
 grammar Signature{..} x' a' b' i =
-  let x = x'  ( ovrlap <<< a % b % a % b         ... h
+  let x = x'  ( ovrlap <<< (split (Proxy :: Proxy "a") (Proxy :: Proxy 0) (Proxy :: Proxy Fragment) a)
+                        %  (split (Proxy :: Proxy "b") (Proxy :: Proxy 0) (Proxy :: Proxy Fragment) b)
+                        %  (split (Proxy :: Proxy "a") (Proxy :: Proxy 0) (Proxy :: Proxy Final   ) a)
+                        %  (split (Proxy :: Proxy "b") (Proxy :: Proxy 0) (Proxy :: Proxy Final   ) b) ... h
               )
       a = a'  ( nilnil <<< (M:|Epsilon:|Epsilon)                           |||
                 brckts <<< (M:|chr i:|Deletion) % a % (M:|Deletion:|chr i) ... h
@@ -88,7 +95,7 @@ overlappingPalindromes inp = (d,bs) where
   i  = VU.fromList inp
   n  = VU.length i
   d  = unId $ axiom x
-  bs = unId $ axiom x'
+  bs = [] -- unId $ axiom x'
   x :: X
   a :: T
   b :: T
@@ -98,18 +105,20 @@ overlappingPalindromes inp = (d,bs) where
                    (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.subword 0 0:.subword 0 0) (Z:.subword 0 n:.subword 0 n) (-999999) []))
                    (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.subword 0 0:.subword 0 0) (Z:.subword 0 n:.subword 0 n) (-999999) []))
                    i
+  {-
   (Z:.x':.a':.b') = grammar (score <|| pretty)
                       (toBacktrack x (undefined :: Id a -> Id a))
                       (toBacktrack a (undefined :: Id a -> Id a))
                       (toBacktrack b (undefined :: Id a -> Id a))
                       i
+                      -}
 {-# NoInline overlappingPalindromes #-}
 
 type X = ITbl Id Unboxed Subword Int
 type T = ITbl Id Unboxed (Z:.Subword:.Subword) Int
 
 
-
+{-
 main :: IO ()
 main = do
   xs <- fmap lines $ getContents
@@ -118,4 +127,5 @@ main = do
     putStrLn x
     print d
     putStrLn $ head $ head bs
+-}
 

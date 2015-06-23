@@ -5,7 +5,10 @@
 --
 -- NOTE /highly experimental/
 
-module ADP.Fusion.SynVar.Split.Type where
+module ADP.Fusion.SynVar.Split.Type
+  ( module ADP.Fusion.SynVar.Split.Type
+  , Proxy (..)
+  ) where
 
 import Data.Proxy
 import Data.Strict.Tuple
@@ -45,14 +48,19 @@ type family ArgTy argTy where
 --
 -- TODO attach empty/non-empty stuff (or get from non-splitted synvar?)
 
-newtype Split (uId :: Symbol) (zOrder :: Nat) (splitType :: SplitType) synVar varTy = Split { getSplit :: synVar }
+newtype Split (uId :: Symbol) (zOrder :: Nat) (splitType :: SplitType) synVar = Split { getSplit :: synVar }
+
+split :: Proxy (uId::Symbol) -> Proxy (zOrder::Nat) -> Proxy (splitType::SplitType) -> synVar -> Split uId zOrder splitType synVar
+split _ _ _ = Split
+
+type Spl uId zOrder splitType = forall synVar . Split uId zOrder splitType synVar
 
 instance
   ( Element ls i
-  ) => Element (ls :!: Split uId zOrder splitType synVar varTy) i where
-  data Elm     (ls :!: Split uId zOrder splitType synVar varTy) i = ElmSplit !(Proxy uId) !(CalcSplitType splitType varTy) !i !i !(Elm ls i)
-  type Arg     (ls :!: Split uId zOrder splitType synVar varTy)   = Arg ls :. (CalcSplitType splitType varTy)
-  type RecElm  (ls :!: Split uId zOrder splitType synVar varTy) i = Elm ls i
+  ) => Element (ls :!: Split uId zOrder splitType (ITbl m arr j x)) i where
+  data Elm     (ls :!: Split uId zOrder splitType (ITbl m arr j x)) i = ElmSplit !(Proxy uId) !(CalcSplitType splitType x) !i !i !(Elm ls i)
+  type Arg     (ls :!: Split uId zOrder splitType (ITbl m arr j x))   = Arg ls :. (CalcSplitType splitType x)
+  type RecElm  (ls :!: Split uId zOrder splitType (ITbl m arr j x)) i = Elm ls i
   getArg (ElmSplit _ x _ _ ls) = getArg ls :. x
   getIdx (ElmSplit _ _ i _ _ ) = i
   getOmx (ElmSplit _ _ _ o _ ) = o
@@ -68,7 +76,7 @@ instance
   ( Monad m
   , Element ls Subword
   , MkStream m ls Subword
-  ) => MkStream m (ls :!: Split uId zOrder Fragment synVar varTy) Subword where
+  ) => MkStream m (ls :!: Split uId zOrder Fragment (ITbl m arr j x)) Subword where
   mkStream (ls :!: Split _) (IStatic ()) hh (Subword (i:.j))
     = map (\s -> let (Subword (_:.l)) = getIdx s
                  in  ElmSplit Proxy () (subword l j) (subword 0 0) s)
@@ -125,7 +133,7 @@ instance
   ,  (PrimArrayOps arr (BTy uId (SameSid uId (Elm ls Subword)) ls Subword :. Subword) x)
 --  , x ~ ArgTy (Arg (ITbl m arr (BuildIxTy uId ls :. Subword) x))
 --  , j ~ BuildIxTy uId (ls :!: Split uId zOrder Final (ITbl m arr j x))
-  ) => MkStream m (ls :!: Split uId zOrder Final (ITbl m arr mix x) x) Subword where
+  ) => MkStream m (ls :!: Split uId zOrder Final (ITbl m arr mix x)) Subword where
   mkStream (ls :!: Split (ITbl _ _ c t elm)) (IStatic ()) hh (Subword (i:.j))
     = map (\s -> let (Subword (_:.l)) = getIdx s
                      fmbkm :: mix = ccc (Proxy :: Proxy uId) s :. subword l j
@@ -153,16 +161,24 @@ instance
   bbb p b e = ccc p (getElm e)
   {-# Inline bbb #-}
 
+-- TODO ?
 instance
   ( B uId (SameSid uId (Elm ls i)) ls i
-  ) => B uId True  (ls :!: Split sId zOrder splitType synVar varTy) i where
-  type BTy uId True (ls :!: Split sId zOrder splitType synVar varTy) i = CTy uId ls i :. i
+  ) => B uId False  (ls :!: Split sId zOrder splitType  (ITbl m arr j x)) i where
+  type BTy uId False (ls :!: Split sId zOrder splitType (ITbl m arr j x)) i = CTy uId ls i
+  bbb p b (ElmSplit _ _ i _ e) = ccc p e
+  {-# Inline bbb #-}
+
+instance
+  ( B uId (SameSid uId (Elm ls i)) ls i
+  ) => B uId True  (ls :!: Split sId zOrder splitType  (ITbl m arr j x)) i where
+  type BTy uId True (ls :!: Split sId zOrder splitType (ITbl m arr j x)) i = CTy uId ls i :. i
   bbb p b (ElmSplit _ _ i _ e) = ccc p e :. i
   {-# Inline bbb #-}
 
 type family SameSid uId elm :: Bool where
-  SameSid uId (Elm (ls :!: Split sId zOrder splitType synVar varTy) i) = uId == sId
-  SameSid uId (Elm (ls :!: l                                      ) i) = False
+  SameSid uId (Elm (ls :!: Split sId zOrder splitType synVar) i) = uId == sId
+  SameSid uId (Elm (ls :!: l                                ) i) = False
 
 class C (uId::Symbol) ls i where
   type CTy uId ls i :: *
