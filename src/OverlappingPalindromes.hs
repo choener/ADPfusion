@@ -42,7 +42,7 @@ import           ADP.Fusion.SynVar.Split.Type
 
 
 data Signature m x r c = Signature
-  { ovrlap :: () -> () -> x -> x -> x -- TODO !!!
+  { ovrlap :: () -> () -> x -> x -> () -> x -- TODO !!!
   , brckts :: (Z:.c:.()) -> x -> (Z:.():.c) -> x
   , braces :: (Z:.c:.()) -> x -> (Z:.():.c) -> x
   , nilnil :: (Z:.():.()) -> x
@@ -64,7 +64,8 @@ grammar Signature{..} x' a' b' i =
   let x = x'  ( ovrlap <<< (split (Proxy :: Proxy "a") (Proxy :: Proxy 0) (Proxy :: Proxy Fragment) a)
                         %  (split (Proxy :: Proxy "b") (Proxy :: Proxy 0) (Proxy :: Proxy Fragment) b)
                         %  (split (Proxy :: Proxy "a") (Proxy :: Proxy 0) (Proxy :: Proxy Final   ) a)
-                        %  (split (Proxy :: Proxy "b") (Proxy :: Proxy 0) (Proxy :: Proxy Final   ) b) ... h
+                        %  (split (Proxy :: Proxy "b") (Proxy :: Proxy 0) (Proxy :: Proxy Final   ) b) -- ... h
+                        %  (split (Proxy :: Proxy "c") (Proxy :: Proxy 0) (Proxy :: Proxy Fragment) b) ... h
               )
       a = a'  ( nilnil <<< (M:|Epsilon:|Epsilon)                           |||
                 brckts <<< (M:|chr i:|Deletion) % a % (M:|Deletion:|chr i) ... h
@@ -79,7 +80,7 @@ grammar Signature{..} x' a' b' i =
 
 score :: Monad m => Signature m Int Int Char
 score = Signature
-  { ovrlap = \ a' b' a b -> {- if a>0 || b>0 then traceShow ("oo",a',b',a,b) $ a + b else -} a+b -- TODO !!!
+  { ovrlap = \ a' b' a b _ -> {- if a>0 || b>0 then traceShow ("oo",a',b',a,b) $ a + b else -} a+b -- TODO !!!
   , brckts = \ (Z:.l:.()) a (Z:.():.r) -> {- traceShow ("[]",l,a,r) $ -} if l=='[' && r==']' then a+1 else -999999
   , braces = \ (Z:.l:.()) b (Z:.():.r) -> {- traceShow ("()",l,b,r) $ -} if l=='(' && r==')' then b+1 else -999999
   , nilnil = \ _ -> 0
@@ -94,6 +95,7 @@ score = Signature
 -- TODO pretty shows in @ovrlap@ that we might want to introduce a second
 -- @h@ together with @Stream m y -> m s@?
 
+{-
 pretty :: Monad m => Signature m [String] [[String]] Char
 pretty = Signature
   { ovrlap = \ _ _ [a,a'] [b,b'] -> [a ++ b ++ a' ++ b'] -- TODO !!!
@@ -103,6 +105,7 @@ pretty = Signature
   , h = SM.toList
   }
 {-# Inline pretty #-}
+-}
 
 
 
