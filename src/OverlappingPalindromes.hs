@@ -1,5 +1,21 @@
 
 {-# Language DataKinds #-}
+{-# Language KindSignatures #-}
+{-# Language ScopedTypeVariables #-}
+{-# Language DataKinds               #-}
+{-# Language DefaultSignatures       #-}
+{-# Language FlexibleContexts        #-}
+{-# Language FlexibleInstances       #-}
+{-# Language GADTs                   #-}
+{-# Language KindSignatures          #-}
+{-# Language MultiParamTypeClasses   #-}
+{-# Language RankNTypes              #-}
+{-# Language StandaloneDeriving      #-}
+{-# Language TemplateHaskell         #-}
+{-# Language TypeFamilies            #-}
+{-# Language TypeOperators           #-}
+{-# Language TypeSynonymInstances    #-}
+{-# Language UndecidableInstances    #-}
 
 module Main where
 
@@ -99,12 +115,15 @@ overlappingPalindromes inp = (d,bs) where
   x :: X
   a :: T
   b :: T
+  (Z:.x:.a:.b) = opForward i
+  {-
   (Z:.x:.a:.b) = mutateTablesDefault $
                    grammar score
                    (ITbl 1 0 EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-999999) []))
                    (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.subword 0 0:.subword 0 0) (Z:.subword 0 n:.subword 0 n) (-999999) []))
                    (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.subword 0 0:.subword 0 0) (Z:.subword 0 n:.subword 0 n) (-999999) []))
                    i
+                   -}
   {-
   (Z:.x':.a':.b') = grammar (score <|| pretty)
                       (toBacktrack x (undefined :: Id a -> Id a))
@@ -114,11 +133,21 @@ overlappingPalindromes inp = (d,bs) where
                       -}
 {-# NoInline overlappingPalindromes #-}
 
+opForward :: VU.Vector Char -> Z:.X:.T:.T
+opForward i =
+  let n = VU.length i
+  in  mutateTablesDefault $
+        grammar score
+        (ITbl 1 0 EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-999999) []))
+        (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.subword 0 0:.subword 0 0) (Z:.subword 0 n:.subword 0 n) (-999999) []))
+        (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.subword 0 0:.subword 0 0) (Z:.subword 0 n:.subword 0 n) (-999999) []))
+        i
+{-# NoInline opForward #-}
+
 type X = ITbl Id Unboxed Subword Int
 type T = ITbl Id Unboxed (Z:.Subword:.Subword) Int
 
 
-{-
 main :: IO ()
 main = do
   xs <- fmap lines $ getContents
@@ -126,6 +155,5 @@ main = do
     let (d,bs) = overlappingPalindromes x
     putStrLn x
     print d
-    putStrLn $ head $ head bs
--}
+--    putStrLn $ head $ head bs
 

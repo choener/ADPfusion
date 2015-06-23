@@ -52,6 +52,7 @@ newtype Split (uId :: Symbol) (zOrder :: Nat) (splitType :: SplitType) synVar = 
 
 split :: Proxy (uId::Symbol) -> Proxy (zOrder::Nat) -> Proxy (splitType::SplitType) -> synVar -> Split uId zOrder splitType synVar
 split _ _ _ = Split
+{-# split #-}
 
 type Spl uId zOrder splitType = forall synVar . Split uId zOrder splitType synVar
 
@@ -141,6 +142,17 @@ instance
                      fmbkm :: mix = ccc (Proxy :: Proxy uId) s :. subword l j
                  in  ElmSplit Proxy (t ! fmbkm) (subword l j) (subword 0 0) s)
     $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j)) -- TODO (see TODO in @Split@) - minSize c))
+  mkStream (ls :!: Split (ITbl _ _ c t _)) (IVariable ()) hh (Subword (i:.j))
+    = flatten mk step Unknown $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j)) -- TODO - minSize c))
+    where mk s = let Subword (_:.l) = getIdx s in return (s :. j - l) -- TODO - minSize c)
+          step (s:.z) | z >= 0 = do let Subword (_:.k) = getIdx s
+                                        l              = j - z
+                                        kl             = subword k l
+                                        fmbkm :: mix   = ccc (Proxy :: Proxy uId) s :. kl
+                                    return $ Yield (ElmSplit Proxy (t ! fmbkm) kl (subword 0 0) s) (s:. z-1)
+                      | otherwise = return $ Done
+          {-# Inline [0] mk   #-}
+          {-# Inline [0] step #-}
   {-# Inline mkStream #-}
 
 
@@ -164,12 +176,14 @@ instance
   {-# Inline bbb #-}
 
 -- TODO ?
+{-
 instance
   ( B uId (SameSid uId (Elm ls i)) ls i
   ) => B uId False  (ls :!: Split sId zOrder splitType  (ITbl m arr j x)) i where
   type BTy uId False (ls :!: Split sId zOrder splitType (ITbl m arr j x)) i = CTy uId ls i
   bbb p b (ElmSplit _ _ i _ e) = ccc p e
   {-# Inline bbb #-}
+-}
 
 instance
   ( B uId (SameSid uId (Elm ls i)) ls i
@@ -198,7 +212,7 @@ instance
 
 
 
-
+{-
 
 class Y (x :: Bool) where
   y :: (Proxy x) -> String
@@ -218,4 +232,6 @@ instance
   ) => Equal x y where
   equal' _ _ p = y p
   equal  x y   = equal' x y Proxy
+
+-}
 
