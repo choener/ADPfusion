@@ -55,6 +55,8 @@ split _ _ _ = Split
 
 type Spl uId zOrder splitType = forall synVar . Split uId zOrder splitType synVar
 
+instance Build (Split uId zOrder splitType synVar)
+
 instance
   ( Element ls i
   ) => Element (ls :!: Split uId zOrder splitType (ITbl m arr j x)) i where
