@@ -37,8 +37,6 @@ import           Data.PrimitiveArray as PA hiding (map)
 
 import           ADP.Fusion
 
-import           ADP.Fusion.SynVar.Split.Type
-
 
 
 data Signature m x r c = Signature
@@ -49,7 +47,7 @@ data Signature m x r c = Signature
   , h :: Stream m x -> m r
   }
 
---makeAlgebraProduct ''Signature
+makeAlgebraProduct ''Signature
 
 
 
@@ -61,11 +59,11 @@ data Signature m x r c = Signature
 -- @
 
 grammar Signature{..} x' a' b' i =
-  let x = x'  ( ovrlap <<< (split (Proxy :: Proxy "a") (Proxy :: Proxy 0) (Proxy :: Proxy Fragment) a)
-                        %  (split (Proxy :: Proxy "b") (Proxy :: Proxy 0) (Proxy :: Proxy Fragment) b)
-                        %  (split (Proxy :: Proxy "a") (Proxy :: Proxy 0) (Proxy :: Proxy Final   ) a)
-                        %  (split (Proxy :: Proxy "b") (Proxy :: Proxy 0) (Proxy :: Proxy Final   ) b) -- ... h
-                        %  (split (Proxy :: Proxy "c") (Proxy :: Proxy 0) (Proxy :: Proxy Fragment) b) ... h
+  let x = x'  ( ovrlap <<< (split (Proxy :: Proxy "a") (Proxy :: Proxy Fragment) a)
+                        %  (split (Proxy :: Proxy "b") (Proxy :: Proxy Fragment) b)
+                        %  (split (Proxy :: Proxy "a") (Proxy :: Proxy Final   ) a)
+                        %  (split (Proxy :: Proxy "b") (Proxy :: Proxy Final   ) b) -- ... h
+                        %  (split (Proxy :: Proxy "c") (Proxy :: Proxy Fragment) b) ... h
               )
       a = a'  ( nilnil <<< (M:|Epsilon:|Epsilon)                           |||
                 brckts <<< (M:|chr i:|Deletion) % a % (M:|Deletion:|chr i) ... h
@@ -95,17 +93,15 @@ score = Signature
 -- TODO pretty shows in @ovrlap@ that we might want to introduce a second
 -- @h@ together with @Stream m y -> m s@?
 
-{-
 pretty :: Monad m => Signature m [String] [[String]] Char
 pretty = Signature
-  { ovrlap = \ _ _ [a,a'] [b,b'] -> [a ++ b ++ a' ++ b'] -- TODO !!!
+  { ovrlap = \ () () [a,a'] [b,b'] () -> [a ++ b ++ a' ++ b'] -- TODO !!!
   , brckts = \ (Z:.l:.()) [a,a'] (Z:.():.r) -> ["a"++a , a'++"A"]
   , braces = \ (Z:.l:.()) [b,b'] (Z:.():.r) -> ["b"++b , b'++"B"]
   , nilnil = \ _ -> ["",""]
   , h = SM.toList
   }
 {-# Inline pretty #-}
--}
 
 
 
@@ -114,7 +110,7 @@ overlappingPalindromes inp = (d,bs) where
   i  = VU.fromList inp
   n  = VU.length i
   d  = unId $ axiom x
-  bs = [] -- unId $ axiom x'
+  bs = unId $ axiom x'
   x :: X
   a :: T
   b :: T
@@ -127,13 +123,11 @@ overlappingPalindromes inp = (d,bs) where
                    (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.subword 0 0:.subword 0 0) (Z:.subword 0 n:.subword 0 n) (-999999) []))
                    i
                    -}
-  {-
   (Z:.x':.a':.b') = grammar (score <|| pretty)
                       (toBacktrack x (undefined :: Id a -> Id a))
                       (toBacktrack a (undefined :: Id a -> Id a))
                       (toBacktrack b (undefined :: Id a -> Id a))
                       i
-                      -}
 {-# NoInline overlappingPalindromes #-}
 
 opForward :: VU.Vector Char -> Z:.X:.T:.T

@@ -169,6 +169,7 @@ library
                     , KindSignatures
                     , MultiParamTypeClasses
                     , RankNTypes
+                    , ScopedTypeVariables
                     , StandaloneDeriving
                     , TemplateHaskell
                     , TypeFamilies

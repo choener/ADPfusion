@@ -1,6 +1,4 @@
 
-{-# Language ScopedTypeVariables #-}
-
 -- |
 --
 -- NOTE /highly experimental/
@@ -23,8 +21,8 @@ import Data.Type.Equality
 import Data.PrimitiveArray hiding (map)
 
 import ADP.Fusion.Base
-
-import ADP.Fusion.SynVar.Array.Type -- TODO temporary
+import ADP.Fusion.SynVar.Array.Type
+import ADP.Fusion.SynVar.Backtrack
 
 
 
@@ -47,54 +45,50 @@ type family ArgTy argTy where
 -- and z-ordering (with the unused @Z@ at @0@).
 --
 -- TODO attach empty/non-empty stuff (or get from non-splitted synvar?)
+--
+-- TODO re-introduce z-ordering later (once we have a sort fun)
 
-newtype Split (uId :: Symbol) (zOrder :: Nat) (splitType :: SplitType) synVar = Split { getSplit :: synVar }
+newtype Split (uId :: Symbol) {- (zOrder :: Nat) -} (splitType :: SplitType) synVar = Split { getSplit :: synVar }
 
-split :: Proxy (uId::Symbol) -> Proxy (zOrder::Nat) -> Proxy (splitType::SplitType) -> synVar -> Split uId zOrder splitType synVar
-split _ _ _ = Split
-{-# split #-}
+split :: Proxy (uId::Symbol) -> {- Proxy (zOrder::Nat) -> -} Proxy (splitType::SplitType) -> synVar -> Split uId splitType synVar
+split _ _ = Split
+{-# Inline split #-}
 
-type Spl uId zOrder splitType = forall synVar . Split uId zOrder splitType synVar
+--type Spl uId zOrder splitType = forall synVar . Split uId zOrder splitType synVar
 
-instance Build (Split uId zOrder splitType synVar)
+instance Build (Split uId splitType synVar)
 
 instance
   ( Element ls i
-  ) => Element (ls :!: Split uId zOrder splitType (ITbl m arr j x)) i where
-  data Elm     (ls :!: Split uId zOrder splitType (ITbl m arr j x)) i = ElmSplit !(Proxy uId) !(CalcSplitType splitType x) !i !i !(Elm ls i)
-  type Arg     (ls :!: Split uId zOrder splitType (ITbl m arr j x))   = Arg ls :. (CalcSplitType splitType x)
-  type RecElm  (ls :!: Split uId zOrder splitType (ITbl m arr j x)) i = Elm ls i
-  getArg (ElmSplit _ x _ _ ls) = getArg ls :. x
-  getIdx (ElmSplit _ _ i _ _ ) = i
-  getOmx (ElmSplit _ _ _ o _ ) = o
-  getElm (ElmSplit _ _ _ _ ls) = ls
+  ) => Element (ls :!: Split uId splitType (ITbl m arr j x)) i where
+  data Elm     (ls :!: Split uId splitType (ITbl m arr j x)) i = ElmSplitITbl !(Proxy uId) !(CalcSplitType splitType x) !i !i !(Elm ls i)
+  type Arg     (ls :!: Split uId splitType (ITbl m arr j x))   = Arg ls :. (CalcSplitType splitType x)
+  type RecElm  (ls :!: Split uId splitType (ITbl m arr j x)) i = Elm ls i
+  getArg (ElmSplitITbl _ x _ _ ls) = getArg ls :. x
+  getIdx (ElmSplitITbl _ _ i _ _ ) = i
+  getOmx (ElmSplitITbl _ _ _ o _ ) = o
+  getElm (ElmSplitITbl _ _ _ _ ls) = ls
+  {-# Inline getArg #-}
+  {-# Inline getIdx #-}
+  {-# Inline getOmx #-}
+  {-# Inline getElm #-}
+
+instance
+  ( Element ls i
+  ) => Element (ls :!: Split uId splitType (Backtrack (ITbl mF arr j x) mF mB r)) i where
+  data Elm     (ls :!: Split uId splitType (Backtrack (ITbl mF arr j x) mF mB r)) i = ElmSplitBtITbl !(Proxy uId) !(CalcSplitType splitType (x, [r])) !i !i !(Elm ls i)
+  type Arg     (ls :!: Split uId splitType (Backtrack (ITbl mF arr j x) mF mB r))   = Arg ls :. (CalcSplitType splitType (x,[r]))
+  type RecElm  (ls :!: Split uId splitType (Backtrack (ITbl mF arr j x) mF mB r)) i = Elm ls i
+  getArg (ElmSplitBtITbl _ xs _ _ ls) = getArg ls :. xs
+  getIdx (ElmSplitBtITbl _ _ i _ _ ) = i
+  getOmx (ElmSplitBtITbl _ _ _ o _ ) = o
+  getElm (ElmSplitBtITbl _ _ _ _ ls) = ls
   {-# Inline getArg #-}
   {-# Inline getIdx #-}
   {-# Inline getOmx #-}
   {-# Inline getElm #-}
 
 
-
-instance
-  ( Monad m
-  , Element ls Subword
-  , MkStream m ls Subword
-  ) => MkStream m (ls :!: Split uId zOrder Fragment (ITbl m arr j x)) Subword where
-  mkStream (ls :!: Split _) (IStatic ()) hh (Subword (i:.j))
-    = map (\s -> let (Subword (_:.l)) = getIdx s
-                 in  ElmSplit Proxy () (subword l j) (subword 0 0) s)
-    $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j)) -- TODO (see TODO in @Split@) - minSize c))
-  mkStream (ls :!: Split _) (IVariable ()) hh (Subword (i:.j))
-    = flatten mk step Unknown $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j)) -- TODO (see above) - minSize c))
-    where mk s = let Subword (_:.l) = getIdx s in return (s :. j - l) -- TODO - minSize c)
-          step (s:.z) | z >= 0 = do let Subword (_:.k) = getIdx s
-                                        l              = j - z
-                                        kl             = subword k l
-                                    return $ Yield (ElmSplit Proxy () kl (subword 0 0) s) (s:. z-1)
-                      | otherwise = return $ Done
-          {-# Inline [0] mk   #-}
-          {-# Inline [0] step #-}
-  {-# Inline mkStream #-}
 
 {-
 type family BuildIxTy (uId :: Symbol) ls where
@@ -125,36 +119,6 @@ instance GetHelper uId True (ls :!: Split sId zOrder splitType synVar) i where
   getHelper p sp = undefined
 
 -}
-instance
-  ( Monad m
-  , Element ls Subword
-  , MkStream m ls Subword
-  , B uId (SameSid uId (Elm ls Subword)) ls Subword
-  , C uId ls Subword
-  , (BTy uId (SameSid uId (Elm ls Subword)) ls Subword :. Subword) ~ mix
---  , (CTy uId ls Subword :. Subword) ~ zij
-  ,  (PrimArrayOps arr (BTy uId (SameSid uId (Elm ls Subword)) ls Subword :. Subword) x)
---  , x ~ ArgTy (Arg (ITbl m arr (BuildIxTy uId ls :. Subword) x))
---  , j ~ BuildIxTy uId (ls :!: Split uId zOrder Final (ITbl m arr j x))
-  ) => MkStream m (ls :!: Split uId zOrder Final (ITbl m arr mix x)) Subword where
-  mkStream (ls :!: Split (ITbl _ _ c t elm)) (IStatic ()) hh (Subword (i:.j))
-    = map (\s -> let (Subword (_:.l)) = getIdx s
-                     fmbkm :: mix = ccc (Proxy :: Proxy uId) s :. subword l j
-                 in  ElmSplit Proxy (t ! fmbkm) (subword l j) (subword 0 0) s)
-    $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j)) -- TODO (see TODO in @Split@) - minSize c))
-  mkStream (ls :!: Split (ITbl _ _ c t _)) (IVariable ()) hh (Subword (i:.j))
-    = flatten mk step Unknown $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j)) -- TODO - minSize c))
-    where mk s = let Subword (_:.l) = getIdx s in return (s :. j - l) -- TODO - minSize c)
-          step (s:.z) | z >= 0 = do let Subword (_:.k) = getIdx s
-                                        l              = j - z
-                                        kl             = subword k l
-                                        fmbkm :: mix   = ccc (Proxy :: Proxy uId) s :. kl
-                                    return $ Yield (ElmSplit Proxy (t ! fmbkm) kl (subword 0 0) s) (s:. z-1)
-                      | otherwise = return $ Done
-          {-# Inline [0] mk   #-}
-          {-# Inline [0] step #-}
-  {-# Inline mkStream #-}
-
 
 
 class B (uId::Symbol) (b::Bool) ls i where
@@ -181,20 +145,27 @@ instance
   ( B uId (SameSid uId (Elm ls i)) ls i
   ) => B uId False  (ls :!: Split sId zOrder splitType  (ITbl m arr j x)) i where
   type BTy uId False (ls :!: Split sId zOrder splitType (ITbl m arr j x)) i = CTy uId ls i
-  bbb p b (ElmSplit _ _ i _ e) = ccc p e
+  bbb p b (ElmSplitITbl _ _ i _ e) = ccc p e
   {-# Inline bbb #-}
 -}
 
 instance
   ( B uId (SameSid uId (Elm ls i)) ls i
-  ) => B uId True  (ls :!: Split sId zOrder splitType  (ITbl m arr j x)) i where
-  type BTy uId True (ls :!: Split sId zOrder splitType (ITbl m arr j x)) i = CTy uId ls i :. i
-  bbb p b (ElmSplit _ _ i _ e) = ccc p e :. i
+  ) => B   uId True (ls :!: Split sId splitType (ITbl m arr j x)) i where
+  type BTy uId True (ls :!: Split sId splitType (ITbl m arr j x)) i = CTy uId ls i :. i
+  bbb p b (ElmSplitITbl _ _ i _ e) = ccc p e :. i
+  {-# Inline bbb #-}
+
+instance
+  ( B uId (SameSid uId (Elm ls i)) ls i
+  ) => B   uId True (ls :!: Split sId splitType (Backtrack (ITbl mF arr j x) mF mB r)) i where
+  type BTy uId True (ls :!: Split sId splitType (Backtrack (ITbl mF arr j x) mF mB r)) i = CTy uId ls i :. i
+  bbb p b (ElmSplitBtITbl _ _ i _ e) = ccc p e :. i
   {-# Inline bbb #-}
 
 type family SameSid uId elm :: Bool where
-  SameSid uId (Elm (ls :!: Split sId zOrder splitType synVar) i) = uId == sId
-  SameSid uId (Elm (ls :!: l                                ) i) = False
+  SameSid uId (Elm (ls :!: Split sId splitType synVar) i) = uId == sId
+  SameSid uId (Elm (ls :!: l                         ) i) = False
 
 class C (uId::Symbol) ls i where
   type CTy uId ls i :: *
