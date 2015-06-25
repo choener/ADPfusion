@@ -14,7 +14,7 @@ import           Control.Arrow (second)
 import           Data.Int(Int64)
 import           System.Exit
 
-import           ADP.Fusion
+import           ADP.Fusion hiding (Split)
 import           Data.PrimitiveArray hiding (map)
 import           BenchmarkHistory
 

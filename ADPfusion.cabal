@@ -421,6 +421,50 @@ executable OverlappingPalindromes
 
 
 
+executable SplitTests
+  if flag(examples)
+    buildable:
+      True
+    build-depends:  base
+                 ,  ADPfusion
+                 ,  PrimitiveArray
+                 ,  template-haskell
+                 ,  vector
+  else
+    buildable:
+      False
+  hs-source-dirs:
+    src
+  main-is:
+    SplitTests.hs
+  default-language:
+    Haskell2010
+  default-extensions: BangPatterns
+                    , FlexibleContexts
+                    , FlexibleInstances
+                    , MultiParamTypeClasses
+                    , RecordWildCards
+                    , TemplateHaskell
+                    , TypeFamilies
+                    , TypeOperators
+  ghc-options:
+    -O2
+    -funbox-strict-fields
+    -funfolding-use-threshold1000
+    -funfolding-keeness-factor1000
+  if flag(llvm)
+    ghc-options:
+      -fllvm
+      -optlo-O3 -optlo-std-compile-opts
+      -fllvm-tbaa
+  if flag(debug)
+    ghc-options:
+      -ddump-to-file
+      -ddump-simpl
+      -dsuppress-all
+
+
+
 test-suite properties
   type:
     exitcode-stdio-1.0
