@@ -9,6 +9,7 @@ module ADP.Fusion.SynVar.Array
 import ADP.Fusion.SynVar.Array.Point
 import ADP.Fusion.SynVar.Array.Set
 import ADP.Fusion.SynVar.Array.Subword
+import ADP.Fusion.SynVar.Array.TermSymbol
 import ADP.Fusion.SynVar.Array.Type
 
 {-

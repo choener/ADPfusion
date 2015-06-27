@@ -112,34 +112,16 @@ library
     ADP.Fusion.Base.Point
     ADP.Fusion.Base.Set
     ADP.Fusion.Base.Subword
-    ADP.Fusion.Term
-    ADP.Fusion.Term.Chr
-    ADP.Fusion.Term.Chr.Point
-    ADP.Fusion.Term.Chr.Subword
-    ADP.Fusion.Term.Chr.Type
-    ADP.Fusion.Term.Edge
-    ADP.Fusion.Term.Edge.Set
-    ADP.Fusion.Term.Edge.Type
-    ADP.Fusion.Term.Epsilon
-    ADP.Fusion.Term.Epsilon.Point
-    ADP.Fusion.Term.Epsilon.Subword
-    ADP.Fusion.Term.Epsilon.Type
-    ADP.Fusion.Term.Deletion
-    ADP.Fusion.Term.Deletion.Point
-    ADP.Fusion.Term.Deletion.Subword
-    ADP.Fusion.Term.Deletion.Type
-    ADP.Fusion.Term.PeekIndex
-    ADP.Fusion.Term.PeekIndex.Subword
-    ADP.Fusion.Term.PeekIndex.Type
-    ADP.Fusion.Term.Strng
-    ADP.Fusion.Term.Strng.Point
-    ADP.Fusion.Term.Strng.Subword
-    ADP.Fusion.Term.Strng.Type
+    ADP.Fusion.QuickCheck.Common
+    ADP.Fusion.QuickCheck.Point
+    ADP.Fusion.QuickCheck.Set
+    ADP.Fusion.QuickCheck.Subword
     ADP.Fusion.SynVar
     ADP.Fusion.SynVar.Array
     ADP.Fusion.SynVar.Array.Point
     ADP.Fusion.SynVar.Array.Set
     ADP.Fusion.SynVar.Array.Subword
+    ADP.Fusion.SynVar.Array.TermSymbol
     ADP.Fusion.SynVar.Array.Type
     ADP.Fusion.SynVar.Axiom
     ADP.Fusion.SynVar.Backtrack
@@ -152,13 +134,32 @@ library
     ADP.Fusion.SynVar.Split
     ADP.Fusion.SynVar.Split.Subword
     ADP.Fusion.SynVar.Split.Type
+    ADP.Fusion.Term
+    ADP.Fusion.Term.Chr
+    ADP.Fusion.Term.Chr.Point
+    ADP.Fusion.Term.Chr.Subword
+    ADP.Fusion.Term.Chr.Type
+    ADP.Fusion.Term.Deletion
+    ADP.Fusion.Term.Deletion.Point
+    ADP.Fusion.Term.Deletion.Subword
+    ADP.Fusion.Term.Deletion.Type
+    ADP.Fusion.Term.Edge
+    ADP.Fusion.Term.Edge.Set
+    ADP.Fusion.Term.Edge.Type
+    ADP.Fusion.Term.Epsilon
+    ADP.Fusion.Term.Epsilon.Point
+    ADP.Fusion.Term.Epsilon.Subword
+    ADP.Fusion.Term.Epsilon.Type
+    ADP.Fusion.Term.PeekIndex
+    ADP.Fusion.Term.PeekIndex.Subword
+    ADP.Fusion.Term.PeekIndex.Type
+    ADP.Fusion.Term.Strng
+    ADP.Fusion.Term.Strng.Point
+    ADP.Fusion.Term.Strng.Subword
+    ADP.Fusion.Term.Strng.Type
     ADP.Fusion.TH
     ADP.Fusion.TH.Backtrack
     ADP.Fusion.TH.Common
-    ADP.Fusion.QuickCheck.Common
-    ADP.Fusion.QuickCheck.Point
-    ADP.Fusion.QuickCheck.Set
-    ADP.Fusion.QuickCheck.Subword
 
   default-extensions: BangPatterns
                     , DataKinds
