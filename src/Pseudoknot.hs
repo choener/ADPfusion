@@ -40,7 +40,7 @@ bpmax = Nussinov
   , jux = \ x c y d -> if c `pairs` d then x + y + 1 else -999999
   , pse = \ () () x y -> x + y
   , nil = \ ()      -> 0
-  , pkn = \ (Z:.x:.()) (Z:.a:.()) y (Z:.():.z) (Z:.():.b) -> if a `pairs` b then x + y + z + 1 else -888888
+  , pkn = \ (Z:.x:.()) (Z:.a:.()) y (Z:.():.z) (Z:.():.b) -> if (a `pairs` b || a == 'N' && b == 'M') then x + y + z + 1 else -888888
   , h   = SM.foldl' max (-999999)
   }
 {-# INLINE bpmax #-}
@@ -102,14 +102,14 @@ grammar Nussinov{..} t' u' v' c =
   in Z:.t:.u:.v
 {-# INLINE grammar #-}
 
-runNussinov :: Int -> String -> (Int,[String])
-runNussinov k inp = (d, take k bs) where
+runPseudoknot :: Int -> String -> (Int,[String])
+runPseudoknot k inp = (d, take k bs) where
   i = VU.fromList . Prelude.map toUpper $ inp
   n = VU.length i
   !(Z:.t:.u:.v) = runInsideForward i
   d = unId $ axiom t
   bs = [] -- runInsideBacktrack i t
-{-# NOINLINE runNussinov #-}
+{-# NOINLINE runPseudoknot #-}
 
 type X = ITbl Id Unboxed Subword Int
 type T = ITbl Id Unboxed (Z:.Subword:.Subword) Int
@@ -117,9 +117,9 @@ type T = ITbl Id Unboxed (Z:.Subword:.Subword) Int
 runInsideForward :: VU.Vector Char -> Z:.X:.T:.T
 runInsideForward i = mutateTablesDefault
                    $ grammar bpmax
-                        (ITbl 0 0 EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-999999) []))
-                        (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.subword 0 0:.subword 0 0) (Z:.subword 0 n:.subword 0 n) (-999999) []))
-                        (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.subword 0 0:.subword 0 0) (Z:.subword 0 n:.subword 0 n) (-999999) []))
+                        (ITbl 0 0 EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-666999) []))
+                        (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.subword 0 0:.subword 0 0) (Z:.subword 0 n:.subword 0 n) (-777999) []))
+                        (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.subword 0 0:.subword 0 0) (Z:.subword 0 n:.subword 0 n) (-888999) []))
                         i
   where n = VU.length i
 {-# NoInline runInsideForward #-}
@@ -137,6 +137,7 @@ main = do
   ls <- lines <$> getContents
   forM_ ls $ \l -> do
     putStrLn l
-    let (s,xs) = runNussinov k l
+    let (s,xs) = runPseudoknot k l
+    print s
     mapM_ (\x -> printf "%s %5d\n" x s) xs
 
