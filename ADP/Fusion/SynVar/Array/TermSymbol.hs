@@ -24,6 +24,7 @@ instance
   ( Monad m
   , TerminalStream m a is
   , PrimArrayOps arr Subword x
+  , Show x
   ) => TerminalStream m (TermSymbol a (ITbl m arr Subword x)) (is:.Subword) where
   terminalStream (a :| ITbl _ _ c t _) (sv:.IStatic _) (is:.ix@(Subword (i:.j)))
     = map (\ (S6 s (zi:.(Subword (_:.l))) (zo:._) is os e) ->

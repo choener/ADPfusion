@@ -28,6 +28,7 @@ data Nussinov m x r c = Nussinov
   , pse :: () -> () -> x -> x -> x
   , nil :: () -> x
   , pkn :: (Z:.x:.()) -> (Z:.c:.()) -> x -> (Z:.():.x) -> (Z:.():.c) -> x
+  , nll :: (Z:.():.()) -> x
   , h   :: SM.Stream m x -> m r
   }
 
@@ -41,6 +42,7 @@ bpmax = Nussinov
   , pse = \ () () x y -> x + y
   , nil = \ ()      -> 0
   , pkn = \ (Z:.x:.()) (Z:.a:.()) y (Z:.():.z) (Z:.():.b) -> if (a `pairs` b || a == 'N' && b == 'M') then x + y + z + 1 else -888888
+  , nll = \ (Z:.():.()) -> 0
   , h   = SM.foldl' max (-999999)
   }
 {-# INLINE bpmax #-}
@@ -95,9 +97,11 @@ grammar Nussinov{..} t' u' v' c =
                      %  (split (Proxy :: Proxy "U") (Proxy :: Proxy Final)    u)
                      %  (split (Proxy :: Proxy "V") (Proxy :: Proxy Final)    v)  ... h
               )
-      u = u'  ( pkn <<< (M:|t:|Deletion) % (M:|chr c:|Deletion) % u % (M:|Deletion:|t) % (M:|Deletion:|chr c) ... h
+      u = u'  ( pkn <<< (M:|t:|Deletion) % (M:|chr c:|Deletion) % u % (M:|Deletion:|t) % (M:|Deletion:|chr c) |||
+                nll <<< (M:|Epsilon:|Epsilon)                                                                 ... h
               )
-      v = v'  ( pkn <<< (M:|t:|Deletion) % (M:|chr c:|Deletion) % u % (M:|Deletion:|t) % (M:|Deletion:|chr c) ... h
+      v = v'  ( pkn <<< (M:|t:|Deletion) % (M:|chr c:|Deletion) % v % (M:|Deletion:|t) % (M:|Deletion:|chr c) |||
+                nll <<< (M:|Epsilon:|Epsilon)                                                                 ... h
               )
   in Z:.t:.u:.v
 {-# INLINE grammar #-}
