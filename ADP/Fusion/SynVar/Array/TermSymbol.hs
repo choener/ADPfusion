@@ -1,4 +1,6 @@
 
+-- | TODO migrate instances to correct modules
+
 module ADP.Fusion.SynVar.Array.TermSymbol where
 
 import Data.Strict.Tuple
@@ -35,9 +37,18 @@ instance
                                             l                  = j - z
                                             kl                 = subword k l
                                         return $ Yield (S6 s zi zo (is:.kl) (os:.subword 0 0) (e:.(t!kl))) (s6 :. k :. z-1)
+                          | otherwise = return $ Done
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline terminalStream #-}
+
+instance TermStaticVar (ITbl m arr Subword x) Subword where
+  termStaticVar _ (IStatic   d) _ = IVariable d
+  termStaticVar _ (IVariable d) _ = IVariable d
+  termStreamIndex (ITbl _ _ _ _ _) (IStatic   d) (Subword (i:.j)) = subword i j -- TODO minSize handling !
+  termStreamIndex (ITbl _ _ _ _ _) (IVariable d) (Subword (i:.j)) = subword i j -- TODO minsize handling
+  {-# Inline [0] termStaticVar   #-}
+  {-# Inline [0] termStreamIndex #-}
 
 
 {-

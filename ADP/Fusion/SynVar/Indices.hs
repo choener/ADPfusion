@@ -31,6 +31,22 @@ instance TableIndices is => TableIndices (is:.Subword) where
     = map (\(S5 s (zi:.Subword (_:.l)) (zo:._) is os) -> S5 s zi zo (is:.subword l j) (os:.subword 0 0))
     . tableIndices cs vs ixs
     . map (\(S5 s zi zo (is:.i) (os:.o)) -> S5 s (zi:.i) (zo:.o) is os)
+  -- TODO ? using the defns in TermSymbol.hs for Array syns?
+  tableIndices (cs:._) (vs:.IVariable _) (ixs:.Subword (i:.j))
+    = map (\(S5 s (zi:.Subword (_:.l)) (zo:._) is os) -> S5 s zi zo (is:.subword l j) (os:.subword 0 0))
+    . tableIndices cs vs ixs
+    . map (\(S5 s zi zo (is:.i) (os:.o)) -> S5 s (zi:.i) (zo:.o) is os)
+  -- TODO minsize handling ? constraint handling?
+  {-
+  tableIndices (cs:._) (vs:.IVariable _) (ixs:.Subword (i:.j))
+    = flatten mk step Unknown
+    . tableIndices cs vs ixs
+    . map (\(S5 s zi zo (is:.i) (os:.o)) -> S5 s (zi:.i) (zo:.o) is os)
+    where mk (S5 s (zi:.Subword (_:.l)) (zo:._) is os) = return ( (S5 s zi zo (is:.
+          step = error "step"
+          {-# Inline [0] mk   #-}
+          {-# Inline [0] step #-}
+          -}
   {-# Inline tableIndices #-}
 {-
   tableIndices (cs:.c) (vs:.Static) (is:.Subword (i:.j))
