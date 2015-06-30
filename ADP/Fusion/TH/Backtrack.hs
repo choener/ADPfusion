@@ -252,14 +252,17 @@ recBuildLamPat nts fL' fR' ts = do
         let
         in  error "buildLfun f (StackedVars vs) WRITE ME"
   lfun <- foldl buildLfun (varE fL') ps
-  rfun <- buildRns (VarE fR') $ undefined ps
-  return (undefined ps, lfun, rfun)
+  rfun <- buildRns (VarE fR') ps
+  return (map unpackArgTy ps, lfun, rfun)
+
+-- | Look at the argument type and build the capturing variables. In
+-- particular captures synvar arguments with a 2-tuple @(x,ys)@.
 
 argTyArgs :: ArgTy Name -> Q (ArgTy Pat)
-argTyArgs (SynVar n) = SynVar <$> tupP [newName "X" >>= varP , newName "ys" >>= varP]
+argTyArgs (SynVar n) = SynVar <$> tupP [newName "x" >>= varP , newName "ys" >>= varP]
 argTyArgs (Term n)          = Term <$> (newName "t" >>= varP)
 argTyArgs (StackedTerms _)  = Term <$> (newName "t" >>= varP) -- !!!
-argTyArgs (StackedVars vs)  = StackedVars <$> mapM argTyArgs vs
+argTyArgs (StackedVars vs)  = error "this should build up (Z:.(x,ys):. ...) stuff" -- StackedVars <$> mapM argTyArgs vs
 argTyArgs NilVar            = Term <$> (newName "t" >>= varP)
 argTyArgs (Result _)        = error "argTyArgs: should not receive @Result@"
 
@@ -276,7 +279,7 @@ argTyArgs (Result _)        = error "argTyArgs: should not receive @Result@"
 buildRns
   :: Exp
 --  -> [Name]
-  -> [Pat]
+  -> [ArgTy Pat]
   -> ExpQ
 buildRns f ps = do
   ys <- sequence [ newName "y" | TupP [_,VarP v] <- ps ]
@@ -412,3 +415,9 @@ data ArgTy x
   | Result { result :: x }
   deriving (Show,Eq)
 
+unpackArgTy :: Show x => ArgTy x -> x
+unpackArgTy = go
+  where go (SynVar x) = x
+        go (Term   x) = x
+        go (Result x) = x
+        go err        = error $ show err
