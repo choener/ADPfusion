@@ -124,14 +124,15 @@ buildLeftType tycon (m, x, r) (mL, xL) = foldl AppT (ConT tycon) . map (VarT . g
 buildRightType :: Name -> (Name, Name, Name) -> (Name, Name, Name) -> [TyVarBndr] -> Type
 buildRightType tycon (m, x, r) (mR, xR, rR) = foldl AppT (ConT tycon) . map (VarT . go)
   where go (PlainTV z)
-          | z == m    = mR
-          | z == x    = xR
-          | z == r    = rR
-          | otherwise = z
+          | z == m    = mR  -- have discovered a monadic type
+          | z == x    = xR  -- have discovered a type that is equal to the stream type (and hence we have a synvar type)
+          | z == r    = rR  -- have discovered a type that is equal to the result type (for @<||@) equal to the stream type, hence synvar
+          | otherwise = z   -- this is a terminal or a terminal stack (we don't care)
         go (KindedTV z _) = go (PlainTV z)
 
 -- | Build up the type for backtracking. We want laziness in the right
--- return type. Hence, we have @AppT ListT (VarT xR)@.
+-- return type. Hence, we have @AppT ListT (VarT xR)@ ; i.e. we want to
+-- return results in a list.
 
 buildSigBacktrackingType :: Name -> (Name, Name, Name) -> (Name) -> (Name, Name, Name) -> [TyVarBndr] -> Type
 buildSigBacktrackingType tycon (m, x, r) (xL) (mR, xR, rR) = foldl AppT (ConT tycon) . map go
@@ -158,7 +159,8 @@ buildSigCombiningType tycon vG (m, x, r) (mL, xL, rL) (mR, xR, rR) = foldl appT 
 
 -- *
 
--- | Build up attribute and choice function.
+-- | Build up attribute and choice function. Here, we actually bind the
+-- left and right algebra to @l@ and @r@.
 
 genAlgProdFunctions
   :: Choice
@@ -173,7 +175,6 @@ genAlgProdFunctions choice conName allFunNames evalFunNames choiceFunNames = do
   -- also create unique names for the function names we shall bind later.
   nameL <- newName "l"
   varL  <- varP nameL
-  -- TODO automate discovery of choice functions?
   fnmsL <- sequence $ replicate (length allFunNames) (newName "fnamL")
   nameR <- newName "r"
   varR  <- varP nameR
@@ -189,7 +190,7 @@ genAlgProdFunctions choice conName allFunNames evalFunNames choiceFunNames = do
   let cls = Clause [varL, varR] (NormalB rce) [whereL,whereR]
   return cls
 
--- |
+-- | Simple wrapper for creating the choice fun expression.
 
 genChoiceFunction
   :: Choice
@@ -202,7 +203,9 @@ genChoiceFunction choice hL hR (name,_,t) = do
   return (name,exp)
 
 
--- |
+-- | We take the left and right function name for one attribute and build
+-- up the combined attribute function. Mostly a wrapper around
+-- 'recBuildLampat' which does the main work.
 --
 -- TODO need fun names from @l@ and @r@
 
@@ -213,22 +216,52 @@ genAttributeFunction
   -> VarStrictType
   -> Q (Name,Exp)
 genAttributeFunction nts fL fR (name,_,t) = do
-  (lamPat,funL,funR) <-recBuildLamPat nts fL fR (init $ getRuleSynVarNames t) -- @init@ since we don't want the result as a parameter
+  (lamPat,funL,funR) <-recBuildLamPat nts fL fR (init $ getRuleSynVarNames nts t) -- @init@ since we don't want the result as a parameter
   let exp = LamE lamPat $ TupE [funL,funR]
   return (name,exp)
 
--- |
+-- | Now things become trickly. We are given all non-terminal names (to
+-- differentiate between a terminal (stack) and a syntactic variable; the
+-- left and right function; and the arguments to this attribute function
+-- (except the result parameter). We are given the latter as a result to an
+-- earlier call to 'getRuleSynVarNames'.
+--
+-- We now look at each argument and determine wether it is a syntactic
+-- variable. If so, then we actually have a tuple arguments @(x,ys)@ where
+-- @x@ has to optimized value and @ys@ the backtracking list. The left
+-- function receives just @x@ in this case. For the right function, things
+-- are more complicated, since we have to flatten lists. See 'buildRns'.
+--
+-- Terminals are always given "as is" since we do not have a need for
+-- tupled-up information as we have for syntactic variables.
 
-recBuildLamPat :: [Name] -> Name -> Name -> [Name] -> Q ([Pat], Exp, Exp)
+recBuildLamPat
+  :: [Name]   -- ^ all non-terminal names
+  -> Name     -- ^ left attribute function
+  -> Name     -- ^ right attribute function
+  -> [ArgTy Name]  -- ^ all arguments to the attribute function
+  -> Q ([Pat], Exp, Exp)
 recBuildLamPat nts fL' fR' ts = do
   -- here we just run through all arguments, either creating an @x@ and
   -- a @ys@ for a non-term or a @t@ for a term.
-  ps <- sequence [ if t `elem` nts then tupP [newName "x" >>= varP, newName "ys" >>= varP] else (newName "t" >>= varP) | t<-ts]
-  let buildLfun f (TupP [VarP v,_]) = appE f (varE v)
-      buildLfun f (VarP v         ) = appE f (varE v)
+  -- ps <- sequence [ if t `elem` nts then tupP [newName "x" >>= varP, newName "ys" >>= varP] else (newName "t" >>= varP) | t<-ts]
+  ps <- mapM argTyArgs ts
+  let buildLfun f (SynVar (TupP [VarP v,_])) = appE f (varE v)
+      buildLfun f (Term   (VarP v         )) = appE f (varE v)
+      buildLfun f (StackedVars vs) =
+        let
+        in  error "buildLfun f (StackedVars vs) WRITE ME"
   lfun <- foldl buildLfun (varE fL') ps
-  rfun <- buildRns (VarE fR') ps
-  return (ps, lfun, rfun)
+  rfun <- buildRns (VarE fR') $ undefined ps
+  return (undefined ps, lfun, rfun)
+
+argTyArgs :: ArgTy Name -> Q (ArgTy Pat)
+argTyArgs (SynVar n) = SynVar <$> tupP [newName "X" >>= varP , newName "ys" >>= varP]
+argTyArgs (Term n)          = Term <$> (newName "t" >>= varP)
+argTyArgs (StackedTerms _)  = Term <$> (newName "t" >>= varP) -- !!!
+argTyArgs (StackedVars vs)  = StackedVars <$> mapM argTyArgs vs
+argTyArgs NilVar            = Term <$> (newName "t" >>= varP)
+argTyArgs (Result _)        = error "argTyArgs: should not receive @Result@"
 
 
 -- |
@@ -348,12 +381,34 @@ vectorToStream = SM.fromList . V.toList
 -- AppT (AppT ArrowT (AppT (AppT (ConT Data.Array.Repa.Index.:.) (AppT (AppT (ConT Data.Array.Repa.Index.:.) (ConT Data.Array.Repa.Index.Z)) (VarT c_1627675270))) (VarT c_1627675270))) (VarT x_1627675265)
 -- @
 
-getRuleSynVarNames :: Type -> [Name]
-getRuleSynVarNames t' = go t' where
+getRuleSynVarNames :: [Name]-> Type -> [ArgTy Name] -- [Name]
+getRuleSynVarNames nts t' = undefined where -- go t' where
   go t
     | VarT x <- t = [x]
-    | AppT (AppT ArrowT (VarT x  )) y <- t = x : go y   -- this is a syntactic variable, return the name that the incoming data is bound to
+    | AppT (AppT ArrowT (VarT x  )) y <- t = x : go y   -- this is a single-dim variable, return the name that the incoming data is bound to (not necessarily syntactic)
     | AppT (AppT ArrowT (AppT _ _)) y <- t = mkName "[]" : go y   -- this captures that we have a multi-dim terminal.
     | AppT (AppT ArrowT (TupleT 0)) y <- t = mkName "()" : go y   -- this case captures things like @nil :: () -> x@ for rules like @nil <<< Epsilon@.
     | otherwise            = error $ "getRuleSynVarNames error: " ++ show t ++ "    in:    " ++ show t'
+
+
+data ArgTy x
+  -- | This @SynVar@ spans the full column of tapes; i.e. it is a normal
+  -- syntactic variable.
+  = SynVar { synVarName :: x }
+  -- | We have just a single-tape grammar and as such just
+  -- a single-dimensional terminal. We call this term, because
+  -- @StackedTerms@ will be rewritten to just @Term@!
+  | Term { termName :: x }
+  -- | We have a multi-tape grammar with a stack of just terminals. We
+  -- normally can ignore the contents in the functions above, but keep them
+  -- anyway.
+  | StackedTerms { stackedTerms :: [ArgTy x] }
+  -- | We have a multi-tape grammar, but the stack contains a mixture of
+  -- @ArgTy@s.
+  | StackedVars { stackedVars :: [ArgTy x] }
+  -- | A single-dim @()@ case
+  | NilVar
+  -- | The result type name
+  | Result { result :: x }
+  deriving (Show,Eq)
 

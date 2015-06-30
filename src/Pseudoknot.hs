@@ -32,7 +32,7 @@ data Nussinov m x r c = Nussinov
   , h   :: SM.Stream m x -> m r
   }
 
---makeAlgebraProduct ''Nussinov
+makeAlgebraProduct ''Nussinov
 
 
 bpmax :: Monad m => Nussinov m Int Int Char
@@ -47,16 +47,6 @@ bpmax = Nussinov
   }
 {-# INLINE bpmax #-}
 
-{-
-prob :: Monad m => Nussinov m Double Double Char
-prob = Nussinov
-  { unp = \ x c     -> 0.3 * x
-  , jux = \ x c y d -> 0.6 * if c `pairs` d then x * y else 0
-  , nil = \ ()      -> 0.1
-  , h   = SM.foldl' (+) 0
-  }
--}
-
 -- |
 
 pairs !c !d
@@ -68,25 +58,24 @@ pairs !c !d
   || c=='U' && d=='G'
 {-# INLINE pairs #-}
 
-{-
-pretty :: Monad m => Nussinov m String [String] Char -- (SM.Stream m String)
+-- |
+--
+-- TODO It could be beneficial to introduce
+-- @type Splitted = Either String (String,String)@
+-- or something isomorphic. While [String] works, it allows for too many
+-- possibilities here! ([] ist lightweight, on the other hand ...)
+
+pretty :: Monad m => Nussinov m [String] [[String]] Char
 pretty = Nussinov
-  { unp = \ x c     -> x ++ "."
-  , jux = \ x c y d -> x ++ "(" ++ y ++ ")"
-  , nil = \ ()      -> ""
-  , h   = SM.toList -- return . id
+  { unp = \ [x] c     -> [x ++ "."]
+  , jux = \ [x] c [y] d -> [x ++ "(" ++ y ++ ")"]
+  , pse = \ () () [x1,x2] [y1,y2] -> [x1 ++ y1 ++ x2 ++ y2]
+  , nil = \ ()      -> [""]
+  , pkn = \ (Z:.[x]:.()) (Z:.a:.()) [y1,y2] (Z:.():.[z]) (Z:.():.b) -> [x ++ "[" ++ y1 , y2 ++ z ++ "]"]
+  , nll = \ (Z:.():.()) -> ["",""]
+  , h   = SM.toList
   }
 {-# INLINE pretty #-}
-
-prettyL :: Monad m => Nussinov m String String Char
-prettyL = Nussinov
-  { unp = \ x c     -> x ++ "."
-  , jux = \ x c y d -> x ++ "(" ++ y ++ ")"
-  , nil = \ ()      -> ""
-  , h   = SM.head -- return . id
-  }
-{-# INLINE prettyL #-}
--}
 
 grammar Nussinov{..} t' u' v' c =
   let t = t'  ( unp <<< t % chr c               |||
