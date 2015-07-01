@@ -19,6 +19,9 @@ import qualified Data.Vector.Generic as VG
 import           Control.Monad.Primitive (PrimState, PrimMonad)
 import           Data.Vector.Fusion.Stream.Monadic (Stream(..))
 import           Debug.Trace
+import qualified Data.Map.Strict as M
+
+import           Data.PrimitiveArray ( (:.)(..) , Z(..) )
 
 import           ADP.Fusion.TH.Common
 
@@ -250,10 +253,10 @@ recBuildLamPat nts fL' fR' ts = do
       buildLfun f (Term   (VarP v         )) = appE f (varE v)
       buildLfun f (StackedVars vs) =
         let
-        in  error "buildLfun f (StackedVars vs) WRITE ME"
+        in  error "buildLfun: WRITE ME" -- appE f (varE $ mkName "foo")
   lfun <- foldl buildLfun (varE fL') ps
   rfun <- buildRns (VarE fR') ps
-  return (map unpackArgTy ps, lfun, rfun)
+  return (error $ "return pattern, WRITE ME " ++ show ps, lfun, rfun)
 
 -- | Look at the argument type and build the capturing variables. In
 -- particular captures synvar arguments with a 2-tuple @(x,ys)@.
@@ -262,7 +265,7 @@ argTyArgs :: ArgTy Name -> Q (ArgTy Pat)
 argTyArgs (SynVar n) = SynVar <$> tupP [newName "x" >>= varP , newName "ys" >>= varP]
 argTyArgs (Term n)          = Term <$> (newName "t" >>= varP)
 argTyArgs (StackedTerms _)  = Term <$> (newName "t" >>= varP) -- !!!
-argTyArgs (StackedVars vs)  = error "this should build up (Z:.(x,ys):. ...) stuff" -- StackedVars <$> mapM argTyArgs vs
+argTyArgs (StackedVars vs)  = StackedVars <$> mapM argTyArgs vs
 argTyArgs NilVar            = Term <$> (newName "t" >>= varP)
 argTyArgs (Result _)        = error "argTyArgs: should not receive @Result@"
 
@@ -282,6 +285,25 @@ buildRns
   -> [ArgTy Pat]
   -> ExpQ
 buildRns f ps = do
+  -- get all synvars, shallow or deep and create a new name to bind
+  -- individual parts to.
+  sy <- M.fromList <$> (mapM (\s -> newName "y" >>= \y -> return (s,y)) $ concatMap flattenSynVars ps)
+  -- bind them for the right part of the list expression (even though they
+  -- are left in @CompE@. We don't use @sy@ directly to keep the order in
+  -- which the comprehensions run.
+  let rs = map (\k@(TupP [_,VarP v]) -> BindS (VarP $ sy M.! k) (VarE v)) $ concatMap flattenSynVars ps
+  -- helper function for the argument build-up
+  let go [] = []
+      go ((SynVar      k       ):ks) = sy M.! k  : go ks
+      go ((Term        (VarP v)):ks) = v         : go ks -- should also cover StackedTerms, NilVar ! (because we build this earlier in @argTypArgs@)
+      go ((StackedVars ls      ):ks) = undefined : go ks -- need to work more
+  -- more verbose build-up of the arguments for @funApp@.
+  let xs = go ps
+  -- function application
+  funApp <- noBindS $ foldl (\g z -> appE g (varE z)) (return f) xs
+  return . CompE $ rs ++ [funApp]
+{-
+buildRns f ps = do
   ys <- sequence [ newName "y" | TupP [_,VarP v] <- ps ]
   let vs = zipWith (\y v -> (BindS (VarP y) (VarE v))) ys [ v | TupP [_,VarP v] <- ps ]
   let xs = go ps ys
@@ -291,6 +313,7 @@ buildRns f ps = do
         go (VarP v : gs) ys     = v : go gs ys  -- keep terminal binders
         go (TupP _ : gs) (v:ys) = v : go gs ys  -- insert new binders
         go as bs = error $ show ("not done?", as, bs)
+-}
 
 -- | Type for backtracking functions.
 --
@@ -385,6 +408,34 @@ vectorToStream = SM.fromList . V.toList
 -- @
 
 getRuleSynVarNames :: [Name]-> Type -> [ArgTy Name] -- [Name]
+getRuleSynVarNames nts t' = go t' where
+  go t
+    | VarT x <- t                          = [Result x]
+    | AppT (AppT ArrowT (VarT x)  ) y <- t = (if x `elem` nts then SynVar x else Term x) : go y
+    | AppT (AppT ArrowT (TupleT 0)) y <- t = NilVar : go y
+    | AppT (AppT ArrowT s         ) y <- t = stacked s : go y
+    | otherwise                            = error $ "getRuleSynVarNames error: " ++ show t ++ "    in:    " ++ show t'
+  stacked s = if null [ () | SynVar _ <- xs ] then StackedTerms xs else StackedVars xs
+    where xs = reverse $ stckd s
+          stckd (ConT z) | z == ''Z = []
+          stckd (AppT a (TupleT 0)) = NilVar : stckd a
+          stckd (AppT a (VarT x)  ) = (if x `elem` nts then SynVar x else Term x) : stckd a
+          stckd (AppT (ConT c) a  ) | c == ''(:.) = stckd a
+          stckd err = error $ "stckd" ++ show err
+
+{-
+(AppT (AppT (ConT Data.PrimitiveArray.Index.Class.:.)
+            (AppT (AppT (ConT Data.PrimitiveArray.Index.Class.:.)
+                        (ConT Data.PrimitiveArray.Index.Class.Z)
+                  )
+                  (VarT x_1627774371)
+            )
+      )
+      (TupleT 0)
+)
+-}
+
+{-
 getRuleSynVarNames nts t' = undefined where -- go t' where
   go t
     | VarT x <- t = [x]
@@ -392,7 +443,7 @@ getRuleSynVarNames nts t' = undefined where -- go t' where
     | AppT (AppT ArrowT (AppT _ _)) y <- t = mkName "[]" : go y   -- this captures that we have a multi-dim terminal.
     | AppT (AppT ArrowT (TupleT 0)) y <- t = mkName "()" : go y   -- this case captures things like @nil :: () -> x@ for rules like @nil <<< Epsilon@.
     | otherwise            = error $ "getRuleSynVarNames error: " ++ show t ++ "    in:    " ++ show t'
-
+-}
 
 data ArgTy x
   -- | This @SynVar@ spans the full column of tapes; i.e. it is a normal
@@ -420,4 +471,12 @@ unpackArgTy = go
   where go (SynVar x) = x
         go (Term   x) = x
         go (Result x) = x
-        go err        = error $ show err
+        go err        = error $ "unpackArgTy " ++ show err
+
+-- | Get all synvars, even if deep in a stack
+
+flattenSynVars :: ArgTy x -> [x]
+flattenSynVars (SynVar x)       = [x]
+flattenSynVars (StackedVars xs) = concatMap flattenSynVars xs
+flattenSynVars _                = []
+
