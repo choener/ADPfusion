@@ -27,7 +27,8 @@ data Nussinov m x r c = Nussinov
   , jux :: x -> c -> x -> c -> x
   , pse :: () -> () -> x -> x -> x
   , nil :: () -> x
-  , pkn :: (Z:.x:.()) -> (Z:.c:.()) -> x -> (Z:.():.x) -> (Z:.():.c) -> x
+  , pk1 :: (Z:.x:.()) -> (Z:.c:.()) -> x -> (Z:.():.x) -> (Z:.():.c) -> x
+  , pk2 :: (Z:.x:.()) -> (Z:.c:.()) -> x -> (Z:.():.x) -> (Z:.():.c) -> x
   , nll :: (Z:.():.()) -> x
   , h   :: SM.Stream m x -> m r
   }
@@ -41,7 +42,8 @@ bpmax = Nussinov
   , jux = \ x c y d -> if c `pairs` d then x + y + 1 else -999999
   , pse = \ () () x y -> x + y
   , nil = \ ()      -> 0
-  , pkn = \ (Z:.x:.()) (Z:.a:.()) y (Z:.():.z) (Z:.():.b) -> if (a `pairs` b || a == 'N' && b == 'M') then x + y + z + 1 else -888888
+  , pk1 = \ (Z:.x:.()) (Z:.a:.()) y (Z:.():.z) (Z:.():.b) -> if (a `pairs` b || a == 'N' && b == 'M') then x + y + z + 1 else -888888
+  , pk2 = \ (Z:.x:.()) (Z:.a:.()) y (Z:.():.z) (Z:.():.b) -> if (a `pairs` b || a == 'N' && b == 'M') then x + y + z + 1 else -888888
   , nll = \ (Z:.():.()) -> 0
   , h   = SM.foldl' max (-999999)
   }
@@ -71,7 +73,8 @@ pretty = Nussinov
   , jux = \ [x] c [y] d -> [x ++ "(" ++ y ++ ")"]
   , pse = \ () () [x1,x2] [y1,y2] -> [x1 ++ y1 ++ x2 ++ y2]
   , nil = \ ()      -> [""]
-  , pkn = \ (Z:.[x]:.()) (Z:.a:.()) [y1,y2] (Z:.():.[z]) (Z:.():.b) -> [x ++ "[" ++ y1 , y2 ++ z ++ "]"]
+  , pk1 = \ (Z:.[x]:.()) (Z:.a:.()) [y1,y2] (Z:.():.[z]) (Z:.():.b) -> [x ++ "[" ++ y1 , y2 ++ z ++ "]"]
+  , pk2 = \ (Z:.[x]:.()) (Z:.a:.()) [y1,y2] (Z:.():.[z]) (Z:.():.b) -> [x ++ "{" ++ y1 , y2 ++ z ++ "}"]
   , nll = \ (Z:.():.()) -> ["",""]
   , h   = SM.toList
   }
@@ -86,10 +89,10 @@ grammar Nussinov{..} t' u' v' c =
                      %  (split (Proxy :: Proxy "U") (Proxy :: Proxy Final)    u)
                      %  (split (Proxy :: Proxy "V") (Proxy :: Proxy Final)    v)  ... h
               )
-      u = u'  ( pkn <<< (M:|t:|Deletion) % (M:|chr c:|Deletion) % u % (M:|Deletion:|t) % (M:|Deletion:|chr c) |||
+      u = u'  ( pk1 <<< (M:|t:|Deletion) % (M:|chr c:|Deletion) % u % (M:|Deletion:|t) % (M:|Deletion:|chr c) |||
                 nll <<< (M:|Epsilon:|Epsilon)                                                                 ... h
               )
-      v = v'  ( pkn <<< (M:|t:|Deletion) % (M:|chr c:|Deletion) % v % (M:|Deletion:|t) % (M:|Deletion:|chr c) |||
+      v = v'  ( pk2 <<< (M:|t:|Deletion) % (M:|chr c:|Deletion) % v % (M:|Deletion:|t) % (M:|Deletion:|chr c) |||
                 nll <<< (M:|Epsilon:|Epsilon)                                                                 ... h
               )
   in Z:.t:.u:.v
