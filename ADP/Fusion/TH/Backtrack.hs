@@ -249,12 +249,14 @@ recBuildLamPat nts fL' fR' ts = do
   -- a @ys@ for a non-term or a @t@ for a term.
   -- ps <- sequence [ if t `elem` nts then tupP [newName "x" >>= varP, newName "ys" >>= varP] else (newName "t" >>= varP) | t<-ts]
   ps <- mapM argTyArgs ts
+  {-
   let buildLfun f (SynVar (TupP [VarP v,_])) = appE f (varE v)
       buildLfun f (Term   (VarP v         )) = appE f (varE v)
       buildLfun f (StackedVars vs) =
         let
         in  error "buildLfun: WRITE ME" -- appE f (varE $ mkName "foo")
-  lfun <- foldl buildLfun (varE fL') ps
+  -}
+  lfun <- buildLns (VarE fL') ps -- foldl buildLfun (varE fL') ps
   rfun <- buildRns (VarE fR') ps
   return (error $ "return pattern, WRITE ME " ++ show ps, lfun, rfun)
 
@@ -269,6 +271,18 @@ argTyArgs (StackedVars vs)  = StackedVars <$> mapM argTyArgs vs
 argTyArgs NilVar            = Term <$> (newName "t" >>= varP)
 argTyArgs (Result _)        = error "argTyArgs: should not receive @Result@"
 
+buildLns
+  :: Exp
+  -> [ArgTy Pat]
+  -> ExpQ
+buildLns f' ps = foldl go (return f') ps
+  where go f (SynVar      (TupP [VarP v,_])) = appE f (varE v)
+        go f (Term        (VarP v         )) = appE f (varE v)
+        go f (StackedVars vs               ) = appE f (build vs)
+        build :: [ArgTy Pat] -> ExpQ
+        build = foldl (\s v -> [| $(s) :. $(varE v) |]) [|Z|] . map get
+        get (SynVar (TupP [VarP v,_])) = v
+        get (Term   (VarP t)         ) = t
 
 -- |
 --
