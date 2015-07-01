@@ -95,13 +95,13 @@ grammar Nussinov{..} t' u' v' c =
   in Z:.t:.u:.v
 {-# INLINE grammar #-}
 
-runPseudoknot :: Int -> String -> (Int,[String])
+runPseudoknot :: Int -> String -> (Int,[[String]])
 runPseudoknot k inp = (d, take k bs) where
   i = VU.fromList . Prelude.map toUpper $ inp
   n = VU.length i
   !(Z:.t:.u:.v) = runInsideForward i
   d = unId $ axiom t
-  bs = [] -- runInsideBacktrack i t
+  bs = runInsideBacktrack i (Z:.t:.u:.v)
 {-# NOINLINE runPseudoknot #-}
 
 type X = ITbl Id Unboxed Subword Int
@@ -117,12 +117,14 @@ runInsideForward i = mutateTablesDefault
   where n = VU.length i
 {-# NoInline runInsideForward #-}
 
-{-
-runInsideBacktrack :: VU.Vector Char -> ITbl Id Unboxed Subword Int -> [String]
-runInsideBacktrack i t = unId $ axiom b
-  where !(Z:.b) = grammar (bpmax <|| pretty) (chr i) (toBacktrack t (undefined :: Id a -> Id a))
+runInsideBacktrack :: VU.Vector Char -> Z:.X:.T:.T -> [[String]]
+runInsideBacktrack i (Z:.t:.u:.v) = unId $ axiom b
+  where !(Z:.b:._:._) = grammar (bpmax <|| pretty)
+                          (toBacktrack t (undefined :: Id a -> Id a))
+                          (toBacktrack u (undefined :: Id a -> Id a))
+                          (toBacktrack v (undefined :: Id a -> Id a))
+                          i
 {-# NoInline runInsideBacktrack #-}
--}
 
 main = do
   as <- getArgs
@@ -132,5 +134,5 @@ main = do
     putStrLn l
     let (s,xs) = runPseudoknot k l
     print s
-    mapM_ (\x -> printf "%s %5d\n" x s) xs
+    mapM_ (\[x] -> printf "%s %5d\n" x s) xs
 

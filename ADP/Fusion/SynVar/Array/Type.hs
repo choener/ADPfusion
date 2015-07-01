@@ -35,6 +35,8 @@ instance GenBacktrackTable (ITbl mF arr i x) mF mB r where
   toBacktrack (ITbl _ _ c arr _) _ bt = BtITbl c arr bt
   {-# Inline toBacktrack #-}
 
+type instance TermArg (TermSymbol a (Backtrack (ITbl mF arr i x) mF mB r)) = TermArg a :. (x,[r])
+
 instance
   ( Monad m
   , PrimArrayOps arr i x

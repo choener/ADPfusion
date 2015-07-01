@@ -3,7 +3,7 @@
 
 module ADP.Fusion.SynVar.Array.TermSymbol where
 
-import Data.Strict.Tuple
+import Data.Strict.Tuple hiding (snd)
 import Data.Vector.Fusion.Stream.Size
 import Data.Vector.Fusion.Util (delay_inline)
 import Data.Vector.Fusion.Stream.Monadic
@@ -43,11 +43,44 @@ instance
           {-# Inline [0] step #-}
   {-# Inline terminalStream #-}
 
+instance
+  ( Monad mB
+  , TerminalStream mB a is
+  , PrimArrayOps arr Subword x
+  ) => TerminalStream mB (TermSymbol a (Backtrack (ITbl mF arr Subword x) mF mB r)) (is:.Subword) where
+  terminalStream (a :| BtITbl c t bt) (sv:.IStatic _) (is:.ix@(Subword (i:.j)))
+    = mapM (\ (S6 s (zi:.(Subword (_:.l))) (zo:._) is os e) ->
+              let lj = subword l j
+                  hh = snd $ bounds t
+              in  bt hh lj >>= \ ~bb -> return $ S6 s zi zo (is:.lj) (os:.subword 0 0) (e:.(t!lj, bb)) )
+    . iPackTerminalStream a sv (is:.ix)
+  terminalStream (a :| BtITbl c t bt) (sv:.IVariable _) (is:.ix@(Subword (i:.j)))
+    = flatten mk step Unknown . iPackTerminalStream a sv (is:.ix)
+    where mk (S6 s (zi:.(Subword (_:.l))) (zo:._) is os e) = return (S6 s zi zo is os e :. l :. j - l) -- TODO minsize c !
+          step (s6:.k:.z) | z >= 0 = do let S6 s zi zo is os e = s6
+                                            l                  = j - z
+                                            kl                 = subword k l
+                                            hh                 = snd $ bounds t
+                                        bt hh kl >>= \ ~bb -> return $ Yield (S6 s zi zo (is:.kl) (os:.subword 0 0) (e:.(t!kl,bb))) (s6 :. k :. z-1)
+                          | otherwise = return $ Done
+          {-# Inline [0] mk   #-}
+          {-# Inline [0] step #-}
+  {-# Inline terminalStream #-}
+
+
 instance TermStaticVar (ITbl m arr Subword x) Subword where
   termStaticVar _ (IStatic   d) _ = IVariable d
   termStaticVar _ (IVariable d) _ = IVariable d
   termStreamIndex (ITbl _ _ _ _ _) (IStatic   d) (Subword (i:.j)) = subword i j -- TODO minSize handling !
   termStreamIndex (ITbl _ _ _ _ _) (IVariable d) (Subword (i:.j)) = subword i j -- TODO minsize handling
+  {-# Inline [0] termStaticVar   #-}
+  {-# Inline [0] termStreamIndex #-}
+
+instance TermStaticVar (Backtrack (ITbl mF arr Subword x) mF mB r) Subword where
+  termStaticVar _ (IStatic   d) _ = IVariable d
+  termStaticVar _ (IVariable d) _ = IVariable d
+  termStreamIndex (BtITbl _ _ _) (IStatic   d) (Subword (i:.j)) = subword i j -- TODO minSize handling !
+  termStreamIndex (BtITbl _ _ _) (IVariable d) (Subword (i:.j)) = subword i j -- TODO minsize handling
   {-# Inline [0] termStaticVar   #-}
   {-# Inline [0] termStreamIndex #-}
 

@@ -256,9 +256,21 @@ recBuildLamPat nts fL' fR' ts = do
         let
         in  error "buildLfun: WRITE ME" -- appE f (varE $ mkName "foo")
   -}
+  lamPat <- buildLamPat ps
   lfun <- buildLns (VarE fL') ps -- foldl buildLfun (varE fL') ps
   rfun <- buildRns (VarE fR') ps
-  return (error $ "return pattern, WRITE ME " ++ show ps, lfun, rfun)
+  return (lamPat, lfun, rfun)
+
+buildLamPat :: [ArgTy Pat] -> Q [Pat]
+buildLamPat = mapM go where
+  go (SynVar      p ) = return p
+  go (Term        p ) = return p
+  go (StackedVars ps) = build ps
+  build :: [ArgTy Pat] -> Q Pat
+  build = foldl (\s v -> [p| $(s) :. $(return v) |]) [p|Z|] . map get
+  get :: ArgTy Pat -> Pat
+  get (SynVar p) = p
+  get (Term   p) = p
 
 -- | Look at the argument type and build the capturing variables. In
 -- particular captures synvar arguments with a 2-tuple @(x,ys)@.
@@ -276,7 +288,8 @@ buildLns
   -> [ArgTy Pat]
   -> ExpQ
 buildLns f' ps = foldl go (return f') ps
-  where go f (SynVar      (TupP [VarP v,_])) = appE f (varE v)
+  where go :: ExpQ -> ArgTy Pat -> ExpQ
+        go f (SynVar      (TupP [VarP v,_])) = appE f (varE v)
         go f (Term        (VarP v         )) = appE f (varE v)
         go f (StackedVars vs               ) = appE f (build vs)
         build :: [ArgTy Pat] -> ExpQ
@@ -298,24 +311,37 @@ buildRns
 --  -> [Name]
   -> [ArgTy Pat]
   -> ExpQ
-buildRns f ps = do
+buildRns f' ps = do
   -- get all synvars, shallow or deep and create a new name to bind
   -- individual parts to.
-  sy <- M.fromList <$> (mapM (\s -> newName "y" >>= \y -> return (s,y)) $ concatMap flattenSynVars ps)
+  sy :: M.Map Pat Name <- M.fromList <$> (mapM (\s -> newName "y" >>= \y -> return (s,y)) $ concatMap flattenSynVars ps)
   -- bind them for the right part of the list expression (even though they
   -- are left in @CompE@. We don't use @sy@ directly to keep the order in
   -- which the comprehensions run.
   let rs = map (\k@(TupP [_,VarP v]) -> BindS (VarP $ sy M.! k) (VarE v)) $ concatMap flattenSynVars ps
+  let go :: ExpQ -> ArgTy Pat -> ExpQ
+      go f (SynVar      k       ) = appE f (varE $ sy M.! k) -- needed like this, because we need the @y@ in @y <- ys@
+      go f (Term        (VarP v)) = appE f (varE v)
+      go f (StackedVars vs      ) = appE f (foldl build [|Z|] vs)
+      build :: ExpQ -> ArgTy Pat -> ExpQ
+      build s (SynVar k       ) = [| $(s) :. $(varE $ sy M.! k) |]
+      build s (Term   (VarP v)) = [| $(s) :. $(varE v)          |]
+  funApp <- foldl go (return f') ps
+  return . CompE $ rs ++ [NoBindS funApp]
+
+{-
   -- helper function for the argument build-up
-  let go [] = []
+  let go :: [ArgTy Pat] -> [Name]
+      go [] = []
       go ((SynVar      k       ):ks) = sy M.! k  : go ks
       go ((Term        (VarP v)):ks) = v         : go ks -- should also cover StackedTerms, NilVar ! (because we build this earlier in @argTypArgs@)
-      go ((StackedVars ls      ):ks) = undefined : go ks -- need to work more
+      go ((StackedVars ls      ):ks) = (error "here") : go ks -- need to work more
   -- more verbose build-up of the arguments for @funApp@.
   let xs = go ps
   -- function application
   funApp <- noBindS $ foldl (\g z -> appE g (varE z)) (return f) xs
   return . CompE $ rs ++ [funApp]
+-}
 {-
 buildRns f ps = do
   ys <- sequence [ newName "y" | TupP [_,VarP v] <- ps ]
