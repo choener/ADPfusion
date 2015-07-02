@@ -6,20 +6,21 @@
 
 module ADP.Fusion.TH.Backtrack where
 
+import           Control.Applicative (<$>)
 import           Control.Monad
+import           Control.Monad.Primitive (PrimState, PrimMonad)
 import           Data.List
 import           Data.Tuple.Select
-import           Language.Haskell.TH
-import           Language.Haskell.TH.Syntax
-import qualified Data.Vector.Fusion.Stream.Monadic as SM
-import qualified Data.Vector.Mutable as VM
-import qualified Data.Vector.Generic.Mutable as VGM
-import qualified Data.Vector as V
-import qualified Data.Vector.Generic as VG
-import           Control.Monad.Primitive (PrimState, PrimMonad)
 import           Data.Vector.Fusion.Stream.Monadic (Stream(..))
 import           Debug.Trace
+import           Language.Haskell.TH
+import           Language.Haskell.TH.Syntax
 import qualified Data.Map.Strict as M
+import qualified Data.Vector as V
+import qualified Data.Vector.Fusion.Stream.Monadic as SM
+import qualified Data.Vector.Generic as VG
+import qualified Data.Vector.Generic.Mutable as VGM
+import qualified Data.Vector.Mutable as VM
 
 import           Data.PrimitiveArray ( (:.)(..) , Z(..) )
 
