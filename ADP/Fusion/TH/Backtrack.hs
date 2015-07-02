@@ -6,7 +6,7 @@
 
 module ADP.Fusion.TH.Backtrack where
 
-import           Control.Applicative (<$>)
+import           Control.Applicative ( (<$>) )
 import           Control.Monad
 import           Control.Monad.Primitive (PrimState, PrimMonad)
 import           Data.List
