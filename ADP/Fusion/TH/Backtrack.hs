@@ -14,6 +14,7 @@ import           Data.Tuple.Select
 import           Data.Vector.Fusion.Stream.Monadic (Stream(..))
 import           Debug.Trace
 import           Language.Haskell.TH
+import           Language.Haskell.TH.Instances
 import           Language.Haskell.TH.Syntax
 import qualified Data.Map.Strict as M
 import qualified Data.Vector as V
