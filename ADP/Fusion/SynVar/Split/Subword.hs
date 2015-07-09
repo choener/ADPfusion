@@ -47,9 +47,9 @@ instance
   ( Monad m
   , Element ls Subword
   , MkStream m ls Subword
-  , SplitIxCol uId (SameSid uId (Elm ls Subword)) ls Subword
-  , (SplitIxTy uId (SameSid uId (Elm ls Subword)) ls Subword :. Subword) ~ mix
-  ,  (PrimArrayOps arr (SplitIxTy uId (SameSid uId (Elm ls Subword)) ls Subword :. Subword) x)
+  , SplitIxCol uId (SameSid uId (Elm ls Subword)) (Elm ls Subword)
+  , (SplitIxTy uId (SameSid uId (Elm ls Subword)) (Elm ls Subword) :. Subword) ~ mix
+  ,  (PrimArrayOps arr (SplitIxTy uId (SameSid uId (Elm ls Subword)) (Elm ls Subword) :. Subword) x)
   ) => MkStream m (ls :!: Split uId Final (ITbl m arr mix x)) Subword where
   mkStream (ls :!: Split (ITbl _ _ c t elm)) (IStatic ()) hh (Subword (i:.j))
     = map (\s -> let (Subword (_:.l)) = getIdx s
@@ -98,9 +98,9 @@ instance
   ( Monad mB
   , Element ls Subword
   , MkStream mB ls Subword
-  , SplitIxCol uId (SameSid uId (Elm ls Subword)) ls Subword
-  , (SplitIxTy uId (SameSid uId (Elm ls Subword)) ls Subword :. Subword) ~ mix
-  , (PrimArrayOps arr (SplitIxTy uId (SameSid uId (Elm ls Subword)) ls Subword :. Subword) x)
+  , SplitIxCol uId (SameSid uId (Elm ls Subword)) (Elm ls Subword)
+  , (SplitIxTy uId (SameSid uId (Elm ls Subword)) (Elm ls Subword) :. Subword) ~ mix
+  , (PrimArrayOps arr (SplitIxTy uId (SameSid uId (Elm ls Subword)) (Elm ls Subword) :. Subword) x)
   ) => MkStream mB (ls :!: Split uId Final (Backtrack (ITbl mF arr mix x) mF mB r)) Subword where
   mkStream (ls :!: Split (BtITbl c t bt)) (IStatic ()) hh (Subword (i:.j))
     = mapM (\s -> let (Subword (_:.l)) = getIdx s

@@ -95,9 +95,9 @@ instance
 
 collectIx
   :: forall uId ls i .
-     ( SplitIxCol uId (SameSid uId (Elm ls i)) ls i
+     ( SplitIxCol uId (SameSid uId (Elm ls i)) (Elm ls i)
      )
-  => Proxy uId -> Elm ls i -> SplitIxTy uId (SameSid uId (Elm ls i)) ls i
+  => Proxy uId -> Elm ls i -> SplitIxTy uId (SameSid uId (Elm ls i)) (Elm ls i)
 collectIx p e = splitIxCol p (Proxy :: Proxy (SameSid uId (Elm ls i))) e
 
 -- | Closed type family that gives us a (type) function for type symbol
@@ -116,50 +116,71 @@ type family OR a b where
   OR False False = False
   OR a     b     = True
 
+-- | @x ++ y@ but for inductive tuples.
+--
+-- TODO move to PrimitiveArray
+
+class Zconcat x y where
+  type Zpp x y :: *
+  zconcat :: x -> y -> Zpp x y
+
+instance Zconcat x Z where
+  type Zpp x Z = x
+  zconcat x Z = x
+  {-# Inline zconcat #-}
+
+instance 
+  ( Zconcat x z
+  ) => Zconcat x (z:.y) where
+  type Zpp x (z:.y) = Zpp x z :. y
+  zconcat x (z:.y) = zconcat x z :. y
+  {-# Inline zconcat #-}
+
 -- WORKS
 
 -- | Actually collect split indices based on if we managed to find the
 -- right @Split@ synvar (based on the right symbol).
 
-class SplitIxCol (uId::Symbol) (b::Bool) ls i where
-  type SplitIxTy uId b ls i :: *
-  splitIxCol :: Proxy uId -> Proxy b -> Elm ls i -> SplitIxTy uId b ls i
+class SplitIxCol (uId::Symbol) (b::Bool) e where
+  type SplitIxTy uId b e :: *
+  splitIxCol :: Proxy uId -> Proxy b -> e -> SplitIxTy uId b e
 
 
 
-instance SplitIxCol uId b S i where
-  type SplitIxTy uId b S i = Z
+instance SplitIxCol uId b (Elm S i) where
+  type SplitIxTy uId b (Elm S i) = Z
   splitIxCol p b (ElmS _ _) = Z
   {-# Inline splitIxCol #-}
 
+
 instance
-  ( SplitIxCol uId (SameSid uId (Elm ls i)) ls i
+  ( SplitIxCol uId (SameSid uId (Elm ls i)) (Elm ls i)
   , Element (ls :!: l) i
   , RecElm (ls :!: l) i ~ Elm ls i
-  ) => SplitIxCol uId False (ls :!: l) i where
-  type SplitIxTy uId False (ls :!: l) i = SplitIxTy uId (SameSid uId (Elm ls i)) ls i
+  ) => SplitIxCol uId False (Elm (ls :!: l) i) where
+  type SplitIxTy uId False (Elm (ls :!: l) i) = SplitIxTy uId (SameSid uId (Elm ls i)) (Elm ls i)
   splitIxCol p b e = collectIx p (getElm e)
   {-# Inline splitIxCol #-}
 
 instance
-  ( SplitIxCol uId (SameSid uId (Elm ls i)) ls i
-  ) => SplitIxCol   uId True (ls :!: Split sId splitType (ITbl m arr j x)) i where
-  type SplitIxTy uId True (ls :!: Split sId splitType (ITbl m arr j x)) i = SplitIxTy uId (SameSid uId (Elm ls i)) ls i :. i
+  ( SplitIxCol uId (SameSid uId (Elm ls i)) (Elm ls i)
+  ) => SplitIxCol   uId True (Elm (ls :!: Split sId splitType (ITbl m arr j x)) i) where
+  type SplitIxTy uId True (Elm (ls :!: Split sId splitType (ITbl m arr j x)) i) = SplitIxTy uId (SameSid uId (Elm ls i)) (Elm ls i) :. i
   splitIxCol p b (ElmSplitITbl _ _ i _ e) = collectIx p e :. i
   {-# Inline splitIxCol #-}
 
 instance
-  ( SplitIxCol uId (SameSid uId (Elm ls i)) ls i
-  ) => SplitIxCol   uId True (ls :!: Split sId splitType (Backtrack (ITbl mF arr j x) mF mB r)) i where
-  type SplitIxTy uId True (ls :!: Split sId splitType (Backtrack (ITbl mF arr j x) mF mB r)) i = SplitIxTy uId (SameSid uId (Elm ls i)) ls i :. i
+  ( SplitIxCol uId (SameSid uId (Elm ls i)) (Elm ls i)
+  ) => SplitIxCol   uId True (Elm (ls :!: Split sId splitType (Backtrack (ITbl mF arr j x) mF mB r)) i) where
+  type SplitIxTy uId True (Elm (ls :!: Split sId splitType (Backtrack (ITbl mF arr j x) mF mB r)) i) = SplitIxTy uId (SameSid uId (Elm ls i)) (Elm ls i) :. i
   splitIxCol p b (ElmSplitBtITbl _ _ i _ e) = collectIx p e :. i
   {-# Inline splitIxCol #-}
 
-{-
 instance
-  ( SplitIxCol uId (SameSid uId (Elm ls i)) ls i
-  ) => SplitIxCol uId True (ls :!: TermSymbol a b) i where
-  type SplitIxTy uId True (ls :!: TermSymbol a b) i = SplitIxTy uId (SameSid uId (Elm ls i)) ls i :. SplitIxTy uId (SameSid uId (TermSymbol a b)) (TermSymbol a b) i
-  splitIxCol p b (ElmTS t i _ e) = collectIx p e :. collectIx p t
--}
+  ( SplitIxCol uId (SameSid uId (Elm ls i)) (Elm ls i)
+  , Zconcat (SplitIxTy uId (SameSid uId (Elm ls i)) (Elm ls i)) (SplitIxTy uId (SameSid uId (TermSymbol a b)) (TermSymbol a b))
+  ) => SplitIxCol uId True (Elm (ls :!: TermSymbol a b) i) where
+  type SplitIxTy uId True (Elm (ls :!: TermSymbol a b) i) = Zpp (SplitIxTy uId (SameSid uId (Elm ls i)) (Elm ls i)) (SplitIxTy uId (SameSid uId (TermSymbol a b)) (TermSymbol a b))
+  splitIxCol p b (ElmTS t i _ e) = collectIx p e `zconcat` (undefined p t :: SplitIxTy uId (SameSid uId (TermSymbol a b)) (TermSymbol a b))
+  {-# Inline splitIxCol #-}
 
