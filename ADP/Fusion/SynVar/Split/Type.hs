@@ -90,119 +90,76 @@ instance
 
 
 
-{-
-type family BuildIxTy (uId :: Symbol) ls where
-  BuildIxTy uId S = Z
-  BuildIxTy uId (ls :!: Split sId zOrder splitType synVar) = BuildIxTyHelper uId (ls :!: Split sId zOrder splitType synVar) (uId == sId)
-  BuildIxTy uId (ls :!: other) = BuildIxTy uId ls
+-- | 'collectIx' gobbles up indices that are tagged with the same symbolic
+-- identifier.
 
-type family BuildIxTyHelper (uId :: Symbol) ls (sameId :: Bool) where
-  BuildIxTyHelper uId (ls :!: Split uId zOrder splitType synVar) True  = BuildIxTy uId ls :. Subword
-  BuildIxTyHelper uId (ls :!: Split uId zOrder splitType synVar) False = BuildIxTy uId ls
+collectIx
+  :: forall uId ls i .
+     ( SplitIxCol uId (SameSid uId (Elm ls i)) ls i
+     )
+  => Proxy uId -> Elm ls i -> SplitIxTy uId (SameSid uId (Elm ls i)) ls i
+collectIx p e = splitIxCol p (Proxy :: Proxy (SameSid uId (Elm ls i))) e
 
-class Get (uId :: Symbol) ls i where
-  get :: Proxy uId -> Elm ls i -> BuildIxTy uId ls
-
-instance Get uId S i where
-  get _ (ElmS _ _) = Z
-
-instance
-  ( sameId ~ (uId==sId)
-  , GetHelper uId sameId (ls :!: Split sId zOrder splitType synVar) i
-  ) => Get uId (ls :!: Split sId zOrder splitType synVar) i where
-  get p = getHelper p (Proxy :: Proxy sameId)
-
-class GetHelper (uId :: Symbol) (sameId :: Bool) ls i where
-  getHelper :: Proxy uId -> Proxy Bool -> Elm ls i -> BuildIxTy uId ls
-
-instance GetHelper uId True (ls :!: Split sId zOrder splitType synVar) i where
-  getHelper p sp = undefined
-
--}
-
-
-class B (uId::Symbol) (b::Bool) ls i where
-  type BTy uId b ls i :: *
-  bbb :: Proxy uId -> Proxy b -> Elm ls i -> BTy uId b ls i
-
-instance B uId b S i where
-  type BTy uId b S i = Z
-  bbb p b (ElmS _ _) = Z
-  {-# Inline bbb #-}
-
-instance
-  ( B uId (SameSid uId (Elm ls i)) ls i
-  , Element (ls :!: l) i
-  , RecElm (ls :!: l) i ~ Elm ls i
-  ) => B uId False (ls :!: l) i where
-  type BTy uId False (ls :!: l) i = CTy uId ls i
-  bbb p b e = ccc p (getElm e)
-  {-# Inline bbb #-}
-
--- TODO ?
-{-
-instance
-  ( B uId (SameSid uId (Elm ls i)) ls i
-  ) => B uId False  (ls :!: Split sId zOrder splitType  (ITbl m arr j x)) i where
-  type BTy uId False (ls :!: Split sId zOrder splitType (ITbl m arr j x)) i = CTy uId ls i
-  bbb p b (ElmSplitITbl _ _ i _ e) = ccc p e
-  {-# Inline bbb #-}
--}
-
-instance
-  ( B uId (SameSid uId (Elm ls i)) ls i
-  ) => B   uId True (ls :!: Split sId splitType (ITbl m arr j x)) i where
-  type BTy uId True (ls :!: Split sId splitType (ITbl m arr j x)) i = CTy uId ls i :. i
-  bbb p b (ElmSplitITbl _ _ i _ e) = ccc p e :. i
-  {-# Inline bbb #-}
-
-instance
-  ( B uId (SameSid uId (Elm ls i)) ls i
-  ) => B   uId True (ls :!: Split sId splitType (Backtrack (ITbl mF arr j x) mF mB r)) i where
-  type BTy uId True (ls :!: Split sId splitType (Backtrack (ITbl mF arr j x) mF mB r)) i = CTy uId ls i :. i
-  bbb p b (ElmSplitBtITbl _ _ i _ e) = ccc p e :. i
-  {-# Inline bbb #-}
+-- | Closed type family that gives us a (type) function for type symbol
+-- equality.
 
 type family SameSid uId elm :: Bool where
   SameSid uId (Elm (ls :!: Split sId splitType synVar) i) = uId == sId
+  SameSid uId (Elm (ls :!: TermSymbol a b            ) i) = SameSid uId (TermSymbol a b)
+  SameSid uId M                                           = False
+  SameSid uId (TermSymbol a (Split sId splitType synVar)) = OR (uId == sId) (SameSid uId a)
   SameSid uId (Elm (ls :!: l                         ) i) = False
 
-class C (uId::Symbol) ls i where
-  type CTy uId ls i :: *
-  cCC :: Proxy uId -> Proxy (SameSid uId (Elm ls i)) -> Elm ls i -> CTy uId ls i
-  ccc :: Proxy uId ->                                   Elm ls i -> CTy uId ls i
+-- | Type-level @(||)@
+
+type family OR a b where
+  OR False False = False
+  OR a     b     = True
+
+-- WORKS
+
+-- | Actually collect split indices based on if we managed to find the
+-- right @Split@ synvar (based on the right symbol).
+
+class SplitIxCol (uId::Symbol) (b::Bool) ls i where
+  type SplitIxTy uId b ls i :: *
+  splitIxCol :: Proxy uId -> Proxy b -> Elm ls i -> SplitIxTy uId b ls i
+
+
+
+instance SplitIxCol uId b S i where
+  type SplitIxTy uId b S i = Z
+  splitIxCol p b (ElmS _ _) = Z
+  {-# Inline splitIxCol #-}
 
 instance
-  ( B uId (SameSid uId (Elm ls i)) ls i
-  ) => C uId ls i where
-  type CTy uId ls i = BTy uId (SameSid uId (Elm ls i)) ls i
-  cCC p b e = bbb p b     e
-  ccc p   e = cCC p Proxy e
-  {-# Inline cCC #-}
-  {-# Inline ccc #-}
+  ( SplitIxCol uId (SameSid uId (Elm ls i)) ls i
+  , Element (ls :!: l) i
+  , RecElm (ls :!: l) i ~ Elm ls i
+  ) => SplitIxCol uId False (ls :!: l) i where
+  type SplitIxTy uId False (ls :!: l) i = SplitIxTy uId (SameSid uId (Elm ls i)) ls i
+  splitIxCol p b e = collectIx p (getElm e)
+  {-# Inline splitIxCol #-}
 
+instance
+  ( SplitIxCol uId (SameSid uId (Elm ls i)) ls i
+  ) => SplitIxCol   uId True (ls :!: Split sId splitType (ITbl m arr j x)) i where
+  type SplitIxTy uId True (ls :!: Split sId splitType (ITbl m arr j x)) i = SplitIxTy uId (SameSid uId (Elm ls i)) ls i :. i
+  splitIxCol p b (ElmSplitITbl _ _ i _ e) = collectIx p e :. i
+  {-# Inline splitIxCol #-}
 
+instance
+  ( SplitIxCol uId (SameSid uId (Elm ls i)) ls i
+  ) => SplitIxCol   uId True (ls :!: Split sId splitType (Backtrack (ITbl mF arr j x) mF mB r)) i where
+  type SplitIxTy uId True (ls :!: Split sId splitType (Backtrack (ITbl mF arr j x) mF mB r)) i = SplitIxTy uId (SameSid uId (Elm ls i)) ls i :. i
+  splitIxCol p b (ElmSplitBtITbl _ _ i _ e) = collectIx p e :. i
+  {-# Inline splitIxCol #-}
 
 {-
-
-class Y (x :: Bool) where
-  y :: (Proxy x) -> String
-
-instance Y True where
-  y Proxy = "True"
-
-instance Y False where
-  y Proxy = "False"
-
-class Equal x y where
-  equal' :: x -> y -> (Proxy (x==y)) -> String
-  equal  :: x -> y                   -> String
-
 instance
-  ( Y (x==y)
-  ) => Equal x y where
-  equal' _ _ p = y p
-  equal  x y   = equal' x y Proxy
-
+  ( SplitIxCol uId (SameSid uId (Elm ls i)) ls i
+  ) => SplitIxCol uId True (ls :!: TermSymbol a b) i where
+  type SplitIxTy uId True (ls :!: TermSymbol a b) i = SplitIxTy uId (SameSid uId (Elm ls i)) ls i :. SplitIxTy uId (SameSid uId (TermSymbol a b)) (TermSymbol a b) i
+  splitIxCol p b (ElmTS t i _ e) = collectIx p e :. collectIx p t
 -}
 

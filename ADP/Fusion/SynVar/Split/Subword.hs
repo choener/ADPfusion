@@ -47,14 +47,13 @@ instance
   ( Monad m
   , Element ls Subword
   , MkStream m ls Subword
-  , B uId (SameSid uId (Elm ls Subword)) ls Subword
-  , C uId ls Subword
-  , (BTy uId (SameSid uId (Elm ls Subword)) ls Subword :. Subword) ~ mix
-  ,  (PrimArrayOps arr (BTy uId (SameSid uId (Elm ls Subword)) ls Subword :. Subword) x)
+  , SplitIxCol uId (SameSid uId (Elm ls Subword)) ls Subword
+  , (SplitIxTy uId (SameSid uId (Elm ls Subword)) ls Subword :. Subword) ~ mix
+  ,  (PrimArrayOps arr (SplitIxTy uId (SameSid uId (Elm ls Subword)) ls Subword :. Subword) x)
   ) => MkStream m (ls :!: Split uId Final (ITbl m arr mix x)) Subword where
   mkStream (ls :!: Split (ITbl _ _ c t elm)) (IStatic ()) hh (Subword (i:.j))
     = map (\s -> let (Subword (_:.l)) = getIdx s
-                     fmbkm :: mix = ccc (Proxy :: Proxy uId) s :. subword l j
+                     fmbkm :: mix = collectIx (Proxy :: Proxy uId) s :. subword l j
                  in  ElmSplitITbl Proxy (t ! fmbkm) (subword l j) (subword 0 0) s)
     $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j)) -- TODO (see TODO in @Split@) - minSize c))
   mkStream (ls :!: Split (ITbl _ _ c t _)) (IVariable ()) hh (Subword (i:.j))
@@ -63,7 +62,7 @@ instance
           step (s:.z) | z >= 0 = do let Subword (_:.k) = getIdx s
                                         l              = j - z
                                         kl             = subword k l
-                                        fmbkm :: mix   = ccc (Proxy :: Proxy uId) s :. kl
+                                        fmbkm :: mix   = collectIx (Proxy :: Proxy uId) s :. kl
                                     return $ Yield (ElmSplitITbl Proxy (t ! fmbkm) kl (subword 0 0) s) (s:. z-1)
                       | otherwise = return $ Done
           {-# Inline [0] mk   #-}
@@ -99,15 +98,14 @@ instance
   ( Monad mB
   , Element ls Subword
   , MkStream mB ls Subword
-  , B uId (SameSid uId (Elm ls Subword)) ls Subword
-  , C uId ls Subword
-  , (BTy uId (SameSid uId (Elm ls Subword)) ls Subword :. Subword) ~ mix
-  , (PrimArrayOps arr (BTy uId (SameSid uId (Elm ls Subword)) ls Subword :. Subword) x)
+  , SplitIxCol uId (SameSid uId (Elm ls Subword)) ls Subword
+  , (SplitIxTy uId (SameSid uId (Elm ls Subword)) ls Subword :. Subword) ~ mix
+  , (PrimArrayOps arr (SplitIxTy uId (SameSid uId (Elm ls Subword)) ls Subword :. Subword) x)
   ) => MkStream mB (ls :!: Split uId Final (Backtrack (ITbl mF arr mix x) mF mB r)) Subword where
   mkStream (ls :!: Split (BtITbl c t bt)) (IStatic ()) hh (Subword (i:.j))
     = mapM (\s -> let (Subword (_:.l)) = getIdx s
                       lj               = subword l j
-                      fmbkm :: mix     = ccc (Proxy :: Proxy uId) s :. lj
+                      fmbkm :: mix     = collectIx (Proxy :: Proxy uId) s :. lj
                       (_,hhhh)         = bounds t -- This is an ugly hack, but we need a notation of higher bound from somewhere
                   in  bt hhhh fmbkm >>= \ ~bb -> return $ ElmSplitBtITbl Proxy (t ! fmbkm,bb) lj (subword 0 0) s)
     $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j)) -- TODO (see TODO in @Split@) - minSize c))
@@ -117,7 +115,7 @@ instance
           step (s:.z) | z >= 0 = do let Subword (_:.k) = getIdx s
                                         l              = j - z
                                         kl             = subword k l
-                                        fmbkm :: mix   = ccc (Proxy :: Proxy uId) s :. kl
+                                        fmbkm :: mix   = collectIx (Proxy :: Proxy uId) s :. kl
                                         (_,hhhh)       = bounds t -- same ugly hack
                                     bt hhhh fmbkm >>= \ ~bb -> return $ Yield (ElmSplitBtITbl Proxy (t ! fmbkm,bb) kl (subword 0 0) s) (s:. z-1)
                       | otherwise = return $ Done
