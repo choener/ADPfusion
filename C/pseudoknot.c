@@ -9,6 +9,7 @@
 
 int pseudoknot (int, char *);
 int pairs (char, char);
+void filluv (char name, char *inp, int *t, int *uv, int n, int i, int j);
 
 int main () {
   char *p = calloc (10000, sizeof(char));
@@ -76,29 +77,15 @@ int pseudoknot (int n, char *inp) {
         newR = v[I4(n,a+1,b,c+1,j)];
         new = newL + newR;
         cur = MAX(cur,new);
-        printf ("Q %3d %c %3d %c %3d %c %3d %c -- %4d + %4d\n", i,inp[i], a,inp[a], b,inp[b], c,inp[c], newL, newR);
+        printf ("Q %3d %c %3d %c %3d %c %3d %c %3d %c -- %4d + %4d\n", i,inp[i], a,inp[a], b,inp[b], c,inp[c], j,inp[j], newL, newR);
       }
     }; // n^5 pseudoknot loop
     t[i*n+j] = cur;
-    printf ("  %3d %c %3d %c %4d\n",i,inp[i],j,inp[j], t[I2(n,i,j)]);
+//    printf ("  %3d %c %3d %c %4d\n",i,inp[i],j,inp[j], t[I2(n,i,j)]);
     // fill up <U>
-    for (k=i; k<=j; k++) for (l=k; l<=j; l++) {
-      // u
-      cur = -999999;
-      // loop over inner part
-      for (a=i; a<=k; a++) for (b=l; b<=j; b++) {
-        if (pairs(inp[a], inp[j])) {
-          newL = a>i ? t[I2(n,i,a-1)] : 0;
-          newM = k+1<l ? u[I4(n,i,k,l,j)] : 0;
-          newR = b<j ? t[I2(n,l,j)] : 0;
-          new = newL + newM + newR + 1;
-          cur = MAX(cur,new);
-          printf ("U %3d : %3d %c : %3d %3d : %3d %c -- %4d + %4d + %4d\n", i, a,inp[a], k,l, j,inp[j], newL, newM, newR);
-        };
-      };
-      u[I4(n,i,k,l,j)] = cur;
-    };
+    filluv ('V', inp, t, u, n, i, j);
     // fill up <V>
+    filluv ('V', inp, t, v, n, i, j);
   } // the n^2 loop
 
   cur = t[I2(n,0,n-1)];
@@ -109,3 +96,24 @@ int pseudoknot (int n, char *inp) {
   return cur;
 }
 
+void filluv (char name, char *inp, int *t, int *uv, int n, int i, int j) {
+  int k, l, a, b;
+  int cur, newL, newM, newR, new;
+  for (k=i; k<=j; k++) for (l=k; l<=j; l++) {
+    // u
+    cur = -999999;
+    // loop over inner part
+    for (a=i; a<=k; a++) for (b=l; b<=j; b++) {
+      if (pairs(inp[a], inp[j])) {
+        newL = a>i                ?  t[I2(n,i,a-1)]     : 0;
+        newM = a+1<=k && b+1<=j-1 ? uv[I4(n,a+1,k,l,b)] : 0;
+        newR = b+1<j              ?  t[I2(n,b+1,j-1)]   : 0;
+        new = newL + newM + newR + 1;
+        cur = MAX(cur,new);
+        if (new>0)
+          printf ("%c %3d : %3d %c : %3d %3d : %3d %c -- %4d + %4d + %4d\n", name, i, a,inp[a], k,l, j,inp[j], newL, newM, newR);
+      };
+    };
+    uv[I4(n,i,k,l,j)] = cur;
+  };
+};
