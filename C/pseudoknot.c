@@ -5,7 +5,7 @@
 
 #define MAX(a,b)      ( ((a) > (b)) ? (a) : (b) )
 #define I2(n,i,j)     ((i)*n+(j))
-#define I4(n,i,j,k,l) ((i)*n^3 + (j)*n^2 + (k)*n + (l))
+#define I4(n,i,j,k,l) ((i)*n*n*n + (j)*n*n + (k)*n + (l))
 
 int pseudoknot (int, char *);
 int pairs (char, char);
@@ -67,23 +67,25 @@ int pseudoknot (int n, char *inp) {
       if (pairs (inp[a],inp[j])) {
         new = newL + newR + 1;
         cur = MAX(cur,new);
-//        printf ("P %3d %c %3d %c -- %4d + %4d + 1\n",a, inp[a],j, inp[j], newL, newR);
+        printf ("P %3d %c %3d %c -- %4d + %4d + 1\n",a, inp[a],j, inp[j], newL, newR);
       }
     }; // n^3 loop
-    for (a=i; a<=j; a++) for (b=a; b<=j; b++) for (c=b; c<=j; c++) {
+    for (a=i; a<=j; a++) for (b=a+1; b<=j; b++) for (c=b+1; c<j; c++) {
       // ~~ i ~~ a ~~ b ~~ c ~~ j ~~
-      if (i<a && a<b && b<c && c<=j) {
+      if (1) { // (i<a && a<b && b<c && c<=j) {
         newL = u[I4(n,i  ,a,b+1,c)];
         newR = v[I4(n,a+1,b,c+1,j)];
         new = newL + newR;
         cur = MAX(cur,new);
-        printf ("Q %3d %c %3d %c %3d %c %3d %c %3d %c -- %4d + %4d\n", i,inp[i], a,inp[a], b,inp[b], c,inp[c], j,inp[j], newL, newR);
+        printf ("Q %3d %c %3d %c %3d %c %3d %c %3d %c -- %4d + %4d = %4d\n", i,inp[i], a,inp[a], b,inp[b], c,inp[c], j,inp[j], newL, newR, new);
+        printf ("L %3d %3d %3d %3d %3d   %3d\n", n, i  , a, b+1, c, newL);
+        printf ("R %3d (%3d) %3d %3d %3d %3d   %3d\n", n, i, a+1, b, c+1, j, newR);
       }
     }; // n^5 pseudoknot loop
     t[i*n+j] = cur;
 //    printf ("  %3d %c %3d %c %4d\n",i,inp[i],j,inp[j], t[I2(n,i,j)]);
     // fill up <U>
-    filluv ('V', inp, t, u, n, i, j);
+    filluv ('U', inp, t, u, n, i, j);
     // fill up <V>
     filluv ('V', inp, t, v, n, i, j);
   } // the n^2 loop
@@ -99,21 +101,23 @@ int pseudoknot (int n, char *inp) {
 void filluv (char name, char *inp, int *t, int *uv, int n, int i, int j) {
   int k, l, a, b;
   int cur, newL, newM, newR, new;
-  for (k=i; k<=j; k++) for (l=k; l<=j; l++) {
+  for (k=i; k<=j; k++) for (l=k+1; l<=j; l++) {
     // u
     cur = -999999;
     // loop over inner part
     for (a=i; a<=k; a++) for (b=l; b<=j; b++) {
       if (pairs(inp[a], inp[j])) {
-        newL = a>i                ?  t[I2(n,i,a-1)]     : 0;
-        newM = a+1<=k && b+1<=j-1 ? uv[I4(n,a+1,k,l,b)] : 0;
-        newR = b+1<j              ?  t[I2(n,b+1,j-1)]   : 0;
+        newL = a>i    ?  t[I2(n,i,a-1)]     : 0;
+        newM = a+1<=k ? uv[I4(n,a+1,k,l,b)] : 0;
+        newR = b+1<j  ?  t[I2(n,b+1,j-1)]   : 0;
         new = newL + newM + newR + 1;
         cur = MAX(cur,new);
-        if (new>0)
-          printf ("%c %3d : %3d %c : %3d %3d : %3d %c -- %4d + %4d + %4d\n", name, i, a,inp[a], k,l, j,inp[j], newL, newM, newR);
+        if (i==0 && k==1 && l==4 && j==5)
+          printf ("%c %d %d (%d %d) %d %d   %d %d %d %d %d\n", name, i,a,k,l,b,j, newL, newM, newR, a+1<=k, b+1<=j-1);
       };
     };
+//    if (name=='U') // && i==0 && k==2 && l==4 && j==7)
+    printf ("%c %3d %3d %3d %3d   -- (%d) %3d\n", name, i,k,l,j, uv[I4(n,i,k,l,j)], cur );
     uv[I4(n,i,k,l,j)] = cur;
   };
 };
