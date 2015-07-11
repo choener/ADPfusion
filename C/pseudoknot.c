@@ -67,7 +67,7 @@ int pseudoknot (int n, char *inp) {
       if (pairs (inp[a],inp[j])) {
         new = newL + newR + 1;
         cur = MAX(cur,new);
-        printf ("P %3d %c %3d %c -- %4d + %4d + 1\n",a, inp[a],j, inp[j], newL, newR);
+//        printf ("P %3d %c %3d %c -- %4d + %4d + 1\n",a, inp[a],j, inp[j], newL, newR);
       }
     }; // n^3 loop
     for (a=i; a<=j; a++) for (b=a+1; b<=j; b++) for (c=b+1; c<j; c++) {
@@ -77,9 +77,9 @@ int pseudoknot (int n, char *inp) {
         newR = v[I4(n,a+1,b,c+1,j)];
         new = newL + newR;
         cur = MAX(cur,new);
-        printf ("Q %3d %c %3d %c %3d %c %3d %c %3d %c -- %4d + %4d = %4d\n", i,inp[i], a,inp[a], b,inp[b], c,inp[c], j,inp[j], newL, newR, new);
-        printf ("L %3d %3d %3d %3d %3d   %3d\n", n, i  , a, b+1, c, newL);
-        printf ("R %3d (%3d) %3d %3d %3d %3d   %3d\n", n, i, a+1, b, c+1, j, newR);
+//        printf ("Q %3d %c %3d %c %3d %c %3d %c %3d %c -- %4d + %4d = %4d\n", i,inp[i], a,inp[a], b,inp[b], c,inp[c], j,inp[j], newL, newR, new);
+//        printf ("L %3d %3d %3d %3d %3d   %3d\n", n, i  , a, b+1, c, newL);
+//        printf ("R %3d (%3d) %3d %3d %3d %3d   %3d\n", n, i, a+1, b, c+1, j, newR);
       }
     }; // n^5 pseudoknot loop
     t[i*n+j] = cur;
@@ -108,16 +108,29 @@ void filluv (char name, char *inp, int *t, int *uv, int n, int i, int j) {
     for (a=i; a<=k; a++) for (b=l; b<=j; b++) {
       if (pairs(inp[a], inp[j])) {
         newL = a>i    ?  t[I2(n,i,a-1)]     : 0;
-        newM = a+1<=k ? uv[I4(n,a+1,k,l,b)] : 0;
+        // i=0 , k=1, l=3, j=4
+        // a=1 , b=3
+        newM = a+1<=k && b+1<=j ? uv[I4(n,a+1,k,l,b)] : 0;
         newR = b+1<j  ?  t[I2(n,b+1,j-1)]   : 0;
         new = newL + newM + newR + 1;
         cur = MAX(cur,new);
-        if (i==0 && k==1 && l==4 && j==5)
-          printf ("%c %d %d (%d %d) %d %d   %d %d %d %d %d\n", name, i,a,k,l,b,j, newL, newM, newR, a+1<=k, b+1<=j-1);
+//        if (i==0 && k==1 && l==3 && j==4)
+//          printf ("%c %d %d (%d %d) %d %d   %d %d %d %d %d\n", name, i,a,k,l,b,j, newL, newM, newR, a+1<=k, b+1<j);
       };
     };
 //    if (name=='U') // && i==0 && k==2 && l==4 && j==7)
-    printf ("%c %3d %3d %3d %3d   -- (%d) %3d\n", name, i,k,l,j, uv[I4(n,i,k,l,j)], cur );
+//    printf ("%c %3d %3d %3d %3d   -- (%d) %3d\n", name, i,k,l,j, uv[I4(n,i,k,l,j)], cur );
     uv[I4(n,i,k,l,j)] = cur;
   };
 };
+
+/*
+ * cccuuggaa
+ * 012345678
+ *  i  k l
+ *       j
+ *
+ * ccugga
+ * 012345
+ * ik lj
+ */
