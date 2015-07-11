@@ -111,7 +111,7 @@ type X = ITbl Id Unboxed Subword Int
 type T = ITbl Id Unboxed (Z:.Subword:.Subword) Int
 
 runInsideForward :: VU.Vector Char -> Z:.X:.T:.T
-runInsideForward i = mutateTablesDefault
+runInsideForward i = mutateTablesWithHints (Proxy :: Proxy MonotoneMCFG)
                    $ grammar bpmax
                         (ITbl 0 0 EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-666999) []))
                         (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.subword 0 0:.subword 0 0) (Z:.subword 0 n:.subword 0 n) (-777999) []))

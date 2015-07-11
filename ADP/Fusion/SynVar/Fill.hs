@@ -12,6 +12,7 @@ import           System.IO.Unsafe
 import           Control.Monad (when,forM_)
 import           Data.List (nub,sort)
 import qualified Data.Vector.Unboxed as VU
+import           Data.Proxy
 
 import           Data.PrimitiveArray
 
@@ -56,6 +57,15 @@ instance ExposeTables Z where
 
 
 
+-- | A vanilla context-free grammar
+
+data CFG
+
+-- | This grammar is a multi-cfg in a monotone setting
+
+data MonotoneMCFG
+
+
 -- * Unsafely mutate 'ITbls' and similar tables in the forward phase.
 
 -- | Mutate a cell in a stack of syntactic variables.
@@ -66,13 +76,13 @@ instance ExposeTables Z where
 -- /not/ want to have this state influence forward results, unless that can
 -- be made deterministic, or we'll break Bellman)
 
-class MutateCell (s :: *) (im :: * -> *) (om :: * -> *) i where
-  mutateCell :: Int -> Int -> (forall a . im a -> om a) -> s -> i -> i -> om ()
+class MutateCell (h :: *) (s :: *) (im :: * -> *) (om :: * -> *) i where
+  mutateCell :: Proxy h -> Int -> Int -> (forall a . im a -> om a) -> s -> i -> i -> om ()
 
 -- |
 
-class MutateTables (s :: *) (im :: * -> *) (om :: * -> *) where
-  mutateTables :: (forall a . im a -> om a) -> s -> om s
+class MutateTables (h :: *) (s :: *) (im :: * -> *) (om :: * -> *) where
+  mutateTables :: Proxy h -> (forall a . im a -> om a) -> s -> om s
 
 class TableOrder (s :: *) where
   tableLittleOrder :: s -> [Int]
@@ -95,26 +105,42 @@ instance (TableOrder ts) => TableOrder (ts:.ITbl im arr i x) where
 instance
   ( PrimArrayOps  arr i x
   , MPrimArrayOps arr i x
-  , MutateCell ts im om i
+  , MutateCell CFG ts im om i
   , PrimMonad om
   , Show x, Show i
-  ) => MutateCell (ts:.ITbl im arr i x) im om i where
-  mutateCell bo lo mrph (ts:.ITbl tbo tlo c arr f) lu i = do
-    mutateCell bo lo mrph ts lu i
+  ) => MutateCell CFG (ts:.ITbl im arr i x) im om i where
+  mutateCell h bo lo mrph (ts:.ITbl tbo tlo c arr f) lu i = do
+    mutateCell h bo lo mrph ts lu i
     when (bo==tbo && lo==tlo) $ do
       marr <- unsafeThaw arr
       z <- (inline mrph) $ f lu i
       writeM marr i z
   {-# INLINE mutateCell #-}
 
+type ZS2 = Z:.Subword:.Subword
+
+instance
+  ( PrimArrayOps  arr ZS2 x
+  , MPrimArrayOps arr ZS2 x
+  , MutateCell MonotoneMCFG ts im om ZS2
+  , PrimMonad om
+  ) => MutateCell MonotoneMCFG (ts:.ITbl im arr ZS2 x) im om ZS2 where
+  mutateCell h bo lo mrph (ts:.ITbl tbo tlo c arr f) lu iklj@(Z:.Subword (i:.k):.Subword(l:.j)) = do
+    mutateCell h bo lo mrph ts lu iklj
+    when (bo==tbo && lo==tlo && k<=l) $ do
+      marr <- unsafeThaw arr
+      z <- (inline mrph) $ f lu iklj
+      writeM marr iklj z
+  {-# INLINE mutateCell #-}
+
 instance
   ( PrimArrayOps arr Subword x
   , MPrimArrayOps arr Subword x
-  , MutateCell ts im om (Z:.Subword:.Subword)
+  , MutateCell h ts im om (Z:.Subword:.Subword)
   , PrimMonad om
-  ) => MutateCell (ts:.ITbl im arr Subword x) im om (Z:.Subword:.Subword) where
-  mutateCell bo lo mrph (ts:.ITbl tbo tlo c arr f) lu@(Z:.Subword (l:._):.Subword(_:.u)) ix@(Z:.Subword (i1:.j1):.Subword (i2:.j2)) = do
-    mutateCell bo lo mrph ts lu ix
+  ) => MutateCell h (ts:.ITbl im arr Subword x) im om (Z:.Subword:.Subword) where
+  mutateCell h bo lo mrph (ts:.ITbl tbo tlo c arr f) lu@(Z:.Subword (l:._):.Subword(_:.u)) ix@(Z:.Subword (i1:.j1):.Subword (i2:.j2)) = do
+    mutateCell h bo lo mrph ts lu ix
     when (bo==tbo && lo==tlo && i1==i2 && j1==j2) $ do
       let i = i1
       let j = j1
@@ -130,13 +156,13 @@ instance
 
 instance
   ( Monad om
-  , MutateCell (ts:.ITbl im arr i x) im om i
+  , MutateCell h (ts:.ITbl im arr i x) im om i
   , PrimArrayOps arr i x
   , Show i
   , IndexStream i
   , TableOrder (ts:.ITbl im arr i x)
-  ) => MutateTables (ts:.ITbl im arr i x) im om where
-  mutateTables mrph tt@(_:.ITbl _ _ _ arr _) = do
+  ) => MutateTables h (ts:.ITbl im arr i x) im om where
+  mutateTables h mrph tt@(_:.ITbl _ _ _ arr _) = do
     let (from,to) = bounds arr
     -- TODO (1) find the set of orders for the synvars
     let !tbos = VU.fromList . nub . sort $ tableBigOrder tt
@@ -145,21 +171,27 @@ instance
       flip SM.mapM_ (streamUp from to) $ \k ->
         VU.forM_ tlos $ \lo ->
           --traceShow (bo,k,lo) $
-          mutateCell bo lo (inline mrph) tt to k
+          mutateCell h bo lo (inline mrph) tt to k
     return tt
   {-# INLINE mutateTables #-}
 
 instance
   ( Monad om
-  ) => MutateCell Z im om i where
-  mutateCell _ _ _ Z _ _ = return ()
+  ) => MutateCell p Z im om i where
+  mutateCell _ _ _ _ Z _ _ = return ()
   {-# INLINE mutateCell #-}
 
 -- | Default table filling, assuming that the forward monad is just @IO@.
 --
 -- TODO generalize to @MonadIO@ or @MonadPrim@.
 
-mutateTablesDefault :: MutateTables t Id IO => t -> t
-mutateTablesDefault t = unsafePerformIO $ mutateTables (return . unId) t
+mutateTablesDefault :: MutateTables CFG t Id IO => t -> t
+mutateTablesDefault t = unsafePerformIO $ mutateTables (Proxy :: Proxy CFG) (return . unId) t
 {-# INLINE mutateTablesDefault #-}
+
+-- | Mutate tables, but observe certain hints. We use this for monotone
+-- mcfgs for now.
+
+mutateTablesWithHints :: MutateTables h t Id IO => Proxy h -> t -> t
+mutateTablesWithHints h t = unsafePerformIO $ mutateTables h (return . unId) t
 
