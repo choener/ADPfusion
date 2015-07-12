@@ -21,6 +21,9 @@ do
   a=("${(@s/ /)var2}")
   t[${#i}]+=" $a[1]"
   m[${#i}]+=" $a[2]"
+
+  >&2 echo ${#i} $i
+  >&2 echo $a
 done
 
 #print $k
