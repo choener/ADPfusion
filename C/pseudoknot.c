@@ -107,8 +107,8 @@ void filluv (char name, char *inp, int *t, int *uv, int n, int i, int j) {
     // loop over inner part.
     for (a=i; a<=k; a++) {
       if (pairs(inp[a], inp[j])) {
+        newL = i<a        ?  t[I2(n,i,a-1)]     : 0;
         for (b=l; b<=j; b++) {
-          newL = i<a        ?  t[I2(n,i,a-1)]     : 0;
           newM = a<k && b<j ? uv[I4(n,a+1,k,l,b)] : 0;
           newR = b+1<j      ?  t[I2(n,b+1,j-1)]   : 0;
           new = newL + newM + newR + 1;
