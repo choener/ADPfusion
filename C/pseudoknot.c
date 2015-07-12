@@ -108,17 +108,17 @@ void filluv (char name, char *inp, int *t, int *uv, int n, int i, int j) {
     for (a=i; a<=k; a++) {
       if (pairs(inp[a], inp[j])) {
         for (b=l; b<=j; b++) {
-          newL = a>i              ?  t[I2(n,i,a-1)]     : 0;
-          newM = a+1<=k && b+1<=j ? uv[I4(n,a+1,k,l,b)] : 0;
-          newR = b+1<j            ?  t[I2(n,b+1,j-1)]   : 0;
+          newL = i<a        ?  t[I2(n,i,a-1)]     : 0;
+          newM = a<k && b<j ? uv[I4(n,a+1,k,l,b)] : 0;
+          newR = b+1<j      ?  t[I2(n,b+1,j-1)]   : 0;
           new = newL + newM + newR + 1;
           cur = MAX(cur,new);
+//          printf ("%c %d %d (%d %d) %d %d   %d %d %d\n", name, i,a, k,l, b,j, newL, newM, newR);
         };
       } else {
-        cur = -888888;
+        cur = MAX(cur,-888888);
       }; // if pairs
 //        if (i==0 && k==1 && l==3 && j==4)
-//          printf ("%c %d %d (%d %d) %d %d   %d %d %d %d %d\n", name, i,a,k,l,b,j, newL, newM, newR, a+1<=k, b+1<j);
     }; // for a,b
 //    if (name=='U') // && i==0 && k==2 && l==4 && j==7)
 //    printf ("%c %3d %3d %3d %3d   -- (%d) %3d\n", name, i,k,l,j, uv[I4(n,i,k,l,j)], cur );
@@ -126,13 +126,3 @@ void filluv (char name, char *inp, int *t, int *uv, int n, int i, int j) {
   };
 };
 
-/*
- * cccuuggaa
- * 012345678
- *  i  k l
- *       j
- *
- * ccugga
- * 012345
- * ik lj
- */
