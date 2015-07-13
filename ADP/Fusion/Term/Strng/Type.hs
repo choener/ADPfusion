@@ -18,10 +18,10 @@ import           ADP.Fusion.Base
 
 data Strng v x where
   Strng :: VG.Vector v x
-        => !(Int -> Int -> v x -> v x)  -- @slice@ function
-        -> !Int                         -- minimal size
-        -> !Int                         -- maximal size (just use s.th. big if you don't want a limit)
-        -> !(v x)                       -- the actual vector
+        => (Int -> Int -> v x -> v x)  -- @slice@ function
+        -> Int                         -- minimal size
+        -> Int                         -- maximal size (just use s.th. big if you don't want a limit)
+        -> (v x)                       -- the actual vector
         -> Strng v x
 
 manyS :: VG.Vector v x => v x -> Strng v x
