@@ -81,18 +81,18 @@ pretty = Nussinov
 {-# INLINE pretty #-}
 
 grammar Nussinov{..} t' u' v' c =
-  let t = t'  ( unp <<< t % chr c               |||
-                jux <<< t % chr c % t % chr c   |||
+  let t = t'  ( unp <<< t % c               |||
+                jux <<< t % c % t % c   |||
                 nil <<< Epsilon                 |||
                 pse <<< (split (Proxy :: Proxy "U") (Proxy :: Proxy Fragment) u)
                      %  (split (Proxy :: Proxy "V") (Proxy :: Proxy Fragment) v)
                      %  (split (Proxy :: Proxy "U") (Proxy :: Proxy Final)    u)
                      %  (split (Proxy :: Proxy "V") (Proxy :: Proxy Final)    v)  ... h
               )
-      u = u'  ( pk1 <<< (M:|t:|Deletion) % (M:|chr c:|Deletion) % u % (M:|Deletion:|t) % (M:|Deletion:|chr c) |||
+      u = u'  ( pk1 <<< (M:|t:|Deletion) % (M:|c:|Deletion) % u % (M:|Deletion:|t) % (M:|Deletion:|c) |||
                 nll <<< (M:|Epsilon:|Epsilon)                                                                 ... h
               )
-      v = v'  ( pk2 <<< (M:|t:|Deletion) % (M:|chr c:|Deletion) % v % (M:|Deletion:|t) % (M:|Deletion:|chr c) |||
+      v = v'  ( pk2 <<< (M:|t:|Deletion) % (M:|c:|Deletion) % v % (M:|Deletion:|t) % (M:|Deletion:|c) |||
                 nll <<< (M:|Epsilon:|Epsilon)                                                                 ... h
               )
   in Z:.t:.u:.v
@@ -116,7 +116,7 @@ runInsideForward i = mutateTablesWithHints (Proxy :: Proxy MonotoneMCFG)
                         (ITbl 0 0 EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-666999) []))
                         (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.subword 0 0:.subword 0 0) (Z:.subword 0 n:.subword 0 n) (-777999) []))
                         (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.subword 0 0:.subword 0 0) (Z:.subword 0 n:.subword 0 n) (-888999) []))
-                        i
+                        (chr i)
   where n = VU.length i
 {-# NoInline runInsideForward #-}
 
@@ -126,7 +126,7 @@ runInsideBacktrack i (Z:.t:.u:.v) = unId $ axiom b
                           (toBacktrack t (undefined :: Id a -> Id a))
                           (toBacktrack u (undefined :: Id a -> Id a))
                           (toBacktrack v (undefined :: Id a -> Id a))
-                          i
+                          (chr i)
 {-# NoInline runInsideBacktrack #-}
 
 main = do
