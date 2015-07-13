@@ -17,15 +17,14 @@ import           ADP.Fusion.Base
 
 data Chr r x where
   Chr :: VG.Vector v x
-      => !(v x -> Int -> r)
-      -> !(v x)
+      => (v x -> Int -> r)
+      -> (v x)
       -> Chr r x
 
 -- | smart constructor for regular 1-character parsers
 
---chr xs = Chr VG.unsafeIndex xs
-chr xs = Chr (VG.unsafeIndex) xs
---chr xs = Chr (VG.!) xs
+chr :: VG.Vector v x => v x -> Chr x x
+chr = Chr VG.unsafeIndex
 {-# Inline chr #-}
 
 -- | Smart constructor for Maybe Peeking, followed by a character.
