@@ -5,6 +5,7 @@
 - mcfgs allow for interleaved syntactic variables
 - applications include: natural language modelling and pseudoknotted structures in RNA
 - the simplest formal language that requires this is: a^i b^j a^i b^j
+- the [GenussFold](http://hackage.haskell.org/package/GenussFold) library gives a simple example grammar
 
 0.4.0.2
 -------

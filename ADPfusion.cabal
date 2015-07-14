@@ -2,7 +2,7 @@ name:           ADPfusion
 version:        0.4.1.0
 author:         Christian Hoener zu Siederdissen, 2011-2015
 copyright:      Christian Hoener zu Siederdissen, 2011-2015
-homepage:       http://www.bioinf.uni-leipzig.de/Software/gADP/
+homepage:       https://github.com/choener/ADPfusion
 bug-reports:    https://github.com/choener/ADPfusion/issues
 maintainer:     choener@bioinf.uni-leipzig.de
 category:       Algorithms, Data Structures, Bioinformatics, Formal Languages
@@ -14,12 +14,14 @@ cabal-version:  >= 1.10.0
 tested-with:    GHC == 7.8.4, GHC == 7.10.1
 synopsis:       Efficient, high-level dynamic programming.
 description:
+                <http://www.bioinf.uni-leipzig.de/Software/gADP/ generalized Algebraic Dynamic Programming>
+                .
                 ADPfusion combines stream-fusion (using the stream interface
                 provided by the vector library) and type-level programming to
                 provide highly efficient dynamic programming combinators.
                 .
                 ADPfusion allows writing dynamic programs for single- and
-                multi-tape problems. Inputs can be sequences, or sets. And new
+                multi-tape problems. Inputs can be sequences, or sets. New
                 input types can be defined, without having to rewrite this
                 library thanks to the open-world assumption of ADPfusion.
                 .
@@ -27,37 +29,16 @@ description:
                 algorithms as well. Ensemble algorithms combine Inside and
                 Outside calculations.
                 .
+                Starting with version 0.4.1 we support writing multiple
+                context-free grammars (interleaved syntactic variables). Such
+                grammars have applications in bioinformatics and linguistics.
+                .
                 The homepage provides a number of tutorial-style examples, with
                 linear and context-free grammars over sequence and set inputs.
                 .
-                Ideas implemented here are described in a couple of papers:
-                .
-                @
-                Christian Hoener zu Siederdissen
-                Sneaking Around ConcatMap: Efficient Combinators for Dynamic Programming
-                2012. Proceedings of the 17th ACM SIGPLAN international conference on Functional programming
-                <http://doi.acm.org/10.1145/2364527.2364559> preprint: <http://www.tbi.univie.ac.at/newpapers/pdfs/TBI-p-2012-2.pdf>
-                @
-                .
-                @
-                Andrew Farmer, Christian Höner zu Siederdissen, and Andy Gill.
-                The HERMIT in the stream: fusing stream fusion’s concatMap.
-                2014. Proceedings of the ACM SIGPLAN 2014 workshop on Partial evaluation and program manipulation.
-                <http://dl.acm.org/citation.cfm?doid=2543728.2543736>
-                @
-                .
-                @
-                Christian Höner zu Siederdissen, Ivo L. Hofacker, and Peter F. Stadler.
-                Product Grammars for Alignment and Folding.
-                2014. IEEE/ACM Transactions on Computational Biology and Bioinformatics. 99.
-                <http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=6819790>
-                @
-                .
-                @
-                Christian Höner zu Siederdissen, Sonja J. Prohaska, and Peter F. Stadler.
-                Algebraic Dynamic Programming over General Data Structures.
-                2015. submitted.
-                @
+                The formal background for generalized algebraic dynamic
+                progrmaming and ADPfusion is described in a number of papers.
+                These can be found on the gADP homepage and in the README.
                 .
 
 
@@ -70,11 +51,6 @@ Extra-Source-Files:
 
 flag examples
   description:  build the examples
-  default:      False
-  manual:       True
-
-flag llvm
-  description:  build using LLVM
   default:      False
   manual:       True
 
@@ -96,7 +72,7 @@ library
                , mtl                >= 2.0      && < 2.3
                , OrderedBits        >= 0.0.0.1  && < 0.0.1
                , primitive          >= 0.5.4    && < 0.7
-               , PrimitiveArray     >= 0.6.0.1  && < 0.6.2
+               , PrimitiveArray     >= 0.6.1    && < 0.6.2
                , QuickCheck         >= 2.7      && < 2.9
                , strict             >= 0.3      && < 0.4
                , template-haskell   >= 2.0      && < 3.0
@@ -203,7 +179,6 @@ executable NeedlemanWunsch
   else
     buildable:
       False
-
   hs-source-dirs:
     src
   main-is:
@@ -223,11 +198,6 @@ executable NeedlemanWunsch
     -funbox-strict-fields
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000
-  if flag(llvm)
-    ghc-options:
-      -fllvm
-      -optlo-O3 -optlo-std-compile-opts
-      -fllvm-tbaa
   if flag(debug)
     ghc-options:
       -ddump-to-file
@@ -251,7 +221,6 @@ executable Nussinov
   else
     buildable:
       False
-
   hs-source-dirs:
     src
   main-is:
@@ -272,11 +241,6 @@ executable Nussinov
     -funbox-strict-fields
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000
-  if flag(llvm)
-    ghc-options:
-      -fllvm
-      -optlo-O3 -optlo-std-compile-opts
-      -fllvm-tbaa
   if flag(debug)
     ghc-options:
       -ddump-to-file
@@ -301,7 +265,6 @@ executable PartNussinov
   else
     buildable:
       False
-
   hs-source-dirs:
     src
   main-is:
@@ -321,11 +284,6 @@ executable PartNussinov
     -funbox-strict-fields
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000
-  if flag(llvm)
-    ghc-options:
-      -fllvm
-      -optlo-O3 -optlo-std-compile-opts
-      -fllvm-tbaa
   if flag(debug)
     ghc-options:
       -ddump-to-file
@@ -335,7 +293,6 @@ executable PartNussinov
 
 
 executable Durbin
-
   if flag(examples)
     buildable:
       True
@@ -347,7 +304,6 @@ executable Durbin
   else
     buildable:
       False
-
   hs-source-dirs:
     src
   main-is:
@@ -368,11 +324,6 @@ executable Durbin
     -funbox-strict-fields
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000
-  if flag(llvm)
-    ghc-options:
-      -fllvm
-      -optlo-O3 -optlo-std-compile-opts
-      -fllvm-tbaa
   if flag(debug)
     ghc-options:
       -ddump-to-file
@@ -413,11 +364,6 @@ executable Pseudoknot
     -funbox-strict-fields
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000
-  if flag(llvm)
-    ghc-options:
-      -fllvm
-      -optlo-O3 -optlo-std-compile-opts
-      -fllvm-tbaa
   if flag(debug)
     ghc-options:
       -ddump-to-file
@@ -457,11 +403,6 @@ executable OverlappingPalindromes
     -funbox-strict-fields
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000
-  if flag(llvm)
-    ghc-options:
-      -fllvm
-      -optlo-O3 -optlo-std-compile-opts
-      -fllvm-tbaa
   if flag(debug)
     ghc-options:
       -ddump-to-file
@@ -501,11 +442,6 @@ executable SplitTests
     -funbox-strict-fields
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000
-  if flag(llvm)
-    ghc-options:
-      -fllvm
-      -optlo-O3 -optlo-std-compile-opts
-      -fllvm-tbaa
   if flag(debug)
     ghc-options:
       -ddump-to-file
@@ -546,11 +482,6 @@ benchmark performance
     -funbox-strict-fields
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000
-  if flag(llvm)
-    ghc-options:
-      -fllvm
-      -optlo-O3 -optlo-std-compile-opts
-      -fllvm-tbaa
   if flag(debug)
     ghc-options:
       -ddump-to-file

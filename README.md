@@ -4,6 +4,31 @@
 
 [*generalized ADPfusion Homepage*](http://www.bioinf.uni-leipzig.de/Software/gADP/)
 
+Ideas implemented here are described in a couple of papers:
+
+
+
+1.  Christian Hoener zu Siederdissen  
+    *Sneaking Around ConcatMap: Efficient Combinators for Dynamic Programming*  
+    2012. Proceedings of the 17th ACM SIGPLAN international conference on Functional programming  
+    [paper](http://doi.acm.org/10.1145/2364527.2364559) [preprint](http://www.tbi.univie.ac.at/newpapers/pdfs/TBI-p-2012-2.pdf)  
+1.  Andrew Farmer, Christian Höner zu Siederdissen, and Andy Gill.  
+    *The HERMIT in the stream: fusing stream fusion’s concatMap*  
+    2014. Proceedings of the ACM SIGPLAN 2014 workshop on Partial evaluation and program manipulation.  
+    [paper](http://dl.acm.org/citation.cfm?doid=2543728.2543736)  
+1.  Christian Höner zu Siederdissen, Ivo L. Hofacker, and Peter F. Stadler.  
+    /Product Grammars for Alignment and Folding/  
+    2014. IEEE/ACM Transactions on Computational Biology and Bioinformatics. 99  
+    [paper](http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=6819790)  
+1.  Christian Höner zu Siederdissen, Sonja J. Prohaska, and Peter F. Stadler  
+    /Algebraic Dynamic Programming over General Data Structures/  
+    2015. BMC Bioinformatics  
+    [preprint](http://www.bioinf.uni-leipzig.de/Software/gADP/preprints/hoe-pro-2015.pdf)  
+1.  Maik Riechert, Christian Höner zu Siederdissen, and Peter F. Stadler  
+    /Algebraic dynamic programming for multiple context-free languages/  
+    2015. submitted  
+    [preprint](http://www.bioinf.uni-leipzig.de/Software/gADP/preprints/rie-hoe-2015.pdf)  
+
 
 
 # Introduction
@@ -32,55 +57,16 @@ Completely novel (compared to ADP), is the idea of allowing efficient monadic
 combinators. This facilitates writing code that performs backtracking, or
 samples structures stochastically, among others things.
 
-This version is still highly experimental and makes use of multiple recent
-improvements in GHC. This is particularly true for the monadic interface.
-
-Long term goals: Outer indices with more than two dimensions, specialized table
-design, a combinator library, a library for computational biology.
-
-Two algorithms from the realm of computational biology are provided as examples
-on how to write dynamic programming algorithms using this library:
-<http://hackage.haskell.org/package/Nussinov78> and
-<http://hackage.haskell.org/package/RNAfold>.
 
 
 
 # Installation
 
-If GHC-7.2.2/GHC-7.4, LLVM and cabal-install are available, you should be all
-set. I recommend using cabal-dev as it provides a very nice sandbox (replace
-cabal-dev with cabal otherwise).
-
-If you go with cabal-dev, no explicit installation is necessary and ADPfusion
-will be installed in the sandbox together with the example algorithms or your
-own.
-
-For a more global installation, "cabal install ADPfusion" should do the trick.
-
-To run the Quickcheck tests, do an additional "cabal-dev install QuickCheck",
-then "cabal-dev ghci", ":l ADP/Fusion/QuickCheck.hs", and "allProps". Loading
-the quickcheck module should take a bit due to compilation. "allProps" tests
-all properties and should yield no errors.
+Follow the [gADP examples](http://www.bioinf.uni-leipzig.de/Software/gADP/index.html).
 
 
 
-# Notes
-
-If you have problems, find bugs, or want to use this library to write your own
-DP algorithms, please send me a mail. I'm very interested in hearing what is
-missing.
-
-One of the things I'll be integrating is an extension to higher dimensions
-(more than two).
-
-Right now, I am not quite happy with the construction and destruction of the
-"Box" representations. These will change soon. In addition, an analysis of the
-actual combinators should remove the need for nested applications of objective
-functions in many cases.
-
-
-
-# Implementors Notes
+# Implementors Notes (if you want to extend ADPfusion)
 
 
 - The general inlining scheme is: (i) mkStream is {-# INLINE mkStream #-},
@@ -94,6 +80,12 @@ functions in many cases.
   constaints), you have to delay_inline this (until inliner phase 0). Otherwise
   you will break fusion for mkStream.
 
+- Terminals that capture both, say indexing functions, and data should have no
+  strictness annotations for the indexing function. This allows the code to be
+  duplicated, then inlined. This improves performance a lot, because otherwise
+  a function is created that performs these lookups, which has serious (50%
+  slower or so) performance implications.
+
 
 
 #### Contact
@@ -101,5 +93,5 @@ functions in many cases.
 Christian Hoener zu Siederdissen  
 Leipzig University, Leipzig, Germany  
 choener@bioinf.uni-leipzig.de  
-http://www.bioinf.uni-leipzig.de/~choener/  
+<http://www.bioinf.uni-leipzig.de/~choener/>  
 
