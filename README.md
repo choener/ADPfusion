@@ -17,15 +17,15 @@ Ideas implemented here are described in a couple of papers:
     2014. Proceedings of the ACM SIGPLAN 2014 workshop on Partial evaluation and program manipulation.  
     [paper](http://dl.acm.org/citation.cfm?doid=2543728.2543736)  
 1.  Christian Höner zu Siederdissen, Ivo L. Hofacker, and Peter F. Stadler.  
-    /Product Grammars for Alignment and Folding/  
+    *Product Grammars for Alignment and Folding*  
     2014. IEEE/ACM Transactions on Computational Biology and Bioinformatics. 99  
     [paper](http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=6819790)  
 1.  Christian Höner zu Siederdissen, Sonja J. Prohaska, and Peter F. Stadler  
-    /Algebraic Dynamic Programming over General Data Structures/  
+    *Algebraic Dynamic Programming over General Data Structures*  
     2015. BMC Bioinformatics  
     [preprint](http://www.bioinf.uni-leipzig.de/Software/gADP/preprints/hoe-pro-2015.pdf)  
 1.  Maik Riechert, Christian Höner zu Siederdissen, and Peter F. Stadler  
-    /Algebraic dynamic programming for multiple context-free languages/  
+    *Algebraic dynamic programming for multiple context-free languages*  
     2015. submitted  
     [preprint](http://www.bioinf.uni-leipzig.de/Software/gADP/preprints/rie-hoe-2015.pdf)  
 
