@@ -2,7 +2,7 @@
 
 # ADPfusion
 
-[*generalized ADPfusion Homepage*](http://www.bioinf.uni-leipzig.de/Software/gADP/)
+[*generalized Algebraic Dynamic Programming Homepage*](http://www.bioinf.uni-leipzig.de/Software/gADP/)
 
 Ideas implemented here are described in a couple of papers:
 
