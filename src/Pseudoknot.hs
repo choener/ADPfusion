@@ -104,7 +104,14 @@ runPseudoknot k inp = (d, take k bs) where
   n = VU.length i
   !(Z:.t:.u:.v) = runInsideForward i
   d = unId $ axiom t
-  bs = runInsideBacktrack i (Z:.t:.u:.v)
+  bs = {- let ITbl _ _ _ x _ = v in traceShow (filter (flip elem gives . fst) $ assocs x) $ -} runInsideBacktrack i (Z:.t:.u:.v)
+  gives = [ Z:.subword 2 2 :. subword 3 3
+          , Z:.subword 1 2 :. subword 3 5
+          ]
+  {-
+   -  u g a a c
+   - 0 1 2 3 4 5
+  -}
 {-# NOINLINE runPseudoknot #-}
 
 type X = ITbl Id Unboxed Subword Int

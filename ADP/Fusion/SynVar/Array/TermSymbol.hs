@@ -27,9 +27,9 @@ instance
   , Show x
   ) => TerminalStream m (TermSymbol a (ITbl m arr Subword x)) (is:.Subword) where
   terminalStream (a :| ITbl _ _ c t _) (sv:.IStatic _) (is:.ix@(Subword (i:.j)))
-    = map (\ (S6 s (zi:.(Subword (_:.l))) (zo:._) is os e) ->
+    = map (\ (S6 s (zi:.(Subword (a:.l))) (zo:._) is os e) ->
               let lj = subword l j
-              in  S6 s zi zo (is:.lj) (os:.subword 0 0) (e:.(t!lj)) )
+              in  {- traceShow (i,a,' ',l,j,t!lj) $ -} S6 s zi zo (is:.lj) (os:.subword 0 0) (e:.(t!lj)) )
     . iPackTerminalStream a sv (is:.ix)
   terminalStream (a :| ITbl _ _ c t _) (sv:.IVariable _) (is:.ix@(Subword (i:.j)))
     = flatten mk step Unknown . iPackTerminalStream a sv (is:.ix)

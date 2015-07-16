@@ -1,11 +1,20 @@
+0.4.1.1
+-------
+
+- bugfix in Multitape Subword Index calculations (A.F.S.Indices.hs) [this one
+  is quite spurious. I needed quickcheck to find a suitable minimal example
+  where Pseudoknot.hs fails]
+
 0.4.1.0
 -------
 
 - initial support for multi-context free grammars
 - mcfgs allow for interleaved syntactic variables
-- applications include: natural language modelling and pseudoknotted structures in RNA
+- applications include: natural language modelling and pseudoknotted structures
+  in RNA
 - the simplest formal language that requires this is: a^i b^j a^i b^j
-- the [GenussFold](http://hackage.haskell.org/package/GenussFold) library gives a simple example grammar
+- the [GenussFold](http://hackage.haskell.org/package/GenussFold) library gives
+  a simple example grammar
 
 0.4.0.2
 -------

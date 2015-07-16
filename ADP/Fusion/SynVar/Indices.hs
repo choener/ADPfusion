@@ -32,22 +32,36 @@ instance TableIndices is => TableIndices (is:.Subword) where
     . tableIndices cs vs ixs
     . map (\(S5 s zi zo (is:.i) (os:.o)) -> S5 s (zi:.i) (zo:.o) is os)
   -- TODO ? using the defns in TermSymbol.hs for Array syns?
+  {-
   tableIndices (cs:._) (vs:.IVariable _) (ixs:.Subword (i:.j))
     = map (\(S5 s (zi:.Subword (_:.l)) (zo:._) is os) -> S5 s zi zo (is:.subword l j) (os:.subword 0 0))
     . tableIndices cs vs ixs
     . map (\(S5 s zi zo (is:.i) (os:.o)) -> S5 s (zi:.i) (zo:.o) is os)
+  -}
   -- TODO minsize handling ? constraint handling?
-  {-
   tableIndices (cs:._) (vs:.IVariable _) (ixs:.Subword (i:.j))
     = flatten mk step Unknown
     . tableIndices cs vs ixs
     . map (\(S5 s zi zo (is:.i) (os:.o)) -> S5 s (zi:.i) (zo:.o) is os)
-    where mk (S5 s (zi:.Subword (_:.l)) (zo:._) is os) = return ( (S5 s zi zo (is:.
-          step = error "step"
+    where mk (S5 s (zi:.Subword (_:.l)) (zo:._) is os) = return (S5 s zi zo is os :. l :. j - l)
+          step (s5:.k:.z) | z >= 0 = do let S5 s zi zo is os = s5
+                                            l                = j - z
+                                            kl               = subword k l
+                                        return $ Yield (S5 s zi zo (is:.kl) (os:.subword 0 0)) (s5 :. k :. z-1)
+                          | otherwise = return $ Done
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
-          -}
   {-# Inline tableIndices #-}
+
+{-
+    where mk (S6 s (zi:.(Subword (_:.l))) (zo:._) is os e) = return (S6 s zi zo is os e :. l :. j - l) -- TODO minsize c !
+          step (s6:.k:.z) | z >= 0 = do let S6 s zi zo is os e = s6
+                                            l                  = j - z
+                                            kl                 = subword k l
+                                        return $ Yield (S6 s zi zo (is:.kl) (os:.subword 0 0) (e:.(t!kl))) (s6 :. k :. z-1)
+                          | otherwise = return $ Done
+-}
+
 {-
   tableIndices (cs:.c) (vs:.Static) (is:.Subword (i:.j))
     = S.map (\(Tr s (x:.Subword (_:.l)) ys) -> Tr s x (is:.subword l j)) -- constraint handled: tableStreamIndex
