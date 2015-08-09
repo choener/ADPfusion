@@ -2,10 +2,12 @@
 module ADP.Fusion.Term.Epsilon
   ( module ADP.Fusion.Term.Epsilon.Type
   , module ADP.Fusion.Term.Epsilon.Point
+  , module ADP.Fusion.Term.Epsilon.Set
   , module ADP.Fusion.Term.Epsilon.Subword
   ) where
 
 import ADP.Fusion.Term.Epsilon.Point
+import ADP.Fusion.Term.Epsilon.Set
 import ADP.Fusion.Term.Epsilon.Subword
 import ADP.Fusion.Term.Epsilon.Type
 

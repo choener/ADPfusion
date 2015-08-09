@@ -1,5 +1,5 @@
 name:           ADPfusion
-version:        0.4.1.1
+version:        0.4.2.0
 author:         Christian Hoener zu Siederdissen, 2011-2015
 copyright:      Christian Hoener zu Siederdissen, 2011-2015
 homepage:       https://github.com/choener/ADPfusion
@@ -126,6 +126,7 @@ library
     ADP.Fusion.Term.Edge.Type
     ADP.Fusion.Term.Epsilon
     ADP.Fusion.Term.Epsilon.Point
+    ADP.Fusion.Term.Epsilon.Set
     ADP.Fusion.Term.Epsilon.Subword
     ADP.Fusion.Term.Epsilon.Type
     ADP.Fusion.Term.PeekIndex
