@@ -74,6 +74,7 @@ library
                , primitive          >= 0.5.4    && < 0.7
                , PrimitiveArray     >= 0.6.1    && < 0.6.2
                , QuickCheck         >= 2.7      && < 2.9
+               , singletons         >= 1.1      && < 1.2
                , strict             >= 0.3      && < 0.4
                , template-haskell   >= 2.0      && < 3.0
                , th-orphans         >= 0.12     && < 0.13
