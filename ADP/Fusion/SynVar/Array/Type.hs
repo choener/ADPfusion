@@ -1,4 +1,7 @@
 
+{-# Language DataKinds #-}
+{-# Language TypeOperators #-}
+
 module ADP.Fusion.SynVar.Array.Type where
 
 import Data.Strict.Tuple hiding (uncurry,snd)
@@ -12,6 +15,11 @@ import ADP.Fusion.Base
 import ADP.Fusion.SynVar.Backtrack
 import ADP.Fusion.SynVar.Axiom
 import ADP.Fusion.SynVar.Indices
+
+import GHC.TypeLits
+import Data.Proxy
+import qualified Data.Vector.Fusion.Stream.Monadic as SM
+import qualified Data.Vector.Fusion.Stream as S
 
 
 
@@ -151,4 +159,70 @@ instance
     . map (\s -> S5 s Z Z (getIdx s) (getOmx s))
     $ mkStream ls (tableStaticVar vs is) us (tableStreamIndex c vs is)
   {-# Inline mkStream #-}
+
+
+
+-- * Playground: simplify index generation
+
+class GetIndex ixTy myTy (cmp :: Ordering) where
+  type ResolvedIx ixTy myTy cmp :: *
+  getIndex :: ixTy -> myTy -> (Proxy cmp) -> ResolvedIx ixTy myTy cmp
+
+instance GetIndex (ix:.i) (my:.m) EQ where
+  type ResolvedIx (ix:.i) (my:.m) EQ = i
+  getIndex (ix:.i) _ _ = i
+  {-# Inline getIndex #-}
+
+instance (GetIndex ix (my:.m) (CmpNat (X ix) (X (my:.m)))) => GetIndex (ix:.i) (my:.m) GT where
+  type ResolvedIx (ix:.i) (my:.m) GT = ResolvedIx ix (my:.m) (CmpNat (X ix) (X (my:.m)))
+  getIndex (ix:._) (my:.m) _ = getIndex ix (my:.m) (Proxy :: Proxy (CmpNat (X ix) (X (my:.m))))
+  {-# Inline getIndex #-}
+
+instance (GetIndex ix Z (CmpNat (X ix) (X Z))) => GetIndex (ix:.i) Z GT where
+  type ResolvedIx (ix:.i) Z GT = ResolvedIx ix Z (CmpNat (X ix) (X Z))
+  getIndex (ix:._) Z _ = getIndex ix Z (Proxy :: Proxy (CmpNat (X ix) (X Z)))
+  {-# Inline getIndex #-}
+
+instance GetIndex Z Z EQ where
+  type ResolvedIx Z Z EQ = Z
+  getIndex _ _ _ = Z
+  {-# Inline getIndex #-}
+
+ggg :: forall ixTy myTy . GetIndex ixTy myTy (CmpNat (X ixTy) (X myTy)) => ixTy -> myTy -> ResolvedIx ixTy myTy (CmpNat (X ixTy) (X myTy))
+ggg ixTy myTy = getIndex ixTy myTy (Proxy :: Proxy (CmpNat (X ixTy) (X myTy)))
+{-# Inline ggg #-}
+
+type family X x :: Nat
+
+type instance X Z = 0
+type instance X (is:.i) = X is + 1
+
+testggg :: (Z:.Int:.Char) -> Int
+testggg ab = ggg ab (Z:.(3::Int))
+{-# NoInline testggg #-}
+
+class AddIndex a i where
+  addIndex :: (Monad m, GetIndex a i (CmpNat (X a) (X i)) ) => TblConstraint i -> Context i -> i -> Stream m (a,Z) -> Stream m (a,i)
+
+instance
+  ( AddIndex a is
+  , GetIndex a is (CmpNat (X a) (X is))
+  , ResolvedIx a (is:.Subword) (CmpNat (X a) (X (is:.Subword))) ~ Subword
+  ) => AddIndex a (is:.Subword) where
+  addIndex (cs:._) (vs:.IStatic _) (is:.Subword (i:.j))
+    = map (\(a,z) -> let (Subword (u:.v)) = ggg a (is:.subword i j) in (a,z:.subword u v)) . addIndex cs vs is
+  {-# Inline addIndex #-}
+
+instance AddIndex a Z where
+  addIndex _ _ _ = id
+  {-# Inline addIndex #-}
+
+addIndex' :: (Monad m, AddIndex a i, GetIndex a i (CmpNat (X a) (X i))) => TblConstraint i -> Context i -> i -> Stream m a -> Stream m (a,i)
+addIndex' t c i = addIndex t c i . map (\a -> (a,Z))
+{-# Inline addIndex' #-}
+
+testAddIndex i j =
+  let (_,(Z:.Subword (a:.b):.Subword (c:.d))) = S.head $ addIndex' (Z:.EmptyOk:.EmptyOk) (Z:.IStatic undefined :.IStatic undefined) (Z:.subword i (2*i):.subword j (3*j)) $ S.singleton (Z:.subword (4*i) (5*i):.subword (6*j) (7*j))
+  in  (a,b,c,d)
+{-# NoInline testAddIndex #-}
 
