@@ -173,14 +173,14 @@ instance GetIndex (ix:.i) (my:.m) EQ where
   getIndex (ix:.i) _ _ = i
   {-# Inline getIndex #-}
 
-instance (GetIndex ix (my:.m) (CmpNat (X ix) (X (my:.m)))) => GetIndex (ix:.i) (my:.m) GT where
-  type ResolvedIx (ix:.i) (my:.m) GT = ResolvedIx ix (my:.m) (CmpNat (X ix) (X (my:.m)))
-  getIndex (ix:._) (my:.m) _ = getIndex ix (my:.m) (Proxy :: Proxy (CmpNat (X ix) (X (my:.m))))
+instance (GetIndex ix (my:.m) (CmpNat (ToNat ix) (ToNat (my:.m)))) => GetIndex (ix:.i) (my:.m) GT where
+  type ResolvedIx (ix:.i) (my:.m) GT = ResolvedIx ix (my:.m) (CmpNat (ToNat ix) (ToNat (my:.m)))
+  getIndex (ix:._) (my:.m) _ = getIndex ix (my:.m) (Proxy :: Proxy (CmpNat (ToNat ix) (ToNat (my:.m))))
   {-# Inline getIndex #-}
 
-instance (GetIndex ix Z (CmpNat (X ix) (X Z))) => GetIndex (ix:.i) Z GT where
-  type ResolvedIx (ix:.i) Z GT = ResolvedIx ix Z (CmpNat (X ix) (X Z))
-  getIndex (ix:._) Z _ = getIndex ix Z (Proxy :: Proxy (CmpNat (X ix) (X Z)))
+instance (GetIndex ix Z (CmpNat (ToNat ix) (ToNat Z))) => GetIndex (ix:.i) Z GT where
+  type ResolvedIx (ix:.i) Z GT = ResolvedIx ix Z (CmpNat (ToNat ix) (ToNat Z))
+  getIndex (ix:._) Z _ = getIndex ix Z (Proxy :: Proxy (CmpNat (ToNat ix) (ToNat Z)))
   {-# Inline getIndex #-}
 
 instance GetIndex Z Z EQ where
@@ -188,26 +188,26 @@ instance GetIndex Z Z EQ where
   getIndex _ _ _ = Z
   {-# Inline getIndex #-}
 
-ggg :: forall ixTy myTy . GetIndex ixTy myTy (CmpNat (X ixTy) (X myTy)) => ixTy -> myTy -> ResolvedIx ixTy myTy (CmpNat (X ixTy) (X myTy))
-ggg ixTy myTy = getIndex ixTy myTy (Proxy :: Proxy (CmpNat (X ixTy) (X myTy)))
+ggg :: forall ixTy myTy . GetIndex ixTy myTy (CmpNat (ToNat ixTy) (ToNat myTy)) => ixTy -> myTy -> ResolvedIx ixTy myTy (CmpNat (ToNat ixTy) (ToNat myTy))
+ggg ixTy myTy = getIndex ixTy myTy (Proxy :: Proxy (CmpNat (ToNat ixTy) (ToNat myTy)))
 {-# Inline ggg #-}
 
-type family X x :: Nat
+type family ToNat x :: Nat
 
-type instance X Z = 0
-type instance X (is:.i) = X is + 1
+type instance ToNat Z       = 0
+type instance ToNat (is:.i) = ToNat is + 1
 
 testggg :: (Z:.Int:.Char) -> Int
 testggg ab = ggg ab (Z:.(3::Int))
 {-# NoInline testggg #-}
 
 class AddIndex a i where
-  addIndex :: (Monad m, GetIndex a i (CmpNat (X a) (X i)) ) => TblConstraint i -> Context i -> i -> Stream m (a,Z) -> Stream m (a,i)
+  addIndex :: (Monad m, GetIndex a i (CmpNat (ToNat a) (ToNat i)) ) => TblConstraint i -> Context i -> i -> Stream m (a,Z) -> Stream m (a,i)
 
 instance
   ( AddIndex a is
-  , GetIndex a is (CmpNat (X a) (X is))
-  , ResolvedIx a (is:.Subword) (CmpNat (X a) (X (is:.Subword))) ~ Subword
+  , GetIndex a is (CmpNat (ToNat a) (ToNat is))
+  , ResolvedIx a (is:.Subword) (CmpNat (ToNat a) (ToNat (is:.Subword))) ~ Subword
   ) => AddIndex a (is:.Subword) where
   addIndex (cs:._) (vs:.IStatic _) (is:.Subword (i:.j))
     = map (\(a,z) -> let (Subword (u:.v)) = ggg a (is:.subword i j) in (a,z:.subword u v)) . addIndex cs vs is
@@ -217,7 +217,7 @@ instance AddIndex a Z where
   addIndex _ _ _ = id
   {-# Inline addIndex #-}
 
-addIndex' :: (Monad m, AddIndex a i, GetIndex a i (CmpNat (X a) (X i))) => TblConstraint i -> Context i -> i -> Stream m a -> Stream m (a,i)
+addIndex' :: (Monad m, AddIndex a i, GetIndex a i (CmpNat (ToNat a) (ToNat i))) => TblConstraint i -> Context i -> i -> Stream m a -> Stream m (a,i)
 addIndex' t c i = addIndex t c i . map (\a -> (a,Z))
 {-# Inline addIndex' #-}
 
