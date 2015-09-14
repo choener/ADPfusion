@@ -107,10 +107,13 @@ instance
   , PrimArrayOps arr (is:.i) x
   ) => MkStream m (ls :!: ITbl m arr (is:.i) x) (is:.i) where
   mkStream (ls :!: ITbl _ _ c t _) vs lu is
+    = undefined
+{-
     = map (\(S5 s _ _ i o) -> ElmITbl (t ! i) i o s)
     . tableIndices c vs is
     . map (\s -> S5 s Z Z (getIdx s) (getOmx s))
     $ mkStream ls (tableStaticVar vs is) lu (tableStreamIndex c vs is)
+-}
   {-# Inline mkStream #-}
 
 instance
@@ -201,34 +204,46 @@ testggg :: (Z:.Int:.Char) -> Int
 testggg ab = ggg ab (Proxy :: Proxy (Z:.Int)) --  (Z:.(3::Int))
 {-# NoInline testggg #-}
 
-class AddIndex a i where
-  addIndex :: (Monad m, GetIndex a i (CmpNat (ToNat a) (ToNat i)) ) => TblConstraint i -> Context i -> i -> Stream m (s,a,a,Z,Z) -> Stream m (s,a,a,i,i)
+class AddIndexDense a i where
+  addIndexGo :: (Monad m, GetIndex a i (CmpNat (ToNat a) (ToNat i)) ) => TblConstraint i -> Context i -> i -> Stream m (s,a,a,Z,Z) -> Stream m (s,a,a,i,i)
 
 instance
-  ( AddIndex a is
+  ( AddIndexDense a is
   , GetIndex a is (CmpNat (ToNat a) (ToNat is))
   , ResolvedIx a (is:.Subword) (CmpNat (ToNat a) (ToNat (is:.Subword))) ~ Subword
-  ) => AddIndex a (is:.Subword) where
-  addIndex (cs:._) (vs:.IStatic _) (is:.Subword (i:.j))
+  ) => AddIndexDense a (is:.Subword) where
+  addIndexGo (cs:._) (vs:.IStatic _) (is:.Subword (i:.j))
     = map (\(s,a,b,y,z) -> let (Subword (u:.v)) = ggg a (Proxy :: Proxy (is:.Subword))
                                (Subword (w:.x)) = ggg b (Proxy :: Proxy (is:.Subword))
                            in (s,a,b,y:.subword u v,z:.subword w x)
-          ) . addIndex cs vs is
-  {-# Inline addIndex #-}
+          ) . addIndexGo cs vs is
+  {-# Inline addIndexGo #-}
 
-instance AddIndex a Z where
-  addIndex _ _ _ = id
-  {-# Inline addIndex #-}
+instance AddIndexDense a Z where
+  addIndexGo _ _ _ = id
+  {-# Inline addIndexGo #-}
 
-addIndex' :: (Monad m, AddIndex a i, GetIndex a i (CmpNat (ToNat a) (ToNat i)), s ~ Elm x0 a, Element x0 a) => TblConstraint i -> Context i -> i -> Stream m s -> Stream m (s,i,i)
-addIndex' t c i = map (\(s,_,_,i,o) -> (s,i,o)) . addIndex t c i . map (\s -> (s,getIdx s, getOmx s, Z,Z))
-{-# Inline addIndex' #-}
+addIndex :: (Monad m, AddIndexDense a i, GetIndex a i (CmpNat (ToNat a) (ToNat i)), s ~ Elm x0 a, Element x0 a) => TblConstraint i -> Context i -> i -> Stream m s -> Stream m (s,i,i)
+addIndex t c i = map (\(s,_,_,i,o) -> (s,i,o)) . addIndexGo t c i . map (\s -> (s,getIdx s, getOmx s, Z,Z))
+{-# Inline addIndex #-}
+
+addIndex1 :: (Monad m, AddIndexDense (Z:.a) (Z:.i), GetIndex (Z:.a) (Z:.i) (CmpNat (ToNat (Z:.a)) (ToNat (Z:.i))), s ~ Elm x0 a, Element x0 a) => TblConstraint i -> Context i -> i -> Stream m s -> Stream m (s,i,i)
+addIndex1 t c i = map (\(s,_,_,Z:.i,Z:.o) -> (s,i,o)) . addIndexGo (Z:.t) (Z:.c) (Z:.i) . map (\s -> (s,Z:.getIdx s, Z:.getOmx s, Z,Z))
+{-# Inline addIndex1 #-}
 
 testAddIndex i j =
   let (_,(Z:.Subword (a:.b):.Subword (c:.d)),_) = S.head
-                                                $ addIndex' (Z:.EmptyOk:.EmptyOk) (Z:.IStatic undefined :.IStatic undefined) (Z:.subword i (2*i):.subword j (3*j))
+                                                $ addIndex (Z:.EmptyOk:.EmptyOk) (Z:.IStatic undefined :.IStatic undefined) (Z:.subword i (2*i):.subword j (3*j))
                                                 $ S.singleton
                                                 $ ElmS (Z:.subword (4*i) (5*i):.subword (6*j) (7*j)) (Z:.subword 0 0:.subword 0 0)
   in  (a,b,c,d)
 {-# NoInline testAddIndex #-}
+
+testAddIndex1 i j =
+  let (_,(Subword (a:.b)),_) = S.head
+                             $ addIndex1 EmptyOk (IStatic undefined) (subword i j)
+                             $ S.singleton
+                             $ ElmS (subword i j) (subword 0 0)
+  in  (a,b)
+{-# NoInline testAddIndex1 #-}
 
