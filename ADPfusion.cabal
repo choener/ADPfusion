@@ -91,6 +91,7 @@ library
     ADP.Fusion.Base.Point
     ADP.Fusion.Base.Set
     ADP.Fusion.Base.Subword
+    ADP.Fusion.Base.TyLvlIx
     ADP.Fusion.QuickCheck.Common
     ADP.Fusion.QuickCheck.Point
     ADP.Fusion.QuickCheck.Set
@@ -106,6 +107,10 @@ library
     ADP.Fusion.SynVar.Backtrack
     ADP.Fusion.SynVar.Fill
     ADP.Fusion.SynVar.Indices
+    ADP.Fusion.SynVar.Indices.Classes
+    ADP.Fusion.SynVar.Indices.Point
+    ADP.Fusion.SynVar.Indices.Set
+    ADP.Fusion.SynVar.Indices.Subword
     ADP.Fusion.SynVar.Recursive
     ADP.Fusion.SynVar.Recursive.Point
     ADP.Fusion.SynVar.Recursive.Subword
@@ -142,6 +147,7 @@ library
     ADP.Fusion.TH.Common
 
   default-extensions: BangPatterns
+                    , ConstraintKinds
                     , DataKinds
                     , DefaultSignatures
                     , FlexibleContexts

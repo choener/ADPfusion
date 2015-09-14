@@ -3,8 +3,20 @@
 -- need 'tableIndices' in multi-dimensional tables as the type of the
 -- multi-dimensional indices is generic.
 
-module ADP.Fusion.SynVar.Indices where
+module ADP.Fusion.SynVar.Indices
+  ( module ADP.Fusion.SynVar.Indices.Classes
+  , module ADP.Fusion.SynVar.Indices.Point
+  , module ADP.Fusion.SynVar.Indices.Set
+  , module ADP.Fusion.SynVar.Indices.Subword
+  ) where
 
+import ADP.Fusion.SynVar.Indices.Classes
+import ADP.Fusion.SynVar.Indices.Point
+import ADP.Fusion.SynVar.Indices.Set
+import ADP.Fusion.SynVar.Indices.Subword
+
+
+{-
 import Data.Vector.Fusion.Stream.Size (Size(Unknown))
 import Data.Vector.Fusion.Stream.Monadic (flatten,map,Stream, Step(..))
 import Prelude hiding (map)
@@ -12,6 +24,8 @@ import Prelude hiding (map)
 import Data.PrimitiveArray hiding (map)
 
 import ADP.Fusion.Base
+
+
 
 
 
@@ -140,5 +154,9 @@ instance TableIndices is => TableIndices (is:.PointR) where
           {-# INLINE [1] mk   #-}
           {-# INLINE [1] step #-}
   {-# INLINE tableIndices #-}
+-}
+
+
+
 -}
 

@@ -124,6 +124,8 @@ instance
   {-# INLINE termStaticVar #-}
   {-# INLINE termStreamIndex #-}
 
+data S3 a b c       = S3 !a !b !c
+
 data S4 a b c d     = S4 !a !b !c !d
 
 data S5 a b c d e   = S5 !a !b !c !d !e

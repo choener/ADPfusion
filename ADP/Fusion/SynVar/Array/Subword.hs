@@ -15,9 +15,10 @@ import Data.PrimitiveArray hiding (map)
 import ADP.Fusion.Base
 import ADP.Fusion.SynVar.Array.Type
 import ADP.Fusion.SynVar.Backtrack
+import ADP.Fusion.SynVar.Indices
 
 -- TODO think about what we are about to do
-import GHC.Prim (reallyUnsafePtrEquality#)
+-- import GHC.Prim (reallyUnsafePtrEquality#)
 
 
 
@@ -31,6 +32,11 @@ instance
   , PrimArrayOps arr Subword x
   , MkStream m ls Subword
   ) => MkStream m (ls :!: ITbl m arr Subword x) Subword where
+  mkStream (ls :!: ITbl _ _ c t _) vs lu is
+    = map (\(s,ii,oo) -> ElmITbl (t!ii) ii oo s)
+    . addIndexDense1 c vs is
+    $ mkStream ls (tableStaticVar vs is) lu (tableStreamIndex c vs is)
+  {-
   mkStream (ls :!: ITbl _ _ c t _) (IStatic ()) hh (Subword (i:.j))
     = map (\s -> let (Subword (_:.l)) = getIdx s
                  in  ElmITbl (t ! subword l j) (subword l j) (subword 0 0) s)
@@ -45,6 +51,7 @@ instance
                       | otherwise = return $ Done
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
+  -}
   {-# Inline mkStream #-}
 
 instance
@@ -53,6 +60,11 @@ instance
   , MkStream mB ls Subword
   , PrimArrayOps arr Subword x
   ) => MkStream mB (ls :!: Backtrack (ITbl mF arr Subword x) mF mB r) Subword where
+  mkStream (ls :!: BtITbl c t bt) vs us is
+    = mapM (\(s,ii,oo) -> bt us ii >>= \ ~bb -> return $ ElmBtITbl (t!ii) bb ii oo s)
+    . addIndexDense1 c vs is
+    $ mkStream ls (tableStaticVar vs is) us (tableStreamIndex c vs is)
+  {-
   mkStream (ls :!: BtITbl c t bt) (IStatic ()) hh ij@(Subword (i:.j))
     = mapM (\s -> let Subword (_:.l) = getIdx s
                       lj             = subword l j
@@ -68,6 +80,7 @@ instance
                       | otherwise = return $ Done
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
+  -}
   {-# Inline mkStream #-}
 
 
@@ -179,6 +192,11 @@ instance ModifyConstraint (Backtrack (ITbl mF arr Subword x) mF mB r) where
 
 
 
+
+
+
+{-
+
 instance
   ( Monad m
   , Element ls Subword -- (Z:.Subword:.Subword)
@@ -252,6 +270,11 @@ instance
           {-# Inline [0] step #-}
   {-# Inline mkStream #-}
 
+-}
+
+
+{-
+
 -- | Get the previous index; this should really be made generic!
 --
 -- TODO This is probably a REALLY STUPID IDEA ;-)
@@ -315,4 +338,7 @@ instance
       1# -> let ab = getIdx e in ab
       _  -> let g = getElm e in greenIdx ls (undefined :: Subword) t' g
   {-# Inline greenIdx   #-}
+
+-}
+
 
