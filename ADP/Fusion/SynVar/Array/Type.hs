@@ -102,32 +102,39 @@ instance
   ( Monad m
   , Element ls (is:.i)
   , TableStaticVar (is:.i)
-  , TableIndices (is:.i)
+--  , TableIndices (is:.i)
+  , AddIndexDense (is:.i) (is:.i)
   , MkStream m ls (is:.i)
   , PrimArrayOps arr (is:.i) x
   ) => MkStream m (ls :!: ITbl m arr (is:.i) x) (is:.i) where
   mkStream (ls :!: ITbl _ _ c t _) vs lu is
-    = undefined
+    = map (\(s,ii,oo) -> ElmITbl (t!ii) ii oo s)
+    . addIndex c vs is
 {-
     = map (\(S5 s _ _ i o) -> ElmITbl (t ! i) i o s)
     . tableIndices c vs is
     . map (\s -> S5 s Z Z (getIdx s) (getOmx s))
-    $ mkStream ls (tableStaticVar vs is) lu (tableStreamIndex c vs is)
 -}
+    $ mkStream ls (tableStaticVar vs is) lu (tableStreamIndex c vs is)
   {-# Inline mkStream #-}
 
 instance
   ( Monad mB
   , Element ls (is:.i)
   , TableStaticVar (is:.i)
-  , TableIndices (is:.i)
+--  , TableIndices (is:.i)
+  , AddIndexDense (is:.i) (is:.i)
   , MkStream mB ls (is:.i)
   , PrimArrayOps arr (is:.i) x
   ) => MkStream mB (ls :!: Backtrack (ITbl mF arr (is:.i) x) mF mB r) (is:.i) where
   mkStream (ls :!: BtITbl c t bt) vs us is
+    = mapM (\(s,ii,oo) -> bt us ii >>= \ ~bb -> return $ ElmBtITbl (t!ii) bb ii oo s)
+    . addIndex c vs is
+{-
     = mapM (\(S5 s _ _ i o) -> bt us i >>= \ ~bb -> return $ ElmBtITbl (t ! i) (bb {-bt us i-}) i o s)
     . tableIndices c vs is
     . map (\s -> S5 s Z Z (getIdx s) (getOmx s))
+-}
     $ mkStream ls (tableStaticVar vs is) us (tableStreamIndex c vs is)
   {-# Inline mkStream #-}
 
