@@ -220,15 +220,15 @@ instance AddIndex a Z where
   addIndex _ _ _ = id
   {-# Inline addIndex #-}
 
-addIndex' :: (Monad m, AddIndex a i, GetIndex a i (CmpNat (ToNat a) (ToNat i)), s ~ Elm x0 a, Element x0 a) => TblConstraint i -> Context i -> i -> Stream m s -> Stream m (s,a,a,i,i)
-addIndex' t c i = addIndex t c i . map (\s -> (s,getIdx s, getOmx s, Z,Z))
+addIndex' :: (Monad m, AddIndex a i, GetIndex a i (CmpNat (ToNat a) (ToNat i)), s ~ Elm x0 a, Element x0 a) => TblConstraint i -> Context i -> i -> Stream m s -> Stream m (s,i,i)
+addIndex' t c i = map (\(s,_,_,i,o) -> (s,i,o)) . addIndex t c i . map (\s -> (s,getIdx s, getOmx s, Z,Z))
 {-# Inline addIndex' #-}
 
 testAddIndex i j =
-  let (_,_,_,(Z:.Subword (a:.b):.Subword (c:.d)),_) = S.head
-                                                    $ addIndex' (Z:.EmptyOk:.EmptyOk) (Z:.IStatic undefined :.IStatic undefined) (Z:.subword i (2*i):.subword j (3*j))
-                                                    $ S.singleton
-                                                    $ ElmS (Z:.subword (4*i) (5*i):.subword (6*j) (7*j)) (Z:.subword 0 0:.subword 0 0)
+  let (_,(Z:.Subword (a:.b):.Subword (c:.d)),_) = S.head
+                                                $ addIndex' (Z:.EmptyOk:.EmptyOk) (Z:.IStatic undefined :.IStatic undefined) (Z:.subword i (2*i):.subword j (3*j))
+                                                $ S.singleton
+                                                $ ElmS (Z:.subword (4*i) (5*i):.subword (6*j) (7*j)) (Z:.subword 0 0:.subword 0 0)
   in  (a,b,c,d)
 {-# NoInline testAddIndex #-}
 
