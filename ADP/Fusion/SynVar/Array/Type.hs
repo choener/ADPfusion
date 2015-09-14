@@ -166,7 +166,7 @@ instance
 
 class GetIndex ixTy myTy (cmp :: Ordering) where
   type ResolvedIx ixTy myTy cmp :: *
-  getIndex :: ixTy -> myTy -> (Proxy cmp) -> ResolvedIx ixTy myTy cmp
+  getIndex :: ixTy -> (Proxy myTy) -> (Proxy cmp) -> ResolvedIx ixTy myTy cmp
 
 instance GetIndex (ix:.i) (my:.m) EQ where
   type ResolvedIx (ix:.i) (my:.m) EQ = i
@@ -175,12 +175,12 @@ instance GetIndex (ix:.i) (my:.m) EQ where
 
 instance (GetIndex ix (my:.m) (CmpNat (ToNat ix) (ToNat (my:.m)))) => GetIndex (ix:.i) (my:.m) GT where
   type ResolvedIx (ix:.i) (my:.m) GT = ResolvedIx ix (my:.m) (CmpNat (ToNat ix) (ToNat (my:.m)))
-  getIndex (ix:._) (my:.m) _ = getIndex ix (my:.m) (Proxy :: Proxy (CmpNat (ToNat ix) (ToNat (my:.m))))
+  getIndex (ix:._) p _ = getIndex ix p (Proxy :: Proxy (CmpNat (ToNat ix) (ToNat (my:.m))))
   {-# Inline getIndex #-}
 
 instance (GetIndex ix Z (CmpNat (ToNat ix) (ToNat Z))) => GetIndex (ix:.i) Z GT where
   type ResolvedIx (ix:.i) Z GT = ResolvedIx ix Z (CmpNat (ToNat ix) (ToNat Z))
-  getIndex (ix:._) Z _ = getIndex ix Z (Proxy :: Proxy (CmpNat (ToNat ix) (ToNat Z)))
+  getIndex (ix:._) p _ = getIndex ix p (Proxy :: Proxy (CmpNat (ToNat ix) (ToNat Z)))
   {-# Inline getIndex #-}
 
 instance GetIndex Z Z EQ where
@@ -188,8 +188,8 @@ instance GetIndex Z Z EQ where
   getIndex _ _ _ = Z
   {-# Inline getIndex #-}
 
-ggg :: forall ixTy myTy . GetIndex ixTy myTy (CmpNat (ToNat ixTy) (ToNat myTy)) => ixTy -> myTy -> ResolvedIx ixTy myTy (CmpNat (ToNat ixTy) (ToNat myTy))
-ggg ixTy myTy = getIndex ixTy myTy (Proxy :: Proxy (CmpNat (ToNat ixTy) (ToNat myTy)))
+ggg :: forall ixTy myTy . GetIndex ixTy myTy (CmpNat (ToNat ixTy) (ToNat myTy)) => ixTy -> Proxy myTy -> ResolvedIx ixTy myTy (CmpNat (ToNat ixTy) (ToNat myTy))
+ggg ixTy myTy = getIndex ixTy (Proxy :: Proxy myTy) (Proxy :: Proxy (CmpNat (ToNat ixTy) (ToNat myTy)))
 {-# Inline ggg #-}
 
 type family ToNat x :: Nat
@@ -198,7 +198,7 @@ type instance ToNat Z       = 0
 type instance ToNat (is:.i) = ToNat is + 1
 
 testggg :: (Z:.Int:.Char) -> Int
-testggg ab = ggg ab (Z:.(3::Int))
+testggg ab = ggg ab (Proxy :: Proxy (Z:.Int)) --  (Z:.(3::Int))
 {-# NoInline testggg #-}
 
 class AddIndex a i where
@@ -210,8 +210,8 @@ instance
   , ResolvedIx a (is:.Subword) (CmpNat (ToNat a) (ToNat (is:.Subword))) ~ Subword
   ) => AddIndex a (is:.Subword) where
   addIndex (cs:._) (vs:.IStatic _) (is:.Subword (i:.j))
-    = map (\(s,a,b,y,z) -> let (Subword (u:.v)) = ggg a (is:.subword i j)
-                               (Subword (w:.x)) = ggg b (is:.subword i j)
+    = map (\(s,a,b,y,z) -> let (Subword (u:.v)) = ggg a (Proxy :: Proxy (is:.Subword))
+                               (Subword (w:.x)) = ggg b (Proxy :: Proxy (is:.Subword))
                            in (s,a,b,y:.subword u v,z:.subword w x)
           ) . addIndex cs vs is
   {-# Inline addIndex #-}
