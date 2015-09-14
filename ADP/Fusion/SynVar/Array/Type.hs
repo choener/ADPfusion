@@ -202,7 +202,7 @@ testggg ab = ggg ab (Z:.(3::Int))
 {-# NoInline testggg #-}
 
 class AddIndex a i where
-  addIndex :: (Monad m, GetIndex a i (CmpNat (ToNat a) (ToNat i)) ) => TblConstraint i -> Context i -> i -> Stream m (s,a,Z) -> Stream m (s,a,i)
+  addIndex :: (Monad m, GetIndex a i (CmpNat (ToNat a) (ToNat i)) ) => TblConstraint i -> Context i -> i -> Stream m (s,a,a,Z,Z) -> Stream m (s,a,a,i,i)
 
 instance
   ( AddIndex a is
@@ -210,22 +210,25 @@ instance
   , ResolvedIx a (is:.Subword) (CmpNat (ToNat a) (ToNat (is:.Subword))) ~ Subword
   ) => AddIndex a (is:.Subword) where
   addIndex (cs:._) (vs:.IStatic _) (is:.Subword (i:.j))
-    = map (\(s,a,z) -> let (Subword (u:.v)) = ggg a (is:.subword i j) in (s,a,z:.subword u v)) . addIndex cs vs is
+    = map (\(s,a,b,y,z) -> let (Subword (u:.v)) = ggg a (is:.subword i j)
+                               (Subword (w:.x)) = ggg b (is:.subword i j)
+                           in (s,a,b,y:.subword u v,z:.subword w x)
+          ) . addIndex cs vs is
   {-# Inline addIndex #-}
 
 instance AddIndex a Z where
   addIndex _ _ _ = id
   {-# Inline addIndex #-}
 
-addIndex' :: (Monad m, AddIndex a i, GetIndex a i (CmpNat (ToNat a) (ToNat i)), s ~ Elm x0 a, Element x0 a) => TblConstraint i -> Context i -> i -> Stream m s -> Stream m (s,a,i)
-addIndex' t c i = addIndex t c i . map (\s -> (s,getIdx s, Z))
+addIndex' :: (Monad m, AddIndex a i, GetIndex a i (CmpNat (ToNat a) (ToNat i)), s ~ Elm x0 a, Element x0 a) => TblConstraint i -> Context i -> i -> Stream m s -> Stream m (s,a,a,i,i)
+addIndex' t c i = addIndex t c i . map (\s -> (s,getIdx s, getOmx s, Z,Z))
 {-# Inline addIndex' #-}
 
 testAddIndex i j =
-  let (_,_,(Z:.Subword (a:.b):.Subword (c:.d))) = S.head
-                                                $ addIndex' (Z:.EmptyOk:.EmptyOk) (Z:.IStatic undefined :.IStatic undefined) (Z:.subword i (2*i):.subword j (3*j))
-                                                $ S.singleton
-                                                $ ElmS (Z:.subword (4*i) (5*i):.subword (6*j) (7*j)) (Z:.subword 0 0:.subword 0 0)
+  let (_,_,_,(Z:.Subword (a:.b):.Subword (c:.d)),_) = S.head
+                                                    $ addIndex' (Z:.EmptyOk:.EmptyOk) (Z:.IStatic undefined :.IStatic undefined) (Z:.subword i (2*i):.subword j (3*j))
+                                                    $ S.singleton
+                                                    $ ElmS (Z:.subword (4*i) (5*i):.subword (6*j) (7*j)) (Z:.subword 0 0:.subword 0 0)
   in  (a,b,c,d)
 {-# NoInline testAddIndex #-}
 
