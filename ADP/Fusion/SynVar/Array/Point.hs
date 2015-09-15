@@ -1,12 +1,13 @@
 
 module ADP.Fusion.SynVar.Array.Point where
 
-import Data.Strict.Tuple
+import Data.Strict.Tuple hiding (snd)
 import Data.Vector.Fusion.Stream.Monadic
 import Data.Vector.Fusion.Stream.Size
 import Data.Vector.Fusion.Util (delay_inline)
 import Debug.Trace
 import Prelude hiding (map,mapM)
+import Data.Proxy
 --import qualified Data.Vector.Fusion.Stream.Monadic as S
 
 import           Data.PrimitiveArray hiding (map)
@@ -21,13 +22,15 @@ import           ADP.Fusion.SynVar.Indices
 instance
   ( Monad m
   , Element ls PointL
-  , PrimArrayOps arr PointL x
+  , PrimArrayOps arr u x
+  , TblConstraint u ~ TableConstraint
+  , AddIndexDense (Z:.PointL) (Z:.u) (Z:.PointL)
   , MkStream m ls PointL
-  ) => MkStream m (ls :!: ITbl m arr PointL x) PointL where
+  ) => MkStream m (ls :!: ITbl m arr u x) PointL where
   mkStream (ls :!: ITbl _ _ c t _) vs us is
     = map (\(s,ii,oo,ii',oo') -> ElmITbl (t!ii) ii' oo' s)
     . addIndexDense1 c vs us is
-    $ mkStream ls (tableStaticVar c vs is) us (tableStreamIndex c vs is)
+    $ mkStream ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
 {-
     = let ms = minSize c in ms `seq`
     map (ElmITbl (t!j) j (PointL 0))
@@ -49,13 +52,16 @@ instance
 instance
   ( Monad mB
   , Element ls PointL
-  , PrimArrayOps arr PointL x
+  , PrimArrayOps arr u x
   , MkStream mB ls PointL
-  ) => MkStream mB (ls :!: Backtrack (ITbl mF arr PointL x) mF mB r) PointL where
+  , TblConstraint u ~ TableConstraint
+  , AddIndexDense (Z:.PointL) (Z:.u) (Z:.PointL)
+  ) => MkStream mB (ls :!: Backtrack (ITbl mF arr u x) mF mB r) PointL where
   mkStream (ls :!: BtITbl c t bt) vs us is
-    = mapM (\(s,ii,oo,ii',oo') -> bt us ii >>= \ ~bb -> return $ ElmBtITbl (t!ii) bb ii' oo' s)
+    = mapM (\(s,ii,oo,ii',oo') -> bt us' ii >>= \ ~bb -> return $ ElmBtITbl (t!ii) bb ii' oo' s)
     . addIndexDense1 c vs us is
-    $ mkStream ls (tableStaticVar c vs is) us (tableStreamIndex c vs is)
+    $ mkStream ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
+    where !us' = snd $ bounds t
 {-
     = let ms = minSize c in ms `seq`
     mapM (\s -> bt u j >>= \bb -> return $ ElmBtITbl (t!j) (bb {-bt u j-}) j (PointL 0) s)

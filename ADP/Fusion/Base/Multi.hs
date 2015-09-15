@@ -3,6 +3,7 @@ module ADP.Fusion.Base.Multi where
 
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 import           Data.Strict.Tuple
+import           Data.Proxy
 
 import           Data.PrimitiveArray
 
@@ -162,33 +163,33 @@ instance (RuleContext (Outside is), RuleContext (Outside i)) => RuleContext (Out
   initialContext (O (is:.i)) = initialContext (O is):.initialContext (O i)
   {-# INLINE initialContext #-}
 
-class TableStaticVar i where
-  tableStaticVar   :: TblConstraint i -> Context i -> i -> Context i
-  tableStreamIndex :: TblConstraint i -> Context i -> i -> i
+class TableStaticVar u i where
+  tableStaticVar   :: Proxy u -> TblConstraint u -> Context i -> i -> Context i
+  tableStreamIndex :: Proxy u -> TblConstraint u -> Context i -> i -> i
 
-instance TableStaticVar Z where
-  tableStaticVar   _ _ _ = Z
-  tableStreamIndex _ _ _ = Z
+instance TableStaticVar u Z where
+  tableStaticVar   _ _ _ _ = Z
+  tableStreamIndex _ _ _ _ = Z
   {-# INLINE [0] tableStaticVar   #-}
   {-# INLINE [0] tableStreamIndex #-}
 
-instance TableStaticVar (Outside Z) where
-  tableStaticVar   _ _ _ = Z
-  tableStreamIndex _ _ _ = O Z
+instance TableStaticVar u (Outside Z) where
+  tableStaticVar   _ _ _ _ = Z
+  tableStreamIndex _ _ _ _ = O Z
   {-# INLINE [0] tableStaticVar   #-}
   {-# INLINE [0] tableStreamIndex #-}
 
-instance (TableStaticVar is, TableStaticVar i) => TableStaticVar (is:.i) where
-  tableStaticVar   (cs:.c) (vs:.v) (is:.i) = tableStaticVar   cs vs is :. tableStaticVar   c v i
-  tableStreamIndex (cs:.c) (vs:.v) (is:.i) = tableStreamIndex cs vs is :. tableStreamIndex c v i
+instance (TableStaticVar us is, TableStaticVar u i) => TableStaticVar (us:.u) (is:.i) where
+  tableStaticVar   _ (cs:.c) (vs:.v) (is:.i) = tableStaticVar   (Proxy :: Proxy us) cs vs is :. tableStaticVar   (Proxy :: Proxy u) c v i
+  tableStreamIndex _ (cs:.c) (vs:.v) (is:.i) = tableStreamIndex (Proxy :: Proxy us) cs vs is :. tableStreamIndex (Proxy :: Proxy u) c v i
   {-# INLINE [0] tableStaticVar   #-}
   {-# INLINE [0] tableStreamIndex #-}
 
-instance (TableStaticVar (Outside is), TableStaticVar (Outside i)) => TableStaticVar (Outside (is:.i)) where
-  tableStaticVar   (cs:.c) (vs:.v) (O (is:.i)) = tableStaticVar cs vs (O is) :. tableStaticVar c v (O i)
-  tableStreamIndex (cs:.c) (vs:.v) (O (is:.i)) =
-    let (O js) = tableStreamIndex cs vs (O is)
-        (O j)  = tableStreamIndex c  v  (O i)
+instance (TableStaticVar us (Outside is), TableStaticVar u (Outside i)) => TableStaticVar (us:.u) (Outside (is:.i)) where
+  tableStaticVar   _ (cs:.c) (vs:.v) (O (is:.i)) = tableStaticVar (Proxy :: Proxy us) cs vs (O is) :. tableStaticVar (Proxy :: Proxy u) c v (O i)
+  tableStreamIndex _ (cs:.c) (vs:.v) (O (is:.i)) =
+    let (O js) = tableStreamIndex (Proxy :: Proxy us) cs vs (O is)
+        (O j)  = tableStreamIndex (Proxy :: Proxy u ) c  v  (O i)
     in O (js:.j)
   {-# INLINE [0] tableStaticVar   #-}
   {-# INLINE [0] tableStreamIndex #-}

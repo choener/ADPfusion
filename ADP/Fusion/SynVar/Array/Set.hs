@@ -35,9 +35,11 @@ import ADP.Fusion.SynVar.Indices
 instance
   ( Monad m
   , Element ls BitSet
-  , PrimArrayOps arr BitSet x
+  , PrimArrayOps arr u x
+  , TblConstraint u ~ TableConstraint
+  , AddIndexDense (Z:.BitSet) (Z:.u) (Z:.BitSet)
   , MkStream m ls BitSet
-  ) => MkStream m (ls :!: ITbl m arr BitSet x) BitSet where
+  ) => MkStream m (ls :!: ITbl m arr u x) BitSet where
   mkStream (ls :!: ITbl _ _ c t _) vs us is
     -- TODO we need an additional parameter, @ii@ for what to index now,
     -- @jj@ (or so) for what to store as "complete index@.
@@ -47,7 +49,7 @@ instance
                                      aa = getIndex (Z:.getIdx s) (Proxy :: Proxy (Z:.BitSet))
                                  in  ElmITbl (t!ii) jj oo' s)
     . addIndexDense1 c vs us is
-    $ mkStream ls (tableStaticVar c vs is) us (tableStreamIndex c vs is)
+    $ mkStream ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
     {-
     = flatten mk step Unknown $ mkStream ls (delay_inline IVariable $ rp - csize) u s
     where !csize | c==EmptyOk  = 0

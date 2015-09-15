@@ -89,21 +89,21 @@ instance
     $ mkStream S vs (O us) (O is)
   {-# Inline mkStream #-}
 
-instance TableStaticVar PointL where
-  tableStaticVar _ (IStatic   d) _ = IVariable d
-  tableStaticVar _ (IVariable d) _ = IVariable d
+instance (TblConstraint u ~ TableConstraint) => TableStaticVar u PointL where
+  tableStaticVar _ _ (IStatic   d) _ = IVariable d
+  tableStaticVar _ _ (IVariable d) _ = IVariable d
   -- NOTE this code used to destroy fusion. If we inline tableStreamIndex
   -- very late (after 'mkStream', probably) then everything works out.
-  tableStreamIndex c _ (PointL j)
+  tableStreamIndex _ c _ (PointL j)
     | c==EmptyOk  = PointL j
     | c==NonEmpty = PointL $ j-1
     | c==OnlyZero = PointL j -- this should then actually request a size in 'tableStaticVar' ...
   {-# INLINE [0] tableStaticVar   #-}
   {-# INLINE [0] tableStreamIndex #-}
 
-instance TableStaticVar (Outside PointL) where
-  tableStaticVar   _ (OStatic d) _ = OFirstLeft d
-  tableStreamIndex c _ (O (PointL j))
+instance (TblConstraint u ~ TableConstraint) => TableStaticVar u (Outside PointL) where
+  tableStaticVar   _ _ (OStatic d) _ = OFirstLeft d
+  tableStreamIndex _ c _ (O (PointL j))
     | c==EmptyOk  = O (PointL j)
     | c==NonEmpty = O (PointL $ j-1)
     | c==OnlyZero = O (PointL j) -- this should then actually request a size in 'tableStaticVar' ...

@@ -3,12 +3,13 @@
 
 module ADP.Fusion.SynVar.Array.Subword where
 
-import Data.Strict.Tuple
+import Data.Strict.Tuple hiding (snd)
 import Data.Vector.Fusion.Stream.Size
 import Data.Vector.Fusion.Util (delay_inline)
 import Data.Vector.Fusion.Stream.Monadic
 import Debug.Trace
 import Prelude hiding (map,mapM)
+import Data.Proxy
 
 import Data.PrimitiveArray hiding (map)
 
@@ -29,15 +30,17 @@ import ADP.Fusion.SynVar.Indices
 instance
   ( Monad m
   , Element ls Subword
-  , PrimArrayOps arr Subword x
+  , PrimArrayOps arr u x
+  , TblConstraint u ~ TableConstraint
+  , AddIndexDense (Z:.Subword) (Z:.u) (Z:.Subword)
   , MkStream m ls Subword
-  ) => MkStream m (ls :!: ITbl m arr Subword x) Subword where
+  ) => MkStream m (ls :!: ITbl m arr u x) Subword where
   -- TODO using the new version breaks where the table is in static
   -- position; static + variable is ok ???
   mkStream (ls :!: ITbl _ _ c t _) vs us is
     = map (\(s,ii,oo,ii',oo') -> ElmITbl (t!ii) ii' oo' s)
     . addIndexDense1 c vs us is
-    $ mkStream ls (tableStaticVar c vs is) us (tableStreamIndex c vs is)
+    $ mkStream ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
     -- $ mkStream ls (tableStaticVar vs is) us (tableStreamIndex c vs is)
   {-
   mkStream (ls :!: ITbl _ _ c t _) (IStatic ()) hh (Subword (i:.j))
@@ -61,12 +64,15 @@ instance
   ( Monad mB
   , Element ls Subword
   , MkStream mB ls Subword
-  , PrimArrayOps arr Subword x
-  ) => MkStream mB (ls :!: Backtrack (ITbl mF arr Subword x) mF mB r) Subword where
+  , TblConstraint u ~ TableConstraint
+  , AddIndexDense (Z:.Subword) (Z:.u) (Z:.Subword)
+  , PrimArrayOps arr u x
+  ) => MkStream mB (ls :!: Backtrack (ITbl mF arr u x) mF mB r) Subword where
   mkStream (ls :!: BtITbl c t bt) vs us is
-    = mapM (\(s,ii,oo,ii',oo') -> bt us ii >>= \ ~bb -> return $ ElmBtITbl (t!ii) bb ii' oo' s)
+    = mapM (\(s,ii,oo,ii',oo') -> bt us' ii >>= \ ~bb -> return $ ElmBtITbl (t!ii) bb ii' oo' s)
     . addIndexDense1 c vs us is
-    $ mkStream ls (tableStaticVar c vs is) us (tableStreamIndex c vs is)
+    $ mkStream ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
+    where !us' = snd $ bounds t
   {-
   mkStream (ls :!: BtITbl c t bt) (IStatic ()) hh ij@(Subword (i:.j))
     = mapM (\s -> let Subword (_:.l) = getIdx s
