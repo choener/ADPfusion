@@ -96,6 +96,7 @@ grammar Durbin{..} c t' =
                 spl <<< tt % tt     ... h
               )
       tt = toNonEmpty t
+      {-# Inline tt #-}
   in (Z:.t)
 {-# INLINE grammar #-}
 
