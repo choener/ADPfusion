@@ -90,8 +90,8 @@ instance
   {-# Inline mkStream #-}
 
 instance TableStaticVar PointL where
-  tableStaticVar (IStatic   d) _ = IVariable d
-  tableStaticVar (IVariable d) _ = IVariable d
+  tableStaticVar _ (IStatic   d) _ = IVariable d
+  tableStaticVar _ (IVariable d) _ = IVariable d
   -- NOTE this code used to destroy fusion. If we inline tableStreamIndex
   -- very late (after 'mkStream', probably) then everything works out.
   tableStreamIndex c _ (PointL j)
@@ -102,7 +102,7 @@ instance TableStaticVar PointL where
   {-# INLINE [0] tableStreamIndex #-}
 
 instance TableStaticVar (Outside PointL) where
-  tableStaticVar     (OStatic d) _ = OFirstLeft d
+  tableStaticVar   _ (OStatic d) _ = OFirstLeft d
   tableStreamIndex c _ (O (PointL j))
     | c==EmptyOk  = O (PointL j)
     | c==NonEmpty = O (PointL $ j-1)

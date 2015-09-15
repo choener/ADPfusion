@@ -92,10 +92,10 @@ library
     ADP.Fusion.Base.Set
     ADP.Fusion.Base.Subword
     ADP.Fusion.Base.TyLvlIx
---    ADP.Fusion.QuickCheck.Common
---    ADP.Fusion.QuickCheck.Point
---    ADP.Fusion.QuickCheck.Set
---    ADP.Fusion.QuickCheck.Subword
+    ADP.Fusion.QuickCheck.Common
+    ADP.Fusion.QuickCheck.Point
+    ADP.Fusion.QuickCheck.Set
+    ADP.Fusion.QuickCheck.Subword
     ADP.Fusion.SynVar
     ADP.Fusion.SynVar.Array
     ADP.Fusion.SynVar.Array.Point

@@ -3,7 +3,6 @@ module ADP.Fusion.SynVar.Array.Set where
 
 import Data.Bits
 import Data.Bits.Extras
-import Data.Bits.Ordered
 import Data.Strict.Tuple
 import Data.Vector.Fusion.Stream.Monadic
 import Data.Vector.Fusion.Stream.Size
@@ -11,12 +10,15 @@ import Data.Vector.Fusion.Util (delay_inline)
 import Debug.Trace
 import Prelude hiding (map)
 import Control.Applicative ((<$>))
+import Data.Proxy
 
+import Data.Bits.Ordered
 import Data.PrimitiveArray hiding (map)
 
 import ADP.Fusion.Base
 import ADP.Fusion.SynVar.Array.Type
 import ADP.Fusion.SynVar.Backtrack
+import ADP.Fusion.SynVar.Indices
 
 
 
@@ -36,7 +38,17 @@ instance
   , PrimArrayOps arr BitSet x
   , MkStream m ls BitSet
   ) => MkStream m (ls :!: ITbl m arr BitSet x) BitSet where
-  mkStream (ls :!: ITbl _ _ c t _) (IStatic rp) u s
+  mkStream (ls :!: ITbl _ _ c t _) vs us is
+    -- TODO we need an additional parameter, @ii@ for what to index now,
+    -- @jj@ (or so) for what to store as "complete index@.
+    -- Right now, we go via this fun @aa@ hack. (Though maybe, we can do
+    -- this always, anyway?)
+    = map (\(s,ii,oo) -> let jj = ii .|. aa
+                             aa = getIndex (Z:.getIdx s) (Proxy :: Proxy (Z:.BitSet))
+                         in  ElmITbl (t!ii) jj oo s)
+    . addIndexDense1 c vs us is
+    $ mkStream ls (tableStaticVar c vs is) us (tableStreamIndex c vs is)
+    {-
     = flatten mk step Unknown $ mkStream ls (delay_inline IVariable $ rp - csize) u s
     where !csize | c==EmptyOk  = 0
                  | c==NonEmpty = 1
@@ -69,6 +81,7 @@ instance
             where kk = popShiftL mask k
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
+  -}
   {-# Inline mkStream #-}
 
 

@@ -93,8 +93,8 @@ instance
   {-# Inline mkStream #-}
 
 instance TableStaticVar Subword where
-  tableStaticVar (IStatic   d) _ = IVariable d
-  tableStaticVar (IVariable d) _ = IVariable d
+  tableStaticVar _ (IStatic   d) _ = IVariable d
+  tableStaticVar _ (IVariable d) _ = IVariable d
   tableStreamIndex c _ (Subword (i:.j))
     | c==EmptyOk  = subword i j
     | c==NonEmpty = subword i (j-1)

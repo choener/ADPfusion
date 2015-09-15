@@ -45,7 +45,7 @@ prop_b_ii_nn ix@(BitSet _) = zs == ls where
        , popCount (ix `xor` kk) > 0
        ]
 
-prop_b_iii ix@(BitSet _) = zs == ls where
+prop_b_iii ix@(BitSet _) = {- traceShow (zs,ls) $ -} zs == ls where
   tia = ITbl 0 0 EmptyOk xsB (\ _ _ -> Id 1)
   tib = ITbl 0 0 EmptyOk xsB (\ _ _ -> Id 1)
   tic = ITbl 0 0 EmptyOk xsB (\ _ _ -> Id 1)

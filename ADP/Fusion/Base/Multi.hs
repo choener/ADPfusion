@@ -159,29 +159,29 @@ instance (RuleContext (Outside is), RuleContext (Outside i)) => RuleContext (Out
   {-# INLINE initialContext #-}
 
 class TableStaticVar i where
-  tableStaticVar   ::                    Context i -> i -> Context i
+  tableStaticVar   :: TblConstraint i -> Context i -> i -> Context i
   tableStreamIndex :: TblConstraint i -> Context i -> i -> i
 
 instance TableStaticVar Z where
-  tableStaticVar     _ _ = Z
+  tableStaticVar   _ _ _ = Z
   tableStreamIndex _ _ _ = Z
   {-# INLINE [0] tableStaticVar   #-}
   {-# INLINE [0] tableStreamIndex #-}
 
 instance TableStaticVar (Outside Z) where
-  tableStaticVar     _ _ = Z
+  tableStaticVar   _ _ _ = Z
   tableStreamIndex _ _ _ = O Z
   {-# INLINE [0] tableStaticVar   #-}
   {-# INLINE [0] tableStreamIndex #-}
 
 instance (TableStaticVar is, TableStaticVar i) => TableStaticVar (is:.i) where
-  tableStaticVar           (vs:.v) (is:.i) = tableStaticVar      vs is :. tableStaticVar     v i
+  tableStaticVar   (cs:.c) (vs:.v) (is:.i) = tableStaticVar   cs vs is :. tableStaticVar   c v i
   tableStreamIndex (cs:.c) (vs:.v) (is:.i) = tableStreamIndex cs vs is :. tableStreamIndex c v i
   {-# INLINE [0] tableStaticVar   #-}
   {-# INLINE [0] tableStreamIndex #-}
 
 instance (TableStaticVar (Outside is), TableStaticVar (Outside i)) => TableStaticVar (Outside (is:.i)) where
-  tableStaticVar           (vs:.v) (O (is:.i)) = tableStaticVar      vs (O is) :. tableStaticVar     v (O i)
+  tableStaticVar   (cs:.c) (vs:.v) (O (is:.i)) = tableStaticVar cs vs (O is) :. tableStaticVar c v (O i)
   tableStreamIndex (cs:.c) (vs:.v) (O (is:.i)) =
     let (O js) = tableStreamIndex cs vs (O is)
         (O j)  = tableStreamIndex c  v  (O i)

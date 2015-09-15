@@ -117,7 +117,7 @@ instance
   mkStream (ls :!: ITbl _ _ c t _) vs us is
     = map (\(s,ii,oo) -> ElmITbl (t!ii) ii oo s)
     . addIndexDense c vs us is
-    $ mkStream ls (tableStaticVar vs is) us (tableStreamIndex c vs is)
+    $ mkStream ls (tableStaticVar c vs is) us (tableStreamIndex c vs is)
   {-# Inline mkStream #-}
 
 instance
@@ -131,7 +131,7 @@ instance
   mkStream (ls :!: BtITbl c t bt) vs us is
     = mapM (\(s,ii,oo) -> bt us ii >>= \ ~bb -> return $ ElmBtITbl (t!ii) bb ii oo s)
     . addIndexDense c vs us is
-    $ mkStream ls (tableStaticVar vs is) us (tableStreamIndex c vs is)
+    $ mkStream ls (tableStaticVar c vs is) us (tableStreamIndex c vs is)
   {-# Inline mkStream #-}
 
 {-

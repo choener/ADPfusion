@@ -97,6 +97,13 @@ undefi :: Interface i
 undefi = (-1)
 {-# Inline undefi #-}
 
+instance TableStaticVar BitSet where
+  tableStaticVar c (IStatic   d) _ = IVariable $ d - minSize c -- TODO rly?
+  tableStaticVar _ (IVariable d) _ = IVariable $ d
+  tableStreamIndex c _ bitSet = bitSet -- TODO rly?
+  {-# INLINE [0] tableStaticVar   #-}
+  {-# INLINE [0] tableStreamIndex #-}
+
 -- | We sometimes need 
 
 data ThisThatNaught a b = This a | That b | Naught
