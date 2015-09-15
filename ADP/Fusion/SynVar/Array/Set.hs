@@ -43,9 +43,9 @@ instance
     -- @jj@ (or so) for what to store as "complete index@.
     -- Right now, we go via this fun @aa@ hack. (Though maybe, we can do
     -- this always, anyway?)
-    = map (\(s,ii,oo) -> let jj = ii .|. aa
-                             aa = getIndex (Z:.getIdx s) (Proxy :: Proxy (Z:.BitSet))
-                         in  ElmITbl (t!ii) jj oo s)
+    = map (\(s,ii,oo,ii',oo') -> let jj = ii' .|. aa
+                                     aa = getIndex (Z:.getIdx s) (Proxy :: Proxy (Z:.BitSet))
+                                 in  ElmITbl (t!ii) jj oo' s)
     . addIndexDense1 c vs us is
     $ mkStream ls (tableStaticVar c vs is) us (tableStreamIndex c vs is)
     {-

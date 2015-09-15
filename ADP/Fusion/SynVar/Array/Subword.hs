@@ -35,7 +35,7 @@ instance
   -- TODO using the new version breaks where the table is in static
   -- position; static + variable is ok ???
   mkStream (ls :!: ITbl _ _ c t _) vs us is
-    = map (\(s,ii,oo) -> ElmITbl (t!ii) ii oo s)
+    = map (\(s,ii,oo,ii',oo') -> ElmITbl (t!ii) ii' oo' s)
     . addIndexDense1 c vs us is
     $ mkStream ls (tableStaticVar c vs is) us (tableStreamIndex c vs is)
     -- $ mkStream ls (tableStaticVar vs is) us (tableStreamIndex c vs is)
@@ -64,7 +64,7 @@ instance
   , PrimArrayOps arr Subword x
   ) => MkStream mB (ls :!: Backtrack (ITbl mF arr Subword x) mF mB r) Subword where
   mkStream (ls :!: BtITbl c t bt) vs us is
-    = mapM (\(s,ii,oo) -> bt us ii >>= \ ~bb -> return $ ElmBtITbl (t!ii) bb ii oo s)
+    = mapM (\(s,ii,oo,ii',oo') -> bt us ii >>= \ ~bb -> return $ ElmBtITbl (t!ii) bb ii' oo' s)
     . addIndexDense1 c vs us is
     $ mkStream ls (tableStaticVar c vs is) us (tableStreamIndex c vs is)
   {-

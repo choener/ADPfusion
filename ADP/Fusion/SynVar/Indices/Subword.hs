@@ -19,24 +19,27 @@ import ADP.Fusion.SynVar.Indices.Classes
 
 
 instance
-  ( AddIndexDense a is
+  ( AddIndexDense a us is
   , GetIndex a is
   , GetIx a (is:.Subword) ~ Subword
-  ) => AddIndexDense a (is:.Subword) where
+  ) => AddIndexDense a (us:.Subword) (is:.Subword) where
   addIndexDenseGo (cs:._) (vs:.IStatic ()) (us:.Subword (_:.u)) (is:.Subword (i:.j))
     = staticCheck (j<=u)
-    . map (\(S5 s a b y z) -> let (Subword (_:.l)) = getIndex a (Proxy :: Proxy (is:.Subword))
-                              in  (S5 s a b (y:.subword l j) (z:.subword 0 0)))
+    . map (\(S7 s a b y z y' z') -> let (Subword (_:.l)) = getIndex a (Proxy :: Proxy (is:.Subword))
+                                        lj = subword l j
+                                        oo = subword 0 0
+                                    in  S7 s a b (y:.lj) (z:.oo) (y':.lj) (z':.oo))
     . addIndexDenseGo cs vs us is
   addIndexDenseGo (cs:.c) (vs:.IVariable ()) (us:.Subword (_:.u)) (is:.Subword (i:.j))
     = staticCheck (j<=u)
     . flatten mk step Unknown . addIndexDenseGo cs vs us is
-    where mk   (S5 s a b y z) = let (Subword (_:.l)) = getIndex a (Proxy :: Proxy (is:.Subword))
-                                in  return $ S6 s a b y z (j - l - csize)
-          step (S6 s a b y z zz)
+    where mk   (S7 s a b y z y' z') = let (Subword (_:.l)) = getIndex a (Proxy :: Proxy (is:.Subword))
+                                      in  return $ S8 s a b y z y' z' (j - l - csize)
+          step (S8 s a b y z y' z' zz)
             | zz >= 0 = do let Subword (_:.k) = getIndex a (Proxy :: Proxy (is:.Subword))
                                l = j - zz ; kl = subword k l
-                           return $ Yield (S5 s a b (y:.kl) (z:.subword 0 0)) (S6 s a b y z (zz-1))
+                               oo = subword 0 0
+                           return $ Yield (S7 s a b (y:.kl) (z:.oo) (y':.kl) (z':.oo)) (S8 s a b y z y' z' (zz-1))
             | otherwise =  return $ Done
           csize = delay_inline minSize c
           {-# Inline [0] mk   #-}

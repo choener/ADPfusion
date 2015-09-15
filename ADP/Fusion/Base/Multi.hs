@@ -124,13 +124,17 @@ instance
   {-# INLINE termStaticVar #-}
   {-# INLINE termStreamIndex #-}
 
-data S3 a b c       = S3 !a !b !c
+data S3 a b c           = S3 !a !b !c
 
-data S4 a b c d     = S4 !a !b !c !d
+data S4 a b c d         = S4 !a !b !c !d
 
-data S5 a b c d e   = S5 !a !b !c !d !e
+data S5 a b c d e       = S5 !a !b !c !d !e
 
-data S6 a b c d e f = S6 !a !b !c !d !e !f
+data S6 a b c d e f     = S6 !a !b !c !d !e !f
+
+data S7 a b c d e f g   = S7 !a !b !c !d !e !f !g
+
+data S8 a b c d e f g h = S8 !a !b !c !d !e !f !g !h
 
 fromTerminalStream (S6 s Z Z i o e) = ElmTS e i o s
 {-# INLINE fromTerminalStream #-}
