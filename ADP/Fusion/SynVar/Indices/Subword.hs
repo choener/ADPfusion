@@ -23,12 +23,14 @@ instance
   , GetIndex a is
   , GetIx a (is:.Subword) ~ Subword
   ) => AddIndexDense a (is:.Subword) where
-  addIndexDenseGo (cs:._) (vs:.IStatic ()) (is:.Subword (i:.j))
-    = map (\(S5 s a b y z) -> let (Subword (_:.l)) = getIndex a (Proxy :: Proxy (is:.Subword))
+  addIndexDenseGo (cs:._) (vs:.IStatic ()) (us:.Subword (_:.u)) (is:.Subword (i:.j))
+    = staticCheck (j<=u)
+    . map (\(S5 s a b y z) -> let (Subword (_:.l)) = getIndex a (Proxy :: Proxy (is:.Subword))
                               in  (S5 s a b (y:.subword l j) (z:.subword 0 0)))
-    . addIndexDenseGo cs vs is
-  addIndexDenseGo (cs:.c) (vs:.IVariable ()) (is:.Subword (i:.j))
-    = flatten mk step Unknown . addIndexDenseGo cs vs is
+    . addIndexDenseGo cs vs us is
+  addIndexDenseGo (cs:.c) (vs:.IVariable ()) (us:.Subword (_:.u)) (is:.Subword (i:.j))
+    = staticCheck (j<=u)
+    . flatten mk step Unknown . addIndexDenseGo cs vs us is
     where mk   (S5 s a b y z) = let (Subword (_:.l)) = getIndex a (Proxy :: Proxy (is:.Subword))
                                 in  return $ S6 s a b y z (j - l - csize)
           step (S6 s a b y z zz)

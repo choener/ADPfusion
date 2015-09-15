@@ -48,6 +48,7 @@ prop_O_ZEpsilonEpsilon ix@(O (Z:.PointL j:.PointL l)) = zs == ls where
 
 -- * Deletion cases
 
+{-
 prop_O_ItNC ix@(O (PointL j)) = zs == ls where
   t = ITbl 0 0 EmptyOk xsPo (\ _ _ -> Id 1)
   zs = ((,,) <<< t % Deletion % chr xs ... S.toList) (O $ maxPL) ix
@@ -72,6 +73,7 @@ prop_O_2dimIt_NC_CN ix@(O (Z:.PointL j:.PointL l)) = zs == ls where
          , Z:.()           :.xs VU.! (l+0)
          , Z:.xs VU.! (j+0):.()
          ) | j>=0, l>=0, j<=99, l<=99 ]
+-}
 
 prop_2dimIt_NC_CN ix@(Z:.PointL j:.PointL l) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsPP (\ _ _ -> Id 1)
@@ -108,20 +110,24 @@ prop_It ix@(PointL j) = zs == ls where
   zs = (id <<< t ... S.toList) maxPL ix
   ls = [ unsafeIndex xsP ix | j>=0, j<=100 ]
 
+{-
 prop_O_It ix@(O (PointL j)) = zs == ls where
   t = ITbl 0 0 EmptyOk xsPo (\ _ _ -> Id 1)
   zs = (id <<< t ... S.toList) (O maxPL) ix
   ls = [ unsafeIndex xsPo ix | j>=0, j<=100 ]
+-}
 
 prop_ZIt ix@(Z:.PointL j) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk) xsZP (\ _ _ -> Id 1)
   zs = (id <<< t ... S.toList) (Z:.maxPL) ix
   ls = [ unsafeIndex xsZP ix | j>=0, j<=100 ]
 
+{-
 prop_O_ZIt ix@(O (Z:.PointL j)) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk) xsZPo (\ _ _ -> Id 1)
   zs = (id <<< t ... S.toList) (O (Z:.maxPL)) ix
   ls = [ unsafeIndex xsZPo ix | j>=0, j<=100 ]
+-}
 
 -- | Table, then single terminal
 
@@ -134,6 +140,7 @@ prop_ItC ix@(PointL j) = zs == ls where
 
 -- | @A^*_j -> A^*_{j+1} c_{j+1)@ !
 
+{-
 prop_O_ItC ix@(O (PointL j)) = zs == ls where
   t = ITbl 0 0 EmptyOk xsPo (\ _ _ -> Id 1)
   zs = ((,) <<< t % chr xs ... S.toList) (O $ maxPL) ix
@@ -157,6 +164,7 @@ prop_O_ZItCC ix@(O (Z:.PointL j)) = zs == ls where
          , Z:.xs VU.! (j+0)
          , Z:.xs VU.! (j+1)
          ) | j >= 0, j <= 98 ]
+-}
 
 -- | synvar followed by a 2-tape character terminal
 
@@ -168,6 +176,7 @@ prop_2dimItCC ix@(Z:.PointL j:.PointL l) = zs == ls where
          , Z:.xs VU.! (j-1):.xs VU.! (l-1)
          ) | j>=2, l>=2, j<=100, l<=100 ]
 
+{-
 prop_O_2dimItCC ix@(O (Z:.PointL j:.PointL l)) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsPPo (\ _ _ -> Id 1)
   zs = ((,,) <<< t % (M:|chr xs:|chr xs) % (M:|chr xs:|chr xs) ... S.toList) (O (Z:.maxPL:.maxPL)) ix
@@ -175,12 +184,15 @@ prop_O_2dimItCC ix@(O (Z:.PointL j:.PointL l)) = zs == ls where
          , Z:.xs VU.! (j+0):.xs VU.! (l+0)
          , Z:.xs VU.! (j+1):.xs VU.! (l+1)
          ) | j>=0, l>=0, j<=98, l<=98 ]
+-}
 
 -- * direct index tests
 
+{-
 xprop_O_ixZItCC ix@(O (Z:.PointL j)) = zs where
   t = ITbl 0 0 (Z:.EmptyOk) xsZPo (\ _ _ -> Id 1)
   zs = (id >>> t % (M:|chr xs) % (M:|chr xs) ... S.toList) (O (Z:.maxPL)) ix
+-}
 
 -- * 'Strng' tests
 

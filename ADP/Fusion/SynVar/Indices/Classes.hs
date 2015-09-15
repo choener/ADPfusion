@@ -19,10 +19,10 @@ import ADP.Fusion.Base
 -- cases.
 
 class AddIndexDense a i where
-  addIndexDenseGo :: (Monad m, GetIndex a i) => TblConstraint i -> Context i -> i -> Stream m (S5 s a a Z Z) -> Stream m (S5 s a a i i)
+  addIndexDenseGo :: (Monad m, GetIndex a i) => TblConstraint i -> Context i -> i -> i -> Stream m (S5 s a a Z Z) -> Stream m (S5 s a a i i)
 
 instance AddIndexDense a Z where
-  addIndexDenseGo _ _ _ = id
+  addIndexDenseGo _ _ _ _ = id
   {-# Inline addIndexDenseGo #-}
 
 
@@ -37,8 +37,8 @@ addIndexDense
      , s ~ Elm x0 a
      , Element x0 a
      )
-  => TblConstraint i -> Context i -> i -> Stream m s -> Stream m (s,i,i)
-addIndexDense t c i = map (\(S5 s _ _ i o) -> (s,i,o)) . addIndexDenseGo t c i . map (\s -> (S5 s (getIdx s) (getOmx s) Z Z))
+  => TblConstraint i -> Context i -> i -> i -> Stream m s -> Stream m (s,i,i)
+addIndexDense t c u i = map (\(S5 s _ _ i o) -> (s,i,o)) . addIndexDenseGo t c u i . map (\s -> (S5 s (getIdx s) (getOmx s) Z Z))
 {-# Inline addIndexDense #-}
 
 -- | In case of 1-dim tables, we wrap the index creation in a multi-dim
@@ -52,7 +52,7 @@ addIndexDense1
      , s ~ Elm x0 a
      , Element x0 a
      )
-  => TblConstraint i -> Context i -> i -> Stream m s -> Stream m (s,i,i)
-addIndexDense1 t c i = map (\(S5 s _ _ (Z:.i) (Z:.o)) -> (s,i,o)) . addIndexDenseGo (Z:.t) (Z:.c) (Z:.i) . map (\s -> (S5 s (Z:.getIdx s) (Z:.getOmx s) Z Z))
+  => TblConstraint i -> Context i -> i -> i -> Stream m s -> Stream m (s,i,i)
+addIndexDense1 t c u i = map (\(S5 s _ _ (Z:.i) (Z:.o)) -> (s,i,o)) . addIndexDenseGo (Z:.t) (Z:.c) (Z:.u) (Z:.i) . map (\s -> (S5 s (Z:.getIdx s) (Z:.getOmx s) Z Z))
 {-# Inline addIndexDense1 #-}
 

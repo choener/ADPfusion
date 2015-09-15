@@ -114,10 +114,10 @@ instance
   , MkStream m ls (is:.i)
   , PrimArrayOps arr (is:.i) x
   ) => MkStream m (ls :!: ITbl m arr (is:.i) x) (is:.i) where
-  mkStream (ls :!: ITbl _ _ c t _) vs lu is
+  mkStream (ls :!: ITbl _ _ c t _) vs us is
     = map (\(s,ii,oo) -> ElmITbl (t!ii) ii oo s)
-    . addIndexDense c vs is
-    $ mkStream ls (tableStaticVar vs is) lu (tableStreamIndex c vs is)
+    . addIndexDense c vs us is
+    $ mkStream ls (tableStaticVar vs is) us (tableStreamIndex c vs is)
   {-# Inline mkStream #-}
 
 instance
@@ -130,7 +130,7 @@ instance
   ) => MkStream mB (ls :!: Backtrack (ITbl mF arr (is:.i) x) mF mB r) (is:.i) where
   mkStream (ls :!: BtITbl c t bt) vs us is
     = mapM (\(s,ii,oo) -> bt us ii >>= \ ~bb -> return $ ElmBtITbl (t!ii) bb ii oo s)
-    . addIndexDense c vs is
+    . addIndexDense c vs us is
     $ mkStream ls (tableStaticVar vs is) us (tableStreamIndex c vs is)
   {-# Inline mkStream #-}
 
