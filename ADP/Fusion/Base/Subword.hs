@@ -39,7 +39,9 @@ instance RuleContext (Complement Subword) where
 
 instance (Monad m) => MkStream m S Subword where
   mkStream S (IStatic ()) (Subword (_:.h)) (Subword (i:.j))
-    = staticCheck (i>=0 && i==j && j<=h) . singleton $ ElmS (subword i i) (subword 0 0)
+    = staticCheck (i>=0 && i==j && j<=h)
+    . singleton
+    $ ElmS (subword i i) (subword 0 0)
   -- NOTE it seems that a static check within an @IVariable@ context
   -- destroys fusion; maybe because of the outer flatten? We don't actually
   -- need a static check anyway because the next flatten takes care of

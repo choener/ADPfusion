@@ -32,6 +32,8 @@ instance
   , PrimArrayOps arr Subword x
   , MkStream m ls Subword
   ) => MkStream m (ls :!: ITbl m arr Subword x) Subword where
+  -- TODO using the new version breaks where the table is in static
+  -- position; static + variable is ok ???
   mkStream (ls :!: ITbl _ _ c t _) vs lu is
     = map (\(s,ii,oo) -> ElmITbl (t!ii) ii oo s)
     . addIndexDense1 c vs is

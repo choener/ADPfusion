@@ -93,18 +93,18 @@ deriving instance Show ix => Show (Elm S ix)
 -- elements. If 'b' is false, we discard all stream elements.
 
 staticCheck :: Monad m => Bool -> S.Stream m a -> S.Stream m a
-staticCheck b (S.Stream step t n) = b `seq` S.Stream snew (CheckLeft (b:.t)) (toMax n) where
+staticCheck b (S.Stream step t n) = b `seq` S.Stream snew (CheckLeft b t) (toMax n) where
   {-# Inline [0] snew #-}
-  snew (CheckLeft  (False:._)) = return $ S.Done
-  snew (CheckLeft  (True :.s)) = return $ S.Skip (CheckRight s)
-  snew (CheckRight s         ) = do r <- step s
-                                    case r of
-                                      S.Yield x s' -> return $ S.Yield x (CheckRight s')
-                                      S.Skip    s' -> return $ S.Skip    (CheckRight s')
-                                      S.Done       -> return $ S.Done
+  snew (CheckLeft  False _) = return $ S.Done
+  snew (CheckLeft  True  s) = return $ S.Skip (CheckRight s)
+  snew (CheckRight s      ) = do r <- step s
+                                 case r of
+                                   S.Yield x s' -> return $ S.Yield x (CheckRight s')
+                                   S.Skip    s' -> return $ S.Skip    (CheckRight s')
+                                   S.Done       -> return $ S.Done
 {-# INLINE staticCheck #-}
 
-data StaticCheck a b = CheckLeft a | CheckRight b
+data StaticCheck a b = CheckLeft Bool a | CheckRight b
 
 
 -- | Constrains the behaviour of the memoizing tables. They may be 'EmptyOk' if

@@ -8,6 +8,7 @@ module ADP.Fusion.SynVar.Indices.Subword where
 import Data.Proxy
 import Data.Vector.Fusion.Stream.Monadic (map,Stream,head,mapM,flatten,Step(..))
 import Data.Vector.Fusion.Stream.Size
+import Data.Vector.Fusion.Util (delay_inline)
 import Prelude hiding (map,head,mapM)
 
 import Data.PrimitiveArray hiding (map)
@@ -22,18 +23,20 @@ instance
   , GetIndex a is
   , GetIx a (is:.Subword) ~ Subword
   ) => AddIndexDense a (is:.Subword) where
-  addIndexDenseGo (cs:.c) (vs:.IStatic ()) (is:.Subword (i:.j))
+  addIndexDenseGo (cs:._) (vs:.IStatic ()) (is:.Subword (i:.j))
     = map (\(S5 s a b y z) -> let (Subword (_:.l)) = getIndex a (Proxy :: Proxy (is:.Subword))
                               in  (S5 s a b (y:.subword l j) (z:.subword 0 0)))
     . addIndexDenseGo cs vs is
   addIndexDenseGo (cs:.c) (vs:.IVariable ()) (is:.Subword (i:.j))
     = flatten mk step Unknown . addIndexDenseGo cs vs is
-    where mk   (S5 s a b y z) = let (Subword (_:.l)) = getIndex a (Proxy :: Proxy (is:.Subword)) in return $ S6 s a b y z (j - l - minSize c)
+    where mk   (S5 s a b y z) = let (Subword (_:.l)) = getIndex a (Proxy :: Proxy (is:.Subword))
+                                in  return $ S6 s a b y z (j - l - csize)
           step (S6 s a b y z zz)
             | zz >= 0 = do let Subword (_:.k) = getIndex a (Proxy :: Proxy (is:.Subword))
                                l = j - zz ; kl = subword k l
                            return $ Yield (S5 s a b (y:.kl) (z:.subword 0 0)) (S6 s a b y z (zz-1))
-            | otherwise = return $ Done
+            | otherwise =  return $ Done
+          csize = delay_inline minSize c
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline addIndexDenseGo #-}
