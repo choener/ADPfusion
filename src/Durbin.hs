@@ -101,7 +101,7 @@ grammar Durbin{..} c t' =
 {-# INLINE grammar #-}
 
 runDurbin :: Int -> String -> (Int,[String])
-runDurbin k inp = (d, [] {- take k . unId $ axiom b -} ) where
+runDurbin k inp = (d, take k . unId $ axiom b) where
   i = VU.fromList . Prelude.map toUpper $ inp
   n = VU.length i
   !(Z:.t) = mutateTablesDefault
@@ -110,7 +110,7 @@ runDurbin k inp = (d, [] {- take k . unId $ axiom b -} ) where
               (ITbl 0 0 EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-999999) [])) :: Z:.ITbl Id Unboxed Subword Int
   -- d = let (ITbl _ _ arr _) = t in arr PA.! subword 0 n
   d = iTblArray t PA.! subword 0 n
-  -- !(Z:.b) = grammar (bpmax <|| pretty) (chr i) (toBacktrack t (undefined :: Id a -> Id a))
+  !(Z:.b) = grammar (bpmax <|| pretty) (chr i) (toBacktrack t (undefined :: Id a -> Id a))
 {-# NoInline runDurbin #-}
 
 main = do
