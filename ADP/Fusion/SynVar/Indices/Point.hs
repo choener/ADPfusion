@@ -16,7 +16,7 @@ import ADP.Fusion.SynVar.Indices.Classes
 
 instance
   ( AddIndexDense a us is
-  , GetIndex a is
+  , GetIndex a (is:.PointL)
   , GetIx a (is:.PointL) ~ PointL
   ) => AddIndexDense a (us:.PointL) (is:.PointL) where
   addIndexDenseGo (cs:._) (vs:.IStatic d) (us:.u) (is:.i)
@@ -36,7 +36,7 @@ instance
 
 instance
   ( AddIndexDense (Outside a) (Outside us) (Outside is)
-  , GetIndex a is
+  , GetIndex a (is:.PointL)
   , GetIx a (is:.PointL) ~ PointL
   ) => AddIndexDense (Outside a) (Outside (us:.PointL)) (Outside (is:.PointL)) where
   addIndexDenseGo (cs:.c) (vs:.OStatic d) (O (us:.u)) (O (is:.i))
@@ -44,3 +44,5 @@ instance
                                     in  S7 s a b (O $ unO y:.PointL o) (O(unO z:.PointL o)) (O $ unO y':.PointL o) (O (unO z':.PointL o)))
     . addIndexDenseGo cs vs (O us) (O is)
     where csize = delay_inline minSize c
+  {-# Inline addIndexDenseGo #-}
+

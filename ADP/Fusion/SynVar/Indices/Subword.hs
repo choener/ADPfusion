@@ -20,7 +20,7 @@ import ADP.Fusion.SynVar.Indices.Classes
 
 instance
   ( AddIndexDense a us is
-  , GetIndex a is
+  , GetIndex a (is:.Subword)
   , GetIx a (is:.Subword) ~ Subword
   ) => AddIndexDense a (us:.Subword) (is:.Subword) where
   addIndexDenseGo (cs:._) (vs:.IStatic ()) (us:.Subword (_:.u)) (is:.Subword (i:.j))

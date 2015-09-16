@@ -19,7 +19,7 @@ import ADP.Fusion.SynVar.Indices.Classes
 
 instance
   ( AddIndexDense a us is
-  , GetIndex a is
+  , GetIndex a (is:.BitSet)
   , GetIx a (is:.BitSet) ~ BitSet
   ) => AddIndexDense a (us:.BitSet) (is:.BitSet) where
   addIndexDenseGo (cs:.c) (vs:.IStatic rp) (us:.u) (is:.i)
