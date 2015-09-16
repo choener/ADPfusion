@@ -34,3 +34,8 @@ instance
           csize = delay_inline minSize c
   {-# Inline addIndexDenseGo #-}
 
+instance
+  ( AddIndexDense a us is
+  , GetIndex a is
+  , GetIx a (Outside (is:.PointL)) ~ Outside PointL
+  ) => AddIndexDense a (Outside (us:.PointL)) (Outside (is:.PointL)) where

@@ -69,20 +69,32 @@ instance
 -}
   {-# INLINE mkStream #-}
 
-{-
 instance
   ( Monad m
   , Element ls (Outside PointL)
-  , PrimArrayOps arr (Outside PointL) x
+  , PrimArrayOps arr (Outside u) x
+  , TblConstraint (Outside u) ~ TableConstraint
+  , AddIndexDense (Outside (Z:.PointL)) (Outside (Z:.u)) (Outside (Z:.PointL))
   , MkStream m ls (Outside PointL)
-  ) => MkStream m (ls :!: ITbl m arr (Outside PointL) x) (Outside PointL) where
+  ) => MkStream m (ls :!: ITbl m arr (Outside u) x) (Outside PointL) where
+  mkStream (ls :!: ITbl _ _ c t _) vs us is
+  -- TODO need to decide: shall we keep @(Outside (is:.i))@ as the encoding
+  -- or should we swtich to @is :. Outside i@ with the assumption that the
+  -- necessary things in @is@ will also be @Outside@ ?
+  -- (same for @Complement@)
+    = map (\(s,ii,oo,ii',oo') -> ElmITbl (t!ii) ii' oo' s)
+    . addIndexDense1 c vs us is
+    $ mkStream ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
+  {-
   mkStream (ls :!: ITbl _ _ c t _) (OStatic d) u (O (PointL pj))
     = let ms = minSize c in ms `seq`
     map (\z -> let o = getOmx z
                  in  ElmITbl (t ! o) o o z)
     $ mkStream ls (OFirstLeft d) u (O $ PointL $ pj - ms)
+  -}
   {-# Inline mkStream #-}
 
+{-
 instance
   ( Monad mB
   , Element ls (Outside PointL)
