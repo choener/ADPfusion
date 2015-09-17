@@ -26,7 +26,7 @@ import           Data.List
 import           Data.Vector.Fusion.Util
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Syntax
-import qualified Data.Vector.Fusion.Stream as S
+--import qualified Data.Vector.Fusion.Stream as S
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
 import           System.Environment (getArgs)
@@ -107,7 +107,7 @@ runDurbin k inp = (d, take k . unId $ axiom b) where
   !(Z:.t) = mutateTablesDefault
           $ grammar bpmax
               (chr i)
-              (ITbl 0 0 EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-999999) [])) :: Z:.ITbl Id Unboxed Subword Int
+              (ITbl 0 0 EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-999999) [])) :: Z:.ITbl Id Unboxed (Subword I) Int
   -- d = let (ITbl _ _ arr _) = t in arr PA.! subword 0 n
   d = iTblArray t PA.! subword 0 n
   !(Z:.b) = grammar (bpmax <|| pretty) (chr i) (toBacktrack t (undefined :: Id a -> Id a))
