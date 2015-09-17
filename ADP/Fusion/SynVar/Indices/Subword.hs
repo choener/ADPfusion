@@ -6,8 +6,7 @@
 module ADP.Fusion.SynVar.Indices.Subword where
 
 import Data.Proxy
-import Data.Vector.Fusion.Stream.Monadic (map,Stream,head,mapM,flatten,Step(..))
-import Data.Vector.Fusion.Stream.Size
+import Data.Vector.Fusion.Stream.Monadic (map,Stream,head,mapM,Step(..))
 import Data.Vector.Fusion.Util (delay_inline)
 import Prelude hiding (map,head,mapM)
 
@@ -20,23 +19,23 @@ import ADP.Fusion.SynVar.Indices.Classes
 
 instance
   ( AddIndexDense a us is
-  , GetIndex a (is:.Subword)
-  , GetIx a (is:.Subword) ~ Subword
-  ) => AddIndexDense a (us:.Subword) (is:.Subword) where
+  , GetIndex a (is:.Subword I)
+  , GetIx a (is:.Subword I) ~ (Subword I)
+  ) => AddIndexDense a (us:.Subword I) (is:.Subword I) where
   addIndexDenseGo (cs:._) (vs:.IStatic ()) (us:.Subword (_:.u)) (is:.Subword (i:.j))
     = staticCheck (j<=u)
-    . map (\(S7 s a b y z y' z') -> let (Subword (_:.l)) = getIndex a (Proxy :: Proxy (is:.Subword))
+    . map (\(S7 s a b y z y' z') -> let (Subword (_:.l)) = getIndex a (Proxy :: Proxy (is:.Subword I))
                                         lj = subword l j
                                         oo = subword 0 0
                                     in  S7 s a b (y:.lj) (z:.oo) (y':.lj) (z':.oo))
     . addIndexDenseGo cs vs us is
   addIndexDenseGo (cs:.c) (vs:.IVariable ()) (us:.Subword (_:.u)) (is:.Subword (i:.j))
     = staticCheck (j<=u)
-    . flatten mk step Unknown . addIndexDenseGo cs vs us is
-    where mk   (S7 s a b y z y' z') = let (Subword (_:.l)) = getIndex a (Proxy :: Proxy (is:.Subword))
+    . flatten mk step . addIndexDenseGo cs vs us is
+    where mk   (S7 s a b y z y' z') = let (Subword (_:.l)) = getIndex a (Proxy :: Proxy (is:.Subword I))
                                       in  return $ S8 s a b y z y' z' (j - l - csize)
           step (S8 s a b y z y' z' zz)
-            | zz >= 0 = do let Subword (_:.k) = getIndex a (Proxy :: Proxy (is:.Subword))
+            | zz >= 0 = do let Subword (_:.k) = getIndex a (Proxy :: Proxy (is:.Subword I))
                                l = j - zz ; kl = subword k l
                                oo = subword 0 0
                            return $ Yield (S7 s a b (y:.kl) (z:.oo) (y':.kl) (z':.oo)) (S8 s a b y z y' z' (zz-1))

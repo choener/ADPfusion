@@ -21,16 +21,16 @@ grep -o -e "^prop_[[:alnum:]_]*" ADP/Fusion/QuickCheck/Point.hs | awk '{print $1
 
 -- subwords
 
-prop_sv_OIQSW = QSW.prop_sv_OI
-prop_sv_IOQSW = QSW.prop_sv_IO
-prop_sv_OIIQSW = QSW.prop_sv_OII
-prop_sv_IOIQSW = QSW.prop_sv_IOI
-prop_sv_IIOQSW = QSW.prop_sv_IIO
-prop_cOcQSW = QSW.prop_cOc
-prop_ccOccQSW = QSW.prop_ccOcc
-prop_cOcccQSW = QSW.prop_cOccc
-prop_cOcIcQSW = QSW.prop_cOcIc
-prop_cIcOcQSW = QSW.prop_cIcOc
+--prop_sv_OIQSW = QSW.prop_sv_OI
+--prop_sv_IOQSW = QSW.prop_sv_IO
+--prop_sv_OIIQSW = QSW.prop_sv_OII
+--prop_sv_IOIQSW = QSW.prop_sv_IOI
+--prop_sv_IIOQSW = QSW.prop_sv_IIO
+--prop_cOcQSW = QSW.prop_cOc
+--prop_ccOccQSW = QSW.prop_ccOcc
+--prop_cOcccQSW = QSW.prop_cOccc
+--prop_cOcIcQSW = QSW.prop_cOcIc
+--prop_cIcOcQSW = QSW.prop_cIcOc
 prop_EpsilonQSW = QSW.prop_Epsilon
 
 -- sets
@@ -54,24 +54,24 @@ prop_bii_ieee_nQS = QS.prop_bii_ieee_n
 prop_EpsilonQP = QP.prop_Epsilon
 prop_O_EpsilonQP = QP.prop_O_Epsilon
 prop_ZEpsilonQP = QP.prop_ZEpsilon
-prop_O_ZEpsilonQP = QP.prop_O_ZEpsilon
-prop_O_ZEpsilonEpsilonQP = QP.prop_O_ZEpsilonEpsilon
-prop_O_ItNCQP = QP.prop_O_ItNC
-prop_O_ZItNCQP = QP.prop_O_ZItNC
-prop_O_2dimIt_NC_CNQP = QP.prop_O_2dimIt_NC_CN
+--prop_O_ZEpsilonQP = QP.prop_O_ZEpsilon
+--prop_O_ZEpsilonEpsilonQP = QP.prop_O_ZEpsilonEpsilon
+--prop_O_ItNCQP = QP.prop_O_ItNC
+--prop_O_ZItNCQP = QP.prop_O_ZItNC
+--prop_O_2dimIt_NC_CNQP = QP.prop_O_2dimIt_NC_CN
 prop_2dimIt_NC_CNQP = QP.prop_2dimIt_NC_CN
 prop_TtQP = QP.prop_Tt
 prop_CCQP = QP.prop_CC
 prop_ItQP = QP.prop_It
-prop_O_ItQP = QP.prop_O_It
+--prop_O_ItQP = QP.prop_O_It
 prop_ZItQP = QP.prop_ZIt
-prop_O_ZItQP = QP.prop_O_ZIt
+--prop_O_ZItQP = QP.prop_O_ZIt
 prop_ItCQP = QP.prop_ItC
-prop_O_ItCQP = QP.prop_O_ItC
-prop_O_ItCCQP = QP.prop_O_ItCC
-prop_O_ZItCCQP = QP.prop_O_ZItCC
+--prop_O_ItCQP = QP.prop_O_ItC
+--prop_O_ItCCQP = QP.prop_O_ItCC
+--prop_O_ZItCCQP = QP.prop_O_ZItCC
 prop_2dimItCCQP = QP.prop_2dimItCC
-prop_O_2dimItCCQP = QP.prop_O_2dimItCC
+--prop_O_2dimItCCQP = QP.prop_O_2dimItCC
 prop_ManySQP = QP.prop_ManyS
 prop_SomeSQP = QP.prop_SomeS
 prop_2dim_ManyS_ManySQP = QP.prop_2dim_ManyS_ManyS

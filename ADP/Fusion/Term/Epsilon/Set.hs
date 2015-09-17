@@ -15,8 +15,8 @@ import ADP.Fusion.Term.Epsilon.Type
 
 instance
   ( Monad m
-  , MkStream m ls (BS2I First Last)
-  ) => MkStream m (ls :!: Epsilon) (BS2I First Last) where
+  , MkStream m ls (BS2I I First Last)
+  ) => MkStream m (ls :!: Epsilon) (BS2I I First Last) where
   mkStream (ls :!: Epsilon) (IStatic r) u s@(bs:>_:>_)
     = staticCheck (bs==0)
     . map (ElmEpsilon s s)
@@ -25,9 +25,9 @@ instance
 
 instance
   ( Monad m
-  , MkStream m ls (Outside (BS2I First Last))
-  ) => MkStream m (ls :!: Epsilon) (Outside (BS2I First Last)) where
-  mkStream (ls :!: Epsilon) (OStatic r) u@(O (us:>_:>_)) s@(O (bs:>_:>_))
+  , MkStream m ls (BS2I O First Last)
+  ) => MkStream m (ls :!: Epsilon) (BS2I O First Last) where
+  mkStream (ls :!: Epsilon) (OStatic r) u@(us:>_:>_) s@(bs:>_:>_)
     = staticCheck (us==bs)
     . map (ElmEpsilon s s)
     $ mkStream ls (OStatic r) u s

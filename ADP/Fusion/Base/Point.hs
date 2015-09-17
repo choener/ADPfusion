@@ -1,8 +1,7 @@
 
 module ADP.Fusion.Base.Point where
 
-import Data.Vector.Fusion.Stream.Monadic (singleton,map,filter,Step(..),flatten)
-import Data.Vector.Fusion.Stream.Size
+import Data.Vector.Fusion.Stream.Monadic (singleton,map,filter,Step(..))
 import Debug.Trace
 import Prelude hiding (map,filter)
 
@@ -13,35 +12,35 @@ import ADP.Fusion.Base.Multi
 
 
 
-instance RuleContext PointL where
-  type Context PointL = InsideContext Int
+instance RuleContext (PointL I) where
+  type Context (PointL I) = InsideContext Int
   initialContext _ = IStatic 0
   {-# Inline initialContext #-}
 
-instance RuleContext (Outside PointL) where
-  type Context (Outside PointL) = OutsideContext Int
+instance RuleContext (PointL O) where
+  type Context (PointL O) = OutsideContext Int
   initialContext _ = OStatic 0
   {-# Inline initialContext #-}
 
-instance RuleContext (Complement PointL) where
-  type Context (Complement PointL) = ComplementContext
+instance RuleContext (PointL C) where
+  type Context (PointL C) = ComplementContext
   initialContext _ = Complemented
   {-# Inline initialContext #-}
 
 
 
-instance (Monad m) => MkStream m S PointL where
+instance (Monad m) => MkStream m S (PointL I) where
   mkStream S (IStatic d) (PointL u) (PointL j)
     = staticCheck (j>=0 && j<=d) . singleton $ ElmS (PointL 0) (PointL 0)
   mkStream S (IVariable _) (PointL u) (PointL j)
     = staticCheck (0<=j) . singleton $ ElmS (PointL 0) (PointL 0)
   {-# Inline mkStream #-}
 
-instance (Monad m) => MkStream m S (Outside PointL) where
-  mkStream S (OStatic d) (O (PointL u)) (O (PointL i))
-    = staticCheck (i>=0 && i+d<=u && u == i) . singleton $ ElmS (O $ PointL i) (O . PointL $ i+d)
-  mkStream S (OFirstLeft d) (O (PointL u)) (O (PointL i))
-    = staticCheck (i>=0 && i+d<=u) . singleton $ ElmS (O $ PointL i) (O . PointL $ i+d)
+instance (Monad m) => MkStream m S (PointL O) where
+  mkStream S (OStatic d) (PointL u) (PointL i)
+    = staticCheck (i>=0 && i+d<=u && u == i) . singleton $ ElmS (PointL i) (PointL $ i+d)
+  mkStream S (OFirstLeft d) (PointL u) (PointL i)
+    = staticCheck (i>=0 && i+d<=u) . singleton $ ElmS (PointL i) (PointL $ i+d)
   {-# Inline mkStream #-}
 
 
@@ -49,8 +48,8 @@ instance (Monad m) => MkStream m S (Outside PointL) where
 instance
   ( Monad m
   , MkStream m S is
-  , Context (is:.PointL) ~ (Context is:.(InsideContext Int))
-  ) => MkStream m S (is:.PointL) where
+--  , Context (is:.PointL) ~ (Context is:.(InsideContext Int))
+  ) => MkStream m S (is:.PointL I) where
   mkStream S (vs:.IStatic d) (lus:.PointL u) (is:.PointL i)
     = staticCheck (i>=0 && i<=d && i<=u)
     . map (\(ElmS zi zo) -> ElmS (zi:.PointL 0) (zo:.PointL 0))
@@ -76,20 +75,20 @@ instance
 
 instance
   ( Monad m
-  , MkStream m S (Outside is)
-  , Context (Outside (is:.PointL)) ~ (Context (Outside is) :. OutsideContext Int)
-  ) => MkStream m S (Outside (is:.PointL)) where
-  mkStream S (vs:.OStatic d) (O (lus:.PointL u)) (O (is:.PointL i))
+  , MkStream m S is
+--  , Context (Outside (is:.PointL)) ~ (Context (Outside is) :. OutsideContext Int)
+  ) => MkStream m S (is:.PointL O) where
+  mkStream S (vs:.OStatic d) (lus:.PointL u) (is:.PointL i)
     = staticCheck (i>=0 && i+d == u)
-    . map (\(ElmS (O zi) (O zo)) -> ElmS (O (zi:.PointL i)) (O (zo:.(PointL $ i+d))))
-    $ mkStream S vs (O lus) (O is)
-  mkStream S (vs:.OFirstLeft d) (O (us:.PointL u)) (O (is:.PointL i))
+    . map (\(ElmS zi zo) -> ElmS (zi:.PointL i) (zo:.(PointL $ i+d)))
+    $ mkStream S vs lus is
+  mkStream S (vs:.OFirstLeft d) (us:.PointL u) (is:.PointL i)
     = staticCheck (i>=0 && i+d<=u)
-    . map (\(ElmS (O zi) (O zo)) -> ElmS (O (zi:.PointL i)) (O (zo:.(PointL $ i+d))))
-    $ mkStream S vs (O us) (O is)
+    . map (\(ElmS zi zo) -> ElmS (zi:.PointL i) (zo:.(PointL $ i+d)))
+    $ mkStream S vs us is
   {-# Inline mkStream #-}
 
-instance (TblConstraint u ~ TableConstraint) => TableStaticVar u PointL where
+instance (TblConstraint u ~ TableConstraint) => TableStaticVar u (PointL I) where
   tableStaticVar _ _ (IStatic   d) _ = IVariable d
   tableStaticVar _ _ (IVariable d) _ = IVariable d
   -- NOTE this code used to destroy fusion. If we inline tableStreamIndex
@@ -101,12 +100,12 @@ instance (TblConstraint u ~ TableConstraint) => TableStaticVar u PointL where
   {-# INLINE [0] tableStaticVar   #-}
   {-# INLINE [0] tableStreamIndex #-}
 
-instance (TblConstraint u ~ TableConstraint) => TableStaticVar u (Outside PointL) where
+instance (TblConstraint u ~ TableConstraint) => TableStaticVar u (PointL O) where
   tableStaticVar   _ _ (OStatic d) _ = OFirstLeft d
-  tableStreamIndex _ c _ (O (PointL j))
-    | c==EmptyOk  = O (PointL j)
-    | c==NonEmpty = O (PointL $ j-1)
-    | c==OnlyZero = O (PointL j) -- this should then actually request a size in 'tableStaticVar' ...
+  tableStreamIndex _ c _ (PointL j)
+    | c==EmptyOk  = (PointL j)
+    | c==NonEmpty = (PointL $ j-1)
+    | c==OnlyZero = (PointL j) -- this should then actually request a size in 'tableStaticVar' ...
   {-# INLINE [0] tableStaticVar   #-}
   {-# INLINE [0] tableStreamIndex #-}
 

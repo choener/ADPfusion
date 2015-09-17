@@ -4,9 +4,8 @@
 module ADP.Fusion.SynVar.Array.TermSymbol where
 
 import Data.Strict.Tuple hiding (snd)
-import Data.Vector.Fusion.Stream.Size
 import Data.Vector.Fusion.Util (delay_inline)
-import Data.Vector.Fusion.Stream.Monadic
+import Data.Vector.Fusion.Stream.Monadic hiding (flatten)
 import Debug.Trace
 import Prelude hiding (map,mapM)
 
@@ -23,16 +22,16 @@ import ADP.Fusion.SynVar.Backtrack
 instance
   ( Monad m
   , TerminalStream m a is
-  , PrimArrayOps arr Subword x
+  , PrimArrayOps arr (Subword I) x
   , Show x
-  ) => TerminalStream m (TermSymbol a (ITbl m arr Subword x)) (is:.Subword) where
+  ) => TerminalStream m (TermSymbol a (ITbl m arr (Subword I) x)) (is:.Subword I) where
   terminalStream (a :| ITbl _ _ c t _) (sv:.IStatic _) (is:.ix@(Subword (i:.j)))
     = map (\ (S6 s (zi:.(Subword (a:.l))) (zo:._) is os e) ->
               let lj = subword l j
               in  {- traceShow (i,a,' ',l,j,t!lj) $ -} S6 s zi zo (is:.lj) (os:.subword 0 0) (e:.(t!lj)) )
     . iPackTerminalStream a sv (is:.ix)
   terminalStream (a :| ITbl _ _ c t _) (sv:.IVariable _) (is:.ix@(Subword (i:.j)))
-    = flatten mk step Unknown . iPackTerminalStream a sv (is:.ix)
+    = flatten mk step . iPackTerminalStream a sv (is:.ix)
     where mk (S6 s (zi:.(Subword (_:.l))) (zo:._) is os e) = return (S6 s zi zo is os e :. l :. j - l) -- TODO minsize c !
           step (s6:.k:.z) | z >= 0 = do let S6 s zi zo is os e = s6
                                             l                  = j - z
@@ -46,8 +45,8 @@ instance
 instance
   ( Monad mB
   , TerminalStream mB a is
-  , PrimArrayOps arr Subword x
-  ) => TerminalStream mB (TermSymbol a (Backtrack (ITbl mF arr Subword x) mF mB r)) (is:.Subword) where
+  , PrimArrayOps arr (Subword I) x
+  ) => TerminalStream mB (TermSymbol a (Backtrack (ITbl mF arr (Subword I) x) mF mB r)) (is:.Subword I) where
   terminalStream (a :| BtITbl c t bt) (sv:.IStatic _) (is:.ix@(Subword (i:.j)))
     = mapM (\ (S6 s (zi:.(Subword (_:.l))) (zo:._) is os e) ->
               let lj = subword l j
@@ -55,7 +54,7 @@ instance
               in  bt hh lj >>= \ ~bb -> return $ S6 s zi zo (is:.lj) (os:.subword 0 0) (e:.(t!lj, bb)) )
     . iPackTerminalStream a sv (is:.ix)
   terminalStream (a :| BtITbl c t bt) (sv:.IVariable _) (is:.ix@(Subword (i:.j)))
-    = flatten mk step Unknown . iPackTerminalStream a sv (is:.ix)
+    = flatten mk step . iPackTerminalStream a sv (is:.ix)
     where mk (S6 s (zi:.(Subword (_:.l))) (zo:._) is os e) = return (S6 s zi zo is os e :. l :. j - l) -- TODO minsize c !
           step (s6:.k:.z) | z >= 0 = do let S6 s zi zo is os e = s6
                                             l                  = j - z
@@ -68,7 +67,7 @@ instance
   {-# Inline terminalStream #-}
 
 
-instance TermStaticVar (ITbl m arr Subword x) Subword where
+instance TermStaticVar (ITbl m arr (Subword I) x) (Subword I) where
   termStaticVar _ (IStatic   d) _ = IVariable d
   termStaticVar _ (IVariable d) _ = IVariable d
   termStreamIndex (ITbl _ _ _ _ _) (IStatic   d) (Subword (i:.j)) = subword i j -- TODO minSize handling !
@@ -76,7 +75,7 @@ instance TermStaticVar (ITbl m arr Subword x) Subword where
   {-# Inline [0] termStaticVar   #-}
   {-# Inline [0] termStreamIndex #-}
 
-instance TermStaticVar (Backtrack (ITbl mF arr Subword x) mF mB r) Subword where
+instance TermStaticVar (Backtrack (ITbl mF arr (Subword I) x) mF mB r) (Subword I) where
   termStaticVar _ (IStatic   d) _ = IVariable d
   termStaticVar _ (IVariable d) _ = IVariable d
   termStreamIndex (BtITbl _ _ _) (IStatic   d) (Subword (i:.j)) = subword i j -- TODO minSize handling !

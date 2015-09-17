@@ -5,10 +5,9 @@
 module ADP.Fusion.SynVar.Array.Type where
 
 import Data.Strict.Tuple hiding (uncurry,snd)
-import Data.Vector.Fusion.Stream.Monadic (map,Stream,head,mapM,flatten,Step(..))
+import Data.Vector.Fusion.Stream.Monadic (map,Stream,head,mapM,Step(..))
 import Debug.Trace
 import Prelude hiding (map,head,mapM)
-import Data.Vector.Fusion.Stream.Size
 import Data.Proxy
 
 import Data.PrimitiveArray hiding (map)

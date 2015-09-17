@@ -1,3 +1,12 @@
+0.5.0.0
+-------
+
+- complete re-design of Inside / Outside / Complement handling based on phantom
+  types
+- very liberal combination of multi-tape grammars
+- simplified index generation system (both faster, and easier to write new
+  symbol now)
+
 0.4.1.1
 -------
 

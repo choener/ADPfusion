@@ -1,15 +1,11 @@
 
-{-# Language MagicHash #-}
-
 module ADP.Fusion.SynVar.Array.Subword where
 
-import Data.Strict.Tuple hiding (snd)
-import Data.Vector.Fusion.Stream.Size
-import Data.Vector.Fusion.Util (delay_inline)
-import Data.Vector.Fusion.Stream.Monadic
-import Debug.Trace
-import Prelude hiding (map,mapM)
 import Data.Proxy
+import Data.Strict.Tuple hiding (snd)
+import Data.Vector.Fusion.Stream.Monadic
+import Data.Vector.Fusion.Util (delay_inline)
+import Prelude hiding (map,mapM)
 
 import Data.PrimitiveArray hiding (map)
 
@@ -18,81 +14,38 @@ import ADP.Fusion.SynVar.Array.Type
 import ADP.Fusion.SynVar.Backtrack
 import ADP.Fusion.SynVar.Indices
 
--- TODO think about what we are about to do
--- import GHC.Prim (reallyUnsafePtrEquality#)
 
-
-
-
--- TODO delay inline @(subword i $ j - minSize c)@ or face fusion-breakage.
--- Can we just have @Inline [0] subword@ to fix this?
 
 instance
   ( Monad m
-  , Element ls Subword
+  , Element ls (Subword I)
   , PrimArrayOps arr u x
   , TblConstraint u ~ TableConstraint
-  , AddIndexDense (Z:.Subword) (Z:.u) (Z:.Subword)
-  , MkStream m ls Subword
-  ) => MkStream m (ls :!: ITbl m arr u x) Subword where
-  -- TODO using the new version breaks where the table is in static
-  -- position; static + variable is ok ???
+  , AddIndexDense (Z:.Subword I) (Z:.u) (Z:.Subword I)
+  , MkStream m ls (Subword I)
+  ) => MkStream m (ls :!: ITbl m arr u x) (Subword I) where
   mkStream (ls :!: ITbl _ _ c t _) vs us is
     = map (\(s,ii,oo,ii',oo') -> ElmITbl (t!ii) ii' oo' s)
     . addIndexDense1 c vs us is
     $ mkStream ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
-    -- $ mkStream ls (tableStaticVar vs is) us (tableStreamIndex c vs is)
-  {-
-  mkStream (ls :!: ITbl _ _ c t _) (IStatic ()) hh (Subword (i:.j))
-    = map (\s -> let (Subword (_:.l)) = getIdx s
-                 in  ElmITbl (t ! subword l j) (subword l j) (subword 0 0) s)
-    $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j - minSize c))
-  mkStream (ls :!: ITbl _ _ c t _) (IVariable ()) hh (Subword (i:.j))
-    = flatten mk step Unknown $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j - minSize c))
-    where mk s = let Subword (_:.l) = getIdx s in return (s :. j - l - minSize c)
-          step (s:.z) | z >= 0 = do let Subword (_:.k) = getIdx s
-                                        l              = j - z
-                                        kl             = subword k l
-                                    return $ Yield (ElmITbl (t ! kl) kl (subword 0 0) s) (s:. z-1)
-                      | otherwise = return $ Done
-          {-# Inline [0] mk   #-}
-          {-# Inline [0] step #-}
-  -}
   {-# Inline mkStream #-}
 
 instance
   ( Monad mB
-  , Element ls Subword
-  , MkStream mB ls Subword
+  , Element ls (Subword I)
+  , MkStream mB ls (Subword I)
   , TblConstraint u ~ TableConstraint
-  , AddIndexDense (Z:.Subword) (Z:.u) (Z:.Subword)
+  , AddIndexDense (Z:.Subword I) (Z:.u) (Z:.Subword I)
   , PrimArrayOps arr u x
-  ) => MkStream mB (ls :!: Backtrack (ITbl mF arr u x) mF mB r) Subword where
+  ) => MkStream mB (ls :!: Backtrack (ITbl mF arr u x) mF mB r) (Subword I) where
   mkStream (ls :!: BtITbl c t bt) vs us is
     = mapM (\(s,ii,oo,ii',oo') -> bt us' ii >>= \ ~bb -> return $ ElmBtITbl (t!ii) bb ii' oo' s)
     . addIndexDense1 c vs us is
     $ mkStream ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
     where !us' = snd $ bounds t
-  {-
-  mkStream (ls :!: BtITbl c t bt) (IStatic ()) hh ij@(Subword (i:.j))
-    = mapM (\s -> let Subword (_:.l) = getIdx s
-                      lj             = subword l j
-                  in  bt hh lj >>= \ ~bb -> return $ ElmBtITbl (t ! lj) (bb {-bt hh lj-}) lj (subword 0 0) s)
-    $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j - minSize c))
-  mkStream (ls :!: BtITbl c t bt) (IVariable ()) hh ij@(Subword (i:.j))
-    = flatten mk step Unknown $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j - minSize c))
-    where mk s = let Subword (_:.l) = getIdx s in return (s :. j - l - minSize c)
-          step (s:.z) | z >= 0 = do let Subword (_:.k) = getIdx s
-                                        l              = j - z
-                                        kl             = subword k l
-                                    bt hh kl >>= \ ~bb -> return $ Yield (ElmBtITbl (t ! kl) (bb {-bt hh kl-}) kl (subword 0 0) s) (s:.z-1)
-                      | otherwise = return $ Done
-          {-# Inline [0] mk   #-}
-          {-# Inline [0] step #-}
-  -}
   {-# Inline mkStream #-}
 
-
+{-
 instance
   ( Monad m
   , Element ls (Outside Subword)
@@ -117,9 +70,9 @@ instance
   mkStream (ls :!: ITbl _ _ c t _) (OFirstLeft d) u ij = error "Array/Outside Subword : OFirstLeft : should never be reached!"
   mkStream (ls :!: ITbl _ _ c t _) (OLeftOf d) u ij = error "Array/Outside Subword : OLeftOf : should never be reached!"
   {-# Inline mkStream #-}
+-}
 
-
-
+{-
 instance
   ( Monad m
   , Element ls (Outside Subword)
@@ -160,7 +113,9 @@ instance
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline mkStream #-}
+-}
 
+{-
 instance
   ( Monad m
   , Element ls (Complement Subword)
@@ -172,7 +127,9 @@ instance
                  in  ElmITbl (t ! ix) (C ix) (getOmx s) s)
     $ mkStream ls Complemented u ij
   {-# Inline mkStream #-}
+-}
 
+{-
 instance
   ( Monad m
   , Element ls (Complement Subword)
@@ -184,16 +141,16 @@ instance
                  in  ElmITbl (t ! (O ox)) (getIdx s) (C ox) s)
     $ mkStream ls Complemented u ij
   {-# Inline mkStream #-}
+-}
 
 
-
-instance ModifyConstraint (ITbl m arr Subword x) where
+instance ModifyConstraint (ITbl m arr (Subword t) x) where
   toNonEmpty (ITbl b l _ arr f) = ITbl b l NonEmpty arr f
   toEmpty    (ITbl b l _ arr f) = ITbl b l EmptyOk  arr f
   {-# Inline toNonEmpty #-}
   {-# Inline toEmpty #-}
 
-instance ModifyConstraint (Backtrack (ITbl mF arr Subword x) mF mB r) where
+instance ModifyConstraint (Backtrack (ITbl mF arr (Subword t) x) mF mB r) where
   toNonEmpty (BtITbl _ arr bt) = BtITbl NonEmpty arr bt
   toEmpty    (BtITbl _ arr bt) = BtITbl EmptyOk  arr bt
   {-# Inline toNonEmpty #-}

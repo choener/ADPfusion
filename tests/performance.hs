@@ -48,7 +48,7 @@ gLeft Split{..} c t' =
   in Z:.t
 {-# Inline gLeft #-}
 
-mkArrs :: Int -> (VU.Vector Int, Unboxed Subword Int)
+mkArrs :: Int -> (VU.Vector Int, Unboxed (Subword I) Int)
 mkArrs n = ( VU.enumFromTo 1 n
            , fromAssocs (subword 0 0) (subword 0 n) (-999999) []
            )
@@ -57,7 +57,7 @@ mkArrs n = ( VU.enumFromTo 1 n
 -- | WARNING: Multiple runs of @runLeft@ make use of the same @arr@. This
 -- is, of course, dangerous. Unless you know what you are doing.
 
-runLeft :: (VU.Vector Int, Unboxed Subword Int) -> Int -> Int
+runLeft :: (VU.Vector Int, Unboxed (Subword I) Int) -> Int -> Int
 runLeft (!i, !arr) k = seq k d where
 --  i   = VU.enumFromTo 1 k
   n   = VU.length i
@@ -66,7 +66,7 @@ runLeft (!i, !arr) k = seq k d where
   d = unId $ axiom t
 {-# NoInline runLeft #-}
 
-runLeftForward :: VU.Vector Int -> Unboxed Subword Int -> Z:.ITbl Id Unboxed Subword Int
+runLeftForward :: VU.Vector Int -> Unboxed (Subword I) Int -> Z:.ITbl Id Unboxed (Subword I) Int
 runLeftForward !i !arr = mutateTablesDefault
                $ gLeft algMax
                    i

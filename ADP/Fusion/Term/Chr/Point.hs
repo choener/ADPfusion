@@ -14,9 +14,9 @@ import           ADP.Fusion.Term.Chr.Type
 
 instance
   ( Monad m
-  , Element ls PointL
-  , MkStream m ls PointL
-  ) => MkStream m (ls :!: Chr r x) PointL where
+  , Element ls (PointL I)
+  , MkStream m ls (PointL I)
+  ) => MkStream m (ls :!: Chr r x) (PointL I) where
   mkStream (ls :!: Chr f xs) (IStatic d) (PointL u) (PointL i)
     = staticCheck (i>0 && i<=u && i<= VG.length xs)
     $ S.map (ElmChr (f xs $ i-1) (PointL $ i) (PointL 0))
@@ -26,24 +26,24 @@ instance
 
 instance
   ( Monad m
-  , Element ls (Outside PointL)
-  , MkStream m ls (Outside PointL)
-  ) => MkStream m (ls :!: Chr r x) (Outside PointL) where
-  mkStream (ls :!: Chr f xs) (OStatic d) (O (PointL u)) (O (PointL i))
-    = S.map (\z -> let (O (PointL k)) = getOmx z in ElmChr (f xs $ k-d-1) (O . PointL $ k-d) (getOmx z) z)
-    $ mkStream ls (OStatic $ d+1) (O $ PointL u) (O $ PointL i)
+  , Element ls (PointL O)
+  , MkStream m ls (PointL O)
+  ) => MkStream m (ls :!: Chr r x) (PointL O) where
+  mkStream (ls :!: Chr f xs) (OStatic d) (PointL u) (PointL i)
+    = S.map (\z -> let (PointL k) = getOmx z in ElmChr (f xs $ k-d-1) (PointL $ k-d) (getOmx z) z)
+    $ mkStream ls (OStatic $ d+1) (PointL u) (PointL i)
   mkStream _ _ _ _ = error "Chr.Point / mkStream / Chr / Outside.PointL can only be implemented for OStatic"
   {-# Inline mkStream #-}
 
 -- TODO @Inline [0]@ ???
 
-instance TermStaticVar (Chr r x) PointL where
+instance TermStaticVar (Chr r x) (PointL I) where
   termStaticVar   _ sv _                = sv
   termStreamIndex _ _  (PointL j) = PointL $ j-1
   {-# Inline termStaticVar #-}
   {-# Inline termStreamIndex #-}
 
-instance TermStaticVar (Chr r x) (Outside PointL) where
+instance TermStaticVar (Chr r x) (PointL O) where
   termStaticVar   _ (OStatic d) _ = OStatic (d+1) 
   termStreamIndex _ _           j = j
   {-# Inline termStaticVar #-}
@@ -52,7 +52,7 @@ instance TermStaticVar (Chr r x) (Outside PointL) where
 instance
   ( Monad m
   , TerminalStream m a is
-  ) => TerminalStream m (TermSymbol a (Chr r x)) (is:.PointL) where
+  ) => TerminalStream m (TermSymbol a (Chr r x)) (is:.PointL I) where
   terminalStream (a:|Chr f (!v)) (sv:.IStatic _) (is:.i@(PointL j))
     = S.map (\(S6 s (zi:._) (zo:._) is os e) -> S6 s zi zo (is:.PointL j) (os:.PointL 0) (e:.f v (j-1)))
     . iPackTerminalStream a sv (is:.i)
@@ -71,16 +71,12 @@ instance
 
 instance
   ( Monad m
-  , TerminalStream m a (Outside is)
-  , Context (Outside (is:.PointL)) ~ (Context (Outside is) :. OutsideContext Int)
-  ) => TerminalStream m (TermSymbol a (Chr r x)) (Outside (is:.PointL)) where
-  terminalStream (a:|Chr f (!v)) (sv:.OStatic d) (O (is:.i))
-    = S.map (\(S6 s (zi:._) (zo:.(PointL k)) (O is) (O os) e) -> S6 s zi zo (O (is:.(PointL $ k-d))) (O (os:.PointL k)) (e:.f v (k-d-1)))
-    . oPackTerminalStream a sv (O (is:.i))
-    {-
-    . terminalStream a sv (O is)
-    . S.map (\(S5 s zi zo (O (is:.i)) (O (os:.o))) -> S5 s (zi:.i) (zo:.o) (O is) (O os))
-    -}
+  , TerminalStream m a is
+--  , Context (Outside (is:.PointL)) ~ (Context (Outside is) :. OutsideContext Int)
+  ) => TerminalStream m (TermSymbol a (Chr r x)) (is:.PointL O) where
+  terminalStream (a:|Chr f (!v)) (sv:.OStatic d) (is:.i)
+    = S.map (\(S6 s (zi:._) (zo:.(PointL k)) is os e) -> S6 s zi zo (is:.(PointL $ k-d)) (os:.PointL k) (e:.f v (k-d-1)))
+    . iPackTerminalStream a sv (is:.i)
   {-
   terminalStream (a:|Chr f (!v)) (sv:._) (is:.PointL i)
     = S.map (\(S6 s (zi:.PointL k) (zo:.PointL l) is os e) -> S6 s zi zo (is:.PointL (k+1)) (os:.PointL 0) (e:.f v (l-1)))

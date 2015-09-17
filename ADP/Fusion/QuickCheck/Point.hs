@@ -8,7 +8,6 @@ import           Control.Monad
 import           Data.Strict.Tuple
 import           Data.Vector.Fusion.Util
 import           Debug.Trace
-import qualified Data.Vector.Fusion.Stream as S
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
 import           System.IO.Unsafe
@@ -25,23 +24,23 @@ import ADP.Fusion
 -- * Epsilon cases
 
 prop_Epsilon ix@(PointL j) = zs == ls where
-  zs = (id <<< Epsilon ... S.toList) maxPL ix
+  zs = (id <<< Epsilon ... stoList) maxPLi ix
   ls = [ () | j == 0 ]
 
-prop_O_Epsilon ix@(O (PointL j)) = zs == ls where
-  zs = (id <<< Epsilon ... S.toList) (O maxPL) ix
+prop_O_Epsilon ix@(PointL j) = zs == ls where
+  zs = (id <<< Epsilon ... stoList) maxPLo ix
   ls = [ () | j == 100 ]
 
 prop_ZEpsilon ix@(Z:.PointL j) = zs == ls where
-  zs = (id <<< (M:|Epsilon) ... S.toList) (Z:.maxPL) ix
+  zs = (id <<< (M:|Epsilon) ... stoList) (Z:.maxPLi) ix
   ls = [ Z:.() | j == 0 ]
 
-prop_O_ZEpsilon ix@(O (Z:.PointL j)) = zs == ls where
-  zs = (id <<< (M:|Epsilon) ... S.toList) (O (Z:.maxPL)) ix
+prop_O_ZEpsilon ix@(Z:.PointL j) = zs == ls where
+  zs = (id <<< (M:|Epsilon) ... stoList) (Z:.maxPLo) ix
   ls = [ Z:.() | j == 100 ]
 
-prop_O_ZEpsilonEpsilon ix@(O (Z:.PointL j:.PointL l)) = zs == ls where
-  zs = (id <<< (M:|Epsilon:|Epsilon) ... S.toList) (O (Z:.maxPL:.maxPL)) ix
+prop_O_ZEpsilonEpsilon ix@(Z:.PointL j:.PointL l) = zs == ls where
+  zs = (id <<< (M:|Epsilon:|Epsilon) ... stoList) (Z:.maxPLo:.maxPLo) ix
   ls = [ Z:.():.() | j == 100, l == 100 ]
 
 
@@ -51,7 +50,7 @@ prop_O_ZEpsilonEpsilon ix@(O (Z:.PointL j:.PointL l)) = zs == ls where
 {-
 prop_O_ItNC ix@(O (PointL j)) = zs == ls where
   t = ITbl 0 0 EmptyOk xsPo (\ _ _ -> Id 1)
-  zs = ((,,) <<< t % Deletion % chr xs ... S.toList) (O $ maxPL) ix
+  zs = ((,,) <<< t % Deletion % chr xs ... stoList) (O $ maxPLo) ix
   ls = [ ( unsafeIndex xsPo (O $ PointL $ j+1)
          , ()
          , xs VU.! (j+0)
@@ -60,7 +59,7 @@ prop_O_ItNC ix@(O (PointL j)) = zs == ls where
 
 prop_O_ZItNC ix@(O (Z:.PointL j)) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk) xsZPo (\ _ _ -> Id 1)
-  zs = ((,,) <<< t % (M:|Deletion) % (M:|chr xs) ... S.toList) (O (Z:.maxPL)) ix
+  zs = ((,,) <<< t % (M:|Deletion) % (M:|chr xs) ... stoList) (O (Z:.maxPLo)) ix
   ls = [ ( unsafeIndex xsZPo (O (Z:.PointL (j+1)))
          , Z:.()
          , Z:.xs VU.! (j+0)
@@ -68,7 +67,7 @@ prop_O_ZItNC ix@(O (Z:.PointL j)) = zs == ls where
 
 prop_O_2dimIt_NC_CN ix@(O (Z:.PointL j:.PointL l)) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsPPo (\ _ _ -> Id 1)
-  zs = ((,,) <<< t % (M:|Deletion:|chr xs) % (M:|chr xs:|Deletion) ... S.toList) (O (Z:.maxPL:.maxPL)) ix
+  zs = ((,,) <<< t % (M:|Deletion:|chr xs) % (M:|chr xs:|Deletion) ... stoList) (O (Z:.maxPLo:.maxPLo)) ix
   ls = [ ( unsafeIndex xsPPo (O (Z:.PointL (j+1):.PointL (l+1)))
          , Z:.()           :.xs VU.! (l+0)
          , Z:.xs VU.! (j+0):.()
@@ -77,7 +76,7 @@ prop_O_2dimIt_NC_CN ix@(O (Z:.PointL j:.PointL l)) = zs == ls where
 
 prop_2dimIt_NC_CN ix@(Z:.PointL j:.PointL l) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsPP (\ _ _ -> Id 1)
-  zs = ((,,) <<< t % (M:|Deletion:|chr xs) % (M:|chr xs:|Deletion) ... S.toList) (Z:.maxPL:.maxPL) ix
+  zs = ((,,) <<< t % (M:|Deletion:|chr xs) % (M:|chr xs:|Deletion) ... stoList) (Z:.maxPLi:.maxPLi) ix
   ls = [ ( unsafeIndex xsPP (Z:.PointL (j-1):.PointL (l-1))
          , Z:.()           :.xs VU.! (l-1)
          , Z:.xs VU.! (j-1):.()
@@ -90,42 +89,42 @@ prop_2dimIt_NC_CN ix@(Z:.PointL j:.PointL l) = zs == ls where
 -- | A single character terminal
 
 prop_Tt ix@(Z:.PointL j) = zs == ls where
-  zs = (id <<< (M:|chr xs) ... S.toList) (Z:.maxPL) ix
+  zs = (id <<< (M:|chr xs) ... stoList) (Z:.maxPLi) ix
   ls = [ (Z:.xs VU.! (j-1)) | 1==j ]
 
 --prop_O_Tt ix@(Z:.O (PointL j)) = traceShow (j,zs,ls) $ zs == ls where
---  zs = (id <<< (M:|chr xs) ... S.toList) (Z:.O maxPL) ix
+--  zs = (id <<< (M:|chr xs) ... stoList) (Z:.O maxPLo) ix
 --  ls = [ (Z:.xs VU.! (j-1)) | 1==j ]
 
 -- | Two single-character terminals
 
 prop_CC ix@(Z:.PointL i) = zs == ls where
-  zs = ((,) <<< (M:|chr xs) % (M:|chr xs) ... S.toList) (Z:.maxPL) ix
+  zs = ((,) <<< (M:|chr xs) % (M:|chr xs) ... stoList) (Z:.maxPLi) ix
   ls = [ (Z:.xs VU.! (i-2), Z:.xs VU.! (i-1)) | 2==i ]
 
 -- | Just a table
 
 prop_It ix@(PointL j) = zs == ls where
   t = ITbl 0 0 EmptyOk xsP (\ _ _ -> Id 1)
-  zs = (id <<< t ... S.toList) maxPL ix
+  zs = (id <<< t ... stoList) maxPLi ix
   ls = [ unsafeIndex xsP ix | j>=0, j<=100 ]
 
 {-
 prop_O_It ix@(O (PointL j)) = zs == ls where
   t = ITbl 0 0 EmptyOk xsPo (\ _ _ -> Id 1)
-  zs = (id <<< t ... S.toList) (O maxPL) ix
+  zs = (id <<< t ... stoList) (O maxPL) ix
   ls = [ unsafeIndex xsPo ix | j>=0, j<=100 ]
 -}
 
 prop_ZIt ix@(Z:.PointL j) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk) xsZP (\ _ _ -> Id 1)
-  zs = (id <<< t ... S.toList) (Z:.maxPL) ix
+  zs = (id <<< t ... stoList) (Z:.maxPLi) ix
   ls = [ unsafeIndex xsZP ix | j>=0, j<=100 ]
 
 {-
 prop_O_ZIt ix@(O (Z:.PointL j)) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk) xsZPo (\ _ _ -> Id 1)
-  zs = (id <<< t ... S.toList) (O (Z:.maxPL)) ix
+  zs = (id <<< t ... stoList) (O (Z:.maxPLo)) ix
   ls = [ unsafeIndex xsZPo ix | j>=0, j<=100 ]
 -}
 
@@ -133,7 +132,7 @@ prop_O_ZIt ix@(O (Z:.PointL j)) = zs == ls where
 
 prop_ItC ix@(PointL j) = zs == ls where
   t = ITbl 0 0 EmptyOk xsP (\ _ _ -> Id 1)
-  zs = ((,) <<< t % chr xs ... S.toList) maxPL ix
+  zs = ((,) <<< t % chr xs ... stoList) maxPLi ix
   ls = [ ( unsafeIndex xsP (PointL $ j-1)
          , xs VU.! (j-1)
          ) | j>=1, j<=100 ]
@@ -143,14 +142,14 @@ prop_ItC ix@(PointL j) = zs == ls where
 {-
 prop_O_ItC ix@(O (PointL j)) = zs == ls where
   t = ITbl 0 0 EmptyOk xsPo (\ _ _ -> Id 1)
-  zs = ((,) <<< t % chr xs ... S.toList) (O $ maxPL) ix
+  zs = ((,) <<< t % chr xs ... stoList) (O $ maxPLo) ix
   ls = [ ( unsafeIndex xsPo (O $ PointL $ j+1)
          , xs VU.! (j+0)
          ) | j >= 0, j < 100 ]
 
 prop_O_ItCC ix@(O (PointL j)) = zs == ls where
   t = ITbl 0 0 EmptyOk xsPo (\ _ _ -> Id 1)
-  zs = ((,,) <<< t % chr xs % chr xs ... S.toList) (O $ maxPL) ix
+  zs = ((,,) <<< t % chr xs % chr xs ... stoList) (O $ maxPLo) ix
   ls = [ ( unsafeIndex xsPo (O $ PointL $ j+2)
          , xs VU.! (j+0)
          , xs VU.! (j+1)
@@ -159,7 +158,7 @@ prop_O_ItCC ix@(O (PointL j)) = zs == ls where
 
 prop_O_ZItCC ix@(O (Z:.PointL j)) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk) xsZPo (\ _ _ -> Id 1)
-  zs = ((,,) <<< t % (M:|chr xs) % (M:|chr xs) ... S.toList) (O (Z:.maxPL)) ix
+  zs = ((,,) <<< t % (M:|chr xs) % (M:|chr xs) ... stoList) (O (Z:.maxPLo)) ix
   ls = [ ( unsafeIndex xsZPo (O (Z:.PointL (j+2)))
          , Z:.xs VU.! (j+0)
          , Z:.xs VU.! (j+1)
@@ -170,7 +169,7 @@ prop_O_ZItCC ix@(O (Z:.PointL j)) = zs == ls where
 
 prop_2dimItCC ix@(Z:.PointL j:.PointL l) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsPP (\ _ _ -> Id 1)
-  zs = ((,,) <<< t % (M:|chr xs:|chr xs) % (M:|chr xs:|chr xs) ... S.toList) (Z:.maxPL:.maxPL) ix
+  zs = ((,,) <<< t % (M:|chr xs:|chr xs) % (M:|chr xs:|chr xs) ... stoList) (Z:.maxPLi:.maxPLi) ix
   ls = [ ( unsafeIndex xsPP (Z:.PointL (j-2):.PointL (l-2))
          , Z:.xs VU.! (j-2):.xs VU.! (l-2)
          , Z:.xs VU.! (j-1):.xs VU.! (l-1)
@@ -179,7 +178,7 @@ prop_2dimItCC ix@(Z:.PointL j:.PointL l) = zs == ls where
 {-
 prop_O_2dimItCC ix@(O (Z:.PointL j:.PointL l)) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsPPo (\ _ _ -> Id 1)
-  zs = ((,,) <<< t % (M:|chr xs:|chr xs) % (M:|chr xs:|chr xs) ... S.toList) (O (Z:.maxPL:.maxPL)) ix
+  zs = ((,,) <<< t % (M:|chr xs:|chr xs) % (M:|chr xs:|chr xs) ... stoList) (O (Z:.maxPLo:.maxPLo)) ix
   ls = [ ( unsafeIndex xsPPo (O (Z:.PointL (j+2):.PointL (l+2)))
          , Z:.xs VU.! (j+0):.xs VU.! (l+0)
          , Z:.xs VU.! (j+1):.xs VU.! (l+1)
@@ -191,7 +190,7 @@ prop_O_2dimItCC ix@(O (Z:.PointL j:.PointL l)) = zs == ls where
 {-
 xprop_O_ixZItCC ix@(O (Z:.PointL j)) = zs where
   t = ITbl 0 0 (Z:.EmptyOk) xsZPo (\ _ _ -> Id 1)
-  zs = (id >>> t % (M:|chr xs) % (M:|chr xs) ... S.toList) (O (Z:.maxPL)) ix
+  zs = (id >>> t % (M:|chr xs) % (M:|chr xs) ... stoList) (O (Z:.maxPLo)) ix
 -}
 
 -- * 'Strng' tests
@@ -199,58 +198,59 @@ xprop_O_ixZItCC ix@(O (Z:.PointL j)) = zs where
 -- ** Just the 'Strng' terminal
 
 prop_ManyS ix@(PointL j) = zs == ls where
-  zs = (id <<< manyS xs ... S.toList) maxPL ix
+  zs = (id <<< manyS xs ... stoList) maxPLi ix
   ls = [ (VU.slice 0 j xs) ]
 
 prop_SomeS ix@(PointL j) = zs == ls where
-  zs = (id <<< someS xs ... S.toList) maxPL ix
+  zs = (id <<< someS xs ... stoList) maxPLi ix
   ls = [ (VU.slice 0 j xs) | j>0 ]
 
 prop_2dim_ManyS_ManyS ix@(Z:.PointL i:.PointL j) = zs == ls where
-  zs = (id <<< (M:|manyS xs:|manyS xs) ... S.toList) (Z:.maxPL:.maxPL) ix
+  zs = (id <<< (M:|manyS xs:|manyS xs) ... stoList) (Z:.maxPLi:.maxPLi) ix
   ls = [ (Z:.VU.slice 0 i xs:.VU.slice 0 j xs) ]
 
 prop_2dim_SomeS_SomeS ix@(Z:.PointL i:.PointL j) = zs == ls where
-  zs = (id <<< (M:|someS xs:|someS xs) ... S.toList) (Z:.maxPL:.maxPL) ix
+  zs = (id <<< (M:|someS xs:|someS xs) ... stoList) (Z:.maxPLi:.maxPLi) ix
   ls = [ (Z:.VU.slice 0 i xs:.VU.slice 0 j xs) | i > 0 && j > 0 ]
 
 -- ** Together with a syntactic variable.
 
 prop_Itbl_ManyS ix@(PointL i) = zs == ls where
   t = ITbl 0 0 EmptyOk xsP (\ _ _ -> Id 1)
-  zs = ((,) <<< t % manyS xs ... S.toList) maxPL ix
+  zs = ((,) <<< t % manyS xs ... stoList) maxPLi ix
   ls = [ (unsafeIndex xsP (PointL k), VU.slice k (i-k) xs) | k <- [0..i] ]
 
 prop_Itbl_SomeS ix@(PointL i) = zs == ls where
   t = ITbl 0 0 EmptyOk xsP (\ _ _ -> Id 1)
-  zs = ((,) <<< t % someS xs ... S.toList) maxPL ix
+  zs = ((,) <<< t % someS xs ... stoList) maxPLi ix
   ls = [ (unsafeIndex xsP (PointL k), VU.slice k (i-k) xs) | k <- [0..i-1] ]
 
 prop_1dim_Itbl_ManyS ix@(Z:.PointL i) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk) xsZP (\ _ _ -> Id 1)
-  zs = ((,) <<< t % (M:|manyS xs) ... S.toList) (Z:.maxPL) ix
+  zs = ((,) <<< t % (M:|manyS xs) ... stoList) (Z:.maxPLi) ix
   ls = [ (unsafeIndex xsZP (Z:.PointL k), Z:. VU.slice k (i-k) xs) | k <- [0..i] ]
 
 prop_1dim_Itbl_SomeS ix@(Z:.PointL i) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk) xsZP (\ _ _ -> Id 1)
-  zs = ((,) <<< t % (M:|someS xs) ... S.toList) (Z:.maxPL) ix
+  zs = ((,) <<< t % (M:|someS xs) ... stoList) (Z:.maxPLi) ix
   ls = [ (unsafeIndex xsZP (Z:.PointL k), Z:. VU.slice k (i-k) xs) | k <- [0..i-1] ]
 
 prop_2dim_Itbl_ManyS_ManyS ix@(Z:.PointL i:.PointL j) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsPP (\ _ _ -> Id 1)
-  zs = ((,) <<< t % (M:|manyS xs:|manyS xs) ... S.toList) (Z:.maxPL:.maxPL) ix
+  zs = ((,) <<< t % (M:|manyS xs:|manyS xs) ... stoList) (Z:.maxPLi:.maxPLi) ix
   ls = [ (unsafeIndex xsPP (Z:.PointL k:.PointL l), Z:. VU.slice k (i-k) xs :. VU.slice l (j-l) xs) | k <- [0..i], l <- [0..j] ]
 
 prop_2dim_Itbl_SomeS_SomeS ix@(Z:.PointL i:.PointL j) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsPP (\ _ _ -> Id 1)
-  zs = ((,) <<< t % (M:|someS xs:|someS xs) ... S.toList) (Z:.maxPL:.maxPL) ix
+  zs = ((,) <<< t % (M:|someS xs:|someS xs) ... stoList) (Z:.maxPLi:.maxPLi) ix
   ls = [ (unsafeIndex xsPP (Z:.PointL k:.PointL l), Z:. VU.slice k (i-k) xs :. VU.slice l (j-l) xs) | k <- [0..i-1], l <- [0..j-1] ]
 
 
 
+stoList = unId . SM.toList
 
 infixl 8 >>>
-(>>>) f xs = \lu ij -> S.map f . mkStream (build xs) (initialContext ij) lu $ ij
+(>>>) f xs = \lu ij -> SM.map f . mkStream (build xs) (initialContext ij) lu $ ij
 
 class GetIxs x i where
   type R x i :: *
@@ -268,30 +268,35 @@ instance GetIxs ls i => GetIxs (ls :!: ITbl m a i x) i where
   type R (ls :!: ITbl m a i x) i = R ls i :. (i,i)
   getIxs (ElmITbl _ i o s) = getIxs s :. (i,o)
 
-xsP :: Unboxed (PointL) Int
-xsP = fromList (PointL 0) maxPL [0 ..]
+xsP :: Unboxed (PointL I) Int
+xsP = fromList (PointL 0) maxPLi [0 ..]
 
-xsZP :: Unboxed (Z:.PointL) Int
-xsZP = fromList (Z:.PointL 0) (Z:.maxPL) [0 ..]
+xsZP :: Unboxed (Z:.PointL I) Int
+xsZP = fromList (Z:.PointL 0) (Z:.maxPLi) [0 ..]
 
-xsPo :: Unboxed (Outside (PointL)) Int
-xsPo = fromList (O $ PointL 0) (O $ maxPL) [0 ..]
+xsPo :: Unboxed (PointL O) Int
+xsPo = fromList (PointL 0) maxPLo [0 ..]
 
-xsZPo :: Unboxed (Outside (Z:.PointL)) Int
-xsZPo = fromList (O (Z:.PointL 0)) (O (Z:.maxPL)) [0 ..]
+xsZPo :: Unboxed (Z:.PointL O) Int
+xsZPo = fromList (Z:.PointL 0) (Z:.maxPLo) [0 ..]
 
-xsPP :: Unboxed (Z:.PointL:.PointL) Int
-xsPP = fromList (Z:.PointL 0:.PointL 0) (Z:.maxPL:.maxPL) [0 ..]
+xsPP :: Unboxed (Z:.PointL I:.PointL I) Int
+xsPP = fromList (Z:.PointL 0:.PointL 0) (Z:.maxPLi:.maxPLi) [0 ..]
 
-xsPPo :: Unboxed (Outside (Z:.PointL:.PointL)) Int
-xsPPo = fromList (O (Z:.PointL 0:.PointL 0)) (O (Z:.maxPL:.maxPL)) [0 ..]
+xsPPo :: Unboxed (Z:.PointL O:.PointL O) Int
+xsPPo = fromList (Z:.PointL 0:.PointL 0) (Z:.maxPLo:.maxPLo) [0 ..]
 
 mxsPP = unsafePerformIO $ zzz where
-  zzz :: IO (MutArr IO (Unboxed (Z:.PointL:.PointL) Int))
-  zzz = fromListM (Z:.PointL 0:.PointL 0) (Z:.maxPL:.maxPL) [0 ..]
+  zzz :: IO (MutArr IO (Unboxed (Z:.PointL I:.PointL I) Int))
+  zzz = fromListM (Z:.PointL 0:.PointL 0) (Z:.maxPLi:.maxPLi) [0 ..]
 
 maxI = 100
-maxPL = PointL maxI
+
+maxPLi :: PointL I
+maxPLi = PointL maxI
+
+maxPLo :: PointL O
+maxPLo = PointL maxI
 
 xs = VU.fromList [0 .. maxI - 1 :: Int]
 

@@ -16,8 +16,8 @@ import ADP.Fusion.Term.Epsilon.Type
 
 instance
   ( Monad m
-  , MkStream m ls Subword
-  ) => MkStream m (ls :!: Epsilon) Subword where
+  , MkStream m ls (Subword I)
+  ) => MkStream m (ls :!: Epsilon) (Subword I) where
   mkStream (ls :!: Epsilon) (IStatic ()) hh ij@(Subword (i:.j))
     = staticCheck (i==j)
     $ map (ElmEpsilon (subword i j) (subword 0 0))
@@ -26,10 +26,10 @@ instance
 
 instance
   ( Monad m
-  , MkStream m ls (Outside Subword)
-  ) => MkStream m (ls :!: Epsilon) (Outside Subword) where
-  mkStream (ls :!: Epsilon) (OStatic d) u ij@(O (Subword (i:.j)))
-    = map (ElmEpsilon (O $ subword i j) (O $ subword i j))
+  , MkStream m ls (Subword O)
+  ) => MkStream m (ls :!: Epsilon) (Subword O) where
+  mkStream (ls :!: Epsilon) (OStatic d) u ij@(Subword (i:.j))
+    = map (ElmEpsilon (subword i j) (subword i j))
     $ mkStream ls (OStatic d) u ij
   {-# Inline mkStream #-}
 
@@ -38,13 +38,13 @@ instance
 instance
   ( Monad m
   , TerminalStream m a is
-  ) => TerminalStream m (TermSymbol a Epsilon) (is:.Subword) where
+  ) => TerminalStream m (TermSymbol a Epsilon) (is:.Subword I) where
   terminalStream (a:|Epsilon) (sv:.IStatic _) (is:.ij@(Subword (i:.j)))
     = S.map (\(S6 s (zi:._) (zo:._) is os e) -> S6 s zi zo (is:.subword i j) (os:.subword 0 0) (e:.()))
     . iPackTerminalStream a sv (is:.ij)
   {-# Inline terminalStream #-}
 
-instance TermStaticVar Epsilon Subword where
+instance TermStaticVar Epsilon (Subword I) where
   termStaticVar _ sv _ = sv
   termStreamIndex _ _ ij = ij
   {-# Inline termStaticVar #-}

@@ -2,7 +2,6 @@
 module ADP.Fusion.Base.Classes where
 
 import           Data.Strict.Tuple
-import           Data.Vector.Fusion.Stream.Size
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
 import           Data.PrimitiveArray
@@ -93,7 +92,7 @@ deriving instance Show ix => Show (Elm S ix)
 -- elements. If 'b' is false, we discard all stream elements.
 
 staticCheck :: Monad m => Bool -> S.Stream m a -> S.Stream m a
-staticCheck b (S.Stream step t n) = b `seq` S.Stream snew (CheckLeft b t) (toMax n) where
+staticCheck b (S.Stream step t) = b `seq` S.Stream snew (CheckLeft b t) where
   {-# Inline [0] snew #-}
   snew (CheckLeft  False _) = return $ S.Done
   snew (CheckLeft  True  s) = return $ S.Skip (CheckRight s)
@@ -131,14 +130,12 @@ class ModifyConstraint t where
 
 type family   TblConstraint x       :: *
 
-type instance TblConstraint (is:.i)        =  TblConstraint is :. TblConstraint i
-type instance TblConstraint Z              = Z
-type instance TblConstraint (Outside o)    = TblConstraint o
-type instance TblConstraint (Complement o) = TblConstraint o
+type instance TblConstraint (is:.i) =  TblConstraint is :. TblConstraint i
+type instance TblConstraint Z       = Z
 
 -- TODO move into the sub-modules
 
-type instance TblConstraint PointL      = TableConstraint
-type instance TblConstraint PointR      = TableConstraint
-type instance TblConstraint Subword     = TableConstraint
+type instance TblConstraint (PointL  t) = TableConstraint
+type instance TblConstraint (PointR  t) = TableConstraint
+type instance TblConstraint (Subword t) = TableConstraint
 

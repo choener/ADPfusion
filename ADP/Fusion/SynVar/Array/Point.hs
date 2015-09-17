@@ -3,7 +3,6 @@ module ADP.Fusion.SynVar.Array.Point where
 
 import Data.Strict.Tuple hiding (snd)
 import Data.Vector.Fusion.Stream.Monadic
-import Data.Vector.Fusion.Stream.Size
 import Data.Vector.Fusion.Util (delay_inline)
 import Debug.Trace
 import Prelude hiding (map,mapM)
@@ -21,57 +20,37 @@ import           ADP.Fusion.SynVar.Indices
 
 instance
   ( Monad m
-  , Element ls PointL
+  , Element ls (PointL I)
   , PrimArrayOps arr u x
   , TblConstraint u ~ TableConstraint
-  , AddIndexDense (Z:.PointL) (Z:.u) (Z:.PointL)
-  , MkStream m ls PointL
-  ) => MkStream m (ls :!: ITbl m arr u x) PointL where
+  , AddIndexDense (Z:.PointL I) (Z:.u) (Z:.PointL I)
+  , MkStream m ls (PointL I)
+  ) => MkStream m (ls :!: ITbl m arr u x) (PointL I) where
   mkStream (ls :!: ITbl _ _ c t _) vs us is
     = map (\(s,ii,oo,ii',oo') -> ElmITbl (t!ii) ii' oo' s)
     . addIndexDense1 c vs us is
     $ mkStream ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
-{-
-    = let ms = minSize c in ms `seq`
-    map (ElmITbl (t!j) j (PointL 0))
-    $ mkStream ls (IVariable d) u (PointL $ pj - ms)
-  -- We can't really make sure that this is the only time we access the
-  -- ITbl, so the user should know what they are doing.
-  mkStream (ls :!: ITbl _ _ c t _) (IVariable d) u j@(PointL pj)
-    = flatten mk step Unknown $ mkStream ls (IVariable d) u (delay_inline PointL $! pj - ms)
-    where mk s = let PointL k = getIdx s in return (s :. k)
-          step (s :. k)
-            | k+ms>pj   = return $ Done
-            | otherwise = return $ Yield (ElmITbl (t!PointL k) (PointL k) (PointL 0) s) (s :. k+1)
-          !ms = minSize c
-          {-# Inline [0] mk   #-}
-          {-# Inline [0] step #-}
--}
   {-# Inline mkStream #-}
 
 instance
   ( Monad mB
-  , Element ls PointL
+  , Element ls (PointL I)
   , PrimArrayOps arr u x
-  , MkStream mB ls PointL
+  , MkStream mB ls (PointL I)
   , TblConstraint u ~ TableConstraint
-  , AddIndexDense (Z:.PointL) (Z:.u) (Z:.PointL)
-  ) => MkStream mB (ls :!: Backtrack (ITbl mF arr u x) mF mB r) PointL where
+  , AddIndexDense (Z:.PointL I) (Z:.u) (Z:.PointL I)
+  ) => MkStream mB (ls :!: Backtrack (ITbl mF arr u x) mF mB r) (PointL I) where
   mkStream (ls :!: BtITbl c t bt) vs us is
     = mapM (\(s,ii,oo,ii',oo') -> bt us' ii >>= \ ~bb -> return $ ElmBtITbl (t!ii) bb ii' oo' s)
     . addIndexDense1 c vs us is
     $ mkStream ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
     where !us' = snd $ bounds t
-{-
-    = let ms = minSize c in ms `seq`
-    mapM (\s -> bt u j >>= \bb -> return $ ElmBtITbl (t!j) (bb {-bt u j-}) j (PointL 0) s)
-    $ mkStream ls (IVariable d) u (PointL $ pj - ms)
--}
   {-# INLINE mkStream #-}
 
+{-
 instance
   ( Monad m
-  , Element ls (Outside PointL)
+  , Element ls (PointL O)
   , PrimArrayOps arr (Outside u) x
   , TblConstraint (Outside u) ~ TableConstraint
   , AddIndexDense (Outside (Z:.PointL)) (Outside (Z:.u)) (Outside (Z:.PointL))
@@ -93,6 +72,7 @@ instance
     $ mkStream ls (OFirstLeft d) u (O $ PointL $ pj - ms)
   -}
   {-# Inline mkStream #-}
+-}
 
 {-
 instance

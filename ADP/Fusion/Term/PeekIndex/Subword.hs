@@ -14,9 +14,9 @@ import ADP.Fusion.Term.PeekIndex.Type
 
 instance
   ( Monad m
-  , Element ls (Complement Subword)
-  , MkStream m ls (Complement Subword)
-  ) => MkStream m (ls :!: PeekIndex (Complement Subword)) (Complement Subword) where
+  , Element ls (Subword C)
+  , MkStream m ls (Subword C)
+  ) => MkStream m (ls :!: PeekIndex (Subword C)) (Subword C) where
   mkStream (ls :!: PeekIndex) Complemented h ij
     = map (\s -> ElmPeekIndex (getIdx s) (getOmx s) s)
     $ mkStream ls Complemented h ij

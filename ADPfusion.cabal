@@ -1,5 +1,5 @@
 name:           ADPfusion
-version:        0.4.2.0
+version:        0.5.0.0
 author:         Christian Hoener zu Siederdissen, 2011-2015
 copyright:      Christian Hoener zu Siederdissen, 2011-2015
 homepage:       https://github.com/choener/ADPfusion
@@ -11,7 +11,7 @@ license-file:   LICENSE
 build-type:     Simple
 stability:      experimental
 cabal-version:  >= 1.10.0
-tested-with:    GHC == 7.8.4, GHC == 7.10.1
+tested-with:    GHC == 7.8.4, GHC == 7.10.2
 synopsis:       Efficient, high-level dynamic programming.
 description:
                 <http://www.bioinf.uni-leipzig.de/Software/gADP/ generalized Algebraic Dynamic Programming>
@@ -62,17 +62,15 @@ flag debug
 
 
 library
--- ghc-prim: for reallyUnsafePtrEquality#
   build-depends: base               >= 4.7      && < 4.9
                , bits               >= 0.4      && < 0.5
                , containers
-               , ghc-prim
                , mmorph             >= 1.0      && < 1.1
                , monad-primitive    >= 0.1      && < 0.2
                , mtl                >= 2.0      && < 2.3
                , OrderedBits        >= 0.0.0.1  && < 0.0.1
                , primitive          >= 0.5.4    && < 0.7
-               , PrimitiveArray     >= 0.6.1    && < 0.6.2
+               , PrimitiveArray     >= 0.7.0    && < 0.7.1
                , QuickCheck         >= 2.7      && < 2.9
                , singletons         >= 1.1      && < 1.2
                , strict             >= 0.3      && < 0.4
@@ -80,7 +78,7 @@ library
                , th-orphans         >= 0.12     && < 0.13
                , transformers       >= 0.3      && < 0.5
                , tuple              >= 0.3      && < 0.4
-               , vector             >= 0.10     && < 0.11
+               , vector             >= 0.11     && < 0.12
 
   exposed-modules:
     ADP.Fusion

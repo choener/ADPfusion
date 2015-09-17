@@ -3,8 +3,7 @@ module ADP.Fusion.Term.Edge.Set where
 
 import Data.Bits
 import Data.Strict.Tuple
-import Data.Vector.Fusion.Stream.Monadic
-import Data.Vector.Fusion.Stream.Size
+import Data.Vector.Fusion.Stream.Monadic hiding (flatten)
 import Debug.Trace
 import Prelude hiding (map)
 
@@ -18,11 +17,11 @@ import ADP.Fusion.Term.Edge.Type
 
 instance
   ( Monad m
-  , Element    ls (BS2I First Last)
-  , MkStream m ls (BS2I First Last)
-  ) => MkStream m (ls :!: Edge e) (BS2I First Last) where
+  , Element    ls (BS2I I First Last)
+  , MkStream m ls (BS2I I First Last)
+  ) => MkStream m (ls :!: Edge e) (BS2I I First Last) where
   mkStream (ls :!: Edge f) (IStatic rp) u sij@(s:>i:>j)
-    = flatten mk step Unknown $ mkStream ls (IStatic rpn) u tik
+    = flatten mk step $ mkStream ls (IStatic rpn) u tik
     where rpn | j >= 0    = rp
               | otherwise = rp+1
           tik | j >= 0    = s `clearBit` (getIter j) :> i :> undefi
@@ -51,9 +50,9 @@ instance
 
 instance
   ( Monad m
-  , Element ls    (Outside (BS2I First Last))
-  , MkStream m ls (Outside (BS2I First Last))
-  ) => MkStream m (ls :!: Edge f) (Outside (BS2I First Last)) where
+  , Element ls    (BS2I O First Last)
+  , MkStream m ls (BS2I O First Last)
+  ) => MkStream m (ls :!: Edge f) (BS2I O First Last) where
   mkStream (ls :!: Edge f) (OStatic ()) u sij
     = map undefined
     $ mkStream ls (undefined) u sij
@@ -63,9 +62,9 @@ instance
 
 instance
   ( Monad m
-  , Element ls    (Complement (BS2I First Last))
-  , MkStream m ls (Complement (BS2I First Last))
-  ) => MkStream m (ls :!: Edge f) (Complement (BS2I First Last)) where
+  , Element ls    (BS2I C First Last)
+  , MkStream m ls (BS2I C First Last)
+  ) => MkStream m (ls :!: Edge f) (BS2I C First Last) where
   mkStream (ls :!: Edge f) Complemented u sij
     = map undefined
     $ mkStream ls Complemented u sij

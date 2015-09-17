@@ -11,7 +11,6 @@ module ADP.Fusion.SynVar.Split.Type
 import Data.Proxy
 import Data.Strict.Tuple
 import Data.Vector.Fusion.Stream.Monadic
-import Data.Vector.Fusion.Stream.Size
 import Data.Vector.Fusion.Util (delay_inline)
 import Debug.Trace
 import GHC.TypeLits

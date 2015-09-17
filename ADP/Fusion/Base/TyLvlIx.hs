@@ -64,7 +64,6 @@ type family ToNat x :: Nat
 
 type instance ToNat Z       = 0
 type instance ToNat (is:.i) = ToNat is + 1
-type instance ToNat (Outside is) = ToNat is
 
 
 

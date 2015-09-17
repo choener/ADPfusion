@@ -3,7 +3,6 @@ module ADP.Fusion.Term.Strng.Subword where
 
 
 import           Data.Strict.Tuple
-import           Data.Vector.Fusion.Stream.Size
 import           Data.Vector.Fusion.Util (delay_inline)
 import           Debug.Trace
 import           Prelude hiding (map)
@@ -22,16 +21,16 @@ import           ADP.Fusion.Term.Strng.Type
 
 instance
   ( Monad m
-  , Element ls Subword
-  , MkStream m ls Subword
-  ) => MkStream m (ls :!: Strng v x) Subword where
+  , Element ls (Subword I)
+  , MkStream m ls (Subword I)
+  ) => MkStream m (ls :!: Strng v x) (Subword I) where
   mkStream (ls :!: Strng slice mn mx v) (IStatic ()) hh (Subword (i:.j))
     = S.filter (\s -> let Subword (k:.l) = getIdx s in l-k <= mx)
     . S.map (\s -> let (Subword (_:.l)) = getIdx s
                    in  ElmStrng (slice l (j-l) v) (subword l j) (subword 0 0) s)
     $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j - mn))
   mkStream (ls :!: Strng slice mn mx v) (IVariable ()) hh (Subword (i:.j))
-    = S.flatten mk step Unknown $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j - mn))
+    = S.flatten mk step $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j - mn))
     where mk s = let Subword (_:.l) = getIdx s in return (s :. j - l - mn)
           step (s:.z) | z >= 0 = do let Subword (_:.k) = getIdx s
                                         l              = j - z

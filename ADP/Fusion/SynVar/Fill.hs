@@ -117,7 +117,7 @@ instance
       writeM marr i z
   {-# INLINE mutateCell #-}
 
-type ZS2 = Z:.Subword:.Subword
+type ZS2 = Z:.Subword I:.Subword I
 
 instance
   ( PrimArrayOps  arr ZS2 x
@@ -134,11 +134,11 @@ instance
   {-# INLINE mutateCell #-}
 
 instance
-  ( PrimArrayOps arr Subword x
-  , MPrimArrayOps arr Subword x
-  , MutateCell h ts im om (Z:.Subword:.Subword)
+  ( PrimArrayOps arr (Subword I) x
+  , MPrimArrayOps arr (Subword I) x
+  , MutateCell h ts im om (Z:.Subword I:.Subword I)
   , PrimMonad om
-  ) => MutateCell h (ts:.ITbl im arr Subword x) im om (Z:.Subword:.Subword) where
+  ) => MutateCell h (ts:.ITbl im arr (Subword I) x) im om (Z:.Subword I:.Subword I) where
   mutateCell h bo lo mrph (ts:.ITbl tbo tlo c arr f) lu@(Z:.Subword (l:._):.Subword(_:.u)) ix@(Z:.Subword (i1:.j1):.Subword (i2:.j2)) = do
     mutateCell h bo lo mrph ts lu ix
     when (bo==tbo && lo==tlo && i1==i2 && j1==j2) $ do

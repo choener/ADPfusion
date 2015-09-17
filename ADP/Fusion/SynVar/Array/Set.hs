@@ -4,8 +4,7 @@ module ADP.Fusion.SynVar.Array.Set where
 import Data.Bits
 import Data.Bits.Extras
 import Data.Strict.Tuple
-import Data.Vector.Fusion.Stream.Monadic
-import Data.Vector.Fusion.Stream.Size
+import Data.Vector.Fusion.Stream.Monadic hiding (flatten)
 import Data.Vector.Fusion.Util (delay_inline)
 import Debug.Trace
 import Prelude hiding (map)
@@ -34,56 +33,22 @@ import ADP.Fusion.SynVar.Indices
 
 instance
   ( Monad m
-  , Element ls BitSet
+  , Element ls (BitSet I)
   , PrimArrayOps arr u x
   , TblConstraint u ~ TableConstraint
-  , AddIndexDense (Z:.BitSet) (Z:.u) (Z:.BitSet)
-  , MkStream m ls BitSet
-  ) => MkStream m (ls :!: ITbl m arr u x) BitSet where
+  , AddIndexDense (Z:.BitSet I) (Z:.u) (Z:.BitSet I)
+  , MkStream m ls (BitSet I)
+  ) => MkStream m (ls :!: ITbl m arr u x) (BitSet I) where
   mkStream (ls :!: ITbl _ _ c t _) vs us is
     -- TODO we need an additional parameter, @ii@ for what to index now,
     -- @jj@ (or so) for what to store as "complete index@.
     -- Right now, we go via this fun @aa@ hack. (Though maybe, we can do
     -- this always, anyway?)
     = map (\(s,ii,oo,ii',oo') -> let jj = ii' .|. aa
-                                     aa = getIndex (Z:.getIdx s) (Proxy :: Proxy (Z:.BitSet))
+                                     aa = getIndex (Z:.getIdx s) (Proxy :: Proxy (Z:.BitSet I))
                                  in  ElmITbl (t!ii) jj oo' s)
     . addIndexDense1 c vs us is
     $ mkStream ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
-    {-
-    = flatten mk step Unknown $ mkStream ls (delay_inline IVariable $ rp - csize) u s
-    where !csize | c==EmptyOk  = 0
-                 | c==NonEmpty = 1
-          mk z
-            | cm < csize = return (z , mask , Nothing)
-            | otherwise  = return (z , mask , Just k )
-            where k  = (BitSet $ 2^cm-1)
-                  cm = popCount mask - rp
-                  mask = s `xor` (getIdx z)
-          step (_,_,Nothing) = return $ Done
-          step (z,mask,Just k)
-            | pk > popCount s - rp = return $ Done
-            | otherwise            = let kk = popShiftL mask k
-                                     in  return $ Yield (ElmITbl (t!kk) (kk .|. getIdx z) (BitSet 0) z) (z,mask,setSucc (BitSet 0) (2^pk -1) k)
-            where pk = popCount k
-          {-# Inline [0] mk   #-}
-          {-# Inline [0] step #-}
-  mkStream (ls :!: ITbl _ _ c t _) (IVariable rp) u s
-    = flatten mk step Unknown $ mkStream ls (IVariable rp) u s
-    where mk z
-            | c==EmptyOk  = return (z , mask , cm , Just 0 )
-            | cm == 0     = return (z , mask , cm , Nothing) -- we are non-empty but have no free bits left
-            | c==NonEmpty = return (z , mask , cm , Just 1 )
-            where mask = s `xor` (getIdx z) -- bits that are still free
-                  cm   = popCount mask
-          step (z,mask,cm,Nothing) = return $ Done
-          step (z,mask,cm,Just k )
-            | popCount s < popCount (kk .|. getIdx z) + rp = return $ Done
-            | otherwise = return $ Yield (ElmITbl (t!kk) (kk .|. getIdx z) (BitSet 0) z) (z,mask,cm,setSucc (BitSet 0) (2^cm -1) k)
-            where kk = popShiftL mask k
-          {-# Inline [0] mk   #-}
-          {-# Inline [0] step #-}
-  -}
   {-# Inline mkStream #-}
 
 
@@ -95,13 +60,13 @@ instance
 
 instance
   ( Monad m
-  , Element ls (BS2I First Last)
-  , PrimArrayOps arr (BS2I First Last) x
-  , MkStream m ls (BS2I First Last)
+  , Element ls (BS2I I First Last)
+  , PrimArrayOps arr (BS2I I First Last) x
+  , MkStream m ls (BS2I I First Last)
   , Show x
-  ) => MkStream m (ls :!: ITbl m arr (BS2I First Last) x) (BS2I First Last) where
+  ) => MkStream m (ls :!: ITbl m arr (BS2I I First Last) x) (BS2I I First Last) where
   mkStream (ls :!: ITbl _ _ c t _) (IStatic rp) u sij@(s:>i:>j@(Iter jj))
-    = flatten mk step Unknown $ mkStream ls (delay_inline IVariable rpn) u (delay_inline id $ tij)
+    = flatten mk step $ mkStream ls (delay_inline IVariable rpn) u (delay_inline id $ tij)
           -- calculate new index. if we don't know the right-most interface
           -- anymore, than someone has taken it already. Also, if this
           -- synvar may be empty, do not modify the index. Otherwise, if

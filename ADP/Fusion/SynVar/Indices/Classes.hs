@@ -60,20 +60,3 @@ addIndexDense1
 addIndexDense1 t c u i = map (\(S7 s _ _ (Z:.i) (Z:.o) (Z:.i') (Z:.o')) -> (s,i,o,i',o')) . addIndexDenseGo (Z:.t) (Z:.c) (Z:.u) (Z:.i) . map (\s -> (S7 s (Z:.getIdx s) (Z:.getOmx s) Z Z Z Z))
 {-# Inline addIndexDense1 #-}
 
--- | Outside index handling
-
-addIndexDenseO1
-  :: ( Monad m
-     , AddIndexDense (Outside (Z:.a)) (Outside (Z:.u)) (Outside (Z:.i))
---     , GetIndex (Z:.a) (Z:.i)
-     , s ~ Elm x0 a
-     , Element x0 a
-     , (Z:.c) ~ (Context (Outside (Z:.i)))
-     , c ~ (Context i)
-     )
-  => TblConstraint u -> Context i -> i -> i -> Stream m s -> Stream m (s,u,u,i,i)
-addIndexDenseO1 t c u i = map (\(S7 s _ _ (O (Z:.i)) (O (Z:.o)) (O (Z:.i')) (O (Z:.o'))) -> (s,i,o,i',o'))
-                        . addIndexDenseGo (Z:.t) (Z:.c) (O $ Z:.u) (O $ Z:.i)
-                        . map (\s -> (S7 s (O $ Z:.(unO $ getIdx s)) (O $ Z:.(unO $ getOmx s)) Z Z Z Z))
-{-# Inline addIndexDenseO1 #-}
-
