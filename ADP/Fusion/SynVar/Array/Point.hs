@@ -18,6 +18,7 @@ import           ADP.Fusion.SynVar.Indices
 
 
 
+{-
 instance
   ( Monad m
   , Element ls (PointL I)
@@ -46,6 +47,9 @@ instance
     $ mkStream ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
     where !us' = snd $ bounds t
   {-# INLINE mkStream #-}
+-}
+
+
 
 {-
 instance

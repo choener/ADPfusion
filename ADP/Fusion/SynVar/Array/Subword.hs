@@ -18,6 +18,22 @@ import ADP.Fusion.SynVar.Indices
 
 instance
   ( Monad m
+  , Element ls (i I)
+  , PrimArrayOps arr u x
+  , TblConstraint u ~ TableConstraint
+  , AddIndexDense (Z:.i I) (Z:.u) (Z:.i I)
+  , TableStaticVar u (i I)
+  , MkStream m ls (i I)
+  ) => MkStream m (ls :!: ITbl m arr u x) (i I) where
+  mkStream (ls :!: ITbl _ _ c t _) vs us is
+    = map (\(s,ii,oo,ii',oo') -> ElmITbl (t!ii) ii' oo' s)
+    . addIndexDense1 c vs us is
+    $ mkStream ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
+  {-# Inline mkStream #-}
+
+{-
+instance
+  ( Monad m
   , Element ls (Subword I)
   , PrimArrayOps arr u x
   , TblConstraint u ~ TableConstraint
@@ -29,6 +45,7 @@ instance
     . addIndexDense1 c vs us is
     $ mkStream ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
   {-# Inline mkStream #-}
+-}
 
 instance
   ( Monad mB
@@ -45,32 +62,42 @@ instance
     where !us' = snd $ bounds t
   {-# Inline mkStream #-}
 
-{-
+-- | An outside table in an outside index context.
+--
+-- TODO what about @c / minSize@
+
 instance
   ( Monad m
-  , Element ls (Outside Subword)
-  , PrimArrayOps arr (Outside Subword) x
-  , MkStream m ls (Outside Subword)
-  ) => MkStream m (ls :!: ITbl m arr (Outside Subword) x) (Outside Subword) where
-  -- TODO what about @c / minSize@
-  mkStream (ls :!: ITbl _ _ c t _) (OStatic (di:.dj)) u ij@(O (Subword (i:.j)))
-    = map (\s -> let O (Subword (k:._)) = getOmx s
-                     kj = O $ Subword (k:.j+dj)
-                 in  ElmITbl (t ! kj) (O $ Subword (i:.j+dj)) kj s) -- @ij@ or s.th. else shouldn't matter?
-    $ mkStream ls (OFirstLeft (di:.dj)) u ij
-  mkStream (ls :!: ITbl _ _ c t _) (ORightOf (di:.dj)) u@(O (Subword (_:.h))) ij@(O (Subword (i:.j)))
-    = flatten mk step Unknown $ mkStream ls (OFirstLeft (di:.dj)) u ij
-      where mk s = return (s:.j+dj)
-            step (s:.l) | l <= h = do let (O (Subword (k:._))) = getIdx s
-                                          kl = O $ Subword (k:.l)
-                                      return $ Yield (ElmITbl (t ! kl) (O (Subword (j+dj:.j+dj))) kl s) (s:.l+1)
-                        | otherwise = return $ Done
-            {-# Inline [0] mk   #-}
-            {-# Inline [0] step #-}
-  mkStream (ls :!: ITbl _ _ c t _) (OFirstLeft d) u ij = error "Array/Outside Subword : OFirstLeft : should never be reached!"
-  mkStream (ls :!: ITbl _ _ c t _) (OLeftOf d) u ij = error "Array/Outside Subword : OLeftOf : should never be reached!"
+  , Element ls (Subword O)
+  , PrimArrayOps arr (u O) x
+  , TblConstraint (u O) ~ TableConstraint
+  , AddIndexDense (Z:.Subword O) (Z:.u O) (Z:.Subword O)
+  , TableStaticVar (u O) (Subword O)
+  , MkStream m ls (Subword O)
+  ) => MkStream m (ls :!: ITbl m arr (u O) x) (Subword O) where
+  mkStream (ls :!: ITbl _ _ c t _) vs us is
+    = map (\(s,ii,oo,ii',oo') -> ElmITbl (t!oo) ii' oo' s)
+    . addIndexDense1 c vs us is
+    $ mkStream ls (tableStaticVar (Proxy :: Proxy (u O)) c vs is) us (tableStreamIndex (Proxy :: Proxy (u O)) c vs is)
   {-# Inline mkStream #-}
--}
+
+-- | An inside table in an outside index context.
+
+instance
+  ( Monad m
+  , Element ls (Subword O)
+  , PrimArrayOps arr (u I) x
+  , TblConstraint (u I) ~ TableConstraint
+  , AddIndexDense (Z:.Subword O) (Z:.u I) (Z:.Subword O)
+  , TableStaticVar (u I) (Subword O)
+  , MkStream m ls (Subword O)
+  ) => MkStream m (ls :!: ITbl m arr (u I) x) (Subword O) where
+  mkStream (ls :!: ITbl _ _ c t _) vs us is
+    = map (\(s,ii,oo,ii',oo') -> ElmITbl (t!ii) ii' oo' s)
+    . addIndexDense1 c vs us is
+    $ mkStream ls (tableStaticVar (Proxy :: Proxy (u I)) c vs is) us (tableStreamIndex (Proxy :: Proxy (u I)) c vs is)
+  {-# Inline mkStream #-}
+
 
 {-
 instance

@@ -101,3 +101,29 @@ instance (TblConstraint u ~ TableConstraint) => TableStaticVar u (Subword I) whe
   {-# INLINE [0] tableStaticVar   #-}
   {-# INLINE [0] tableStreamIndex #-}
 
+-- | This instance is chosen if we consider an outside table (i.e.
+-- a syntactic variable) in an outside index.
+--
+-- TODO @tableStreamIndex@ needs to be fixed
+
+instance TableStaticVar (u O) (Subword O) where
+  tableStaticVar _ _ (OStatic  d) _ = OFirstLeft d
+  tableStaticVar _ _ (ORightOf d) _ = OFirstLeft d
+  tableStreamIndex _ c _ (Subword (i:.j)) = subword i j
+  {-# INLINE [0] tableStaticVar   #-}
+  {-# INLINE [0] tableStreamIndex #-}
+
+-- | This instance is chosen if we consider an inside table (i.e.
+-- a terminal symbol!) in an outside index.
+--
+-- TODO @tableStreamIndex@ needs to be fixed
+
+instance TableStaticVar (u I) (Subword O) where
+  tableStaticVar _ _ (OStatic    d) _ = ORightOf d
+  tableStaticVar _ _ (ORightOf   d) _ = ORightOf d
+  tableStaticVar _ _ (OFirstLeft d) _ = OLeftOf d
+  tableStaticVar _ _ (OLeftOf    d) _ = OLeftOf d
+  tableStreamIndex _ c _ (Subword (i:.j)) = subword i j
+  {-# INLINE [0] tableStaticVar   #-}
+  {-# INLINE [0] tableStreamIndex #-}
+

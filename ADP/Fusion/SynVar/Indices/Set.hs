@@ -34,7 +34,8 @@ instance
           step (Just (S8 s a b y z y' z' (mask :. k)))
             | pk > popCount i - rp = return $ Done
             | otherwise            = let kk = popShiftL mask k
-                                     in  return $ Yield (S7 s a b (y:.kk) (z:.0) (y':.kk) (z':.0)) (((S8 s a b y z y' z') . (mask :.)) <$> setSucc 0 (2^pk -1) k)
+                                         aa = getIndex a (Proxy :: Proxy (is:.BitSet I))
+                                     in  return $ Yield (S7 s a b (y:.kk) (z:.0) (y':.(kk.|.aa)) (z':.0)) (((S8 s a b y z y' z') . (mask :.)) <$> setSucc 0 (2^pk -1) k)
             where pk = popCount k
           csize = delay_inline minSize c
           {-# Inline [0] mk   #-}
@@ -51,7 +52,7 @@ instance
           step Nothing = return $ Done
           step (Just (S7 s a b y z y' z' :. mask :. cm :. k))
             | popCount i < popCount (kk .|. l) + rp = return $ Done
-            | otherwise = return $ Yield (S7 s a b (y:.kk) (z:.0) (y':.kk) (z':.0)) ((S7 s a b y z y' z' :. mask :. cm :.) <$> setSucc 0 (2^cm -1) k)
+            | otherwise = return $ Yield (S7 s a b (y:.kk) (z:.0) (y':.(kk.|.l)) (z':.0)) ((S7 s a b y z y' z' :. mask :. cm :.) <$> setSucc 0 (2^cm -1) k)
             where kk = popShiftL mask k
                   l  = getIndex a (Proxy :: Proxy (is:.BitSet I))
           {-# Inline [0] mk   #-}

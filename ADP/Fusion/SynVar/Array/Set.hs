@@ -31,6 +31,7 @@ import ADP.Fusion.SynVar.Indices
 -- requested a reserved bit, we need to free each reserved bit at least
 -- once.
 
+{-
 instance
   ( Monad m
   , Element ls (BitSet I)
@@ -50,7 +51,7 @@ instance
     . addIndexDense1 c vs us is
     $ mkStream ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
   {-# Inline mkStream #-}
-
+-}
 
 
 -- * Bitsets with two interfaces.
