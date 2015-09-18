@@ -14,7 +14,6 @@ import           Debug.Trace
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Syntax
 import           Numeric.Log as Log
-import qualified Data.Vector.Fusion.Stream as S
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
 import           System.Environment (getArgs)
@@ -135,17 +134,17 @@ ensemble
   -> NussinovEnsemble
         m
         (Log Double)
-        (Complement Subword:.(Complement Subword))
-        (Subword, Log Double)
-        [(Subword, Log Double)]
+        (Subword C:.Subword C)
+        (Subword C, Log Double)
+        [(Subword C, Log Double)]
 ensemble z = NussinovEnsemble
-  { ens = \ x (C k:._) y -> ( k , x * y / z )
+  { ens = \ x (Subword k:._) y -> ( Subword k , x * y / z )
   , hhh = SM.toList
   }
 {-# Inline ensemble #-}
 
 ensembleGrammar NussinovEnsemble{..} i o v' =
-  let v = v' ( ens <<< i % (PeekIndex :: PeekIndex (Complement Subword)) % o ... hhh )
+  let v = v' ( ens <<< i % (PeekIndex :: PeekIndex (Subword C)) % o ... hhh )
   in  Z:.v
 {-# Inline ensembleGrammar #-}
 
@@ -155,7 +154,7 @@ ensembleGrammar NussinovEnsemble{..} i o v' =
 
 -- * Run different algorithm parts
 
-runNussinov :: String -> ([(Subword, Log Double)], Log Double, [(Int,Int, Log Double, Log Double, Log Double, Log Double)])
+runNussinov :: String -> ([(Subword C, Log Double)], Log Double, [(Int,Int, Log Double, Log Double, Log Double, Log Double)])
 runNussinov inp = (es,z,ys) where
   i = VU.fromList . Prelude.map toUpper $ inp
   n = VU.length i
@@ -165,13 +164,13 @@ runNussinov inp = (es,z,ys) where
   za = let (ITbl _ _ _ arr _) = a in arr PA.! subword 0 n
   zp = let (ITbl _ _ _ arr _) = p in arr PA.! subword 0 n
   z  = za
-  e = let (ITbl _ _ _ arr _) = b in Log.sum [ arr PA.! (O $ subword k k) | k <- [0 .. n] ]
+  e = let (ITbl _ _ _ arr _) = b in Log.sum [ arr PA.! (subword k k) | k <- [0 .. n] ]
   ys =  [ ( k
           , l
           , fwda PA.! subword k l
           , fwdp PA.! subword k l
-          , bwdb PA.! (O $ subword k l)
-          , bwdq PA.! (O $ subword k l)
+          , bwdb PA.! subword k l
+          , bwdq PA.! subword k l
           )
         | let (ITbl _ _ _ fwda _) = a
         , let (ITbl _ _ _ fwdp _) = p
@@ -203,8 +202,8 @@ neat i = do let (es,z,ys) = runNussinov i
             forM_ es $ \ (Subword (i:.j),v) -> printf "%3d %3d  %0.4f\n" i j (exp $ ln v)
             putStrLn ""
 
-type TblI = ITbl Id Unboxed          Subword  (Log Double)
-type TblO = ITbl Id Unboxed (Outside Subword) (Log Double)
+type TblI = ITbl Id Unboxed (Subword I) (Log Double)
+type TblO = ITbl Id Unboxed (Subword O) (Log Double)
 
 runInsideForward :: VU.Vector Char -> Z:.TblI:.TblI
 runInsideForward i = mutateTablesDefault
@@ -220,18 +219,18 @@ runOutsideForward i a p = mutateTablesDefault
                         $ outsideGrammar prob
                             (chr i)
                             a p
-                            (ITbl 0 0 EmptyOk (PA.fromAssocs (O $ subword 0 0) (O $ subword 0 n) 0 []))
-                            (ITbl 0 1 EmptyOk (PA.fromAssocs (O $ subword 0 0) (O $ subword 0 n) 0 []))
+                            (ITbl 0 0 EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) 0 []))
+                            (ITbl 0 1 EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) 0 []))
   where n = VU.length i
 {-# NoInline runOutsideForward #-}
 
-runEnsembleForward :: Log Double -> TblI -> TblO -> [ (Subword,Log Double) ]
+runEnsembleForward :: Log Double -> TblI -> TblO -> [ (Subword C,Log Double) ]
 runEnsembleForward z i o = unId $ axiom g
   where (Z:.g) = ensembleGrammar (ensemble z)
                    i o
-                   (IRec EmptyOk (C l) (C h))
-                 :: Z :. IRec Id (Complement Subword) [(Subword, Log Double)]
-        (l,h) = let (ITbl _ _ _ arr _) = i in bounds arr
+                   (IRec EmptyOk (Subword l) (Subword h))
+                 :: Z :. IRec Id (Subword C) [(Subword C, Log Double)]
+        (Subword l,Subword h) = let (ITbl _ _ _ arr _) = i in bounds arr
 {-# NoInline runEnsembleForward #-}
 
 {-

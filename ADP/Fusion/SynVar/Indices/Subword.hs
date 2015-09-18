@@ -17,6 +17,12 @@ import ADP.Fusion.SynVar.Indices.Classes
 
 
 
+-- |
+-- @
+-- Table: Inside
+-- Grammar: Inside
+-- @
+
 instance
   ( AddIndexDense a us is
   , GetIndex a (is:.Subword I)
@@ -46,6 +52,10 @@ instance
   {-# Inline addIndexDenseGo #-}
 
 -- |
+-- @
+-- Table: Outside
+-- Grammar: Outside
+-- @
 --
 -- TODO Take care of @c@ in all cases to correctly handle @NonEmpty@ tables
 -- and the like.
@@ -78,7 +88,17 @@ instance
   addIndexDenseGo _ (_:.OLeftOf    _) _ _ = error "SynVar.Indices.Subword : LeftOf"
   {-# Inline addIndexDenseGo #-}
 
+-- TODO
+-- @
+-- Table: Inside
+-- Grammar: Outside
+-- @
+
 -- |
+-- @
+-- Table: Complement
+-- Grammar: Complement
+-- @
 
 instance
   ( AddIndexDense a us is

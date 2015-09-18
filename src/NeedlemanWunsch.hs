@@ -28,7 +28,6 @@ import           Data.Vector.Fusion.Util
 import           Debug.Trace
 import qualified Control.Arrow as A
 import qualified Data.Vector as V
-import qualified Data.Vector.Fusion.Stream as S
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
 import           System.Environment (getArgs)
@@ -241,7 +240,7 @@ runNeedlemanWunsch k i1' i2' = (d, take k bs) where
 -- For your own code, you can write as done here, or in the way of
 -- 'runOutsideNeedlemanWunsch'.
 
-nwInsideForward :: VU.Vector Char -> VU.Vector Char -> Z:.ITbl Id Unboxed (Z:.PointL:.PointL) Int
+nwInsideForward :: VU.Vector Char -> VU.Vector Char -> Z:.ITbl Id Unboxed (Z:.PointL I:.PointL I) Int
 nwInsideForward i1 i2 = {-# SCC "nwInsideForward" #-} mutateTablesDefault $
                           grammar sScore
                           (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n1:.PointL n2) (-999999) []))
@@ -250,7 +249,7 @@ nwInsideForward i1 i2 = {-# SCC "nwInsideForward" #-} mutateTablesDefault $
         n2 = VU.length i2
 {-# NoInline nwInsideForward #-}
 
-nwInsideBacktrack :: VU.Vector Char -> VU.Vector Char -> ITbl Id Unboxed (Z:.PointL:.PointL) Int -> [[String]]
+nwInsideBacktrack :: VU.Vector Char -> VU.Vector Char -> ITbl Id Unboxed (Z:.PointL I:.PointL I) Int -> [[String]]
 nwInsideBacktrack i1 i2 t = {-# SCC "nwInsideBacktrack" #-} unId $ axiom b
   where !(Z:.b) = grammar (sScore <|| sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
 {-# NoInline nwInsideBacktrack #-}
@@ -268,17 +267,17 @@ runOutsideNeedlemanWunsch k i1' i2' = {-# SCC "runOutside" #-} (d, take k . unId
   n2 = VU.length i2
   !(Z:.t) = nwOutsideForward i1 i2
   -- d = let (ITbl _ _ arr _) = t in arr PA.! (O (Z:.PointL 0:.PointL 0))
-  d = iTblArray t PA.! (O (Z:.PointL 0:.PointL 0))
+  d = iTblArray t PA.! (Z:.PointL 0:.PointL 0)
   !(Z:.b) = grammar (sScore <|| sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
 {-# Noinline runOutsideNeedlemanWunsch #-}
 
 -- | Again, to be able to observe performance, we have extracted the
 -- outside-table-filling part.
 
-nwOutsideForward :: VU.Vector Char -> VU.Vector Char -> Z:.ITbl Id Unboxed (Outside (Z:.PointL:.PointL)) Int
+nwOutsideForward :: VU.Vector Char -> VU.Vector Char -> Z:.ITbl Id Unboxed (Z:.PointL O:.PointL O) Int
 nwOutsideForward i1 i2 = {-# SCC "nwOutsideForward" #-} mutateTablesDefault $
                            grammar sScore
-                           (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (O (Z:.PointL 0:.PointL 0)) (O (Z:.PointL n1:.PointL n2)) (-999999) []))
+                           (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n1:.PointL n2) (-999999) []))
                            i1 i2
   where n1 = VU.length i1
         n2 = VU.length i2
