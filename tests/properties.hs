@@ -21,16 +21,16 @@ grep -o -e "^prop_[[:alnum:]_]*" ADP/Fusion/QuickCheck/Point.hs | awk '{print $1
 
 -- subwords
 
---prop_sv_OIQSW = QSW.prop_sv_OI
---prop_sv_IOQSW = QSW.prop_sv_IO
---prop_sv_OIIQSW = QSW.prop_sv_OII
---prop_sv_IOIQSW = QSW.prop_sv_IOI
---prop_sv_IIOQSW = QSW.prop_sv_IIO
---prop_cOcQSW = QSW.prop_cOc
---prop_ccOccQSW = QSW.prop_ccOcc
---prop_cOcccQSW = QSW.prop_cOccc
---prop_cOcIcQSW = QSW.prop_cOcIc
---prop_cIcOcQSW = QSW.prop_cIcOc
+prop_sv_OIQSW = QSW.prop_sv_OI
+prop_sv_IOQSW = QSW.prop_sv_IO
+prop_sv_OIIQSW = QSW.prop_sv_OII
+prop_sv_IOIQSW = QSW.prop_sv_IOI
+prop_sv_IIOQSW = QSW.prop_sv_IIO
+prop_cOcQSW = QSW.prop_cOc
+prop_ccOccQSW = QSW.prop_ccOcc
+prop_cOcccQSW = QSW.prop_cOccc
+prop_cOcIcQSW = QSW.prop_cOcIc
+prop_cIcOcQSW = QSW.prop_cIcOc
 prop_EpsilonQSW = QSW.prop_Epsilon
 
 -- sets

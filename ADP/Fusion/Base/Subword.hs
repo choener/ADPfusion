@@ -128,3 +128,15 @@ instance TableStaticVar (u I) (Subword O) where
   {-# INLINE [0] tableStaticVar   #-}
   {-# INLINE [0] tableStreamIndex #-}
 
+instance TableStaticVar (u I) (Subword C) where
+  tableStaticVar _ _ _ _ = Complemented
+  tableStreamIndex _ c _ (Subword (i:.j)) = subword i j
+  {-# INLINE [0] tableStaticVar   #-}
+  {-# INLINE [0] tableStreamIndex #-}
+
+instance TableStaticVar (u O) (Subword C) where
+  tableStaticVar _ _ _ _ = Complemented
+  tableStreamIndex _ c _ (Subword (i:.j)) = subword i j
+  {-# INLINE [0] tableStaticVar   #-}
+  {-# INLINE [0] tableStreamIndex #-}
+

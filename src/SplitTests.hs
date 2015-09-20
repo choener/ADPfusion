@@ -26,7 +26,6 @@ import           Data.Vector.Fusion.Util
 import           Debug.Trace
 import qualified Control.Arrow as A
 import qualified Data.Vector as V
-import qualified Data.Vector.Fusion.Stream as S
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
 import           System.Environment (getArgs)
@@ -121,8 +120,8 @@ opForward i =
         i
 {-# NoInline opForward #-}
 
-type X = ITbl Id Unboxed Subword Int
-type T = ITbl Id Unboxed (Z:.Subword:.Subword) Int
+type X = ITbl Id Unboxed (Subword I) Int
+type T = ITbl Id Unboxed (Z:.Subword I:.Subword I) Int
 
 
 main :: IO ()

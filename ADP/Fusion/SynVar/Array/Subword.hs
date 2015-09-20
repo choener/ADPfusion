@@ -98,63 +98,35 @@ instance
     $ mkStream ls (tableStaticVar (Proxy :: Proxy (u I)) c vs is) us (tableStreamIndex (Proxy :: Proxy (u I)) c vs is)
   {-# Inline mkStream #-}
 
-
-{-
 instance
   ( Monad m
-  , Element ls (Outside Subword)
-  , PrimArrayOps arr Subword x
-  , MkStream m ls (Outside Subword)
-  ) => MkStream m (ls :!: ITbl m arr Subword x) (Outside Subword) where
-  -- TODO what about @c / minSize@
-  mkStream (ls :!: ITbl _ _ c t _) (OStatic (di:.dj)) u ij@(O (Subword (i:.j)))
-    = map (\s -> let O (Subword (_:.k))     = getIdx s
-                     o@(O (Subword (_:.l))) = getOmx s
-                     kl = Subword (k-dj:.l-dj)
-                 in ElmITbl (t ! kl) (O (Subword (k:.l))) o s)
-    $ mkStream ls (ORightOf (di:.dj)) u ij
-  mkStream (ls :!: ITbl _ _ c t _) (ORightOf d) u@(O (Subword (_:.h))) ij@(O (Subword (i:.j)))
-    = flatten mk step Unknown $ mkStream ls (ORightOf d) u ij
-    where mk s = let O (Subword (_:.l)) = getIdx s
-                 in  return (s :.l:.l + minSize c)
-          step (s:.k:.l)
-            | let O (Subword (_:.o)) = getOmx s
-            , l <= o = do let kl = Subword (k:.l)
-                          return $ Yield (ElmITbl (t ! kl) (O kl) (getOmx s) s) (s:.k:.l+1)
-            | otherwise = return $ Done
-          {-# Inline [0] mk   #-}
-          {-# Inline [0] step #-}
-  mkStream (ls :!: ITbl _ _ c t _) (OFirstLeft (di:.dj)) u ij@(O (Subword (i:.j)))
-    = map (\s -> let O (Subword (l:._)) = getOmx s
-                     O (Subword (_:.k)) = getIdx s
-                     kl = Subword (k:.i-di)
-                 in  ElmITbl (t ! kl) (O kl) (getOmx s) s)
-    $ mkStream ls (OLeftOf (di:.dj)) u ij
-  mkStream (ls :!: ITbl _ _ c t _) (OLeftOf d) u ij@(O (Subword (i:.j)))
-    = flatten mk step Unknown $ mkStream ls (OLeftOf d) u ij
-    where mk s = let O (Subword (_:.l)) = getIdx s in return (s:.l)
-          step (s:.l) | l <= i = do let O (Subword (_:.k)) = getIdx s
-                                        kl = Subword (k:.l)
-                                    return $ Yield (ElmITbl (t ! kl) (O kl) (getOmx s) s) (s:.l+1)
-                      | otherwise = return $ Done
-          {-# Inline [0] mk   #-}
-          {-# Inline [0] step #-}
+  , Element ls (Subword C)
+  , PrimArrayOps arr (u I) x
+  , MkStream m ls (Subword C)
+  , TblConstraint (u I) ~ TableConstraint
+  , AddIndexDense (Z:.Subword C) (Z:.u I) (Z:.Subword C)
+  , TableStaticVar (u I) (Subword C)
+  ) => MkStream m (ls :!: ITbl m arr (u I) x) (Subword C) where
+  mkStream (ls :!: ITbl _ _ c t _) vs us is
+    = map (\(s,ii,oo,ii',oo') -> ElmITbl (t!ii) ii' oo' s)
+    . addIndexDense1 c vs us is
+    $ mkStream ls (tableStaticVar (Proxy :: Proxy (u I)) c vs is) us (tableStreamIndex (Proxy :: Proxy (u I)) c vs is)
   {-# Inline mkStream #-}
--}
 
-{-
 instance
   ( Monad m
-  , Element ls (Complement Subword)
-  , PrimArrayOps arr Subword x
-  , MkStream m ls (Complement Subword)
-  ) => MkStream m (ls :!: ITbl m arr Subword x) (Complement Subword) where
-  mkStream (ls :!: ITbl _ _ c t _) Complemented u ij
-    = map (\s -> let (C ix) = getIdx s
-                 in  ElmITbl (t ! ix) (C ix) (getOmx s) s)
-    $ mkStream ls Complemented u ij
+  , Element ls (Subword C)
+  , PrimArrayOps arr (u O) x
+  , MkStream m ls (Subword C)
+  , TblConstraint (u O) ~ TableConstraint
+  , AddIndexDense (Z:.Subword C) (Z:.u O) (Z:.Subword C)
+  , TableStaticVar (u O) (Subword C)
+  ) => MkStream m (ls :!: ITbl m arr (u O) x) (Subword C) where
+  mkStream (ls :!: ITbl _ _ c t _) vs us is
+    = map (\(s,ii,oo,ii',oo') -> ElmITbl (t!oo) ii' oo' s)
+    . addIndexDense1 c vs us is
+    $ mkStream ls (tableStaticVar (Proxy :: Proxy (u O)) c vs is) us (tableStreamIndex (Proxy :: Proxy (u O)) c vs is)
   {-# Inline mkStream #-}
--}
 
 {-
 instance

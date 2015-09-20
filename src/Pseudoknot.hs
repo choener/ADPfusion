@@ -10,7 +10,6 @@ import           Data.Vector.Fusion.Util
 import           Debug.Trace
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Syntax
-import qualified Data.Vector.Fusion.Stream as S
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
 import           System.Environment (getArgs)
@@ -114,8 +113,8 @@ runPseudoknot k inp = (d, take k bs) where
   -}
 {-# NOINLINE runPseudoknot #-}
 
-type X = ITbl Id Unboxed Subword Int
-type T = ITbl Id Unboxed (Z:.Subword:.Subword) Int
+type X = ITbl Id Unboxed (Subword I) Int
+type T = ITbl Id Unboxed (Z:.Subword I:.Subword I) Int
 
 runInsideForward :: VU.Vector Char -> Z:.X:.T:.T
 runInsideForward i = mutateTablesWithHints (Proxy :: Proxy MonotoneMCFG)

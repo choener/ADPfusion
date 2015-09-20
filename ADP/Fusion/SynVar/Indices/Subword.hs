@@ -93,7 +93,7 @@ instance
   addIndexDenseGo _ (_:.OLeftOf    _) _ _ = error "SynVar.Indices.Subword : LeftOf"
   {-# Inline addIndexDenseGo #-}
 
--- TODO
+-- |
 -- @
 -- Table: Inside
 -- Grammar: Outside
@@ -153,18 +153,6 @@ instance
           csize = minSize c
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
-{-
-  mkStream (ls :!: ITbl _ _ c t _) (OLeftOf d) u ij@(O (Subword (i:.j)))
-    = flatten mk step Unknown $ mkStream ls (OLeftOf d) u ij
-    where mk s = let O (Subword (_:.l)) = getIdx s in return (s:.l)
-          step (s:.l) | l <= i = do let O (Subword (_:.k)) = getIdx s
-                                        kl = Subword (k:.l)
-                                    return $ Yield (ElmITbl (t ! kl) (O kl) (getOmx s) s) (s:.l+1)
-                      | otherwise = return $ Done
-          {-# Inline [0] mk   #-}
-          {-# Inline [0] step #-}
-  {-# Inline mkStream #-}
--}
   {-# Inline addIndexDenseGo #-}
 
 
@@ -176,11 +164,37 @@ instance
 -- Grammar: Complement
 -- @
 
+instance
+  ( AddIndexDense a us is
+  , GetIndex a (is:.Subword C)
+  , GetIx a (is:.Subword C) ~ (Subword C)
+  ) => AddIndexDense a (us:.Subword I) (is:.Subword C) where
+  addIndexDenseGo (cs:.c) (vs:.Complemented) (us:.u) (is:.i)
+    = map (\(S7 s a b y z y' z') -> let Subword kk = getIndex a (Proxy :: Proxy (is:.Subword C))
+                                        kT = Subword kk -- @k@ Table
+                                        kC = Subword kk
+                                    in  S7 s a b (y:.kT) (z:.kT) (y':.kC) (z':.kC))
+    . addIndexDenseGo cs vs us is
+  {-# Inline addIndexDenseGo #-}
+
 -- TODO
 -- @
 -- Table: Outside
 -- Grammar: Complement
 -- @
+
+instance
+  ( AddIndexDense a us is
+  , GetIndex a (is:.Subword C)
+  , GetIx a (is:.Subword C) ~ (Subword C)
+  ) => AddIndexDense a (us:.Subword O) (is:.Subword C) where
+  addIndexDenseGo (cs:.c) (vs:.Complemented) (us:.u) (is:.i)
+    = map (\(S7 s a b y z y' z') -> let Subword kk = getIndex a (Proxy :: Proxy (is:.Subword C))
+                                        kT = Subword kk
+                                        kC = Subword kk
+                                    in  S7 s a b (y:.kT) (z:.kT) (y':.kC) (z':.kC))
+    . addIndexDenseGo cs vs us is
+  {-# Inline addIndexDenseGo #-}
 
 -- |
 -- @
