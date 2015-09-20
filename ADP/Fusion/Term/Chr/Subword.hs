@@ -38,7 +38,7 @@ instance
   mkStream (ls :!: Chr f xs) (OStatic (di:.dj)) u ij@(Subword (i:.j))
     = id -- staticCheck ( j < h ) -- TODO any check possible?
     $ map (\s -> let (Subword (_:.k')) = getIdx s
-                     k = k'-dj-1
+                     k = k'-dj -- -1
                  in  ElmChr (f xs k) (subword (k'-1) k') (getOmx s) s)
     $ mkStream ls (OStatic (di:.dj+1)) u ij
   mkStream (ls :!: Chr f xs) (ORightOf (di:.dj)) u ij

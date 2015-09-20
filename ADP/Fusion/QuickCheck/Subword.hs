@@ -124,7 +124,7 @@ prop_cOccc ox@(Subword (i:.j)) = zs == ls where
 
 -- ** Terminals, syntactic terminals, and non-terminals
 
-prop_cOcIc ox@(Subword (i:.k)) = traceShow (zs,ls) $ zs == ls where
+prop_cOcIc ox@(Subword (i:.k)) = zs == ls where
   toa = ITbl 0 0 EmptyOk xoS (\ _ _ -> Id (1,1))
   tic = ITbl 0 0 EmptyOk xsS (\ _ _ -> Id (1,1))
   zs = ((,,,,) <<< chr csS % toa % chr csS % tic % chr csS ... stoList) maxSWo ox

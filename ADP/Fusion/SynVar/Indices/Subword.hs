@@ -73,7 +73,7 @@ instance
   addIndexDenseGo (cs:.c) (vs:.OStatic (di:.dj)) (us:.u) (is:.Subword (i:.j))
     = map (\(S7 s a b y z y' z') -> let Subword (k:._) = getIndex b (Proxy :: Proxy (is:.Subword O))
                                         kj = subword k (j+dj)
-                                        ij' = subword i (j+dj)
+                                        ij' = subword i j -- (j+dj)
                                         oo = subword 0 0
                                     in  S7 s a b (y:.oo) (z:.kj) (y':.ij') (z':.kj))
     . addIndexDenseGo cs vs us is
@@ -112,7 +112,7 @@ instance
                                         klI = subword (k-dj) (l-dj)
                                         klO = subword (k-dj) (l-dj)
                                         oo  = subword 0 0
-                                    in  traceShow (k,l,dj,dj) $ S7 s a b (y:.klI) (z:.oo) (y':.klO) (z':.ll))
+                                    in  S7 s a b (y:.klI) (z:.oo) (y':.klO) (z':.ll))
     . addIndexDenseGo cs vs us is
   addIndexDenseGo (cs:.c) (vs:.ORightOf d) (us:.u) (is:.Subword (i:.j))
     = flatten mk step . addIndexDenseGo cs vs us is
