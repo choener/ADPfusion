@@ -61,6 +61,7 @@ instance (Monad m) => MkStream m S (Subword O) where
       in  staticCheck (0 <= i' && i<=j && j+dj<=h)
     $ map (\k -> ElmS (subword 0 k) (subword k j))
     $ enumFromStepN 0 1 (i'+1)
+  mkStream S e _ _ = error $ show e ++ "maybe only inside syntactic terminals on the RHS of an outside rule?" -- TODO mostly because I'm not sure if that would be useful
   {-# Inline mkStream #-}
 
 instance (Monad m) => MkStream m S (Subword C) where

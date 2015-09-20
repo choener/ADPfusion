@@ -2,6 +2,10 @@
 -- | Instance code for @Inside@, @Outside@, and @Complement@ indices.
 --
 -- TODO actual @Outside@ and @Complement@ code ...
+--
+-- TODO we have quite a lot of @subword i j@ code where only the @type@
+-- is different; check if @coerce@ yields improved performance or if the
+-- compiler optimizes this out!
 
 module ADP.Fusion.SynVar.Indices.Subword where
 
@@ -9,6 +13,7 @@ import Data.Proxy
 import Data.Vector.Fusion.Stream.Monadic (map,Stream,head,mapM,Step(..))
 import Data.Vector.Fusion.Util (delay_inline)
 import Prelude hiding (map,head,mapM)
+import Debug.Trace
 
 import Data.PrimitiveArray hiding (map)
 
@@ -92,6 +97,89 @@ instance
 -- @
 -- Table: Inside
 -- Grammar: Outside
+-- @
+--
+-- TODO take care of @c@
+
+instance
+  ( AddIndexDense a us is
+  , GetIndex a (is:.Subword O)
+  , GetIx a (is:.Subword O) ~ (Subword O)
+  ) => AddIndexDense a (us:.Subword I) (is:.Subword O) where
+  addIndexDenseGo (cs:.c) (vs:.OStatic (di:.dj)) (us:.u) (is:.Subword (i:.j))
+    = map (\(S7 s a b y z y' z') -> let Subword (_:.k) = getIndex a (Proxy :: Proxy (is:.Subword O))
+                                        ll@(Subword (_:.l)) = getIndex b (Proxy :: Proxy (is:.Subword O))
+                                        klI = subword (k-dj) (l-dj)
+                                        klO = subword (k-dj) (l-dj)
+                                        oo  = subword 0 0
+                                    in  traceShow (k,l,dj,dj) $ S7 s a b (y:.klI) (z:.oo) (y':.klO) (z':.ll))
+    . addIndexDenseGo cs vs us is
+  addIndexDenseGo (cs:.c) (vs:.ORightOf d) (us:.u) (is:.Subword (i:.j))
+    = flatten mk step . addIndexDenseGo cs vs us is
+    where mk (S7 s a b y z y' z') = let Subword (_:.l) = getIndex a (Proxy :: Proxy (is:.Subword O))
+                                    in  return (S7 s a b y z y' z' :. l :. l + csize)
+          step (S7 s a b y z y' z' :. k :. l)
+            | l <= o    = return $ Yield (S7 s a b (y:.klI) (z:.oo) (y':.klO) (z':.zo))
+                                         (S7 s a b y z y' z' :. k :. l+1)
+            | otherwise = return $ Done
+            where zo@(Subword (_:.o)) = getIndex b (Proxy :: Proxy (is:.Subword O))
+                  klI = subword k l
+                  klO = subword k l
+                  oo = subword 0 0
+          csize = minSize c
+          {-# Inline [0] mk   #-}
+          {-# Inline [0] step #-}
+  addIndexDenseGo (cs:.c) (vs:.OFirstLeft (di:.dj)) (us:.u) (is:.Subword (i:.j))
+    = map (\(S7 s a b y z y' z') -> let Subword (_:.k) = getIndex a (Proxy :: Proxy (is:.Subword O))
+                                        ll@(Subword (l:._)) = getIndex b (Proxy :: Proxy (is:.Subword O))
+                                        klI = subword k $ i - di
+                                        klO = subword k $ i - di
+                                        oo  = subword 0 0
+                                    in  S7 s a b (y:.klI) (z:.oo) (y':.klO) (z':.ll))
+    . addIndexDenseGo cs vs us is
+  addIndexDenseGo (cs:.c) (vs:.OLeftOf d) (us:.u) (is:.Subword (i:.j))
+    = flatten mk step . addIndexDenseGo cs vs us is
+    where mk (S7 s a b y z y' z') = let Subword (_:.l) = getIndex a (Proxy :: Proxy (is:.Subword O))
+                                    in  return $ S7 s a b y z y' z' :. l
+          step (S7 s a b y z y' z' :. l)
+            | l <= i    = let Subword (_:.k) = getIndex a (Proxy :: Proxy (is:.Subword O))
+                              omx = getIndex b (Proxy :: Proxy (is:.Subword O))
+                              klI = subword k l
+                              klO = subword k l
+                              oo  = subword 0 0
+                          in  return $ Yield (S7 s a b (y:.klI) (z:.oo) (y':.klO) (z':.omx))
+                                             (S7 s a b y z y' z' :. l+1)
+            | otherwise = return $ Done
+          csize = minSize c
+          {-# Inline [0] mk   #-}
+          {-# Inline [0] step #-}
+{-
+  mkStream (ls :!: ITbl _ _ c t _) (OLeftOf d) u ij@(O (Subword (i:.j)))
+    = flatten mk step Unknown $ mkStream ls (OLeftOf d) u ij
+    where mk s = let O (Subword (_:.l)) = getIdx s in return (s:.l)
+          step (s:.l) | l <= i = do let O (Subword (_:.k)) = getIdx s
+                                        kl = Subword (k:.l)
+                                    return $ Yield (ElmITbl (t ! kl) (O kl) (getOmx s) s) (s:.l+1)
+                      | otherwise = return $ Done
+          {-# Inline [0] mk   #-}
+          {-# Inline [0] step #-}
+  {-# Inline mkStream #-}
+-}
+  {-# Inline addIndexDenseGo #-}
+
+
+
+
+-- TODO
+-- @
+-- Table: Inside
+-- Grammar: Complement
+-- @
+
+-- TODO
+-- @
+-- Table: Outside
+-- Grammar: Complement
 -- @
 
 -- |

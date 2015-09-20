@@ -13,13 +13,16 @@ data OutsideContext s
   | ORightOf    s
   | OFirstLeft  s
   | OLeftOf     s
+  deriving (Show)
 
 data InsideContext s
   = IStatic   s
   | IVariable s
+  deriving (Show)
 
 data ComplementContext
   = Complemented
+  deriving (Show)
 
 class RuleContext i where
   type Context i :: *
