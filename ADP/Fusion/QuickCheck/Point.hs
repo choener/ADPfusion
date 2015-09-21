@@ -47,32 +47,30 @@ prop_O_ZEpsilonEpsilon ix@(Z:.PointL j:.PointL l) = zs == ls where
 
 -- * Deletion cases
 
-{-
-prop_O_ItNC ix@(O (PointL j)) = zs == ls where
+prop_O_ItNC ix@(PointL j) = zs == ls where
   t = ITbl 0 0 EmptyOk xsPo (\ _ _ -> Id 1)
-  zs = ((,,) <<< t % Deletion % chr xs ... stoList) (O $ maxPLo) ix
-  ls = [ ( unsafeIndex xsPo (O $ PointL $ j+1)
+  zs = ((,,) <<< t % Deletion % chr xs ... stoList) maxPLo ix
+  ls = [ ( unsafeIndex xsPo (PointL $ j+1)
          , ()
          , xs VU.! (j+0)
          ) | j >= 0, j <= 99 ]
 {-# Noinline prop_O_ItNC #-}
 
-prop_O_ZItNC ix@(O (Z:.PointL j)) = zs == ls where
+prop_O_ZItNC ix@(Z:.PointL j) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk) xsZPo (\ _ _ -> Id 1)
-  zs = ((,,) <<< t % (M:|Deletion) % (M:|chr xs) ... stoList) (O (Z:.maxPLo)) ix
-  ls = [ ( unsafeIndex xsZPo (O (Z:.PointL (j+1)))
+  zs = ((,,) <<< t % (M:|Deletion) % (M:|chr xs) ... stoList) (Z:.maxPLo) ix
+  ls = [ ( unsafeIndex xsZPo (Z:.PointL (j+1))
          , Z:.()
          , Z:.xs VU.! (j+0)
          ) | j >= 0, j <= 99 ]
 
-prop_O_2dimIt_NC_CN ix@(O (Z:.PointL j:.PointL l)) = zs == ls where
+prop_O_2dimIt_NC_CN ix@(Z:.PointL j:.PointL l) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsPPo (\ _ _ -> Id 1)
-  zs = ((,,) <<< t % (M:|Deletion:|chr xs) % (M:|chr xs:|Deletion) ... stoList) (O (Z:.maxPLo:.maxPLo)) ix
-  ls = [ ( unsafeIndex xsPPo (O (Z:.PointL (j+1):.PointL (l+1)))
+  zs = ((,,) <<< t % (M:|Deletion:|chr xs) % (M:|chr xs:|Deletion) ... stoList) (Z:.maxPLo:.maxPLo) ix
+  ls = [ ( unsafeIndex xsPPo (Z:.PointL (j+1):.PointL (l+1))
          , Z:.()           :.xs VU.! (l+0)
          , Z:.xs VU.! (j+0):.()
          ) | j>=0, l>=0, j<=99, l<=99 ]
--}
 
 prop_2dimIt_NC_CN ix@(Z:.PointL j:.PointL l) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsPP (\ _ _ -> Id 1)

@@ -1,16 +1,169 @@
 
 module ADP.Fusion.SynVar.Array
   ( module ADP.Fusion.SynVar.Array.Type
-  , module ADP.Fusion.SynVar.Array.Point
-  , module ADP.Fusion.SynVar.Array.Set
-  , module ADP.Fusion.SynVar.Array.Subword
+--  , module ADP.Fusion.SynVar.Array.Point
+--  , module ADP.Fusion.SynVar.Array.Set
+--  , module ADP.Fusion.SynVar.Array.Subword
   ) where
 
-import ADP.Fusion.SynVar.Array.Point
-import ADP.Fusion.SynVar.Array.Set
-import ADP.Fusion.SynVar.Array.Subword
+
+import Data.Proxy
+import Data.Strict.Tuple hiding (snd)
+import Prelude hiding (map,mapM)
+import Data.Vector.Fusion.Stream.Monadic
+
+import Data.PrimitiveArray hiding (map)
+
+import ADP.Fusion.Base
+import ADP.Fusion.SynVar.Indices
+import ADP.Fusion.SynVar.Backtrack
+
+--import ADP.Fusion.SynVar.Array.Point
+--import ADP.Fusion.SynVar.Array.Set
+--import ADP.Fusion.SynVar.Array.Subword
 import ADP.Fusion.SynVar.Array.TermSymbol
 import ADP.Fusion.SynVar.Array.Type
+
+
+
+
+instance
+  ( Monad m
+  , Element ls (i I)
+  , PrimArrayOps arr u x
+  , TblConstraint u ~ TableConstraint
+  , AddIndexDense (Z:.i I) (Z:.u) (Z:.i I)
+  , TableStaticVar u (i I)
+  , MkStream m ls (i I)
+  ) => MkStream m (ls :!: ITbl m arr u x) (i I) where
+  mkStream (ls :!: ITbl _ _ c t _) vs us is
+    = map (\(s,ii,oo,ii',oo') -> ElmITbl (t!ii) ii' oo' s)
+    . addIndexDense1 c vs us is
+    $ mkStream ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
+  {-# Inline mkStream #-}
+
+instance
+  ( Monad mB
+  , Element ls (i I)
+  , MkStream mB ls (i I)
+  , TblConstraint u ~ TableConstraint
+  , AddIndexDense (Z:.i I) (Z:.u) (Z:.i I)
+  , TableStaticVar u (i I)
+  , PrimArrayOps arr u x
+  ) => MkStream mB (ls :!: Backtrack (ITbl mF arr u x) mF mB r) (i I) where
+  mkStream (ls :!: BtITbl c t bt) vs us is
+    = mapM (\(s,ii,oo,ii',oo') -> bt us' ii >>= \ ~bb -> return $ ElmBtITbl (t!ii) bb ii' oo' s)
+    . addIndexDense1 c vs us is
+    $ mkStream ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
+    where !us' = snd $ bounds t
+  {-# Inline mkStream #-}
+
+-- | An outside table in an outside index context.
+--
+-- TODO what about @c / minSize@
+
+instance
+  ( Monad m
+  , Element ls (i O)
+  , PrimArrayOps arr (u O) x
+  , TblConstraint (u O) ~ TableConstraint
+  , AddIndexDense (Z:.i O) (Z:.u O) (Z:.i O)
+  , TableStaticVar (u O) (i O)
+  , MkStream m ls (i O)
+  ) => MkStream m (ls :!: ITbl m arr (u O) x) (i O) where
+  mkStream (ls :!: ITbl _ _ c t _) vs us is
+    = map (\(s,ii,oo,ii',oo') -> ElmITbl (t!oo) ii' oo' s)
+    . addIndexDense1 c vs us is
+    $ mkStream ls (tableStaticVar (Proxy :: Proxy (u O)) c vs is) us (tableStreamIndex (Proxy :: Proxy (u O)) c vs is)
+  {-# Inline mkStream #-}
+
+-- | An inside table in an outside index context.
+
+instance
+  ( Monad m
+  , Element ls (i O)
+  , PrimArrayOps arr (u I) x
+  , TblConstraint (u I) ~ TableConstraint
+  , AddIndexDense (Z:.i O) (Z:.u I) (Z:.i O)
+  , TableStaticVar (u I) (i O)
+  , MkStream m ls (i O)
+  ) => MkStream m (ls :!: ITbl m arr (u I) x) (i O) where
+  mkStream (ls :!: ITbl _ _ c t _) vs us is
+    = map (\(s,ii,oo,ii',oo') -> ElmITbl (t!ii) ii' oo' s)
+    . addIndexDense1 c vs us is
+    $ mkStream ls (tableStaticVar (Proxy :: Proxy (u I)) c vs is) us (tableStreamIndex (Proxy :: Proxy (u I)) c vs is)
+  {-# Inline mkStream #-}
+
+instance
+  ( Monad m
+  , Element ls (i C)
+  , PrimArrayOps arr (u I) x
+  , MkStream m ls (i C)
+  , TblConstraint (u I) ~ TableConstraint
+  , AddIndexDense (Z:.i C) (Z:.u I) (Z:.i C)
+  , TableStaticVar (u I) (i C)
+  ) => MkStream m (ls :!: ITbl m arr (u I) x) (i C) where
+  mkStream (ls :!: ITbl _ _ c t _) vs us is
+    = map (\(s,ii,oo,ii',oo') -> ElmITbl (t!ii) ii' oo' s)
+    . addIndexDense1 c vs us is
+    $ mkStream ls (tableStaticVar (Proxy :: Proxy (u I)) c vs is) us (tableStreamIndex (Proxy :: Proxy (u I)) c vs is)
+  {-# Inline mkStream #-}
+
+instance
+  ( Monad m
+  , Element ls (i C)
+  , PrimArrayOps arr (u O) x
+  , MkStream m ls (i C)
+  , TblConstraint (u O) ~ TableConstraint
+  , AddIndexDense (Z:.i C) (Z:.u O) (Z:.i C)
+  , TableStaticVar (u O) (i C)
+  ) => MkStream m (ls :!: ITbl m arr (u O) x) (i C) where
+  mkStream (ls :!: ITbl _ _ c t _) vs us is
+    = map (\(s,ii,oo,ii',oo') -> ElmITbl (t!oo) ii' oo' s)
+    . addIndexDense1 c vs us is
+    $ mkStream ls (tableStaticVar (Proxy :: Proxy (u O)) c vs is) us (tableStreamIndex (Proxy :: Proxy (u O)) c vs is)
+  {-# Inline mkStream #-}
+
+
+
+instance ModifyConstraint (ITbl m arr (Subword t) x) where
+  toNonEmpty (ITbl b l _ arr f) = ITbl b l NonEmpty arr f
+  toEmpty    (ITbl b l _ arr f) = ITbl b l EmptyOk  arr f
+  {-# Inline toNonEmpty #-}
+  {-# Inline toEmpty #-}
+
+instance ModifyConstraint (Backtrack (ITbl mF arr (Subword t) x) mF mB r) where
+  toNonEmpty (BtITbl _ arr bt) = BtITbl NonEmpty arr bt
+  toEmpty    (BtITbl _ arr bt) = BtITbl EmptyOk  arr bt
+  {-# Inline toNonEmpty #-}
+  {-# Inline toEmpty #-}
+
+
+
+
+class Boo x where
+  foo :: x -> String
+
+instance (Show (i I)) => Boo (i I) where
+  foo s = "dat " Prelude.++ show s
+
+instance (Show (i I), Show ts) => Boo (i I :> ts) where
+  foo s = show s
+
+data Xi i t = Xi
+  deriving (Show)
+
+--instance Show (x i I) => Boo (x i I) where
+--  foo s = show s
+
+data Bs2i t where
+  Bs2i :: Interface i -> Interface j -> Bs2i t
+
+instance Show (Bs2i t) where
+  show _ = "x"
+
+
+
 
 {-
 

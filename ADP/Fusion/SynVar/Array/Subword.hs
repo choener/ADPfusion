@@ -49,12 +49,13 @@ instance
 
 instance
   ( Monad mB
-  , Element ls (Subword I)
-  , MkStream mB ls (Subword I)
+  , Element ls (i I)
+  , MkStream mB ls (i I)
   , TblConstraint u ~ TableConstraint
-  , AddIndexDense (Z:.Subword I) (Z:.u) (Z:.Subword I)
+  , AddIndexDense (Z:.i I) (Z:.u) (Z:.i I)
+  , TableStaticVar u (i I)
   , PrimArrayOps arr u x
-  ) => MkStream mB (ls :!: Backtrack (ITbl mF arr u x) mF mB r) (Subword I) where
+  ) => MkStream mB (ls :!: Backtrack (ITbl mF arr u x) mF mB r) (i I) where
   mkStream (ls :!: BtITbl c t bt) vs us is
     = mapM (\(s,ii,oo,ii',oo') -> bt us' ii >>= \ ~bb -> return $ ElmBtITbl (t!ii) bb ii' oo' s)
     . addIndexDense1 c vs us is
@@ -68,13 +69,13 @@ instance
 
 instance
   ( Monad m
-  , Element ls (Subword O)
+  , Element ls (i O)
   , PrimArrayOps arr (u O) x
   , TblConstraint (u O) ~ TableConstraint
-  , AddIndexDense (Z:.Subword O) (Z:.u O) (Z:.Subword O)
-  , TableStaticVar (u O) (Subword O)
-  , MkStream m ls (Subword O)
-  ) => MkStream m (ls :!: ITbl m arr (u O) x) (Subword O) where
+  , AddIndexDense (Z:.i O) (Z:.u O) (Z:.i O)
+  , TableStaticVar (u O) (i O)
+  , MkStream m ls (i O)
+  ) => MkStream m (ls :!: ITbl m arr (u O) x) (i O) where
   mkStream (ls :!: ITbl _ _ c t _) vs us is
     = map (\(s,ii,oo,ii',oo') -> ElmITbl (t!oo) ii' oo' s)
     . addIndexDense1 c vs us is
@@ -85,13 +86,13 @@ instance
 
 instance
   ( Monad m
-  , Element ls (Subword O)
+  , Element ls (i O)
   , PrimArrayOps arr (u I) x
   , TblConstraint (u I) ~ TableConstraint
-  , AddIndexDense (Z:.Subword O) (Z:.u I) (Z:.Subword O)
-  , TableStaticVar (u I) (Subword O)
-  , MkStream m ls (Subword O)
-  ) => MkStream m (ls :!: ITbl m arr (u I) x) (Subword O) where
+  , AddIndexDense (Z:.i O) (Z:.u I) (Z:.i O)
+  , TableStaticVar (u I) (i O)
+  , MkStream m ls (i O)
+  ) => MkStream m (ls :!: ITbl m arr (u I) x) (i O) where
   mkStream (ls :!: ITbl _ _ c t _) vs us is
     = map (\(s,ii,oo,ii',oo') -> ElmITbl (t!ii) ii' oo' s)
     . addIndexDense1 c vs us is
@@ -100,13 +101,13 @@ instance
 
 instance
   ( Monad m
-  , Element ls (Subword C)
+  , Element ls (i C)
   , PrimArrayOps arr (u I) x
-  , MkStream m ls (Subword C)
+  , MkStream m ls (i C)
   , TblConstraint (u I) ~ TableConstraint
-  , AddIndexDense (Z:.Subword C) (Z:.u I) (Z:.Subword C)
-  , TableStaticVar (u I) (Subword C)
-  ) => MkStream m (ls :!: ITbl m arr (u I) x) (Subword C) where
+  , AddIndexDense (Z:.i C) (Z:.u I) (Z:.i C)
+  , TableStaticVar (u I) (i C)
+  ) => MkStream m (ls :!: ITbl m arr (u I) x) (i C) where
   mkStream (ls :!: ITbl _ _ c t _) vs us is
     = map (\(s,ii,oo,ii',oo') -> ElmITbl (t!ii) ii' oo' s)
     . addIndexDense1 c vs us is
@@ -115,13 +116,13 @@ instance
 
 instance
   ( Monad m
-  , Element ls (Subword C)
+  , Element ls (i C)
   , PrimArrayOps arr (u O) x
-  , MkStream m ls (Subword C)
+  , MkStream m ls (i C)
   , TblConstraint (u O) ~ TableConstraint
-  , AddIndexDense (Z:.Subword C) (Z:.u O) (Z:.Subword C)
-  , TableStaticVar (u O) (Subword C)
-  ) => MkStream m (ls :!: ITbl m arr (u O) x) (Subword C) where
+  , AddIndexDense (Z:.i C) (Z:.u O) (Z:.i C)
+  , TableStaticVar (u O) (i C)
+  ) => MkStream m (ls :!: ITbl m arr (u O) x) (i C) where
   mkStream (ls :!: ITbl _ _ c t _) vs us is
     = map (\(s,ii,oo,ii',oo') -> ElmITbl (t!oo) ii' oo' s)
     . addIndexDense1 c vs us is

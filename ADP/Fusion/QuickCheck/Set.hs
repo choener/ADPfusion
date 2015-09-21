@@ -101,6 +101,7 @@ prop_bii_i ix@(s:>i:>j) = zs == ls where
   zs = (id <<< tia ... stoList) highestBII ix
   ls = [ xsBII ! ix ]
 
+{-
 prop_bii_i_n :: BS2I I First Last -> Bool
 prop_bii_i_n ix@(s:>i:>j) = zs == ls where
   tia = ITbl 0 0 NonEmpty xsBII (\ _ _ -> Id 1)
@@ -204,6 +205,7 @@ prop_bii_ieee_n ix@(s:>i:>Iter j) = L.sort zs == L.sort ls where
        , k /= getIter i
        , let kk = Iter k
        ]
+-}
 
 -- prop_bii_ii (ix@(s:>i:>j) :: (BitSet:>Interface First:>Interface Last)) = tr zs ls $ zs == ls where
 --   tia = ITbl 0 0 EmptyOk xsBII (\ _ _ -> Id 1)

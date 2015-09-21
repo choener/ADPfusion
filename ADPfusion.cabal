@@ -96,9 +96,9 @@ library
     ADP.Fusion.QuickCheck.Subword
     ADP.Fusion.SynVar
     ADP.Fusion.SynVar.Array
-    ADP.Fusion.SynVar.Array.Point
-    ADP.Fusion.SynVar.Array.Set
-    ADP.Fusion.SynVar.Array.Subword
+--    ADP.Fusion.SynVar.Array.Point
+--    ADP.Fusion.SynVar.Array.Set
+--    ADP.Fusion.SynVar.Array.Subword
     ADP.Fusion.SynVar.Array.TermSymbol
     ADP.Fusion.SynVar.Array.Type
     ADP.Fusion.SynVar.Axiom
