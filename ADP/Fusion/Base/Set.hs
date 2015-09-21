@@ -17,8 +17,8 @@ import ADP.Fusion.Base.Multi
 
 
 
-type instance TblConstraint (BitSet t)                            = TableConstraint
-type instance TblConstraint (BitSet t:>Interface i:>Interface j)  = TableConstraint
+type instance TblConstraint (BitSet t)  = TableConstraint
+type instance TblConstraint (BS2 i j t) = TableConstraint
 
 
 
@@ -39,18 +39,18 @@ instance RuleContext (BitSet C) where
 
 
 
-instance RuleContext (BS2I I First Last) where
-  type Context (BS2I I First Last) = InsideContext Int
+instance RuleContext (BS2 First Last I) where
+  type Context (BS2 First Last I) = InsideContext Int
   initialContext _ = IStatic 0
   {-# Inline initialContext #-}
 
-instance RuleContext (BS2I O First Last) where
-  type Context (BS2I O First Last) = OutsideContext ()
+instance RuleContext (BS2 First Last O) where
+  type Context (BS2 First Last O) = OutsideContext ()
   initialContext _ = OStatic ()
   {-# Inline initialContext #-}
 
-instance RuleContext (BS2I C First Last) where
-  type Context (BS2I C First Last) = ComplementContext
+instance RuleContext (BS2 First Last C) where
+  type Context (BS2 First Last C) = ComplementContext
   initialContext _ = Complemented
   {-# Inline initialContext #-}
 
@@ -69,27 +69,27 @@ instance
 
 instance
   ( Monad m
-  ) => MkStream m S (BS2I I First Last) where
-  mkStream S (IStatic rp) u sij@(s:>Iter i:>j)
-    = staticCheck (popCount s == 0 && rp == 0) . singleton $ ElmS (0:>Iter i:>Iter i) undefbs2i
-  mkStream S (IVariable rp) u sij@(s:>Iter i:>j)
-    = staticCheck (popCount s >= rp) . singleton $ ElmS (0:>Iter i:>Iter i) undefbs2i
+  ) => MkStream m S (BS2 First Last I) where
+  mkStream S (IStatic rp) u sij@(BS2 s (Iter i) _)
+    = staticCheck (popCount s == 0 && rp == 0) . singleton $ ElmS (BS2 0 (Iter i) (Iter i)) undefbs2i
+  mkStream S (IVariable rp) u sij@(BS2 s (Iter i) _)
+    = staticCheck (popCount s >= rp) . singleton $ ElmS (BS2 0 (Iter i) (Iter i)) undefbs2i
   {-# Inline mkStream #-}
 
 instance
   ( Monad m
-  ) => MkStream m S (BS2I O First Last) where
+  ) => MkStream m S (BS2 First Last O) where
 
 instance
   ( Monad m
-  ) => MkStream m S (BS2I C First Last) where
+  ) => MkStream m S (BS2 First Last C) where
 
 
 
 -- | An undefined bitset with 2 interfaces.
 
-undefbs2i :: BS2I t f l
-undefbs2i = (-1) :> (-1) :> (-1)
+undefbs2i :: BS2 f l t
+undefbs2i = BS2 (-1)  (-1) (-1)
 {-# Inline undefbs2i #-}
 
 undefi :: Interface i
@@ -102,6 +102,8 @@ instance (TblConstraint u ~ TableConstraint) => TableStaticVar u (BitSet I) wher
   tableStreamIndex _ c _ bitSet = bitSet -- TODO rly?
   {-# INLINE [0] tableStaticVar   #-}
   {-# INLINE [0] tableStreamIndex #-}
+
+instance (TblConstraint u ~ TableConstraint) => TableStaticVar u (BS2 i j I) where
 
 -- | We sometimes need 
 

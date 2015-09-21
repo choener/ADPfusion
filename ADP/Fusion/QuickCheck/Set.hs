@@ -95,23 +95,22 @@ prop_b_iii_nnn ix@(BitSet _) = zs == ls where
 
 -- ** Inside checks
 
-prop_bii_i :: BS2I I First Last -> Bool
-prop_bii_i ix@(s:>i:>j) = zs == ls where
+prop_bii_i :: BS2 First Last I -> Bool
+prop_bii_i ix@(BS2 s i j) = zs == ls where
   tia = ITbl 0 0 EmptyOk xsBII (\ _ _ -> Id 1)
   zs = (id <<< tia ... stoList) highestBII ix
   ls = [ xsBII ! ix ]
 
-{-
-prop_bii_i_n :: BS2I I First Last -> Bool
-prop_bii_i_n ix@(s:>i:>j) = zs == ls where
+prop_bii_i_n :: BS2 First Last I -> Bool
+prop_bii_i_n ix@(BS2 s i j) = zs == ls where
   tia = ITbl 0 0 NonEmpty xsBII (\ _ _ -> Id 1)
   zs = (id <<< tia ... stoList) highestBII ix
   ls = [ xsBII ! ix | popCount s > 0 ]
 
 -- | Edges should never work as a single terminal element.
 
-prop_bii_e :: BS2I I First Last -> Bool
-prop_bii_e ix@(s:>Iter i:>Iter j) = zs == ls where
+prop_bii_e :: BS2 First Last I -> Bool
+prop_bii_e ix@(BS2 s (Iter i) (Iter j)) = zs == ls where
   e   = Edge (\ i j -> (i,j)) :: Edge (Int,Int)
   zs = (id <<< e ... stoList) highestBII ix
   ls = [] :: [ (Int,Int) ]
@@ -119,33 +118,33 @@ prop_bii_e ix@(s:>Iter i:>Iter j) = zs == ls where
 -- | Edges extend only in cases where in @i -> j@, @i@ actually happens to
 -- be a true interface.
 
-prop_bii_ie :: BS2I I First Last -> Bool
-prop_bii_ie ix@(s:>i:>Iter j) = zs == ls where
+prop_bii_ie :: BS2 First Last I -> Bool
+prop_bii_ie ix@(BS2 s i (Iter j)) = zs == ls where
   tia = ITbl 0 0 EmptyOk xsBII (\ _ _ -> Id 1)
   e   = Edge (\ i j -> (i,j)) :: Edge (Int,Int)
   zs = ((,) <<< tia % e ... stoList) highestBII ix
-  ls = [ ( xsBII ! (t:>i:>(Iter k :: Interface Last)) , (k,j) )
+  ls = [ ( xsBII ! (BS2 t i (Iter k :: Interface Last)) , (k,j) )
        | let t = s `clearBit` j
        , k <- activeBitsL t ]
 
-prop_bii_ie_n :: BS2I I First Last -> Bool
-prop_bii_ie_n ix@(s:>i:>Iter j) = zs == ls where
+prop_bii_ie_n :: BS2 First Last I -> Bool
+prop_bii_ie_n ix@(BS2 s i (Iter j)) = zs == ls where
   tia = ITbl 0 0 NonEmpty xsBII (\ _ _ -> Id 1)
   e   = Edge (\ i j -> (i,j)) :: Edge (Int,Int)
   zs = ((,) <<< tia % e ... stoList) highestBII ix
-  ls = [ ( xsBII ! (t:>i:>(Iter k :: Interface Last)) , (k,j) )
+  ls = [ ( xsBII ! (BS2 t i (Iter k :: Interface Last)) , (k,j) )
        | let t = s `clearBit` j
        , popCount t >= 2
        , k <- activeBitsL t
        , k /= getIter i
        ]
 
-prop_bii_iee :: BS2I I First Last -> Bool
-prop_bii_iee ix@(s:>i:>Iter j) = L.sort zs == L.sort ls where
+prop_bii_iee :: BS2 First Last I -> Bool
+prop_bii_iee ix@(BS2 s i (Iter j)) = L.sort zs == L.sort ls where
   tia = ITbl 0 0 EmptyOk xsBII (\ _ _ -> Id 1)
   e   = Edge (\ i j -> (i,j)) :: Edge (Int,Int)
   zs = ((,,) <<< tia % e % e ... stoList) highestBII ix
-  ls = [ ( xsBII ! (t:>i:>kk) , (k,l) , (l,j) )
+  ls = [ ( xsBII ! (BS2 t i kk) , (k,l) , (l,j) )
        | let tmp = (s `clearBit` j)
        , l <- activeBitsL tmp
        , l /= getIter i
@@ -154,12 +153,12 @@ prop_bii_iee ix@(s:>i:>Iter j) = L.sort zs == L.sort ls where
        , let kk = Iter k
        ]
 
-prop_bii_ieee :: BS2I I First Last -> Bool
-prop_bii_ieee ix@(s:>i:>Iter j) = L.sort zs == L.sort ls where
+prop_bii_ieee :: BS2 First Last I -> Bool
+prop_bii_ieee ix@(BS2 s i (Iter j)) = L.sort zs == L.sort ls where
   tia = ITbl 0 0 EmptyOk xsBII (\ _ _ -> Id 1)
   e   = Edge (\ i j -> (i,j)) :: Edge (Int,Int)
   zs = ((,,,) <<< tia % e % e % e ... stoList) highestBII ix
-  ls = [ ( xsBII ! (t:>i:>kk) , (k,l) , (l,m) , (m,j) )
+  ls = [ ( xsBII ! (BS2 t i kk) , (k,l) , (l,m) , (m,j) )
        | let tmpM = (s `clearBit` j)
        , m <- activeBitsL tmpM
        , m /= getIter i
@@ -171,12 +170,12 @@ prop_bii_ieee ix@(s:>i:>Iter j) = L.sort zs == L.sort ls where
        , let kk = Iter k
        ]
 
-prop_bii_iee_n :: BS2I I First Last -> Bool
-prop_bii_iee_n ix@(s:>i:>Iter j) = L.sort zs == L.sort ls where
+prop_bii_iee_n :: BS2 First Last I -> Bool
+prop_bii_iee_n ix@(BS2 s i (Iter j)) = L.sort zs == L.sort ls where
   tia = ITbl 0 0 NonEmpty xsBII (\ _ _ -> Id 1)
   e   = Edge (\ i j -> (i,j)) :: Edge (Int,Int)
   zs = ((,,) <<< tia % e % e ... stoList) highestBII ix
-  ls = [ ( xsBII ! (t:>i:>kk) , (k,l) , (l,j) )
+  ls = [ ( xsBII ! (BS2 t i kk) , (k,l) , (l,j) )
        | let tmp = (s `clearBit` j)
        , l <- activeBitsL tmp
        , l /= getIter i
@@ -187,12 +186,12 @@ prop_bii_iee_n ix@(s:>i:>Iter j) = L.sort zs == L.sort ls where
        , let kk = Iter k
        ]
 
-prop_bii_ieee_n :: BS2I I First Last -> Bool
-prop_bii_ieee_n ix@(s:>i:>Iter j) = L.sort zs == L.sort ls where
+prop_bii_ieee_n :: BS2 First Last I -> Bool
+prop_bii_ieee_n ix@(BS2 s i (Iter j)) = L.sort zs == L.sort ls where
   tia = ITbl 0 0 NonEmpty xsBII (\ _ _ -> Id 1)
   e   = Edge (\ i j -> (i,j)) :: Edge (Int,Int)
   zs = ((,,,) <<< tia % e % e % e ... stoList) highestBII ix
-  ls = [ ( xsBII ! (t:>i:>kk) , (k,l) , (l,m) , (m,j) )
+  ls = [ ( xsBII ! (BS2 t i kk) , (k,l) , (l,m) , (m,j) )
        | let tmpM = (s `clearBit` j)
        , m <- activeBitsL tmpM
        , m /= getIter i
@@ -205,7 +204,6 @@ prop_bii_ieee_n ix@(s:>i:>Iter j) = L.sort zs == L.sort ls where
        , k /= getIter i
        , let kk = Iter k
        ]
--}
 
 -- prop_bii_ii (ix@(s:>i:>j) :: (BitSet:>Interface First:>Interface Last)) = tr zs ls $ zs == ls where
 --   tia = ITbl 0 0 EmptyOk xsBII (\ _ _ -> Id 1)
@@ -233,7 +231,7 @@ highestBi :: BitSet I
 highestBi = BitSet $ 2^(highBit+1) -1
 highestBo :: BitSet o
 highestBo = BitSet $ 2^(highBit+1) -1
-highestBII = highestBi :> Iter (highBit-1) :> Iter (highBit-1) -- assuming @highBit >= 1@
+highestBII = BS2 highestBi (Iter $ highBit-1) (Iter $ highBit-1) -- assuming @highBit >= 1@
 
 xsB :: Unboxed (BitSet I) Int
 xsB = fromList (BitSet 0) highestBi [ 0 .. ]
@@ -241,8 +239,8 @@ xsB = fromList (BitSet 0) highestBi [ 0 .. ]
 xoB :: Unboxed (BitSet O) Int
 xoB = fromList (BitSet 0) highestBo [ 0 .. ]
 
-xsBII :: Unboxed (BitSet I:>Interface First:>Interface Last) Int
-xsBII = fromList (BitSet 0:>Iter 0:>Iter 0) highestBII [ 0 .. ]
+xsBII :: Unboxed (BS2 First Last I) Int
+xsBII = fromList (BS2 0 0 0) highestBII [ 0 .. ]
 
 -- * general quickcheck stuff
 

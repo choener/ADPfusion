@@ -59,9 +59,7 @@ instance
           {-# Inline [0] step #-}
   {-# Inline addIndexDenseGo #-}
 
-type BS2I' f l t = BS2I t f l
-
 instance
   (
-  ) => AddIndexDense (cs:.c) (us:.BS2I I First Last) (is:.BS2I I First Last) where
+  ) => AddIndexDense (cs:.c) (us:.BS2 First Last I) (is:.BS2 First Last I) where
 

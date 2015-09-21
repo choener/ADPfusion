@@ -29,7 +29,7 @@ prop_Epsilon ix@(PointL j) = zs == ls where
 
 prop_O_Epsilon ix@(PointL j) = zs == ls where
   zs = (id <<< Epsilon ... stoList) maxPLo ix
-  ls = [ () | j == 100 ]
+  ls = [ () | j == maxI ]
 
 prop_ZEpsilon ix@(Z:.PointL j) = zs == ls where
   zs = (id <<< (M:|Epsilon) ... stoList) (Z:.maxPLi) ix
@@ -37,11 +37,11 @@ prop_ZEpsilon ix@(Z:.PointL j) = zs == ls where
 
 prop_O_ZEpsilon ix@(Z:.PointL j) = zs == ls where
   zs = (id <<< (M:|Epsilon) ... stoList) (Z:.maxPLo) ix
-  ls = [ Z:.() | j == 100 ]
+  ls = [ Z:.() | j == maxI ]
 
 prop_O_ZEpsilonEpsilon ix@(Z:.PointL j:.PointL l) = zs == ls where
   zs = (id <<< (M:|Epsilon:|Epsilon) ... stoList) (Z:.maxPLo:.maxPLo) ix
-  ls = [ Z:.():.() | j == 100, l == 100 ]
+  ls = [ Z:.():.() | j == maxI, l == maxI ]
 
 
 
@@ -53,7 +53,7 @@ prop_O_ItNC ix@(PointL j) = zs == ls where
   ls = [ ( unsafeIndex xsPo (PointL $ j+1)
          , ()
          , xs VU.! (j+0)
-         ) | j >= 0, j <= 99 ]
+         ) | j >= 0, j <= (maxI-1) ]
 {-# Noinline prop_O_ItNC #-}
 
 prop_O_ZItNC ix@(Z:.PointL j) = zs == ls where
@@ -62,7 +62,7 @@ prop_O_ZItNC ix@(Z:.PointL j) = zs == ls where
   ls = [ ( unsafeIndex xsZPo (Z:.PointL (j+1))
          , Z:.()
          , Z:.xs VU.! (j+0)
-         ) | j >= 0, j <= 99 ]
+         ) | j >= 0, j <= (maxI-1) ]
 
 prop_O_2dimIt_NC_CN ix@(Z:.PointL j:.PointL l) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsPPo (\ _ _ -> Id 1)
@@ -70,7 +70,7 @@ prop_O_2dimIt_NC_CN ix@(Z:.PointL j:.PointL l) = zs == ls where
   ls = [ ( unsafeIndex xsPPo (Z:.PointL (j+1):.PointL (l+1))
          , Z:.()           :.xs VU.! (l+0)
          , Z:.xs VU.! (j+0):.()
-         ) | j>=0, l>=0, j<=99, l<=99 ]
+         ) | j>=0, l>=0, j<=(maxI-1), l<=(maxI-1) ]
 
 prop_2dimIt_NC_CN ix@(Z:.PointL j:.PointL l) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsPP (\ _ _ -> Id 1)
@@ -78,7 +78,7 @@ prop_2dimIt_NC_CN ix@(Z:.PointL j:.PointL l) = zs == ls where
   ls = [ ( unsafeIndex xsPP (Z:.PointL (j-1):.PointL (l-1))
          , Z:.()           :.xs VU.! (l-1)
          , Z:.xs VU.! (j-1):.()
-         ) | j>=1, l>=1, j<=100, l<=100 ]
+         ) | j>=1, l>=1, j<=maxI, l<=maxI ]
 
 
 
@@ -105,26 +105,22 @@ prop_CC ix@(Z:.PointL i) = zs == ls where
 prop_It ix@(PointL j) = zs == ls where
   t = ITbl 0 0 EmptyOk xsP (\ _ _ -> Id 1)
   zs = (id <<< t ... stoList) maxPLi ix
-  ls = [ unsafeIndex xsP ix | j>=0, j<=100 ]
+  ls = [ unsafeIndex xsP ix | j>=0, j<=maxI ]
 
-{-
-prop_O_It ix@(O (PointL j)) = zs == ls where
+prop_O_It ix@(PointL j) = zs == ls where
   t = ITbl 0 0 EmptyOk xsPo (\ _ _ -> Id 1)
-  zs = (id <<< t ... stoList) (O maxPL) ix
-  ls = [ unsafeIndex xsPo ix | j>=0, j<=100 ]
--}
+  zs = (id <<< t ... stoList) maxPLo ix
+  ls = [ unsafeIndex xsPo ix | j>=0, j<=maxI ]
 
 prop_ZIt ix@(Z:.PointL j) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk) xsZP (\ _ _ -> Id 1)
   zs = (id <<< t ... stoList) (Z:.maxPLi) ix
-  ls = [ unsafeIndex xsZP ix | j>=0, j<=100 ]
+  ls = [ unsafeIndex xsZP ix | j>=0, j<=maxI ]
 
-{-
-prop_O_ZIt ix@(O (Z:.PointL j)) = zs == ls where
+prop_O_ZIt ix@(Z:.PointL j) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk) xsZPo (\ _ _ -> Id 1)
-  zs = (id <<< t ... stoList) (O (Z:.maxPLo)) ix
-  ls = [ unsafeIndex xsZPo ix | j>=0, j<=100 ]
--}
+  zs = (id <<< t ... stoList) (Z:.maxPLo) ix
+  ls = [ unsafeIndex xsZPo ix | j>=0, j<=maxI ]
 
 -- | Table, then single terminal
 
@@ -133,35 +129,33 @@ prop_ItC ix@(PointL j) = zs == ls where
   zs = ((,) <<< t % chr xs ... stoList) maxPLi ix
   ls = [ ( unsafeIndex xsP (PointL $ j-1)
          , xs VU.! (j-1)
-         ) | j>=1, j<=100 ]
+         ) | j>=1, j<=maxI ]
 
 -- | @A^*_j -> A^*_{j+1} c_{j+1)@ !
 
-{-
-prop_O_ItC ix@(O (PointL j)) = zs == ls where
+prop_O_ItC ix@(PointL j) = zs == ls where
   t = ITbl 0 0 EmptyOk xsPo (\ _ _ -> Id 1)
-  zs = ((,) <<< t % chr xs ... stoList) (O $ maxPLo) ix
-  ls = [ ( unsafeIndex xsPo (O $ PointL $ j+1)
+  zs = ((,) <<< t % chr xs ... stoList) maxPLo ix
+  ls = [ ( unsafeIndex xsPo (PointL $ j+1)
          , xs VU.! (j+0)
-         ) | j >= 0, j < 100 ]
+         ) | j >= 0, j < maxI ]
 
-prop_O_ItCC ix@(O (PointL j)) = zs == ls where
+prop_O_ItCC ix@(PointL j) = zs == ls where
   t = ITbl 0 0 EmptyOk xsPo (\ _ _ -> Id 1)
-  zs = ((,,) <<< t % chr xs % chr xs ... stoList) (O $ maxPLo) ix
-  ls = [ ( unsafeIndex xsPo (O $ PointL $ j+2)
+  zs = ((,,) <<< t % chr xs % chr xs ... stoList) maxPLo ix
+  ls = [ ( unsafeIndex xsPo (PointL $ j+2)
          , xs VU.! (j+0)
          , xs VU.! (j+1)
-         ) | j >= 0, j <= 98 ]
+         ) | j >= 0, j <= (maxI-2) ]
 {-# Noinline prop_O_ItCC #-}
 
-prop_O_ZItCC ix@(O (Z:.PointL j)) = zs == ls where
+prop_O_ZItCC ix@(Z:.PointL j) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk) xsZPo (\ _ _ -> Id 1)
-  zs = ((,,) <<< t % (M:|chr xs) % (M:|chr xs) ... stoList) (O (Z:.maxPLo)) ix
-  ls = [ ( unsafeIndex xsZPo (O (Z:.PointL (j+2)))
+  zs = ((,,) <<< t % (M:|chr xs) % (M:|chr xs) ... stoList) (Z:.maxPLo) ix
+  ls = [ ( unsafeIndex xsZPo (Z:.PointL (j+2))
          , Z:.xs VU.! (j+0)
          , Z:.xs VU.! (j+1)
-         ) | j >= 0, j <= 98 ]
--}
+         ) | j >= 0, j <= (maxI-2) ]
 
 -- | synvar followed by a 2-tape character terminal
 
@@ -171,17 +165,15 @@ prop_2dimItCC ix@(Z:.PointL j:.PointL l) = zs == ls where
   ls = [ ( unsafeIndex xsPP (Z:.PointL (j-2):.PointL (l-2))
          , Z:.xs VU.! (j-2):.xs VU.! (l-2)
          , Z:.xs VU.! (j-1):.xs VU.! (l-1)
-         ) | j>=2, l>=2, j<=100, l<=100 ]
+         ) | j>=2, l>=2, j<=maxI, l<=maxI ]
 
-{-
-prop_O_2dimItCC ix@(O (Z:.PointL j:.PointL l)) = zs == ls where
+prop_O_2dimItCC ix@(Z:.PointL j:.PointL l) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsPPo (\ _ _ -> Id 1)
-  zs = ((,,) <<< t % (M:|chr xs:|chr xs) % (M:|chr xs:|chr xs) ... stoList) (O (Z:.maxPLo:.maxPLo)) ix
-  ls = [ ( unsafeIndex xsPPo (O (Z:.PointL (j+2):.PointL (l+2)))
+  zs = ((,,) <<< t % (M:|chr xs:|chr xs) % (M:|chr xs:|chr xs) ... stoList) (Z:.maxPLo:.maxPLo) ix
+  ls = [ ( unsafeIndex xsPPo (Z:.PointL (j+2):.PointL (l+2))
          , Z:.xs VU.! (j+0):.xs VU.! (l+0)
          , Z:.xs VU.! (j+1):.xs VU.! (l+1)
-         ) | j>=0, l>=0, j<=98, l<=98 ]
--}
+         ) | j>=0, l>=0, j<=(maxI-2), l<=(maxI-2) ]
 
 -- * direct index tests
 
@@ -288,7 +280,7 @@ mxsPP = unsafePerformIO $ zzz where
   zzz :: IO (MutArr IO (Unboxed (Z:.PointL I:.PointL I) Int))
   zzz = fromListM (Z:.PointL 0:.PointL 0) (Z:.maxPLi:.maxPLi) [0 ..]
 
-maxI = 100
+maxI =100
 
 maxPLi :: PointL I
 maxPLi = PointL maxI
