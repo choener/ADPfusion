@@ -57,6 +57,24 @@ instance
     $ mkStream ls (termStaticVar ts sv i) lu (termStreamIndex ts sv i)
   {-# Inline mkStream #-}
 
+data TermState s a u i e = TState
+  { sS  :: !s -- | state coming in from the left
+  , sIx :: !a -- | @I/C@ index from @sS@
+  , sOx :: !a -- | @O@ index from @sS@
+  , tIx :: !u -- | @I/C@ building up state to index the @table@.
+  , tOx :: !u -- | @O@ building up state to index the @table@ (for @O tables@).
+  , iIx :: !i -- | @I/C@ building up state to hand over to next symbol
+  , iOx :: !i -- | @O@ building up state to hand over to next symbol
+  , eTS :: !e -- | element data
+  }
+
+class TermStream m t u i where
+  termStream :: t -> i -> i -> S.Stream m (TermState s a Z Z Z) -> S.Stream m (TermState s a u i (TermArg t))
+
+instance TermStream m M Z Z where
+  termStream _ _ _ = id
+  {-# Inline termStream #-}
+
 -- | Handles each individual argument within a stack of terminal symbols.
 
 class TerminalStream m t i where
