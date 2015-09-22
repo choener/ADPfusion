@@ -89,6 +89,7 @@ library
     ADP.Fusion.Base.Point
     ADP.Fusion.Base.Set
     ADP.Fusion.Base.Subword
+    ADP.Fusion.Base.Term
     ADP.Fusion.Base.TyLvlIx
     ADP.Fusion.QuickCheck.Common
     ADP.Fusion.QuickCheck.Point
