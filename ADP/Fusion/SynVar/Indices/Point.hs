@@ -19,15 +19,15 @@ instance
   , GetIx a (is:.PointL I) ~ (PointL I)
   ) => AddIndexDense a (us:.PointL I) (is:.PointL I) where
   addIndexDenseGo (cs:._) (vs:.IStatic d) (us:.u) (is:.i)
-    = map (\(S7 s a b y z y' z') -> S7 s a b (y:.i) (z:.PointL 0) (y':.i) (z':.PointL 0))
+    = map (\(IxS s a b y z y' z') -> IxS s a b (y:.i) (z:.PointL 0) (y':.i) (z':.PointL 0))
     . addIndexDenseGo cs vs us is
   addIndexDenseGo (cs:.c) (vs:.IVariable d) (us:.u) (is:.PointL i)
     = flatten mk step . addIndexDenseGo cs vs us is
-    where mk (S7 s a b y z y' z') = let PointL k = getIndex a (Proxy :: Proxy (is:.PointL I))
-                                    in  return $ S8 s a b y z y' z' k
-          step (S8 s a b y z y' z' k)
+    where mk ixS = let PointL k = getIndex (sIx ixS) (Proxy :: Proxy (is:.PointL I))
+                   in  return $ ixS :. k
+          step (ixS@(IxS s a b y z y' z') :. k)
             | k + csize > i = return $ Done
-            | otherwise     = return $ Yield (S7 s a b (y:.PointL k) (z:.PointL 0) (y':.PointL k) (z':.PointL 0)) (S8 s a b y z y' z' (k+1))
+            | otherwise     = return $ Yield (IxS s a b (y:.PointL k) (z:.PointL 0) (y':.PointL k) (z':.PointL 0)) (ixS :. k+1)
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
           csize = delay_inline minSize c
@@ -39,8 +39,8 @@ instance
   , GetIx a (is:.PointL O) ~ (PointL O)
   ) => AddIndexDense a (us:.PointL O) (is:.PointL O) where
   addIndexDenseGo (cs:.c) (vs:.OStatic d) (us:.u) (is:.i)
-    = map (\(S7 s a b y z y' z') -> let o = getIndex b (Proxy :: Proxy (is:.PointL O))
-                                    in  S7 s a b (y:.o) (z:.o) (y':.o) (z':.o))
+    = map (\(IxS s a b y z y' z') -> let o = getIndex b (Proxy :: Proxy (is:.PointL O))
+                                     in  IxS s a b (y:.o) (z:.o) (y':.o) (z':.o))
     . addIndexDenseGo cs vs us is
     where csize = delay_inline minSize c
   {-# Inline addIndexDenseGo #-}

@@ -19,16 +19,29 @@ import ADP.Fusion.Base
 -- cases. The type @a@ is the type of the /full stack/ of indices, i.e. the
 -- full multi-tape problem.
 
-
 class AddIndexDense a u i where
   addIndexDenseGo
-    :: (Monad m) -- , GetIndex a i)
-    => TblConstraint u -> Context i -> i -> i -> Stream m (S7 s a a Z Z Z Z) -> Stream m (S7 s a a u u i i)
+    :: (Monad m)
+    => TblConstraint u -> Context i -> i -> i -> Stream m (IxState s a Z Z) -> Stream m (IxState s a u i)
 
 instance AddIndexDense a Z Z where
   addIndexDenseGo _ _ _ _ = id
   {-# Inline addIndexDenseGo #-}
 
+-- | @IxState@ holds the state that is currently being built up by
+-- @AddIndexDense@. We have both @tIx@ (and @tOx@) and @iIx@ (and @iOx@).
+-- For most index structures, the indices will co-incide; however for some,
+-- this will not be true -- herein for @Set@ index structures.
+
+data IxState s a u i = IxS
+  { sS  :: !s -- | state coming in from the left
+  , sIx :: !a -- | @I/C@ index from @sS@
+  , sOx :: !a -- | @O@ index from @sS@
+  , tIx :: !u -- | @I/C@ building up state to index the @table@.
+  , tOx :: !u -- | @O@ building up state to index the @table@ (for @O tables@).
+  , iIx :: !i -- | @I/C@ building up state to hand over to next symbol
+  , iOx :: !i -- | @O@ building up state to hand over to next symbol
+  }
 
 
 -- | Given an incoming stream with indices, this adds indices for the
@@ -42,7 +55,7 @@ addIndexDense
      , Element x0 a
      )
   => TblConstraint u -> Context i -> i -> i -> Stream m s -> Stream m (s,u,u,i,i)
-addIndexDense t c u i = map (\(S7 s _ _ i o i' o') -> (s,i,o,i',o')) . addIndexDenseGo t c u i . map (\s -> (S7 s (getIdx s) (getOmx s) Z Z Z Z))
+addIndexDense t c u i = map (\(IxS s _ _ i o i' o') -> (s,i,o,i',o')) . addIndexDenseGo t c u i . map (\s -> (IxS s (getIdx s) (getOmx s) Z Z Z Z))
 {-# Inline addIndexDense #-}
 
 -- | In case of 1-dim tables, we wrap the index creation in a multi-dim
@@ -57,6 +70,8 @@ addIndexDense1
      , Element x0 a
      )
   => TblConstraint u -> Context i -> i -> i -> Stream m s -> Stream m (s,u,u,i,i)
-addIndexDense1 t c u i = map (\(S7 s _ _ (Z:.i) (Z:.o) (Z:.i') (Z:.o')) -> (s,i,o,i',o')) . addIndexDenseGo (Z:.t) (Z:.c) (Z:.u) (Z:.i) . map (\s -> (S7 s (Z:.getIdx s) (Z:.getOmx s) Z Z Z Z))
+addIndexDense1 t c u i = map (\(IxS s _ _ (Z:.i) (Z:.o) (Z:.i') (Z:.o')) -> (s,i,o,i',o'))
+                       . addIndexDenseGo (Z:.t) (Z:.c) (Z:.u) (Z:.i)
+                       . map (\s -> (IxS s (Z:.getIdx s) (Z:.getOmx s) Z Z Z Z))
 {-# Inline addIndexDense1 #-}
 

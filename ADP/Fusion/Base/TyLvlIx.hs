@@ -3,8 +3,8 @@
 
 module ADP.Fusion.Base.TyLvlIx where
 
-import GHC.TypeLits
 import Data.Proxy
+import GHC.TypeLits
 
 import Data.PrimitiveArray hiding (map)
 
