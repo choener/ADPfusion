@@ -37,8 +37,7 @@ data SvState s a u i = SvS
   { sS  :: !s -- | state coming in from the left
   , sIx :: !a -- | @I/C@ index from @sS@
   , sOx :: !a -- | @O@ index from @sS@
-  , tIx :: !u -- | @I/C@ building up state to index the @table@.
-  , tOx :: !u -- | @O@ building up state to index the @table@ (for @O tables@).
+  , tx  :: !u -- | @I/C@ building up state to index the @table@.
   , iIx :: !i -- | @I/C@ building up state to hand over to next symbol
   , iOx :: !i -- | @O@ building up state to hand over to next symbol
   }
@@ -54,8 +53,8 @@ addIndexDense
      , s ~ Elm x0 a
      , Element x0 a
      )
-  => TblConstraint u -> Context i -> i -> i -> Stream m s -> Stream m (s,u,u,i,i)
-addIndexDense t c u i = map (\(SvS s _ _ i o i' o') -> (s,i,o,i',o')) . addIndexDenseGo t c u i . map (\s -> (SvS s (getIdx s) (getOmx s) Z Z Z Z))
+  => TblConstraint u -> Context i -> i -> i -> Stream m s -> Stream m (s,u,i,i)
+addIndexDense t c u i = map (\(SvS s _ _ z i' o') -> (s,z,i',o')) . addIndexDenseGo t c u i . map (\s -> (SvS s (getIdx s) (getOmx s) Z Z Z))
 {-# Inline addIndexDense #-}
 
 -- | In case of 1-dim tables, we wrap the index creation in a multi-dim
@@ -69,9 +68,9 @@ addIndexDense1
      , s ~ Elm x0 a
      , Element x0 a
      )
-  => TblConstraint u -> Context i -> i -> i -> Stream m s -> Stream m (s,u,u,i,i)
-addIndexDense1 t c u i = map (\(SvS s _ _ (Z:.i) (Z:.o) (Z:.i') (Z:.o')) -> (s,i,o,i',o'))
+  => TblConstraint u -> Context i -> i -> i -> Stream m s -> Stream m (s,u,i,i)
+addIndexDense1 t c u i = map (\(SvS s _ _ (Z:.z) (Z:.i') (Z:.o')) -> (s,z,i',o'))
                        . addIndexDenseGo (Z:.t) (Z:.c) (Z:.u) (Z:.i)
-                       . map (\s -> (SvS s (Z:.getIdx s) (Z:.getOmx s) Z Z Z Z))
+                       . map (\s -> (SvS s (Z:.getIdx s) (Z:.getOmx s) Z Z Z))
 {-# Inline addIndexDense1 #-}
 

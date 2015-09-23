@@ -37,7 +37,7 @@ instance
   , MkStream m ls (i I)
   ) => MkStream m (ls :!: ITbl m arr u x) (i I) where
   mkStream (ls :!: ITbl _ _ c t _) vs us is
-    = map (\(s,ii,oo,ii',oo') -> ElmITbl (t!ii) ii' oo' s)
+    = map (\(s,tt,ii',oo') -> ElmITbl (t!tt) ii' oo' s)
     . addIndexDense1 c vs us is
     $ mkStream ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
   {-# Inline mkStream #-}
@@ -52,7 +52,7 @@ instance
   , PrimArrayOps arr u x
   ) => MkStream mB (ls :!: Backtrack (ITbl mF arr u x) mF mB r) (i I) where
   mkStream (ls :!: BtITbl c t bt) vs us is
-    = mapM (\(s,ii,oo,ii',oo') -> bt us' ii >>= \ ~bb -> return $ ElmBtITbl (t!ii) bb ii' oo' s)
+    = mapM (\(s,tt,ii',oo') -> bt us' tt >>= \ ~bb -> return $ ElmBtITbl (t!tt) bb ii' oo' s)
     . addIndexDense1 c vs us is
     $ mkStream ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
     where !us' = snd $ bounds t
@@ -72,7 +72,7 @@ instance
   , MkStream m ls (i O)
   ) => MkStream m (ls :!: ITbl m arr (u O) x) (i O) where
   mkStream (ls :!: ITbl _ _ c t _) vs us is
-    = map (\(s,ii,oo,ii',oo') -> ElmITbl (t!oo) ii' oo' s)
+    = map (\(s,tt,ii',oo') -> ElmITbl (t!tt) ii' oo' s)
     . addIndexDense1 c vs us is
     $ mkStream ls (tableStaticVar (Proxy :: Proxy (u O)) c vs is) us (tableStreamIndex (Proxy :: Proxy (u O)) c vs is)
   {-# Inline mkStream #-}
@@ -89,7 +89,7 @@ instance
   , MkStream m ls (i O)
   ) => MkStream m (ls :!: ITbl m arr (u I) x) (i O) where
   mkStream (ls :!: ITbl _ _ c t _) vs us is
-    = map (\(s,ii,oo,ii',oo') -> ElmITbl (t!ii) ii' oo' s)
+    = map (\(s,tt,ii',oo') -> ElmITbl (t!tt) ii' oo' s)
     . addIndexDense1 c vs us is
     $ mkStream ls (tableStaticVar (Proxy :: Proxy (u I)) c vs is) us (tableStreamIndex (Proxy :: Proxy (u I)) c vs is)
   {-# Inline mkStream #-}
@@ -104,7 +104,7 @@ instance
   , TableStaticVar (u I) (i C)
   ) => MkStream m (ls :!: ITbl m arr (u I) x) (i C) where
   mkStream (ls :!: ITbl _ _ c t _) vs us is
-    = map (\(s,ii,oo,ii',oo') -> ElmITbl (t!ii) ii' oo' s)
+    = map (\(s,tt,ii',oo') -> ElmITbl (t!tt) ii' oo' s)
     . addIndexDense1 c vs us is
     $ mkStream ls (tableStaticVar (Proxy :: Proxy (u I)) c vs is) us (tableStreamIndex (Proxy :: Proxy (u I)) c vs is)
   {-# Inline mkStream #-}
@@ -119,7 +119,7 @@ instance
   , TableStaticVar (u O) (i C)
   ) => MkStream m (ls :!: ITbl m arr (u O) x) (i C) where
   mkStream (ls :!: ITbl _ _ c t _) vs us is
-    = map (\(s,ii,oo,ii',oo') -> ElmITbl (t!oo) ii' oo' s)
+    = map (\(s,tt,ii',oo') -> ElmITbl (t!tt) ii' oo' s)
     . addIndexDense1 c vs us is
     $ mkStream ls (tableStaticVar (Proxy :: Proxy (u O)) c vs is) us (tableStreamIndex (Proxy :: Proxy (u O)) c vs is)
   {-# Inline mkStream #-}

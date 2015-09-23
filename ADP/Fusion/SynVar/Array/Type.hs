@@ -115,7 +115,7 @@ instance
   , PrimArrayOps arr (us:.u) x
   ) => MkStream m (ls :!: ITbl m arr (us:.u) x) (is:.i) where
   mkStream (ls :!: ITbl _ _ c t _) vs us is
-    = map (\(s,ii,oo,ii',oo') -> ElmITbl (t!ii) ii' oo' s)
+    = map (\(s,tt,ii',oo') -> ElmITbl (t!tt) ii' oo' s)
     . addIndexDense c vs us is
     $ mkStream ls (tableStaticVar (Proxy :: Proxy (us:.u)) c vs is) us (tableStreamIndex (Proxy :: Proxy (us:.u)) c vs is)
   {-# Inline mkStream #-}
@@ -129,7 +129,7 @@ instance
   , PrimArrayOps arr (us:.u) x
   ) => MkStream mB (ls :!: Backtrack (ITbl mF arr (us:.u) x) mF mB r) (is:.i) where
   mkStream (ls :!: BtITbl c t bt) vs us is
-    = mapM (\(s,ii,oo,ii',oo') -> bt us' ii >>= \ ~bb -> return $ ElmBtITbl (t!ii) bb ii' oo' s)
+    = mapM (\(s,tt,ii',oo') -> bt us' tt >>= \ ~bb -> return $ ElmBtITbl (t!tt) bb ii' oo' s)
     . addIndexDense c vs us is
     $ mkStream ls (tableStaticVar (Proxy :: Proxy (us:.u)) c vs is) us (tableStreamIndex (Proxy :: Proxy (us:.u)) c vs is)
     where !us' = snd $ bounds t
