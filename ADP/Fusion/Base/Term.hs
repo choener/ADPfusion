@@ -14,8 +14,7 @@ data TermState s a u i e = TState
   { sS  :: !s -- | state coming in from the left
   , sIx :: !a -- | @I/C@ index from @sS@
   , sOx :: !a -- | @O@ index from @sS@
-  , tIx :: !u -- | @I/C@ building up state to index the @table@.
-  , tOx :: !u -- | @O@ building up state to index the @table@ (for @O tables@).
+--  , tt  :: !u -- | @I/C@ building up state to index the @table@.
   , iIx :: !i -- | @I/C@ building up state to hand over to next symbol
   , iOx :: !i -- | @O@ building up state to hand over to next symbol
   , eTS :: !e -- | element data
