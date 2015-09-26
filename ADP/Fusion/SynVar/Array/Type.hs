@@ -31,7 +31,7 @@ data ITbl m arr i x where
 
 instance Build (ITbl m arr i x)
 
-type instance TermArg (TermSymbol a (ITbl m arr i x)) = TermArg a :. x
+type instance TermArg (ITbl m arr i x) = x
 
 instance GenBacktrackTable (ITbl mF arr i x) mF mB r where
   data Backtrack (ITbl mF arr i x) mF mB r = BtITbl !(TblConstraint i) !(arr i x) (i -> i -> mB [r])
@@ -39,7 +39,7 @@ instance GenBacktrackTable (ITbl mF arr i x) mF mB r where
   toBacktrack (ITbl _ _ c arr _) _ bt = BtITbl c arr bt
   {-# Inline toBacktrack #-}
 
-type instance TermArg (TermSymbol a (Backtrack (ITbl mF arr i x) mF mB r)) = TermArg a :. (x,[r])
+type instance TermArg (Backtrack (ITbl mF arr i x) mF mB r) = (x,[r])
 
 
 

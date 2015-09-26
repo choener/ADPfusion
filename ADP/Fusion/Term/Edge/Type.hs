@@ -28,5 +28,5 @@ instance
 
 deriving instance (Show i, Show e, Show (Elm ls i)) => Show (Elm (ls :!: Edge e) i)
 
-type instance TermArg (TermSymbol a (Edge e)) = TermArg a :. e
+type instance TermArg (Edge e) = e
 

@@ -1,6 +1,7 @@
 
 module ADP.Fusion.Term.Chr.Point where
 
+import           Data.Proxy
 import           Data.Strict.Tuple
 import           Debug.Trace
 import qualified Data.Vector.Fusion.Stream.Monadic as S
@@ -11,7 +12,11 @@ import           Data.PrimitiveArray
 import           ADP.Fusion.Base
 import           ADP.Fusion.Term.Chr.Type
 
+import           ADP.Fusion.Base.Term
 
+
+
+{-
 instance
   ( Monad m
   , Element ls (PointL I)
@@ -23,7 +28,56 @@ instance
     $ mkStream ls (IStatic d) (PointL u) (PointL $ i-1)
   mkStream _ _ _ _ = error "mkStream / Chr / PointL can only be implemented for IStatic"
   {-# Inline mkStream #-}
+-}
 
+-- | First try in getting this right with a @termStream@.
+--
+-- TODO use @PointL i@ since this is probably the same for all single-tape
+-- instances with @ElmChr@.
+--
+-- TODO it might even be possible to auto-generate this code via TH.
+
+instance
+  ( Monad m
+  , MkStream m ls (PointL i)
+  , TermStream m (TermSymbol M (Chr r x)) (Z:.PointL i) (Z:.PointL i)
+  , Element ls (PointL i)
+  , TermStaticVar (Chr r x) (PointL i)
+  ) => MkStream m (ls :!: Chr r x) (PointL i) where
+  mkStream (ls :!: Chr f xs) sv us is
+    = S.map (\(ss,ee,ii,oo) -> ElmChr ee ii oo ss) -- recover ElmChr
+    . addTermStream1 (Chr f xs) sv us is
+    $ mkStream ls (termStaticVar (Chr f xs) sv is) us (termStreamIndex (Chr f xs) sv is)
+  {-# Inline mkStream #-}
+
+-- | Current first try for using @TermStream@
+--
+-- TODO what happens to fusion if @staticCheck@ happens before @S.map@?
+
+instance
+  ( Monad m
+  , TermStream m ts a is
+  ) => TermStream m (TermSymbol ts (Chr r x)) a (is:.PointL I) where
+  termStream (ts:|Chr f xs) (cs:.IStatic d) (us:.PointL u) (is:.PointL i)
+    = staticCheck (i>0 && i<=u && i<= VG.length xs)
+    . S.map (\(TState s a b ii oo ee) -> TState s a b (ii:.PointL i) (oo:.PointL 0) (ee:. f xs (i-1)))
+    . termStream ts cs us is
+  {-# Inline termStream #-}
+
+instance
+  ( Monad m
+  , TermStream m ts a is
+  , GetIndex a (is:.PointL O)
+  , GetIx a (is:.PointL O) ~ (PointL O)
+  ) => TermStream m (TermSymbol ts (Chr r x)) a (is:.PointL O) where
+  termStream (ts:|Chr f xs) (cs:.OStatic d) (us:.PointL u) (is:.PointL i)
+    = S.map (\(TState s a b ii oo ee) ->
+                let PointL k = getIndex a (Proxy :: Proxy (is:.PointL O))
+                in  TState s a b (ii:.PointL (k-d)) (oo:.PointL k) (ee:.f xs (k-d-1)))
+    . termStream ts cs us is
+  {-# Inline termStream #-}
+
+{-
 instance
   ( Monad m
   , Element ls (PointL O)
@@ -34,6 +88,7 @@ instance
     $ mkStream ls (OStatic $ d+1) (PointL u) (PointL i)
   mkStream _ _ _ _ = error "Chr.Point / mkStream / Chr / Outside.PointL can only be implemented for OStatic"
   {-# Inline mkStream #-}
+-}
 
 -- TODO @Inline [0]@ ???
 

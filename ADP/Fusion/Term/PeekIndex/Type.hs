@@ -27,5 +27,5 @@ instance
 
 deriving instance (Show i, Show (Elm ls i)) => Show (Elm (ls :!: PeekIndex i) i)
 
-type instance TermArg (TermSymbol a (PeekIndex i)) = TermArg a :. PeekIndex i
+type instance TermArg (PeekIndex i) = PeekIndex i
 

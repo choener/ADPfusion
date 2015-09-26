@@ -52,5 +52,5 @@ instance
 
 deriving instance (Show i, Show (v x), Show (Elm ls i)) => Show (Elm (ls :!: Strng v x) i)
 
-type instance TermArg (TermSymbol a (Strng v x)) = TermArg a :. v x
+type instance TermArg (Strng v x) = v x
 

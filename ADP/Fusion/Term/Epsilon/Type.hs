@@ -23,5 +23,5 @@ instance (Element ls i) => Element (ls :!: Epsilon) i where
   {-# Inline getIdx #-}
   {-# Inline getOmx #-}
 
-type instance TermArg (TermSymbol a Epsilon) = TermArg a :. ()
+type instance TermArg Epsilon = ()
 

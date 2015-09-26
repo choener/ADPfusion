@@ -23,5 +23,5 @@ instance (Element ls i) => Element (ls :!: Deletion) i where
   {-# Inline getIdx #-}
   {-# Inline getOmx #-}
 
-type instance TermArg (TermSymbol a Deletion) = TermArg a :. ()
+type instance TermArg Deletion = ()
 
