@@ -52,9 +52,12 @@ instance
   , TermStaticVar (TermSymbol a b) i
   ) => MkStream m (ls :!: TermSymbol a b) i where
   mkStream (ls :!: ts) sv lu i
+    = termStream ts sv lu i
+    {-
     = S.map fromTerminalStream
     . terminalStream ts sv i
     . S.map toTerminalStream
+    -}
     $ mkStream ls (termStaticVar ts sv i) lu (termStreamIndex ts sv i)
   {-# Inline mkStream #-}
 

@@ -53,13 +53,15 @@ instance
 -- | Current first try for using @TermStream@
 --
 -- TODO what happens to fusion if @staticCheck@ happens before @S.map@?
+--
+-- NOTE / TODO a bit faster with @seq xs@ ?
 
 instance
   ( Monad m
   , TermStream m ts a is
   ) => TermStream m (TermSymbol ts (Chr r x)) a (is:.PointL I) where
   termStream (ts:|Chr f xs) (cs:.IStatic d) (us:.PointL u) (is:.PointL i)
-    = staticCheck (i>0 && i<=u && i<= VG.length xs)
+    = seq xs . staticCheck (i>0 && i<=u && i<= VG.length xs)
     . S.map (\(TState s a b ii oo ee) -> TState s a b (ii:.PointL i) (oo:.PointL 0) (ee:. f xs (i-1)))
     . termStream ts cs us is
   {-# Inline termStream #-}
