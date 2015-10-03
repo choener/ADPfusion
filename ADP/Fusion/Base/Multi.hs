@@ -2,10 +2,12 @@
 module ADP.Fusion.Base.Multi where
 
 import qualified Data.Vector.Fusion.Stream.Monadic as S
+import           Data.Vector.Fusion.Stream.Monadic
 import           Data.Strict.Tuple
 import           Data.Proxy
+import           Prelude hiding (map)
 
-import           Data.PrimitiveArray
+import           Data.PrimitiveArray hiding (map)
 
 import           ADP.Fusion.Base.Classes
 
@@ -48,16 +50,19 @@ instance
   ( Monad m
   , MkStream m ls i
   , Element ls i
-  , TerminalStream m (TermSymbol a b) i
+--  , TerminalStream m (TermSymbol a b) i
   , TermStaticVar (TermSymbol a b) i
+  , TermStream m (TermSymbol a b) i i
   ) => MkStream m (ls :!: TermSymbol a b) i where
   mkStream (ls :!: ts) sv lu i
-    = termStream ts sv lu i
+    = map (\(TState sS _ _ ii oo ee) -> ElmTS ee ii oo sS)
+    . termStream ts sv lu i
     {-
     = S.map fromTerminalStream
     . terminalStream ts sv i
     . S.map toTerminalStream
     -}
+    . map (\s -> TState s (getIdx s) (getOmx s) Z Z Z)
     $ mkStream ls (termStaticVar ts sv i) lu (termStreamIndex ts sv i)
   {-# Inline mkStream #-}
 
@@ -143,4 +148,43 @@ instance (TableStaticVar us is, TableStaticVar u i) => TableStaticVar (us:.u) (i
   tableStreamIndex _ (cs:.c) (vs:.v) (is:.i) = tableStreamIndex (Proxy :: Proxy us) cs vs is :. tableStreamIndex (Proxy :: Proxy u) c v i
   {-# INLINE [0] tableStaticVar   #-}
   {-# INLINE [0] tableStreamIndex #-}
+
+
+
+data TermState s a i e = TState
+  { tS  :: !s -- | state coming in from the left
+  , tIx :: !a -- | @I/C@ index from @sS@
+  , tOx :: !a -- | @O@ index from @sS@
+--  , tt  :: !u -- | @I/C@ building up state to index the @table@.
+  , iIx :: !i -- | @I/C@ building up state to hand over to next symbol
+  , iOx :: !i -- | @O@ building up state to hand over to next symbol
+  , eTS :: !e -- | element data
+  }
+
+class TermStream m t a i where
+  termStream :: t -> Context i -> i -> i -> Stream m (TermState s a Z Z) -> Stream m (TermState s a i (TermArg t))
+
+instance TermStream m M a Z where
+  termStream _ _ _ _ = id
+  {-# Inline termStream #-}
+
+-- |
+--
+-- TODO need @t -> ElmType t@ type function
+--
+-- TODO need to actually return an @ElmType t@ can do that instead of
+-- returning @u@ !!!
+
+addTermStream1
+  :: ( Monad m
+     , TermStream m (TermSymbol M t) (Z:.a) (Z:.i)
+     , s ~ Elm x0 a
+     , Element x0 a
+     )
+  => t -> Context i -> i -> i -> Stream m s -> Stream m (s,TermArg t,i,i)
+addTermStream1 t c u i
+  = map (\(TState sS _ _ (Z:.ii) (Z:.oo) (Z:.ee)) -> (sS,ee,ii,oo))
+  . termStream (M:|t) (Z:.c) (Z:.u) (Z:.i)
+  . map (\s -> TState s (Z:.getIdx s) (Z:.getOmx s) Z Z Z)
+{-# Inline addTermStream1 #-}
 

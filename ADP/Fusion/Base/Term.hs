@@ -1,6 +1,8 @@
 
 module ADP.Fusion.Base.Term where
 
+{-
+
 import Data.Vector.Fusion.Stream.Monadic
 import Prelude hiding (map)
 
@@ -47,4 +49,7 @@ addTermStream1 t c u i
   . termStream (M:|t) (Z:.c) (Z:.u) (Z:.i)
   . map (\s -> TState s (Z:.getIdx s) (Z:.getOmx s) Z Z Z)
 {-# Inline addTermStream1 #-}
+
+
+-}
 
