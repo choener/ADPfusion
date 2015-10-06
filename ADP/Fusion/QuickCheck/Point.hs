@@ -31,17 +31,17 @@ prop_O_Epsilon ix@(PointL j) = zs == ls where
   zs = (id <<< Epsilon ... stoList) maxPLo ix
   ls = [ () | j == maxI ]
 
---prop_ZEpsilon ix@(Z:.PointL j) = zs == ls where
---  zs = (id <<< (M:|Epsilon) ... stoList) (Z:.maxPLi) ix
---  ls = [ Z:.() | j == 0 ]
+prop_ZEpsilon ix@(Z:.PointL j) = zs == ls where
+  zs = (id <<< (M:|Epsilon) ... stoList) (Z:.maxPLi) ix
+  ls = [ Z:.() | j == 0 ]
 
---prop_O_ZEpsilon ix@(Z:.PointL j) = zs == ls where
---  zs = (id <<< (M:|Epsilon) ... stoList) (Z:.maxPLo) ix
---  ls = [ Z:.() | j == maxI ]
+prop_O_ZEpsilon ix@(Z:.PointL j) = zs == ls where
+  zs = (id <<< (M:|Epsilon) ... stoList) (Z:.maxPLo) ix
+  ls = [ Z:.() | j == maxI ]
 
---prop_O_ZEpsilonEpsilon ix@(Z:.PointL j:.PointL l) = zs == ls where
---  zs = (id <<< (M:|Epsilon:|Epsilon) ... stoList) (Z:.maxPLo:.maxPLo) ix
---  ls = [ Z:.():.() | j == maxI, l == maxI ]
+prop_O_ZEpsilonEpsilon ix@(Z:.PointL j:.PointL l) = zs == ls where
+  zs = (id <<< (M:|Epsilon:|Epsilon) ... stoList) (Z:.maxPLo:.maxPLo) ix
+  ls = [ Z:.():.() | j == maxI, l == maxI ]
 
 
 
