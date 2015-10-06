@@ -31,21 +31,29 @@ prop_O_Epsilon ix@(PointL j) = zs == ls where
   zs = (id <<< Epsilon ... stoList) maxPLo ix
   ls = [ () | j == maxI ]
 
-prop_ZEpsilon ix@(Z:.PointL j) = zs == ls where
-  zs = (id <<< (M:|Epsilon) ... stoList) (Z:.maxPLi) ix
-  ls = [ Z:.() | j == 0 ]
+--prop_ZEpsilon ix@(Z:.PointL j) = zs == ls where
+--  zs = (id <<< (M:|Epsilon) ... stoList) (Z:.maxPLi) ix
+--  ls = [ Z:.() | j == 0 ]
 
-prop_O_ZEpsilon ix@(Z:.PointL j) = zs == ls where
-  zs = (id <<< (M:|Epsilon) ... stoList) (Z:.maxPLo) ix
-  ls = [ Z:.() | j == maxI ]
+--prop_O_ZEpsilon ix@(Z:.PointL j) = zs == ls where
+--  zs = (id <<< (M:|Epsilon) ... stoList) (Z:.maxPLo) ix
+--  ls = [ Z:.() | j == maxI ]
 
-prop_O_ZEpsilonEpsilon ix@(Z:.PointL j:.PointL l) = zs == ls where
-  zs = (id <<< (M:|Epsilon:|Epsilon) ... stoList) (Z:.maxPLo:.maxPLo) ix
-  ls = [ Z:.():.() | j == maxI, l == maxI ]
+--prop_O_ZEpsilonEpsilon ix@(Z:.PointL j:.PointL l) = zs == ls where
+--  zs = (id <<< (M:|Epsilon:|Epsilon) ... stoList) (Z:.maxPLo:.maxPLo) ix
+--  ls = [ Z:.():.() | j == maxI, l == maxI ]
 
 
 
 -- * Deletion cases
+
+prop_ItNC ix@(PointL j) = zs == ls where
+  t = ITbl 0 0 EmptyOk xsP (\ _ _ -> Id 1)
+  zs = ((,,) <<< t % Deletion % chr xs ... stoList) maxPLi ix
+  ls = [ ( unsafeIndex xsP (PointL $ j-1)
+         , ()
+         , xs VU.! (j-1)
+         ) | j >= 1, j <= (maxI) ]
 
 prop_O_ItNC ix@(PointL j) = zs == ls where
   t = ITbl 0 0 EmptyOk xsPo (\ _ _ -> Id 1)
@@ -195,13 +203,13 @@ prop_SomeS ix@(PointL j) = zs == ls where
   zs = (id <<< someS xs ... stoList) maxPLi ix
   ls = [ (VU.slice 0 j xs) | j>0 ]
 
-prop_2dim_ManyS_ManyS ix@(Z:.PointL i:.PointL j) = zs == ls where
-  zs = (id <<< (M:|manyS xs:|manyS xs) ... stoList) (Z:.maxPLi:.maxPLi) ix
-  ls = [ (Z:.VU.slice 0 i xs:.VU.slice 0 j xs) ]
+--prop_2dim_ManyS_ManyS ix@(Z:.PointL i:.PointL j) = zs == ls where
+--  zs = (id <<< (M:|manyS xs:|manyS xs) ... stoList) (Z:.maxPLi:.maxPLi) ix
+--  ls = [ (Z:.VU.slice 0 i xs:.VU.slice 0 j xs) ]
 
-prop_2dim_SomeS_SomeS ix@(Z:.PointL i:.PointL j) = zs == ls where
-  zs = (id <<< (M:|someS xs:|someS xs) ... stoList) (Z:.maxPLi:.maxPLi) ix
-  ls = [ (Z:.VU.slice 0 i xs:.VU.slice 0 j xs) | i > 0 && j > 0 ]
+--prop_2dim_SomeS_SomeS ix@(Z:.PointL i:.PointL j) = zs == ls where
+--  zs = (id <<< (M:|someS xs:|someS xs) ... stoList) (Z:.maxPLi:.maxPLi) ix
+--  ls = [ (Z:.VU.slice 0 i xs:.VU.slice 0 j xs) | i > 0 && j > 0 ]
 
 -- ** Together with a syntactic variable.
 
@@ -215,25 +223,25 @@ prop_Itbl_SomeS ix@(PointL i) = zs == ls where
   zs = ((,) <<< t % someS xs ... stoList) maxPLi ix
   ls = [ (unsafeIndex xsP (PointL k), VU.slice k (i-k) xs) | k <- [0..i-1] ]
 
-prop_1dim_Itbl_ManyS ix@(Z:.PointL i) = zs == ls where
-  t = ITbl 0 0 (Z:.EmptyOk) xsZP (\ _ _ -> Id 1)
-  zs = ((,) <<< t % (M:|manyS xs) ... stoList) (Z:.maxPLi) ix
-  ls = [ (unsafeIndex xsZP (Z:.PointL k), Z:. VU.slice k (i-k) xs) | k <- [0..i] ]
+--prop_1dim_Itbl_ManyS ix@(Z:.PointL i) = zs == ls where
+--  t = ITbl 0 0 (Z:.EmptyOk) xsZP (\ _ _ -> Id 1)
+--  zs = ((,) <<< t % (M:|manyS xs) ... stoList) (Z:.maxPLi) ix
+--  ls = [ (unsafeIndex xsZP (Z:.PointL k), Z:. VU.slice k (i-k) xs) | k <- [0..i] ]
 
-prop_1dim_Itbl_SomeS ix@(Z:.PointL i) = zs == ls where
-  t = ITbl 0 0 (Z:.EmptyOk) xsZP (\ _ _ -> Id 1)
-  zs = ((,) <<< t % (M:|someS xs) ... stoList) (Z:.maxPLi) ix
-  ls = [ (unsafeIndex xsZP (Z:.PointL k), Z:. VU.slice k (i-k) xs) | k <- [0..i-1] ]
+--prop_1dim_Itbl_SomeS ix@(Z:.PointL i) = zs == ls where
+--  t = ITbl 0 0 (Z:.EmptyOk) xsZP (\ _ _ -> Id 1)
+--  zs = ((,) <<< t % (M:|someS xs) ... stoList) (Z:.maxPLi) ix
+--  ls = [ (unsafeIndex xsZP (Z:.PointL k), Z:. VU.slice k (i-k) xs) | k <- [0..i-1] ]
 
-prop_2dim_Itbl_ManyS_ManyS ix@(Z:.PointL i:.PointL j) = zs == ls where
-  t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsPP (\ _ _ -> Id 1)
-  zs = ((,) <<< t % (M:|manyS xs:|manyS xs) ... stoList) (Z:.maxPLi:.maxPLi) ix
-  ls = [ (unsafeIndex xsPP (Z:.PointL k:.PointL l), Z:. VU.slice k (i-k) xs :. VU.slice l (j-l) xs) | k <- [0..i], l <- [0..j] ]
+--prop_2dim_Itbl_ManyS_ManyS ix@(Z:.PointL i:.PointL j) = zs == ls where
+--  t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsPP (\ _ _ -> Id 1)
+--  zs = ((,) <<< t % (M:|manyS xs:|manyS xs) ... stoList) (Z:.maxPLi:.maxPLi) ix
+--  ls = [ (unsafeIndex xsPP (Z:.PointL k:.PointL l), Z:. VU.slice k (i-k) xs :. VU.slice l (j-l) xs) | k <- [0..i], l <- [0..j] ]
 
-prop_2dim_Itbl_SomeS_SomeS ix@(Z:.PointL i:.PointL j) = zs == ls where
-  t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsPP (\ _ _ -> Id 1)
-  zs = ((,) <<< t % (M:|someS xs:|someS xs) ... stoList) (Z:.maxPLi:.maxPLi) ix
-  ls = [ (unsafeIndex xsPP (Z:.PointL k:.PointL l), Z:. VU.slice k (i-k) xs :. VU.slice l (j-l) xs) | k <- [0..i-1], l <- [0..j-1] ]
+--prop_2dim_Itbl_SomeS_SomeS ix@(Z:.PointL i:.PointL j) = zs == ls where
+--  t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsPP (\ _ _ -> Id 1)
+--  zs = ((,) <<< t % (M:|someS xs:|someS xs) ... stoList) (Z:.maxPLi:.maxPLi) ix
+--  ls = [ (unsafeIndex xsPP (Z:.PointL k:.PointL l), Z:. VU.slice k (i-k) xs :. VU.slice l (j-l) xs) | k <- [0..i-1], l <- [0..j-1] ]
 
 
 
