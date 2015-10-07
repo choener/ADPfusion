@@ -300,7 +300,7 @@ xs = VU.fromList [0 .. maxI - 1 :: Int]
 
 -- * general quickcheck stuff
 
-options = stdArgs {maxSuccess = 100 } -- 0}
+options = stdArgs {maxSuccess = 1000 } -- 0}
 
 customCheck = quickCheckWithResult options
 

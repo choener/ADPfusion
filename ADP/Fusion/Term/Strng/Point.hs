@@ -29,16 +29,30 @@ instance
 
 instance
   ( Monad m
+  , GetIndex a (is:.PointL I)
+  , GetIx a (is:.PointL I) ~ (PointL I)
   , TermStream m ts a is
   ) => TermStream m (TermSymbol ts (Strng v x)) a (is:.PointL I) where
+  termStream (ts:|Strng f minL maxL v) (cs:.IStatic d) (us:.PointL u) (is:.PointL i)
+    = S.map (\(TState s a b ii oo ee) ->
+                let PointL j = getIndex a (Proxy :: Proxy (is:.PointL I))
+                in  TState s a b (ii:.PointL i) (oo:.PointL 0) (ee:.f j (i-j) v))
+    . termStream ts cs us is
+  {-# Inline termStream #-}
 
 instance
   ( Monad m
   , TermStream m ts a is
   ) => TermStream m (TermSymbol ts (Strng v x)) a (is:.PointL O) where
+  termStream (ts:|Strng f minL maxL v) (cs:.OStatic d) (us:.PointL u) (is:.PointL i)
+    = error "TODO termStream / Strng / PointL"
+    . termStream ts cs us is
+  {-# Inline termStream #-}
 
 instance TermStaticVar (Strng v x) (PointL I) where
   termStaticVar (Strng _ minL maxL _) (IStatic   d) _ = IVariable $ d + maxL - minL
+  -- TODO need this as well, we want to allow multiple terminals in linear
+  -- languages, even if they induce variable boundaries
 --  termStaticVar _ (IVariable d) _ = IVariable d
   termStreamIndex (Strng _ minL _ _) (IStatic d) (PointL j) = PointL $ j - minL
   {-# Inline [0] termStaticVar   #-}
