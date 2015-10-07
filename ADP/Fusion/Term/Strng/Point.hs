@@ -1,6 +1,7 @@
 
 module ADP.Fusion.Term.Strng.Point where
 
+import           Data.Proxy
 import           Data.Strict.Tuple
 import           Debug.Trace
 import qualified Data.Vector.Fusion.Stream.Monadic as S
@@ -15,29 +16,62 @@ import           ADP.Fusion.Term.Strng.Type
 
 instance
   ( Monad m
-  , Element ls (PointL I)
-  , MkStream m ls (PointL I)
-  ) => MkStream m (ls :!: Strng v x) (PointL I) where
-  mkStream (ls :!: Strng f minL maxL xs) (IStatic d) (PointL u) (PointL i)
-    = staticCheck (i - minL >= 0 && i <= u && minL <= maxL)
-    $ S.map (\z -> let PointL j = getIdx z in ElmStrng (f j (i-j) xs) (PointL i) (PointL 0) z)
-    $ mkStream ls (IVariable $ d + maxL - minL) (PointL u) (PointL $ i - minL)
-  mkStream _ _ _ _ = error "mkStream / Strng / PointL / IVariable"
+  , MkStream m ls (PointL i)
+  , TermStream m (TermSymbol M (Strng v x)) (Z:.PointL i) (Z:.PointL i)
+  , Element ls (PointL i)
+  , TermStaticVar (Strng v x) (PointL i)
+  ) => MkStream m (ls :!: Strng v x) (PointL i) where
+  mkStream (ls :!: strng@(Strng _ minL maxL xs)) sv us is
+    = S.map (\(ss,ee,ii,oo) -> ElmStrng ee ii oo ss)
+    . addTermStream1 strng sv us is
+    $ mkStream ls (termStaticVar strng sv is) us (termStreamIndex strng sv is)
   {-# Inline mkStream #-}
 
+instance
+  ( Monad m
+  , TermStream m ts a is
+  ) => TermStream m (TermSymbol ts (Strng v x)) a (is:.PointL I) where
+
+instance
+  ( Monad m
+  , TermStream m ts a is
+  ) => TermStream m (TermSymbol ts (Strng v x)) a (is:.PointL O) where
+
 instance TermStaticVar (Strng v x) (PointL I) where
-  termStaticVar _ (IStatic   d) _ = IVariable d
-  termStaticVar _ (IVariable d) _ = IVariable d
+  termStaticVar (Strng _ minL maxL _) (IStatic   d) _ = IVariable $ d + maxL - minL
+--  termStaticVar _ (IVariable d) _ = IVariable d
   termStreamIndex (Strng _ minL _ _) (IStatic d) (PointL j) = PointL $ j - minL
   {-# Inline [0] termStaticVar   #-}
   {-# Inline [0] termStreamIndex #-}
 
-instance
-  ( Monad m
-  , TerminalStream m a is
-  ) => TerminalStream m (TermSymbol a (Strng v x)) (is:.PointL I) where
-  terminalStream (a:|Strng f minL maxL xs) (sv:.IStatic d) (is:.i@(PointL j))
-    = S.map (\(S6 s (zi:.PointL pi) (zo:._) is os e) -> S6 s zi zo (is:.i) (os:.PointL 0) (e:.f pi (j-pi) xs))
-    . iPackTerminalStream a sv (is:.i)
-  {-# Inline terminalStream #-}
+instance TermStaticVar (Strng v x) (PointL O) where
+
+
+--instance
+--  ( Monad m
+--  , Element ls (PointL I)
+--  , MkStream m ls (PointL I)
+--  ) => MkStream m (ls :!: Strng v x) (PointL I) where
+--  mkStream (ls :!: Strng f minL maxL xs) (IStatic d) (PointL u) (PointL i)
+--    = staticCheck (i - minL >= 0 && i <= u && minL <= maxL)
+--    $ S.map (\z -> let PointL j = getIdx z in ElmStrng (f j (i-j) xs) (PointL i) (PointL 0) z)
+--    $ mkStream ls (IVariable $ d + maxL - minL) (PointL u) (PointL $ i - minL)
+--  mkStream _ _ _ _ = error "mkStream / Strng / PointL / IVariable"
+--  {-# Inline mkStream #-}
+--
+--instance TermStaticVar (Strng v x) (PointL I) where
+--  termStaticVar _ (IStatic   d) _ = IVariable d
+--  termStaticVar _ (IVariable d) _ = IVariable d
+--  termStreamIndex (Strng _ minL _ _) (IStatic d) (PointL j) = PointL $ j - minL
+--  {-# Inline [0] termStaticVar   #-}
+--  {-# Inline [0] termStreamIndex #-}
+--
+--instance
+--  ( Monad m
+--  , TerminalStream m a is
+--  ) => TerminalStream m (TermSymbol a (Strng v x)) (is:.PointL I) where
+--  terminalStream (a:|Strng f minL maxL xs) (sv:.IStatic d) (is:.i@(PointL j))
+--    = S.map (\(S6 s (zi:.PointL pi) (zo:._) is os e) -> S6 s zi zo (is:.i) (os:.PointL 0) (e:.f pi (j-pi) xs))
+--    . iPackTerminalStream a sv (is:.i)
+--  {-# Inline terminalStream #-}
 
