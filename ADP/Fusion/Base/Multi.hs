@@ -10,6 +10,7 @@ import           Prelude hiding (map)
 import           Data.PrimitiveArray hiding (map)
 
 import           ADP.Fusion.Base.Classes
+import           ADP.Fusion.Base.TyLvlIx
 
 
 
@@ -187,4 +188,23 @@ addTermStream1 t c u i
   . termStream (M:|t) (Z:.c) (Z:.u) (Z:.i)
   . map (\s -> TState s (Z:.getIdx s) (Z:.getOmx s) Z Z Z)
 {-# Inline addTermStream1 #-}
+
+-- | @Term MkStream@ context
+
+type TmkCtx1 m ls t i
+  = ( Monad m
+    , MkStream m ls i
+    , TermStream m (TermSymbol M t) (Z:.i) (Z:.i)
+    , Element ls i
+    , TermStaticVar t i
+    )
+
+-- | @Term TermStream@ context
+
+type TstCtx1 m ts a is i
+  = ( Monad m
+    , TermStream m ts a is
+    , GetIndex a (is:.i)
+    , GetIx a (is:.i) ~ i
+    )
 

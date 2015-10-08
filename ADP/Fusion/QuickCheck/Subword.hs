@@ -148,9 +148,9 @@ prop_cIcOc ox@(Subword (k:.j)) = zs == ls where
 
 -- ** Epsilonness
 
---prop_Epsilon ox@(Subword (i:.j)) = zs == ls where
---  zs = (id <<< Epsilon ... stoList) (maxSWo) ox
---  ls = [ () | i==0 && j==highest ]
+prop_Epsilon ox@(Subword (i:.j)) = zs == ls where
+  zs = (id <<< Epsilon ... stoList) (maxSWo) ox
+  ls = [ () | i==0 && j==highest ]
 
 
 -- ** Multi-tape cases

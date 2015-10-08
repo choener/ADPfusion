@@ -17,11 +17,7 @@ import           ADP.Fusion.Term.Chr.Type
 
 
 instance
-  ( Monad m
-  , MkStream m ls (Subword i)
-  , TermStream m (TermSymbol M (Chr r x)) (Z:.Subword i) (Z:.Subword i)
-  , Element ls (Subword i)
-  , TermStaticVar (Chr r x) (Subword i)
+  ( TmkCtx1 m ls (Chr r x) (Subword i)
   ) => MkStream m (ls :!: Chr r x) (Subword i) where
   mkStream (ls :!: Chr f xs) sv us is
     = S.map (\(ss,ee,ii,oo) -> ElmChr ee ii oo ss)
@@ -30,10 +26,7 @@ instance
   {-# Inline mkStream #-}
 
 instance
-  ( Monad m
-  , TermStream m ts a is
-  , GetIndex a (is:.Subword I)
-  , GetIx a (is:.Subword I) ~ (Subword I)
+  ( TstCtx1 m ts a is (Subword I)
   ) => TermStream m (TermSymbol ts (Chr r x)) a (is:.Subword I) where
   termStream (ts:|Chr f xs) (cs:.IStatic ()) (us:.u) (is:.Subword (i:.j))
     = staticCheck (i>=0 && i < j && j <= VG.length xs)
@@ -49,10 +42,7 @@ instance
   {-# Inline termStream #-}
 
 instance
-  ( Monad m
-  , TermStream m ts a is
-  , GetIndex a (is:.Subword O)
-  , GetIx a (is:.Subword O) ~ (Subword O)
+  ( TstCtx1 m ts a is (Subword O)
   ) => TermStream m (TermSymbol ts (Chr r x)) a (is:.Subword O) where
   termStream (ts:|Chr f xs) (cs:.OStatic (di:.dj)) (us:.u) (is:.Subword (i:.j))
     = map (\(TState s a b ii oo ee) ->
