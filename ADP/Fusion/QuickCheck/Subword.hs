@@ -148,9 +148,9 @@ prop_cIcOc ox@(Subword (k:.j)) = zs == ls where
 
 -- ** Epsilonness
 
-prop_Epsilon ox@(Subword (i:.j)) = zs == ls where
-  zs = (id <<< Epsilon ... stoList) (maxSWo) ox
-  ls = [ () | i==0 && j==highest ]
+--prop_Epsilon ox@(Subword (i:.j)) = zs == ls where
+--  zs = (id <<< Epsilon ... stoList) (maxSWo) ox
+--  ls = [ () | i==0 && j==highest ]
 
 
 -- ** Multi-tape cases
@@ -159,18 +159,6 @@ prop_2dimIt ix@(Z:.Subword (i:.j):.Subword (k:.l)) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsSS (\ _ _ -> Id ((1,1),(1,1)))
   zs = (id <<< t ... stoList) (Z:.subword 0 highest:.subword 0 highest) ix
   ls = [ ( unsafeIndex xsSS ix ) | j<=highest && l<=highest ]
-
-{-
-xprop_2dimItIt ix@(Z:.Subword (i:.j):.Subword (k:.l)) = zs == ls where
-  t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsSS (\ _ _ -> Id (1,1))
-  zs = ((,) <<< t % t ... stoList) (Z:.subword 0 highest:.subword 0 highest) ix
-  ls = [ ( unsafeIndex xsSS (Z:.subword i m:.subword k n)
-         , unsafeIndex xsSS (Z:.subword m j:.subword n l) )
-       | j<=highest && l<=highest
-       , m <- [i..j]
-       , n <- [k..l]
-       ]
--}
 
 prop_2dimcIt ix@(Z:.Subword(i:.j):.Subword(k:.l)) = {- traceShow (zs,ls) $ -} zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsSS (\ _ _ -> Id ((1,1),(1,1)))
@@ -201,7 +189,7 @@ prop_2dimcItc ix@(Z:.Subword(i:.j):.Subword(k:.l)) = {- traceShow (zs,ls) $ -} z
 
 stoList = unId . SM.toList
 
-highest = 3 -- 10
+highest = 10
 
 maxSWi :: Subword I
 maxSWi = subword 0 highest
