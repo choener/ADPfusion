@@ -5,15 +5,14 @@ resolver: lts-3.8
 
 # Local packages, usually specified by relative directory name
 packages:
-- '.'
+- .././
+- ../../Lib-OrderedBits/
+- ../../Lib-PrimitiveArray/
+- ../../Lib-BenchmarkHistory/
 
 # Packages to be pulled from upstream that are not in the resolver (e.g., acme-missiles-0.3)
 extra-deps:
 - vector-0.11.0.0
-- OrderedBits-9.9.9.9
-- PrimitiveArray-9.9.9.9
-- BenchmarkHistory-9.9.9.9
-# TODO fix deps so that this works for the hackage version
 
 # Override default flag values for local packages and extra-deps
 flags: {}

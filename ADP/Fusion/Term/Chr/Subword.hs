@@ -25,6 +25,8 @@ instance
     $ mkStream ls (termStaticVar (Chr f xs) sv is) us (termStreamIndex (Chr f xs) sv is)
   {-# Inline mkStream #-}
 
+
+
 instance
   ( TstCtx1 m ts a is (Subword I)
   ) => TermStream m (TermSymbol ts (Chr r x)) a (is:.Subword I) where
@@ -75,63 +77,7 @@ instance
     . termStream ts cs us is
   {-# Inline termStream #-}
 
---instance
---  ( Monad m
---  , Element ls (Subword I)
---  , MkStream m ls (Subword I)
---  ) => MkStream m (ls :!: Chr r x) (Subword I) where
---  mkStream (ls :!: Chr f xs) (IStatic ()) hh (Subword (i:.j))
---    = staticCheck (i>=0 && i<j && j<= VG.length xs)
---    $ map (ElmChr (f xs $ j-1) (subword (j-1) j) (subword 0 0))
---    $ mkStream ls (IStatic ()) hh (delay_inline Subword (i:.j-1))
---  mkStream (ls :!: Chr f xs) (IVariable ()) hh (Subword (i:.j))
---    = map (\s -> let Subword (_:.l) = getIdx s
---                 in  ElmChr (f xs l) (subword l (l+1)) (subword 0 0) s)
---    $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j-1))
---  {-# Inline mkStream #-}
 
---instance
---  ( Monad m
---  , Element ls (Subword O)
---  , MkStream m ls (Subword O)
---  ) => MkStream m (ls :!: Chr r x) (Subword O) where
---  mkStream (ls :!: Chr f xs) (OStatic (di:.dj)) u ij@(Subword (i:.j))
---    = id -- staticCheck ( j < h ) -- TODO any check possible?
---    $ map (\s -> let (Subword (_:.k')) = getIdx s
---                     k = k'-dj -- -1
---                 in  ElmChr (f xs k) (subword (k'-1) k') (getOmx s) s)
---    $ mkStream ls (OStatic (di:.dj+1)) u ij
---  mkStream (ls :!: Chr f xs) (ORightOf (di:.dj)) u ij
---    = map (\s -> let (Subword (_:.k')) = getIdx s
---                     k = k'-dj-1
---                 in  ElmChr (f xs k) (subword (k'-1) k') (getOmx s) s)
---    $ mkStream ls (ORightOf (di:.dj+1)) u ij
---  mkStream (ls :!: Chr f xs) (OFirstLeft (di:.dj)) u ij
---    = id
---    $ map (\s -> let (Subword (_:.k)) = getIdx s
---                 in  ElmChr (f xs k) (subword k (k+1)) (getOmx s) s)
---    $ mkStream ls (OFirstLeft (di+1:.dj)) u ij
---  mkStream (ls :!: Chr f xs) (OLeftOf (di:.dj)) u ij
---    = map (\s -> let (Subword (_:.k)) = getIdx s
---                 in  ElmChr (f xs k) (subword k (k+1)) (getOmx s) s)
---    $ mkStream ls (OLeftOf (di+1:.dj)) u ij
---  {-# Inline mkStream #-}
-
-
-
---instance
---  ( Monad m
---  , TerminalStream m a is
---  ) => TerminalStream m (TermSymbol a (Chr r x)) (is:.Subword I) where
---  terminalStream (a:|Chr f v) (sv:.IStatic _) (is:.ix@(Subword (i:.j)))
---    -- TODO check if 'staticCheck' breaks fusion!!!
---    = staticCheck (i>=0 && i<j && j<=VG.length v)
---    . S.map (\(S6 s (zi:._) (zo:._) is os e) -> S6 s zi zo (is:.subword (j-1) j) (os:.subword 0 0) (e:.f v (j-1)))
---    . iPackTerminalStream a sv (is:.ix)
---  terminalStream (a:|Chr f v) (sv:.IVariable _) (is:.ix@(Subword (i:.j)))
---    = S.map (\(S6 s (zi:.Subword (_:.l)) (zo:._) is os e) -> S6 s zi zo (is:.subword l (l+1)) (os:.subword 0 0) (e:.f v l))
---    . iPackTerminalStream a sv (is:.ix)
---  {-# Inline terminalStream #-}
 
 instance TermStaticVar (Chr r x) (Subword I) where
   termStaticVar _ sv _ = sv
