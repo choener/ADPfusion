@@ -5,17 +5,22 @@ resolver: lts-3.8
 
 # Local packages, usually specified by relative directory name
 packages:
-- .././
-- ../../Lib-OrderedBits/
-- ../../Lib-PrimitiveArray/
-- ../../Lib-BenchmarkHistory/
+- '.'
+- ../Lib-OrderedBits/
+- ../Lib-PrimitiveArray/
+- ../Lib-BenchmarkHistory/
+- location:
+    git:    https://github.com/acid-state/safecopy
+    commit: c4798e537b77ecc2a560f523a15dbab02360e335
 
 # Packages to be pulled from upstream that are not in the resolver (e.g., acme-missiles-0.3)
 extra-deps:
 - vector-0.11.0.0
 
 # Override default flag values for local packages and extra-deps
-flags: {}
+flags:
+  ADPfusion:
+    examples: true
 
 # Control whether we use the GHC we find on the path
 # system-ghc: true
