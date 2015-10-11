@@ -1,7 +1,7 @@
 
 {-# Options_GHC -O0 #-}
 
-module ADP.Fusion.QuickCheck.Point where
+module QuickCheck.Point where
 
 import           Control.Applicative
 import           Control.Monad
@@ -14,6 +14,11 @@ import           System.IO.Unsafe
 import           Test.QuickCheck
 import           Test.QuickCheck.All
 import           Test.QuickCheck.Monadic
+#ifdef ADPFUSION_TEST_SUITE_PROPERTIES
+import           Test.Framework.TH
+import           Test.Framework.Providers.QuickCheck2
+#endif
+
 
 import           Data.PrimitiveArray
 
@@ -306,4 +311,10 @@ customCheck = quickCheckWithResult options
 
 return []
 allProps = $forAllProperties customCheck
+
+
+
+#ifdef ADPFUSION_TEST_SUITE_PROPERTIES
+testgroup_point = $(testGroupGenerator)
+#endif
 

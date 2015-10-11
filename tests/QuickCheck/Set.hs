@@ -1,7 +1,7 @@
 
 {-# Options_GHC -O0 #-}
 
-module ADP.Fusion.QuickCheck.Set where
+module QuickCheck.Set where
 
 import           Data.Bits
 import           Data.Vector.Fusion.Util
@@ -12,12 +12,16 @@ import qualified Data.Vector.Unboxed as VU
 import           Test.QuickCheck.All
 import           Test.QuickCheck hiding (NonEmpty)
 import           Test.QuickCheck.Monadic
+#ifdef ADPFUSION_TEST_SUITE_PROPERTIES
+import           Test.Framework.TH
+import           Test.Framework.Providers.QuickCheck2
+#endif
 
 import           Data.Bits.Ordered
 import           Data.PrimitiveArray
 
 import           ADP.Fusion
-import           ADP.Fusion.QuickCheck.Common
+import           QuickCheck.Common
 
 
 
@@ -250,4 +254,11 @@ customCheck = quickCheckWithResult options
 
 return []
 allProps = $forAllProperties customCheck
+
+
+
+#ifdef ADPFUSION_TEST_SUITE_PROPERTIES
+testgroup_set = $(testGroupGenerator)
+#endif
+
 

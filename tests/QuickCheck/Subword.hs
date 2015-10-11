@@ -6,7 +6,7 @@
 -- TODO need to carefully check all props against boundary errors!
 -- Especially the 2-dim cases!
 
-module ADP.Fusion.QuickCheck.Subword where
+module QuickCheck.Subword where
 
 import           Data.Vector.Fusion.Util
 import           Debug.Trace
@@ -16,11 +16,14 @@ import qualified Data.Vector.Unboxed as VU
 import           Test.QuickCheck
 import           Test.QuickCheck.All
 import           Test.QuickCheck.Monadic
+#ifdef ADPFUSION_TEST_SUITE_PROPERTIES
+import           Test.Framework.TH
+import           Test.Framework.Providers.QuickCheck2
+#endif
 
 import           Data.PrimitiveArray
 
 import           ADP.Fusion
-import           ADP.Fusion.QuickCheck.Common
 
 
 
@@ -218,4 +221,10 @@ customCheck = quickCheckWithResult options
 
 return []
 allProps = $forAllProperties customCheck
+
+
+
+#ifdef ADPFUSION_TEST_SUITE_PROPERTIES
+testgroup_subword = $(testGroupGenerator)
+#endif
 

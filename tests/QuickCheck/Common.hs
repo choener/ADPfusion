@@ -1,7 +1,7 @@
 
 {-# Options_GHC -O0 #-}
 
-module ADP.Fusion.QuickCheck.Common where
+module QuickCheck.Common where
 
 import Debug.Trace
 
