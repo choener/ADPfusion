@@ -6,9 +6,12 @@ resolver: lts-3.9
 # Local packages, usually specified by relative directory name
 packages:
 - '.'
-- ../Lib-OrderedBits/
-- ../Lib-PrimitiveArray/
-- ../Lib-BenchmarkHistory/
+- location: ../Lib-OrderedBits/
+  extra-dep: true
+- location: ../Lib-PrimitiveArray/
+  extra-dep: true
+- location: ../Lib-BenchmarkHistory/
+  extra-dep: true
 - location:
     git:    https://github.com/acid-state/safecopy
     commit: c4798e537b77ecc2a560f523a15dbab02360e335

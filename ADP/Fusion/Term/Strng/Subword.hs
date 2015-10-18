@@ -1,7 +1,7 @@
 
 module ADP.Fusion.Term.Strng.Subword where
 
-
+import           Data.Proxy
 import           Data.Strict.Tuple
 import           Data.Vector.Fusion.Util (delay_inline)
 import           Debug.Trace
@@ -15,6 +15,39 @@ import           ADP.Fusion.Base
 import           ADP.Fusion.Term.Strng.Type
 
 
+
+instance
+  ( TmkCtx1 m ls (Strng v x) (Subword i)
+  ) => MkStream m (ls :!: Strng v x) (Subword i) where
+  mkStream (ls :!: strng) sv us is
+    = S.map (\(ss,ee,ii,oo) -> ElmStrng ee ii oo ss)
+    . addTermStream1 strng sv us is
+    $ mkStream ls (termStaticVar strng sv is) us (termStreamIndex strng sv is)
+  {-# Inline mkStream #-}
+
+instance
+  ( TstCtx1 m ts a is (Subword I)
+  ) => TermStream m (TermSymbol ts (Strng v x)) a (is:.Subword I) where
+  --
+  termStream (ts:|Strng f minL maxL v) (cs:.IStatic d) (us:.Subword (ui:.uj)) (is:.Subword (i:.j))
+    = S.filter (\(TState _ a _ _ _ _) -> let Subword (k:.l) = getIndex a (Proxy :: Proxy (is:.Subword I)) in l-k <= maxL)
+    . S.map (\(TState s a b ii oo ee) ->
+                let Subword (_:.l) = getIndex a (Proxy :: Proxy (is:.Subword I))
+                    o              = getIndex b (Proxy :: Proxy (is:.Subword I))
+                in  TState s a b (ii:.subword l j) (oo:.o) (ee:.f l (j-l) v) )
+    . termStream ts cs us is
+  --
+  termStream (ts:|Strng f minL maxL v) (cs:.IVariable d) (us:._) (is:.Subword (i:.j))
+    = S.flatten mk step . termStream ts cs us is
+    where mk (tstate@(TState s a b ii oo ee)) =
+            let Subword (_:.k) = getIndex a (Proxy :: Proxy (is:.Subword I))
+            in  return (tstate, k+minL, min j (k+maxL))
+          step = undefined
+          {-# Inline [0] mk   #-}
+          {-# Inline [0] step #-}
+  {-# Inline termStream #-}
+
+{-
 
 -- | TODO If we use (IVariable mx) we might be able to request @exactly@
 -- the range we need!
@@ -40,4 +73,6 @@ instance
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline mkStream #-}
+
+-}
 
