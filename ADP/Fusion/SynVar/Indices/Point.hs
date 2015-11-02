@@ -45,3 +45,29 @@ instance
     where csize = delay_inline minSize c
   {-# Inline addIndexDenseGo #-}
 
+instance
+  ( AddIndexDense a us is
+  , GetIndex a (is:.PointL C)
+  , GetIx a (is:.PointL C) ~ (PointL C)
+  ) => AddIndexDense a (us:.PointL I) (is:.PointL C) where
+  addIndexDenseGo (cs:.c) (vs:.Complemented) (us:.u) (is:.i)
+    = map (\(SvS s a b t y z) -> let PointL k = getIndex a (Proxy :: Proxy (is:.PointL C))
+                                     kT = PointL k
+                                     kC = PointL k
+                                 in  SvS s a b (t:.kT) (y:.kC) (z:.kC))
+    . addIndexDenseGo cs vs us is
+  {-# Inline addIndexDenseGo #-}
+
+instance
+  ( AddIndexDense a us is
+  , GetIndex a (is:.PointL C)
+  , GetIx a (is:.PointL C) ~ (PointL C)
+  ) => AddIndexDense a (us:.PointL O) (is:.PointL C) where
+  addIndexDenseGo (cs:.c) (vs:.Complemented) (us:.u) (is:.i)
+    = map (\(SvS s a b t y z) -> let PointL k = getIndex a (Proxy :: Proxy (is:.PointL C))
+                                     kT = PointL k
+                                     kC = PointL k
+                                 in  SvS s a b (t:.kT) (y:.kC) (z:.kC))
+    . addIndexDenseGo cs vs us is
+  {-# Inline addIndexDenseGo #-}
+

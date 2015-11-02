@@ -16,6 +16,10 @@ import ADP.Fusion.SynVar.Indices.Classes
 
 
 
+-- * Bitsets without any boundaries
+--
+-- TODO outside and complement code
+
 instance
   ( AddIndexDense a us is
   , GetIndex a (is:.BitSet I)
@@ -60,6 +64,16 @@ instance
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline addIndexDenseGo #-}
+
+-- * Bitsets with a single boundary.
+--
+-- TODO write (copy ...) code
+
+
+
+-- * Bitsetts with two boundaries, a first, and a last element.
+--
+-- TODO write me
 
 instance
   (
