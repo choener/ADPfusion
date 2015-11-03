@@ -71,7 +71,7 @@ instance
 
 
 
--- * Bitsetts with two boundaries, a first, and a last element.
+-- * Bitsets with two boundaries, a first, and a last element.
 --
 -- TODO write me
 
