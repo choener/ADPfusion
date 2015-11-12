@@ -91,11 +91,9 @@ library
     ADP.Fusion.Base.Subword
     ADP.Fusion.Base.Term
     ADP.Fusion.Base.TyLvlIx
+    ADP.Fusion.Base.Unit
     ADP.Fusion.SynVar
     ADP.Fusion.SynVar.Array
---    ADP.Fusion.SynVar.Array.Point
---    ADP.Fusion.SynVar.Array.Set
---    ADP.Fusion.SynVar.Array.Subword
     ADP.Fusion.SynVar.Array.TermSymbol
     ADP.Fusion.SynVar.Array.Type
     ADP.Fusion.SynVar.Axiom
@@ -106,6 +104,7 @@ library
     ADP.Fusion.SynVar.Indices.Point
     ADP.Fusion.SynVar.Indices.Set
     ADP.Fusion.SynVar.Indices.Subword
+    ADP.Fusion.SynVar.Indices.Unit
     ADP.Fusion.SynVar.Recursive
     ADP.Fusion.SynVar.Recursive.Point
     ADP.Fusion.SynVar.Recursive.Subword
@@ -122,6 +121,7 @@ library
     ADP.Fusion.Term.Deletion.Point
     ADP.Fusion.Term.Deletion.Subword
     ADP.Fusion.Term.Deletion.Type
+    ADP.Fusion.Term.Deletion.Unit
     ADP.Fusion.Term.Edge
     ADP.Fusion.Term.Edge.Set
     ADP.Fusion.Term.Edge.Type
@@ -130,6 +130,7 @@ library
     ADP.Fusion.Term.Epsilon.Set
     ADP.Fusion.Term.Epsilon.Subword
     ADP.Fusion.Term.Epsilon.Type
+    ADP.Fusion.Term.Epsilon.Unit
     ADP.Fusion.Term.PeekIndex
     ADP.Fusion.Term.PeekIndex.Subword
     ADP.Fusion.Term.PeekIndex.Type

@@ -3,11 +3,13 @@ module ADP.Fusion.Term.Deletion
   ( module ADP.Fusion.Term.Deletion.Type
   , module ADP.Fusion.Term.Deletion.Point
   , module ADP.Fusion.Term.Deletion.Subword
+  , module ADP.Fusion.Term.Deletion.Unit
   ) where
 
 import ADP.Fusion.Term.Deletion.Point
 import ADP.Fusion.Term.Deletion.Subword
 import ADP.Fusion.Term.Deletion.Type
+import ADP.Fusion.Term.Deletion.Unit
 
 
 {-
