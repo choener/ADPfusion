@@ -30,22 +30,22 @@ instance RuleContext (Subword C) where
   initialContext _ = Complemented
   {-# Inline initialContext #-}
 
--- TODO write instance
-
--- instance RuleContext (Complement Subword)
 
 
+-- | NOTE it seems that a static check within an @IVariable@ context
+-- destroys fusion; maybe because of the outer flatten? We don't actually
+-- need a static check anyway because the next flatten takes care of
+-- conditional checks. @filter@ on the other hand, does work.
+--
+-- TODO test with and without filter using quickcheck
+--
+-- TODO shouldn't the new @staticCheck@ impl handle this?
 
 instance (Monad m) => MkStream m S (Subword I) where
   mkStream S (IStatic ()) (Subword (_:.h)) (Subword (i:.j))
     = staticCheck (i>=0 && i==j && j<=h)
     . singleton
     $ ElmS (subword i i) (subword 0 0)
-  -- NOTE it seems that a static check within an @IVariable@ context
-  -- destroys fusion; maybe because of the outer flatten? We don't actually
-  -- need a static check anyway because the next flatten takes care of
-  -- conditional checks. @filter@ on the other hand, does work.
-  -- TODO test with and without filter using quickcheck
   mkStream S (IVariable ()) (Subword (_:.h)) (Subword (i:.j))
     = filter (const $ 0<=i && i<=j && j<=h) . singleton $ ElmS (subword i i) (subword 0 0)
   {-# Inline mkStream #-}
@@ -63,6 +63,10 @@ instance (Monad m) => MkStream m S (Subword O) where
     $ enumFromStepN 0 1 (i'+1)
   mkStream S e _ _ = error $ show e ++ "maybe only inside syntactic terminals on the RHS of an outside rule?" -- TODO mostly because I'm not sure if that would be useful
   {-# Inline mkStream #-}
+
+-- | 
+--
+-- TODO The @go@ here needs an explanation.
 
 instance (Monad m) => MkStream m S (Subword C) where
   mkStream S Complemented (Subword (_:.h)) (Subword (i:.j))

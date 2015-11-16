@@ -27,9 +27,14 @@ instance RuleContext (BitSet I) where
   initialContext _ = IStatic 0
   {-# Inline initialContext #-}
 
+-- | The @Int@ in an @OutsideContext@ counts how many bits need to be fixed
+-- statically. I.e. if the bits @{1,2}@ are set in @X -> Y t@, and @t@ has
+-- size @1@, then @Y@ will have @{1,2,3}@, @{1,2,4}@ and so on, with @t@
+-- having @3, 4, ...@ as values.
+
 instance RuleContext (BitSet O) where
-  type Context (BitSet O) = OutsideContext ()
-  initialContext _ = OStatic ()
+  type Context (BitSet O) = OutsideContext Int
+  initialContext _ = OStatic 0
   {-# Inline initialContext #-}
 
 instance RuleContext (BitSet C) where
@@ -65,7 +70,25 @@ instance
     = staticCheck (c <= popCount s) . singleton $ ElmS 0 0
   {-# Inline mkStream #-}
 
+-- | Initial index construction. @OStatic@'s happen when we only have
+-- terminals on the r.h.s. That is, with @X -> end@.
 
+instance
+  ( Monad m
+  ) => MkStream m S (BitSet O) where
+  mkStream S (OStatic rp) u s
+    = staticCheck (popCount s + rp <= popCount u) . singleton $ ElmS s s
+  mkStream S (ORightOf _) u s
+    = error "ADP.Fusion.Base.Set: Entered ORightOf/BitSet"
+  mkStream S (OFirstLeft _) u s
+    = undefined
+  mkStream S (OLeftOf _) u s
+    = undefined
+  {-# Inline mkStream #-}
+
+instance
+  ( Monad m
+  ) => MkStream m S (BitSet C) where
 
 instance
   ( Monad m

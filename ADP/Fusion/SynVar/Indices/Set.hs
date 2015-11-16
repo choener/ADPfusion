@@ -95,21 +95,33 @@ instance
           {-# Inline [0] step #-}
   {-# Inline addIndexDenseGo #-}
 
+-- | Outside / Outside synvar indices are either @OStatic@ or @ORightOf@.
+-- Of course, the single outside synvar is not to the right of itself, but
+-- it is the final @RightOf@ object before we have the @FirstLeft@ object.
+
 instance
   ( AddIndexDense a us is
   , GetIndex a (is:.BitSet O)
   , GetIx a (is:.BitSet O) ~ (BitSet O)
   ) => AddIndexDense a (us:.BitSet O) (is:.BitSet O) where
-  addIndexDenseGo (cs:.c) (vs:.OStatic rp) (us:.u) (is:.i)
-    = flatten mk step . addIndexDenseGo cs vs us is
-    where mk svS
-            | undefined = return $ Nothing
-            | otherwise = return $ Just (svS :. mask :. k)
-            where
-          step = undefined
-          csize = delay_inline minSize c
-          {-# Inline [0] mk   #-}
-          {-# Inline [0] step #-}
+--  addIndexDenseGo (cs:.c) (vs:.OStatic rp) (us:.u) (is:.i)
+--    = flatten mk step . addIndexDenseGo cs vs us is
+--          -- We have a static hole to build. First of, we have in @sOx@ the
+--          -- initial hole. This is basically @not i@ (with some mask in
+--          -- place). We first need the popcount of @i@.
+--    where mk svS
+--            | undefined = return $ Nothing
+--            | otherwise = return $ Just (svS :. mask :. k)
+--            where k    = undefined
+--                  mask = undefined
+--                  a    = getIndex (sIx svS) (Proxy :: Proxy (is:.BitSet O))
+--                  b    = getIndex (sOx svS) (Proxy :: Proxy (is:.BitSet O))
+--          step = undefined
+--          csize = delay_inline minSize c
+--          {-# Inline [0] mk   #-}
+--          {-# Inline [0] step #-}
+  addIndexDenseGo (cs:.c) (vs:.ORightOf rp) (us:.u) (is:.i)
+    = undefined
   {-# Inline addIndexDenseGo #-}
 
 -- * Bitsets with a single boundary.
