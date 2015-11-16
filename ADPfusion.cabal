@@ -157,6 +157,7 @@ library
                     , ScopedTypeVariables
                     , StandaloneDeriving
                     , TemplateHaskell
+                    , TupleSections
                     , TypeFamilies
                     , TypeOperators
                     , TypeSynonymInstances

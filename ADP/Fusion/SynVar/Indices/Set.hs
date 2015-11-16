@@ -1,4 +1,6 @@
 
+-- | 
+
 module ADP.Fusion.SynVar.Indices.Set where
 
 import Data.Proxy
@@ -104,22 +106,36 @@ instance
   , GetIndex a (is:.BitSet O)
   , GetIx a (is:.BitSet O) ~ (BitSet O)
   ) => AddIndexDense a (us:.BitSet O) (is:.BitSet O) where
---  addIndexDenseGo (cs:.c) (vs:.OStatic rp) (us:.u) (is:.i)
---    = flatten mk step . addIndexDenseGo cs vs us is
---          -- We have a static hole to build. First of, we have in @sOx@ the
---          -- initial hole. This is basically @not i@ (with some mask in
---          -- place). We first need the popcount of @i@.
---    where mk svS
---            | undefined = return $ Nothing
---            | otherwise = return $ Just (svS :. mask :. k)
---            where k    = undefined
---                  mask = undefined
---                  a    = getIndex (sIx svS) (Proxy :: Proxy (is:.BitSet O))
---                  b    = getIndex (sOx svS) (Proxy :: Proxy (is:.BitSet O))
---          step = undefined
---          csize = delay_inline minSize c
---          {-# Inline [0] mk   #-}
---          {-# Inline [0] step #-}
+  addIndexDenseGo (cs:.c) (vs:.OStatic rp) (us:.u) (is:.i)
+    = flatten mk step . addIndexDenseGo cs vs us is
+          -- All active bits denote "hole" bits. I.e. @i==3@ means that the
+          -- current hole is at bits @[0,1]@. Here we now create the index
+          -- for the hole at @[0,1]@, but with a twist. In case @rp>0@ we
+          -- have reserved bits. In that case, @i@ is a big hole that will
+          -- be "filled" by a smaller hole and some terminal-like objects
+          -- that have reserved size.
+    where mk svS
+            | cm < csize = return $ Nothing
+            | otherwise  = return $ Just (svS :. mask :. k)
+            where a = getIndex (sIx svS) (Proxy :: Proxy (is:.BitSet O))
+                  b = getIndex (sOx svS) (Proxy :: Proxy (is:.BitSet O))
+                  mask = i `xor` b
+                  cm = popCount mask - rp
+                  k = BitSet $ 2^cm -1
+          step Nothing = return $ Done
+          -- |
+          --
+          -- TODO super-wrong, just so that the types match
+          step (Just (svS@(SvS s a b t y' z') :. mask :. k))
+            | pk > popCount i - rp = return $ Done
+            | otherwise            =
+                let
+                in  return $ Yield (SvS s a b (t:.undefined) (y':.undefined) (z':.undefined))
+                                   (Just (svS :. mask :. k `asTypeOf` i))
+            where pk = popCount k
+          csize = delay_inline minSize c
+          {-# Inline [0] mk   #-}
+          {-# Inline [0] step #-}
   addIndexDenseGo (cs:.c) (vs:.ORightOf rp) (us:.u) (is:.i)
     = undefined
   {-# Inline addIndexDenseGo #-}

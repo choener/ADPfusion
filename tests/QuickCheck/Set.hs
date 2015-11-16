@@ -29,7 +29,7 @@ import           QuickCheck.Common
 
 -- ** Inside checks
 
-prop_b_ii ix@(BitSet _) = zs == ls where
+prop_II ix@(BitSet _) = zs == ls where
   tia = ITbl 0 0 EmptyOk xsB (\ _ _ -> Id 1)
   tib = ITbl 0 0 EmptyOk xsB (\ _ _ -> Id 1)
   zs = ((,) <<< tia % tib ... stoList) highestBi ix
@@ -38,7 +38,7 @@ prop_b_ii ix@(BitSet _) = zs == ls where
        , let kk = popShiftL ix (BitSet k)
        ]
 
-prop_b_ii_nn ix@(BitSet _) = zs == ls where
+prop_JJ ix@(BitSet _) = zs == ls where
   tia = ITbl 0 0 NonEmpty xsB (\ _ _ -> Id 1)
   tib = ITbl 0 0 NonEmpty xsB (\ _ _ -> Id 1)
   zs = ((,) <<< tia % tib ... stoList) highestBi ix
@@ -49,7 +49,7 @@ prop_b_ii_nn ix@(BitSet _) = zs == ls where
        , popCount (ix `xor` kk) > 0
        ]
 
-prop_b_iii ix@(BitSet _) = {- traceShow (zs,ls) $ -} zs == ls where
+prop_III ix@(BitSet _) = {- traceShow (zs,ls) $ -} zs == ls where
   tia = ITbl 0 0 EmptyOk xsB (\ _ _ -> Id 1)
   tib = ITbl 0 0 EmptyOk xsB (\ _ _ -> Id 1)
   tic = ITbl 0 0 EmptyOk xsB (\ _ _ -> Id 1)
@@ -62,7 +62,7 @@ prop_b_iii ix@(BitSet _) = {- traceShow (zs,ls) $ -} zs == ls where
        , let mm = (ix `xor` (kk .|. ll))
        ]
 
-prop_b_iii_nnn ix@(BitSet _) = zs == ls where
+prop_JJJ ix@(BitSet _) = zs == ls where
   tia = ITbl 0 0 NonEmpty xsB (\ _ _ -> Id 1)
   tib = ITbl 0 0 NonEmpty xsB (\ _ _ -> Id 1)
   tic = ITbl 0 0 NonEmpty xsB (\ _ _ -> Id 1)
@@ -99,115 +99,115 @@ prop_b_iii_nnn ix@(BitSet _) = zs == ls where
 
 -- ** Inside checks
 
-prop_bii_i :: BS2 First Last I -> Bool
-prop_bii_i ix@(BS2 s i j) = zs == ls where
-  tia = ITbl 0 0 EmptyOk xsBII (\ _ _ -> Id 1)
-  zs = (id <<< tia ... stoList) highestBII ix
-  ls = [ xsBII ! ix ]
-
-prop_bii_i_n :: BS2 First Last I -> Bool
-prop_bii_i_n ix@(BS2 s i j) = zs == ls where
-  tia = ITbl 0 0 NonEmpty xsBII (\ _ _ -> Id 1)
-  zs = (id <<< tia ... stoList) highestBII ix
-  ls = [ xsBII ! ix | popCount s > 0 ]
+--prop_bii_i :: BS2 First Last I -> Bool
+--prop_bii_i ix@(BS2 s i j) = zs == ls where
+--  tia = ITbl 0 0 EmptyOk xsBII (\ _ _ -> Id 1)
+--  zs = (id <<< tia ... stoList) highestBII ix
+--  ls = [ xsBII ! ix ]
+--
+--prop_bii_i_n :: BS2 First Last I -> Bool
+--prop_bii_i_n ix@(BS2 s i j) = zs == ls where
+--  tia = ITbl 0 0 NonEmpty xsBII (\ _ _ -> Id 1)
+--  zs = (id <<< tia ... stoList) highestBII ix
+--  ls = [ xsBII ! ix | popCount s > 0 ]
 
 -- | Edges should never work as a single terminal element.
 
-prop_bii_e :: BS2 First Last I -> Bool
-prop_bii_e ix@(BS2 s (Iter i) (Iter j)) = zs == ls where
-  e   = Edge (\ i j -> (i,j)) :: Edge (Int,Int)
-  zs = (id <<< e ... stoList) highestBII ix
-  ls = [] :: [ (Int,Int) ]
+--prop_bii_e :: BS2 First Last I -> Bool
+--prop_bii_e ix@(BS2 s (Iter i) (Iter j)) = zs == ls where
+--  e   = Edge (\ i j -> (i,j)) :: Edge (Int,Int)
+--  zs = (id <<< e ... stoList) highestBII ix
+--  ls = [] :: [ (Int,Int) ]
 
 -- | Edges extend only in cases where in @i -> j@, @i@ actually happens to
 -- be a true interface.
 
-prop_bii_ie :: BS2 First Last I -> Bool
-prop_bii_ie ix@(BS2 s i (Iter j)) = zs == ls where
-  tia = ITbl 0 0 EmptyOk xsBII (\ _ _ -> Id 1)
-  e   = Edge (\ i j -> (i,j)) :: Edge (Int,Int)
-  zs = ((,) <<< tia % e ... stoList) highestBII ix
-  ls = [ ( xsBII ! (BS2 t i (Iter k :: Interface Last)) , (k,j) )
-       | let t = s `clearBit` j
-       , k <- activeBitsL t ]
-
-prop_bii_ie_n :: BS2 First Last I -> Bool
-prop_bii_ie_n ix@(BS2 s i (Iter j)) = zs == ls where
-  tia = ITbl 0 0 NonEmpty xsBII (\ _ _ -> Id 1)
-  e   = Edge (\ i j -> (i,j)) :: Edge (Int,Int)
-  zs = ((,) <<< tia % e ... stoList) highestBII ix
-  ls = [ ( xsBII ! (BS2 t i (Iter k :: Interface Last)) , (k,j) )
-       | let t = s `clearBit` j
-       , popCount t >= 2
-       , k <- activeBitsL t
-       , k /= getIter i
-       ]
-
-prop_bii_iee :: BS2 First Last I -> Bool
-prop_bii_iee ix@(BS2 s i (Iter j)) = L.sort zs == L.sort ls where
-  tia = ITbl 0 0 EmptyOk xsBII (\ _ _ -> Id 1)
-  e   = Edge (\ i j -> (i,j)) :: Edge (Int,Int)
-  zs = ((,,) <<< tia % e % e ... stoList) highestBII ix
-  ls = [ ( xsBII ! (BS2 t i kk) , (k,l) , (l,j) )
-       | let tmp = (s `clearBit` j)
-       , l <- activeBitsL tmp
-       , l /= getIter i
-       , let t = tmp `clearBit` l
-       , k <- activeBitsL t
-       , let kk = Iter k
-       ]
-
-prop_bii_ieee :: BS2 First Last I -> Bool
-prop_bii_ieee ix@(BS2 s i (Iter j)) = L.sort zs == L.sort ls where
-  tia = ITbl 0 0 EmptyOk xsBII (\ _ _ -> Id 1)
-  e   = Edge (\ i j -> (i,j)) :: Edge (Int,Int)
-  zs = ((,,,) <<< tia % e % e % e ... stoList) highestBII ix
-  ls = [ ( xsBII ! (BS2 t i kk) , (k,l) , (l,m) , (m,j) )
-       | let tmpM = (s `clearBit` j)
-       , m <- activeBitsL tmpM
-       , m /= getIter i
-       , let tmpL = (tmpM `clearBit` m)
-       , l <- activeBitsL tmpL
-       , l /= getIter i
-       , let t = tmpL `clearBit` l
-       , k <- activeBitsL t
-       , let kk = Iter k
-       ]
-
-prop_bii_iee_n :: BS2 First Last I -> Bool
-prop_bii_iee_n ix@(BS2 s i (Iter j)) = L.sort zs == L.sort ls where
-  tia = ITbl 0 0 NonEmpty xsBII (\ _ _ -> Id 1)
-  e   = Edge (\ i j -> (i,j)) :: Edge (Int,Int)
-  zs = ((,,) <<< tia % e % e ... stoList) highestBII ix
-  ls = [ ( xsBII ! (BS2 t i kk) , (k,l) , (l,j) )
-       | let tmp = (s `clearBit` j)
-       , l <- activeBitsL tmp
-       , l /= getIter i
-       , let t = tmp `clearBit` l
-       , popCount t >= 2
-       , k <- activeBitsL t
-       , k /= getIter i
-       , let kk = Iter k
-       ]
-
-prop_bii_ieee_n :: BS2 First Last I -> Bool
-prop_bii_ieee_n ix@(BS2 s i (Iter j)) = L.sort zs == L.sort ls where
-  tia = ITbl 0 0 NonEmpty xsBII (\ _ _ -> Id 1)
-  e   = Edge (\ i j -> (i,j)) :: Edge (Int,Int)
-  zs = ((,,,) <<< tia % e % e % e ... stoList) highestBII ix
-  ls = [ ( xsBII ! (BS2 t i kk) , (k,l) , (l,m) , (m,j) )
-       | let tmpM = (s `clearBit` j)
-       , m <- activeBitsL tmpM
-       , m /= getIter i
-       , let tmpL = (tmpM `clearBit` m)
-       , l <- activeBitsL tmpL
-       , l /= getIter i
-       , let t = tmpL `clearBit` l
-       , popCount t >= 2
-       , k <- activeBitsL t
-       , k /= getIter i
-       , let kk = Iter k
-       ]
+--prop_bii_ie :: BS2 First Last I -> Bool
+--prop_bii_ie ix@(BS2 s i (Iter j)) = zs == ls where
+--  tia = ITbl 0 0 EmptyOk xsBII (\ _ _ -> Id 1)
+--  e   = Edge (\ i j -> (i,j)) :: Edge (Int,Int)
+--  zs = ((,) <<< tia % e ... stoList) highestBII ix
+--  ls = [ ( xsBII ! (BS2 t i (Iter k :: Interface Last)) , (k,j) )
+--       | let t = s `clearBit` j
+--       , k <- activeBitsL t ]
+--
+--prop_bii_ie_n :: BS2 First Last I -> Bool
+--prop_bii_ie_n ix@(BS2 s i (Iter j)) = zs == ls where
+--  tia = ITbl 0 0 NonEmpty xsBII (\ _ _ -> Id 1)
+--  e   = Edge (\ i j -> (i,j)) :: Edge (Int,Int)
+--  zs = ((,) <<< tia % e ... stoList) highestBII ix
+--  ls = [ ( xsBII ! (BS2 t i (Iter k :: Interface Last)) , (k,j) )
+--       | let t = s `clearBit` j
+--       , popCount t >= 2
+--       , k <- activeBitsL t
+--       , k /= getIter i
+--       ]
+--
+--prop_bii_iee :: BS2 First Last I -> Bool
+--prop_bii_iee ix@(BS2 s i (Iter j)) = L.sort zs == L.sort ls where
+--  tia = ITbl 0 0 EmptyOk xsBII (\ _ _ -> Id 1)
+--  e   = Edge (\ i j -> (i,j)) :: Edge (Int,Int)
+--  zs = ((,,) <<< tia % e % e ... stoList) highestBII ix
+--  ls = [ ( xsBII ! (BS2 t i kk) , (k,l) , (l,j) )
+--       | let tmp = (s `clearBit` j)
+--       , l <- activeBitsL tmp
+--       , l /= getIter i
+--       , let t = tmp `clearBit` l
+--       , k <- activeBitsL t
+--       , let kk = Iter k
+--       ]
+--
+--prop_bii_ieee :: BS2 First Last I -> Bool
+--prop_bii_ieee ix@(BS2 s i (Iter j)) = L.sort zs == L.sort ls where
+--  tia = ITbl 0 0 EmptyOk xsBII (\ _ _ -> Id 1)
+--  e   = Edge (\ i j -> (i,j)) :: Edge (Int,Int)
+--  zs = ((,,,) <<< tia % e % e % e ... stoList) highestBII ix
+--  ls = [ ( xsBII ! (BS2 t i kk) , (k,l) , (l,m) , (m,j) )
+--       | let tmpM = (s `clearBit` j)
+--       , m <- activeBitsL tmpM
+--       , m /= getIter i
+--       , let tmpL = (tmpM `clearBit` m)
+--       , l <- activeBitsL tmpL
+--       , l /= getIter i
+--       , let t = tmpL `clearBit` l
+--       , k <- activeBitsL t
+--       , let kk = Iter k
+--       ]
+--
+--prop_bii_iee_n :: BS2 First Last I -> Bool
+--prop_bii_iee_n ix@(BS2 s i (Iter j)) = L.sort zs == L.sort ls where
+--  tia = ITbl 0 0 NonEmpty xsBII (\ _ _ -> Id 1)
+--  e   = Edge (\ i j -> (i,j)) :: Edge (Int,Int)
+--  zs = ((,,) <<< tia % e % e ... stoList) highestBII ix
+--  ls = [ ( xsBII ! (BS2 t i kk) , (k,l) , (l,j) )
+--       | let tmp = (s `clearBit` j)
+--       , l <- activeBitsL tmp
+--       , l /= getIter i
+--       , let t = tmp `clearBit` l
+--       , popCount t >= 2
+--       , k <- activeBitsL t
+--       , k /= getIter i
+--       , let kk = Iter k
+--       ]
+--
+--prop_bii_ieee_n :: BS2 First Last I -> Bool
+--prop_bii_ieee_n ix@(BS2 s i (Iter j)) = L.sort zs == L.sort ls where
+--  tia = ITbl 0 0 NonEmpty xsBII (\ _ _ -> Id 1)
+--  e   = Edge (\ i j -> (i,j)) :: Edge (Int,Int)
+--  zs = ((,,,) <<< tia % e % e % e ... stoList) highestBII ix
+--  ls = [ ( xsBII ! (BS2 t i kk) , (k,l) , (l,m) , (m,j) )
+--       | let tmpM = (s `clearBit` j)
+--       , m <- activeBitsL tmpM
+--       , m /= getIter i
+--       , let tmpL = (tmpM `clearBit` m)
+--       , l <- activeBitsL tmpL
+--       , l /= getIter i
+--       , let t = tmpL `clearBit` l
+--       , popCount t >= 2
+--       , k <- activeBitsL t
+--       , k /= getIter i
+--       , let kk = Iter k
+--       ]
 
 -- prop_bii_ii (ix@(s:>i:>j) :: (BitSet:>Interface First:>Interface Last)) = tr zs ls $ zs == ls where
 --   tia = ITbl 0 0 EmptyOk xsBII (\ _ _ -> Id 1)
