@@ -44,16 +44,6 @@ prop_BS0_I_Ivv ix@(BitSet _) = {- traceShow (zs,ls) $ -} L.sort zs == L.sort ls 
   zs = ((,,) <<< tia % chr csB0 % chr csB0 ... stoList) highestBi ix
   ls = [ (xsB ! (clearBit (clearBit ix a) b), csB0 VU.! a, csB0 VU.! b) | a <- activeBitsL ix, b <- activeBitsL ix, a /=b ]
 
-{-
-prop_cOc ox@(Subword (i:.j)) = zs == ls where
-  toa = ITbl 0 0 EmptyOk xoS (\ _ _ -> Id (1,1))
-  zs  = ((,,) <<< chr csS % toa % chr csS ... stoList) maxSWo ox
-  ls  = [ ( csS VU.! (i-1)
-          , unsafeIndex xoS (subword (i-1) (j+1))
-          , csS VU.! (j  ) )
-        | i > 0 && j < highest ]
--}
-
 prop_BS0_I_II ix@(BitSet _) = zs == ls where
   tia = ITbl 0 0 EmptyOk xsB (\ _ _ -> Id 1)
   tib = ITbl 0 0 EmptyOk xsB (\ _ _ -> Id 1)
@@ -115,16 +105,16 @@ prop_BS0_O_O ix@(BitSet _) = zs == ls where
   zs = (id <<< tia ... stoList) highestBo ix
   ls = [ xoB ! ix ]
 
-prop_BS0_O_IO ix@(BitSet _) = zs == ls where
-  tia = ITbl 0 0 EmptyOk xsB (\ _ _ -> Id 1)
-  tib = ITbl 0 0 EmptyOk xoB (\ _ _ -> Id 1)
-  zs = ((,) <<< tia % tib ... stoList) highestBo ix
-  ls = []
-  {-
-  ls = [ ( xsB ! kk , xsB ! (ix `xor` kk) )
-       | k <- VU.toList . popCntSorted $ popCount ix -- [ 0 .. 2^(popCount ix) -1 ]
-       , let kk = popShiftL ix (BitSet k)
-       ] -}
+--prop_BS0_O_IO ix@(BitSet _) = zs == ls where
+--  tia = ITbl 0 0 EmptyOk xsB (\ _ _ -> Id 1)
+--  tib = ITbl 0 0 EmptyOk xoB (\ _ _ -> Id 1)
+--  zs = ((,) <<< tia % tib ... stoList) highestBo ix
+--  ls = []
+--  {-
+--  ls = [ ( xsB ! kk , xsB ! (ix `xor` kk) )
+--       | k <- VU.toList . popCntSorted $ popCount ix -- [ 0 .. 2^(popCount ix) -1 ]
+--       , let kk = popShiftL ix (BitSet k)
+--       ] -}
 
 {-
 prop_BS0_I_II ix@(BitSet _) = zs == ls where

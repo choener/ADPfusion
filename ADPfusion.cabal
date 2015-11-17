@@ -486,6 +486,7 @@ test-suite properties
     -DADPFUSION_TEST_SUITE_PROPERTIES
   build-depends: base
                , ADPfusion
+               , bits
                , OrderedBits
                , PrimitiveArray
                , QuickCheck
