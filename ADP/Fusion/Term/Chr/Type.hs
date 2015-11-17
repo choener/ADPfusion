@@ -1,4 +1,10 @@
 
+-- |
+--
+-- TODO Rename @Chr@ to @Vtx@, a vertex parser is a generalization of
+-- a char parser. But this is only semantics, so not super important to do
+-- now.
+
 module ADP.Fusion.Term.Chr.Type where
 
 import           Data.Strict.Tuple

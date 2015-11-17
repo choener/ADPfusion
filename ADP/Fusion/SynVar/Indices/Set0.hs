@@ -1,7 +1,10 @@
 
--- | 
+-- | @Set0@ provides index movement for sets with no interfaces.
+--
+-- TODO Sets with 1 and 2 interfaces will go into @Set1@ and @Set2@
+-- modules.
 
-module ADP.Fusion.SynVar.Indices.Set where
+module ADP.Fusion.SynVar.Indices.Set0 where
 
 import Data.Proxy
 import Data.Vector.Fusion.Stream.Monadic (map,Stream,head,mapM,Step(..))
@@ -142,17 +145,14 @@ instance
     = undefined
   {-# Inline addIndexDenseGo #-}
 
--- * Bitsets with a single boundary.
---
--- TODO write (copy ...) code
-
-
-
--- * Bitsets with two boundaries, a first, and a last element.
---
--- TODO write me
+-- |
 
 instance
-  (
-  ) => AddIndexDense (cs:.c) (us:.BS2 First Last I) (is:.BS2 First Last I) where
+  ( AddIndexDense a us is
+  , GetIndex a (is:.BitSet O)
+  , GetIx a (is:.BitSet O) ~ (BitSet O)
+  ) => AddIndexDense a (us:.BitSet I) (is:.BitSet O) where
+--  addIndexDenseGo (cs:.c) (vs:.OFirstLeft rp) (us:.u) (is:.i)
+--    = error "ping"
+  {-# Inline addIndexDenseGo #-}
 

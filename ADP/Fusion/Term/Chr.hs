@@ -2,10 +2,12 @@
 module ADP.Fusion.Term.Chr
   ( module ADP.Fusion.Term.Chr.Type
   , module ADP.Fusion.Term.Chr.Point
+  , module ADP.Fusion.Term.Chr.Set0
   , module ADP.Fusion.Term.Chr.Subword
   ) where
 
 import ADP.Fusion.Term.Chr.Point
+import ADP.Fusion.Term.Chr.Set0
 import ADP.Fusion.Term.Chr.Subword
 import ADP.Fusion.Term.Chr.Type
 

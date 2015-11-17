@@ -94,16 +94,16 @@ prop_BS0_O_O ix@(BitSet _) = zs == ls where
   zs = (id <<< tia ... stoList) highestBo ix
   ls = [ xoB ! ix ]
 
-{-
 prop_BS0_O_IO ix@(BitSet _) = zs == ls where
   tia = ITbl 0 0 EmptyOk xsB (\ _ _ -> Id 1)
   tib = ITbl 0 0 EmptyOk xoB (\ _ _ -> Id 1)
-  zs = ((,) <<< tia % tib ... stoList) highestBi ix
+  zs = ((,) <<< tia % tib ... stoList) highestBo ix
+  ls = []
+  {-
   ls = [ ( xsB ! kk , xsB ! (ix `xor` kk) )
        | k <- VU.toList . popCntSorted $ popCount ix -- [ 0 .. 2^(popCount ix) -1 ]
        , let kk = popShiftL ix (BitSet k)
-       ]
--}
+       ] -}
 
 {-
 prop_BS0_I_II ix@(BitSet _) = zs == ls where

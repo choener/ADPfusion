@@ -149,6 +149,8 @@ instance TableStaticVar (u O) (BitSet O) where
   {-# INLINE [0] tableStaticVar   #-}
   {-# INLINE [0] tableStreamIndex #-}
 
+instance TableStaticVar (u I) (BitSet O) where
+
 instance (TblConstraint u ~ TableConstraint) => TableStaticVar u (BitSet I) where
   tableStaticVar _ c (IStatic   d) _ = IVariable $ d - minSize c -- TODO rly?
   tableStaticVar _ _ (IVariable d) _ = IVariable $ d

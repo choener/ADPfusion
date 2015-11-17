@@ -102,7 +102,7 @@ library
     ADP.Fusion.SynVar.Indices
     ADP.Fusion.SynVar.Indices.Classes
     ADP.Fusion.SynVar.Indices.Point
-    ADP.Fusion.SynVar.Indices.Set
+    ADP.Fusion.SynVar.Indices.Set0
     ADP.Fusion.SynVar.Indices.Subword
     ADP.Fusion.SynVar.Indices.Unit
     ADP.Fusion.SynVar.Recursive
@@ -115,6 +115,7 @@ library
     ADP.Fusion.Term
     ADP.Fusion.Term.Chr
     ADP.Fusion.Term.Chr.Point
+    ADP.Fusion.Term.Chr.Set0
     ADP.Fusion.Term.Chr.Subword
     ADP.Fusion.Term.Chr.Type
     ADP.Fusion.Term.Deletion
