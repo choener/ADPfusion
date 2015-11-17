@@ -79,6 +79,15 @@ pretty = Nussinov
   }
 {-# INLINE pretty #-}
 
+-- |
+--
+-- TODO This grammar can have infinite loops! This will be problematic for
+-- backtracking.
+--
+-- (1) @pse@ can have two empty split parts.
+-- (2) @u@ and @v@ can both ask for a @t@ that can be empty.
+-- (3) this leads to (1)
+
 grammar Nussinov{..} t' u' v' c =
   let t = t'  ( unp <<< t % c               |||
                 jux <<< t % c % t % c   |||
