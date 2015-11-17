@@ -72,9 +72,10 @@ instance
   -- context.
   mkStream S (IStatic rb) u s
     = staticCheck (rb <= ps) . map (\k -> ElmS (popShiftL s k) 0) $ unfoldr go strt
-    where strt = BitSet $ 2^(ps - rb) - 1
+    where strt = Just $ BitSet $ 2^(ps - rb) - 1
           ps   = popCount s
-          go k = (k,) <$> popPermutation ps k
+          go Nothing  = Nothing
+          go (Just k) = Just $ (k, popPermutation ps k)
   -- | Once we are variable, we do not reserve any bits, just check that
   -- the total reservation (if any) works.
   mkStream S (IVariable rb) u s
@@ -98,15 +99,15 @@ instance
   ( Monad m
   ) => MkStream m S (BitSet O) where
   -- | Same argument as above for @BitSet O@ construction.
---  mkStream S (OStatic rp) u s
---    = undefined -- staticCheck (popCount s + rp <= popCount u) . singleton $ ElmS s s
---  mkStream S (ORightOf _) u s
---    = error "ADP.Fusion.Base.Set: Entered ORightOf/BitSet"
+  mkStream S (OStatic rb) u s
+    = staticCheck (rb + popCount s <= popCount u) . singleton $ ElmS s s
+  mkStream S (ORightOf _) u s
+    = error "ADP.Fusion.Base.Set: Entered ORightOf/BitSet (this is probably wrong because it means we have an outside cfg with only terminals on the r.h.s, and the terminals are not a single Outside-Epsilon)"
   mkStream S (OFirstLeft rb) u s
-    = staticCheck (rb + popCount s <= popCount u) . singleton $ ElmS 0 0
+    = staticCheck (rb + popCount s <= popCount u) . singleton $ ElmS s s
 --  mkStream S (OLeftOf rp) u s
 --    = staticCheck (popCount s + rp <= popCount u) . singleton $ ElmS s s
---  {-# Inline mkStream #-}
+  {-# Inline mkStream #-}
 
 instance
   ( Monad m
@@ -140,6 +141,13 @@ undefbs2i = BS2 (-1)  (-1) (-1)
 undefi :: Interface i
 undefi = (-1)
 {-# Inline undefi #-}
+
+instance TableStaticVar (u O) (BitSet O) where
+  tableStaticVar _ _ (OStatic  d) _ = OFirstLeft d
+  tableStaticVar _ _ (ORightOf d) _ = OFirstLeft d
+  tableStreamIndex _ c _ bs = bs
+  {-# INLINE [0] tableStaticVar   #-}
+  {-# INLINE [0] tableStreamIndex #-}
 
 instance (TblConstraint u ~ TableConstraint) => TableStaticVar u (BitSet I) where
   tableStaticVar _ c (IStatic   d) _ = IVariable $ d - minSize c -- TODO rly?

@@ -108,30 +108,32 @@ instance
   ) => AddIndexDense a (us:.BitSet O) (is:.BitSet O) where
   addIndexDenseGo (cs:.c) (vs:.OStatic rp) (us:.u) (is:.i)
     = flatten mk step . addIndexDenseGo cs vs us is
-          -- All active bits denote "hole" bits. I.e. @i==3@ means that the
-          -- current hole is at bits @[0,1]@. Here we now create the index
-          -- for the hole at @[0,1]@, but with a twist. In case @rp>0@ we
-          -- have reserved bits. In that case, @i@ is a big hole that will
-          -- be "filled" by a smaller hole and some terminal-like objects
-          -- that have reserved size.
+          -- We need to make the number of @0@s smaller, or make the number
+          -- of @1@s larger. By an amount given by @rp@. 
     where mk svS
-            | cm < csize = return $ Nothing
+            -- not enough free bits with reserved count
+            | rp + popCount b >= popCount u = return $ Nothing
             | otherwise  = return $ Just (svS :. mask :. k)
             where a = getIndex (sIx svS) (Proxy :: Proxy (is:.BitSet O))
                   b = getIndex (sOx svS) (Proxy :: Proxy (is:.BitSet O))
-                  mask = i `xor` b
-                  cm = popCount mask - rp
-                  k = BitSet $ 2^cm -1
+                  mask = u `xor` b -- all bits available for permutations (upper bound, without already set bits)
+                  k = BitSet $ 2 ^ rp - 1 -- the bits we want to trigger
           step Nothing = return $ Done
-          -- |
-          --
-          -- TODO super-wrong, just so that the types match
+          -- | @step@ can now provide the outside index with @+rp@ more
+          -- bits, while the inside index wont have those. The idea is that
+          -- @outside@ provides the mask we can now plug additional
+          -- @inside@ objects in -- but only in those plug-ports where @i@
+          -- is zero.
           step (Just (svS@(SvS s a b t y' z') :. mask :. k))
-            | pk > popCount i - rp = return $ Done
-            | otherwise            =
-                let
-                in  return $ Yield (SvS s a b (t:.undefined) (y':.undefined) (z':.undefined))
-                                   (Just (svS :. mask :. k `asTypeOf` i))
+            -- drawing the next bitset ends up over the limit
+            | pk > rp   = return $ Done
+            | otherwise =
+                let aa = getIndex a (Proxy :: Proxy (is:.BitSet O)) -- this is our inside-type index, it will not be modified here
+                    bb = getIndex b (Proxy :: Proxy (is:.BitSet O))
+                    kk = popShiftL mask k
+                    tt = kk .|. bb -- the (smaller, more @1@ bits) lookup index
+                in  return $ Yield (SvS s a b (t:.tt) (y':.aa) (z':.tt))
+                                   ((svS :. mask :.) <$> setSucc 0 (2^rp -1) k)
             where pk = popCount k
           csize = delay_inline minSize c
           {-# Inline [0] mk   #-}

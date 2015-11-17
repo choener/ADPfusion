@@ -14,6 +14,56 @@ import ADP.Fusion.Term.Epsilon.Type
 
 
 
+-- ** No boundaries
+
+instance
+  ( TmkCtx1 m ls Epsilon (BitSet i)
+  ) => MkStream m (ls :!: Epsilon) (BitSet i) where
+  mkStream (ls :!: Epsilon) sv us is
+    = map (\(ss,ee,ii,oo) -> ElmEpsilon ii oo ss)
+    . addTermStream1 Epsilon sv us is
+    $ mkStream ls (termStaticVar Epsilon sv is) us (termStreamIndex Epsilon sv is)
+  {-# Inline mkStream #-}
+
+
+
+instance
+  ( TstCtx1 m ts a is (BitSet I)
+  ) => TermStream m (TermSymbol ts Epsilon) a (is:.BitSet I) where
+  termStream (ts:|Epsilon) (cs:.IStatic r) (us:.u) (is:.i)
+    = staticCheck (i==0)
+    . map (\(TState s a b ii oo ee) ->
+              TState s a b (ii:.0) (oo:.0) (ee:.()) )
+    . termStream ts cs us is
+  {-# Inline termStream #-}
+
+instance
+  ( TstCtx1 m ts a is (BitSet O)
+  ) => TermStream m (TermSymbol ts Epsilon) a (is:.BitSet O) where
+  termStream (ts:|Epsilon) (cs:.OStatic r) (us:.u) (is:.i)
+    = staticCheck (i==u)
+    . map (\(TState s a b ii oo ee) ->
+              TState s a b (ii:.u) (oo:.u) (ee:.()) )
+    . termStream ts cs us is
+  {-# Inline termStream #-}
+
+
+
+instance TermStaticVar Epsilon (BitSet I) where
+  termStaticVar _ sv _ = sv
+  termStreamIndex _ _ b = b
+  {-# Inline [0] termStaticVar #-}
+  {-# Inline [0] termStreamIndex #-}
+
+instance TermStaticVar Epsilon (BitSet O) where
+  termStaticVar _ sv _ = sv
+  termStreamIndex _ _ b = b
+  {-# Inline [0] termStaticVar #-}
+  {-# Inline [0] termStreamIndex #-}
+
+
+
+-- ** Two boundaries
 
 instance
   ( TmkCtx1 m ls Epsilon (BS2 First Last i)

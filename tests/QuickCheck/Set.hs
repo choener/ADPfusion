@@ -29,7 +29,11 @@ import           QuickCheck.Common
 
 -- ** Inside checks
 
-prop_II ix@(BitSet _) = zs == ls where
+prop_BS0_I_Eps ix@(BitSet _) = zs == ls where
+  zs = (id <<< Epsilon ... stoList) highestBi ix
+  ls = [ () | ix == 0 ]
+
+prop_BS0_I_II ix@(BitSet _) = zs == ls where
   tia = ITbl 0 0 EmptyOk xsB (\ _ _ -> Id 1)
   tib = ITbl 0 0 EmptyOk xsB (\ _ _ -> Id 1)
   zs = ((,) <<< tia % tib ... stoList) highestBi ix
@@ -38,7 +42,7 @@ prop_II ix@(BitSet _) = zs == ls where
        , let kk = popShiftL ix (BitSet k)
        ]
 
-prop_JJ ix@(BitSet _) = zs == ls where
+prop_BS0_I_JJ ix@(BitSet _) = zs == ls where
   tia = ITbl 0 0 NonEmpty xsB (\ _ _ -> Id 1)
   tib = ITbl 0 0 NonEmpty xsB (\ _ _ -> Id 1)
   zs = ((,) <<< tia % tib ... stoList) highestBi ix
@@ -49,7 +53,7 @@ prop_JJ ix@(BitSet _) = zs == ls where
        , popCount (ix `xor` kk) > 0
        ]
 
-prop_III ix@(BitSet _) = {- traceShow (zs,ls) $ -} zs == ls where
+prop_BS0_I_III ix@(BitSet _) = {- traceShow (zs,ls) $ -} zs == ls where
   tia = ITbl 0 0 EmptyOk xsB (\ _ _ -> Id 1)
   tib = ITbl 0 0 EmptyOk xsB (\ _ _ -> Id 1)
   tic = ITbl 0 0 EmptyOk xsB (\ _ _ -> Id 1)
@@ -62,7 +66,7 @@ prop_III ix@(BitSet _) = {- traceShow (zs,ls) $ -} zs == ls where
        , let mm = (ix `xor` (kk .|. ll))
        ]
 
-prop_JJJ ix@(BitSet _) = zs == ls where
+prop_BS0_I_JJJ ix@(BitSet _) = zs == ls where
   tia = ITbl 0 0 NonEmpty xsB (\ _ _ -> Id 1)
   tib = ITbl 0 0 NonEmpty xsB (\ _ _ -> Id 1)
   tic = ITbl 0 0 NonEmpty xsB (\ _ _ -> Id 1)
@@ -80,6 +84,38 @@ prop_JJJ ix@(BitSet _) = zs == ls where
 -- * Outside checks
 -- These checks are very similar to those in the @Subword@ module. We just
 -- need to be a bit more careful, as indexed sets have overlap.
+
+prop_BS0_O_Eps ix@(BitSet _) = zs == ls where
+  zs = (id <<< Epsilon ... stoList) highestBo ix
+  ls = [ () | ix == highestBo ]
+
+prop_BS0_O_O ix@(BitSet _) = zs == ls where
+  tia = ITbl 0 0 EmptyOk xoB (\ _ _ -> Id 1)
+  zs = (id <<< tia ... stoList) highestBo ix
+  ls = [ xoB ! ix ]
+
+{-
+prop_BS0_O_IO ix@(BitSet _) = zs == ls where
+  tia = ITbl 0 0 EmptyOk xsB (\ _ _ -> Id 1)
+  tib = ITbl 0 0 EmptyOk xoB (\ _ _ -> Id 1)
+  zs = ((,) <<< tia % tib ... stoList) highestBi ix
+  ls = [ ( xsB ! kk , xsB ! (ix `xor` kk) )
+       | k <- VU.toList . popCntSorted $ popCount ix -- [ 0 .. 2^(popCount ix) -1 ]
+       , let kk = popShiftL ix (BitSet k)
+       ]
+-}
+
+{-
+prop_BS0_I_II ix@(BitSet _) = zs == ls where
+  tia = ITbl 0 0 EmptyOk xsB (\ _ _ -> Id 1)
+  tib = ITbl 0 0 EmptyOk xsB (\ _ _ -> Id 1)
+  zs = ((,) <<< tia % tib ... stoList) highestBi ix
+  ls = [ ( xsB ! kk , xsB ! (ix `xor` kk) )
+       | k <- VU.toList . popCntSorted $ popCount ix -- [ 0 .. 2^(popCount ix) -1 ]
+       , let kk = popShiftL ix (BitSet k)
+       ]
+-}
+
 
 -- ** Two non-terminals.
 --
@@ -233,7 +269,7 @@ stoList = unId . SM.toList
 highBit = fromIntegral arbitraryBitSetMax -- should be the same as the highest bit in Index.Set.arbitrary
 highestBi :: BitSet I
 highestBi = BitSet $ 2^(highBit+1) -1
-highestBo :: BitSet o
+highestBo :: BitSet O
 highestBo = BitSet $ 2^(highBit+1) -1
 highestBII = BS2 highestBi (Iter $ highBit-1) (Iter $ highBit-1) -- assuming @highBit >= 1@
 
