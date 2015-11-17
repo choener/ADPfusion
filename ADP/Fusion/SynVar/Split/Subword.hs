@@ -1,4 +1,9 @@
 
+-- |
+--
+-- TODO Rewrite to use the new index-generating system. Take care of
+-- minsize constraints!
+
 module ADP.Fusion.SynVar.Split.Subword where
 
 import Data.Strict.Tuple

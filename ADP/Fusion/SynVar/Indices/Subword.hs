@@ -26,6 +26,8 @@ import ADP.Fusion.SynVar.Indices.Classes
 -- @
 -- Table: Inside
 -- Grammar: Inside
+--
+-- TODO are we checking the minSize condition in the @IStatic@ case?
 -- @
 
 instance

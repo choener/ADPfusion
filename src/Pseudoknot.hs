@@ -89,9 +89,9 @@ pretty = Nussinov
 -- (3) this leads to (1)
 
 grammar Nussinov{..} t' u' v' c =
-  let t = t'  ( unp <<< t % c               |||
+  let t = t'  ( unp <<< t % c           |||
                 jux <<< t % c % t % c   |||
-                nil <<< Epsilon                 |||
+                nil <<< Epsilon         |||
                 pse <<< (split (Proxy :: Proxy "U") (Proxy :: Proxy Fragment) u)
                      %  (split (Proxy :: Proxy "V") (Proxy :: Proxy Fragment) v)
                      %  (split (Proxy :: Proxy "U") (Proxy :: Proxy Final)    u)
