@@ -4,6 +4,7 @@
 module QuickCheck.Set where
 
 import           Data.Bits
+import           Data.Bits.Extras (msb)
 import           Data.Vector.Fusion.Util
 import           Debug.Trace
 import qualified Data.List as L
@@ -32,6 +33,26 @@ import           QuickCheck.Common
 prop_BS0_I_Eps ix@(BitSet _) = zs == ls where
   zs = (id <<< Epsilon ... stoList) highestBi ix
   ls = [ () | ix == 0 ]
+
+prop_BS0_I_Iv ix@(BitSet _) = {- traceShow (zs,ls) $ -} L.sort zs == L.sort ls where
+  tia = ITbl 0 0 EmptyOk xsB (\ _ _ -> Id 1)
+  zs = ((,) <<< tia % chr csB0 ... stoList) highestBi ix
+  ls = [ (xsB ! (clearBit ix a), csB0 VU.! a) | a <- activeBitsL ix ]
+
+prop_BS0_I_Ivv ix@(BitSet _) = {- traceShow (zs,ls) $ -} L.sort zs == L.sort ls where
+  tia = ITbl 0 0 EmptyOk xsB (\ _ _ -> Id 1)
+  zs = ((,,) <<< tia % chr csB0 % chr csB0 ... stoList) highestBi ix
+  ls = [ (xsB ! (clearBit (clearBit ix a) b), csB0 VU.! a, csB0 VU.! b) | a <- activeBitsL ix, b <- activeBitsL ix, a /=b ]
+
+{-
+prop_cOc ox@(Subword (i:.j)) = zs == ls where
+  toa = ITbl 0 0 EmptyOk xoS (\ _ _ -> Id (1,1))
+  zs  = ((,,) <<< chr csS % toa % chr csS ... stoList) maxSWo ox
+  ls  = [ ( csS VU.! (i-1)
+          , unsafeIndex xoS (subword (i-1) (j+1))
+          , csS VU.! (j  ) )
+        | i > 0 && j < highest ]
+-}
 
 prop_BS0_I_II ix@(BitSet _) = zs == ls where
   tia = ITbl 0 0 EmptyOk xsB (\ _ _ -> Id 1)
@@ -281,6 +302,9 @@ xoB = fromList (BitSet 0) highestBo [ 0 .. ]
 
 xsBII :: Unboxed (BS2 First Last I) Int
 xsBII = fromList (BS2 0 0 0) highestBII [ 0 .. ]
+
+csB0 :: VU.Vector Int
+csB0 = VU.fromList [ i | i <- [0 .. msb highestBi] ]
 
 -- * general quickcheck stuff
 

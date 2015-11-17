@@ -35,14 +35,14 @@ instance
   ( TstCtx1 m ts a is (BitSet I)
   ) => TermStream m (TermSymbol ts (Chr r x)) a (is:.BitSet I) where
   termStream (ts:|Chr f xs) (cs:.IStatic rb) (us:.u) (is:.i)
-    = staticCheck (rb + popCount i < popCount u && VG.length xs > msb u)
+    = staticCheck (rb <= popCount i && i <= u && VG.length xs > msb u)
     . S.flatten mk step . termStream ts cs us is
           -- we task all set bits @bs@ and also the index @i@ and calculate
           -- the non-set bits @mask@. The mask should have a popcount equal
           -- to @rb + 1@. We then active bit 0 and proceed with @step@.
     where mk svS = let bs = getIndex (tIx svS) (Proxy :: Proxy (is:.BitSet I))
                        mask = i `xor` bs
-                   in  return (svS :. mask :. lsbZ mask)
+                   in  {- traceShow ("Chr",i,bs,mask,lsbZ mask) $ -} return (svS :. mask :. lsbZ mask)
           -- In case we can still do a step via @k>=0@, we active bit @k@
           -- in @aa@.
           step (svS@(TState s a b ii oo ee) :. mask :. k )
@@ -54,4 +54,11 @@ instance
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline termStream #-}
+
+instance TermStaticVar (Chr r x) (BitSet I) where
+  termStaticVar _ (IStatic   rb) _ = IStatic   $ rb + 1
+  termStaticVar _ (IVariable rb) _ = IVariable $ rb + 1
+  termStreamIndex _ _ b = b
+  {-# Inline [0] termStaticVar   #-}
+  {-# Inline [0] termStreamIndex #-}
 
