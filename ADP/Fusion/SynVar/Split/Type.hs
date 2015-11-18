@@ -58,6 +58,10 @@ split :: Proxy (uId::Symbol) -> {- Proxy (zOrder::Nat) -> -} Proxy (splitType::S
 split _ _ = Split
 {-# Inline split #-}
 
+splitNE :: (ModifyConstraint synVar) => Proxy (uId::Symbol) -> {- Proxy (zOrder::Nat) -> -} Proxy (splitType::SplitType) -> synVar -> Split uId splitType synVar
+splitNE _ _ = Split . toNonEmpty
+{-# Inline splitNE #-}
+
 --type Spl uId zOrder splitType = forall synVar . Split uId zOrder splitType synVar
 
 instance Build (Split uId splitType synVar)

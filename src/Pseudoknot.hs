@@ -92,10 +92,10 @@ grammar Nussinov{..} t' u' v' c =
   let t = t'  ( unp <<< t % c           |||
                 jux <<< t % c % t % c   |||
                 nil <<< Epsilon         |||
-                pse <<< (split (Proxy :: Proxy "U") (Proxy :: Proxy Fragment) u)
-                     %  (split (Proxy :: Proxy "V") (Proxy :: Proxy Fragment) v)
-                     %  (split (Proxy :: Proxy "U") (Proxy :: Proxy Final)    u)
-                     %  (split (Proxy :: Proxy "V") (Proxy :: Proxy Final)    v)  ... h
+                pse <<< (splitNE (Proxy :: Proxy "U") (Proxy :: Proxy Fragment) u)
+                     %  (splitNE (Proxy :: Proxy "V") (Proxy :: Proxy Fragment) v)
+                     %  (splitNE (Proxy :: Proxy "U") (Proxy :: Proxy Final)    u)
+                     %  (splitNE (Proxy :: Proxy "V") (Proxy :: Proxy Final)    v)  ... h
               )
       u = u'  ( pk1 <<< (M:|t:|Deletion) % (M:|c:|Deletion) % u % (M:|Deletion:|t) % (M:|Deletion:|c) |||
                 nll <<< (M:|Epsilon:|Epsilon)                                                                 ... h

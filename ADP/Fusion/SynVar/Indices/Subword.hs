@@ -10,9 +10,9 @@
 module ADP.Fusion.SynVar.Indices.Subword where
 
 import Data.Proxy
-import Data.Vector.Fusion.Stream.Monadic (map,Stream,head,mapM,Step(..))
+import Data.Vector.Fusion.Stream.Monadic (map,Stream,head,mapM,Step(..),filter)
 import Data.Vector.Fusion.Util (delay_inline)
-import Prelude hiding (map,head,mapM)
+import Prelude hiding (map,head,mapM,filter)
 import Debug.Trace
 
 import Data.PrimitiveArray hiding (map)
@@ -27,7 +27,9 @@ import ADP.Fusion.SynVar.Indices.Classes
 -- Table: Inside
 -- Grammar: Inside
 --
--- TODO are we checking the minSize condition in the @IStatic@ case?
+-- The minSize condition for @IStatic@ is guaranteed via the use of
+-- @tableStreamIndex@ (not here, in individual synvars), where @j@ is set
+-- to @j-1@ for the next-left symbol!
 -- @
 
 instance

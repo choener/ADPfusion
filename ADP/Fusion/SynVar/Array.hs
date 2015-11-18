@@ -1,6 +1,7 @@
 
 module ADP.Fusion.SynVar.Array
   ( module ADP.Fusion.SynVar.Array.Type
+  , module ADP.Fusion.SynVar.Array
   ) where
 
 
@@ -116,9 +117,21 @@ instance ModifyConstraint (ITbl m arr (Subword t) x) where
   {-# Inline toNonEmpty #-}
   {-# Inline toEmpty #-}
 
+instance ModifyConstraint (ITbl m arr (Z:.Subword t:.Subword t) x) where
+  toNonEmpty (ITbl b l _ arr f) = ITbl b l (Z:.NonEmpty:.NonEmpty) arr f
+  toEmpty    (ITbl b l _ arr f) = ITbl b l (Z:.EmptyOk :.EmptyOk ) arr f
+  {-# Inline toNonEmpty #-}
+  {-# Inline toEmpty #-}
+
 instance ModifyConstraint (Backtrack (ITbl mF arr (Subword t) x) mF mB r) where
   toNonEmpty (BtITbl _ arr bt) = BtITbl NonEmpty arr bt
   toEmpty    (BtITbl _ arr bt) = BtITbl EmptyOk  arr bt
+  {-# Inline toNonEmpty #-}
+  {-# Inline toEmpty #-}
+
+instance ModifyConstraint (Backtrack (ITbl mF arr (Z:.Subword t:.Subword t) x) mF mB r) where
+  toNonEmpty (BtITbl _ arr bt) = BtITbl (Z:.NonEmpty:.NonEmpty) arr bt
+  toEmpty    (BtITbl _ arr bt) = BtITbl (Z:.EmptyOk :.EmptyOk ) arr bt
   {-# Inline toNonEmpty #-}
   {-# Inline toEmpty #-}
 

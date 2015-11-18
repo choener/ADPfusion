@@ -72,7 +72,7 @@ instance
               let Subword (_:.l) = getIndex a (Proxy :: Proxy (is:.Subword I))
               in  return (tstate, l, j - l)
           step (tstate@(TState s a b ii oo ee), k, z)
-            | k >= 0 = do let l  = j - z
+            | z >= 0 = do let l  = j - z
                               kl = subword k l
                           bt u kl >>= \ ~bb -> return $ Yield (TState s a b (ii:.kl) (oo:.subword 0 0) (ee:.(t!kl,bb))) (tstate, k, z-1)
             | otherwise = return $ Done

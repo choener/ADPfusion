@@ -1,8 +1,10 @@
 
 -- |
 --
--- TODO Rewrite to use the new index-generating system. Take care of
--- minsize constraints!
+-- TODO Rewrite to use the new index-generating system.
+--
+-- TODO Take care of minsize constraints! These are somewhat tricky. We
+-- have one constraint for dimension in the table.
 
 module ADP.Fusion.SynVar.Split.Subword where
 
@@ -53,16 +55,16 @@ instance
   , MkStream m ls (Subword I)
   , SplitIxCol uId (SameSid uId (Elm ls (Subword I))) (Elm ls (Subword I))
   , (SplitIxTy uId (SameSid uId (Elm ls (Subword I))) (Elm ls (Subword I)) :. Subword I) ~ mix
-  ,  (PrimArrayOps arr (SplitIxTy uId (SameSid uId (Elm ls (Subword I))) (Elm ls (Subword I)) :. Subword I) x)
+  , (PrimArrayOps arr (SplitIxTy uId (SameSid uId (Elm ls (Subword I))) (Elm ls (Subword I)) :. Subword I) x)
   ) => MkStream m (ls :!: Split uId Final (ITbl m arr mix x)) (Subword I) where
-  mkStream (ls :!: Split (ITbl _ _ c t elm)) (IStatic ()) hh (Subword (i:.j))
+  mkStream (ls :!: Split (ITbl _ _ (_:.c) t elm)) (IStatic ()) hh (Subword (i:.j))
     = map (\s -> let (Subword (_:.l)) = getIdx s
                      fmbkm :: mix = collectIx (Proxy :: Proxy uId) s :. subword l j
                  in  ElmSplitITbl Proxy (t ! fmbkm) (subword l j) (subword 0 0) s)
-    $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j)) -- TODO (see TODO in @Split@) - minSize c))
-  mkStream (ls :!: Split (ITbl _ _ c t _)) (IVariable ()) hh (Subword (i:.j))
-    = flatten mk step $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j)) -- TODO - minSize c))
-    where mk s = let Subword (_:.l) = getIdx s in return (s :. j - l) -- TODO - minSize c)
+    $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j - minSize c))
+  mkStream (ls :!: Split (ITbl _ _ (_:.c) t _)) (IVariable ()) hh (Subword (i:.j))
+    = flatten mk step $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j - minSize c))
+    where mk s = let Subword (_:.l) = getIdx s in return (s :. (delay_inline id $ j - l - minSize c))
           step (s:.z) | z >= 0 = do let Subword (_:.k) = getIdx s
                                         l              = j - z
                                         kl             = subword k l
@@ -82,7 +84,7 @@ instance
   , Element ls (Subword I)
   , MkStream mB ls (Subword I)
   ) => MkStream mB (ls :!: Split uId Fragment (Backtrack (ITbl mF arr j x) mF mB r)) (Subword I) where
-  mkStream (ls :!: Split _) (IStatic ()) hh (Subword (i:.j))
+  mkStream (ls :!: Split (BtITbl _ _ _)) (IStatic ()) hh (Subword (i:.j))
     = map (\s -> let (Subword (_:.l)) = getIdx s
                  in  ElmSplitBtITbl Proxy () (subword l j) (subword 0 0) s)
     $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j)) -- TODO (see TODO in @Split@) - minSize c))
@@ -106,16 +108,16 @@ instance
   , (SplitIxTy uId (SameSid uId (Elm ls (Subword I))) (Elm ls (Subword I)) :. Subword I) ~ mix
   , (PrimArrayOps arr (SplitIxTy uId (SameSid uId (Elm ls (Subword I))) (Elm ls (Subword I)) :. Subword I) x)
   ) => MkStream mB (ls :!: Split uId Final (Backtrack (ITbl mF arr mix x) mF mB r)) (Subword I) where
-  mkStream (ls :!: Split (BtITbl c t bt)) (IStatic ()) hh (Subword (i:.j))
+  mkStream (ls :!: Split (BtITbl (_:.c) t bt)) (IStatic ()) hh (Subword (i:.j))
     = mapM (\s -> let (Subword (_:.l)) = getIdx s
                       lj               = subword l j
                       fmbkm :: mix     = collectIx (Proxy :: Proxy uId) s :. lj
                       (_,hhhh)         = bounds t -- This is an ugly hack, but we need a notation of higher bound from somewhere
                   in  bt hhhh fmbkm >>= \ ~bb -> return $ ElmSplitBtITbl Proxy (t ! fmbkm,bb) lj (subword 0 0) s)
-    $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j)) -- TODO (see TODO in @Split@) - minSize c))
-  mkStream (ls :!: Split (BtITbl c t bt)) (IVariable ()) hh (Subword (i:.j))
-    = flatten mk step $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j)) -- TODO - minSize c))
-    where mk s = let Subword (_:.l) = getIdx s in return (s :. j - l) -- TODO - minSize c)
+    $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j - minSize c))
+  mkStream (ls :!: Split (BtITbl (_:.c) t bt)) (IVariable ()) hh (Subword (i:.j))
+    = flatten mk step $ mkStream ls (IVariable ()) hh (delay_inline Subword (i:.j))
+    where mk s = let Subword (_:.l) = getIdx s in return (s :. (delay_inline id $ j - l - minSize c))
           step (s:.z) | z >= 0 = do let Subword (_:.k) = getIdx s
                                         l              = j - z
                                         kl             = subword k l

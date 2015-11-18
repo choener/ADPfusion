@@ -125,6 +125,10 @@ minSize NonEmpty = 1
 minSize _        = 0
 {-# INLINE minSize #-}
 
+-- |
+--
+-- TODO Rewrite to generalize easily over multi-dim cases.
+
 class ModifyConstraint t where
   toNonEmpty :: t -> t
   toEmpty    :: t -> t
