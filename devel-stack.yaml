@@ -6,15 +6,13 @@ resolver: lts-3.11
 # Local packages, usually specified by relative directory name
 packages:
 - '.'
-- location: ../Lib-OrderedBits/
-  extra-dep: true
-- location: ../Lib-PrimitiveArray/
-  extra-dep: true
 - location: ../Lib-BenchmarkHistory/
   extra-dep: true
 
 # Packages to be pulled from upstream that are not in the resolver (e.g., acme-missiles-0.3)
 extra-deps:
+- OrderedBits-0.0.1.0
+- PrimitiveArray-0.7.0.0
 - safecopy-0.8.6
 - vector-0.11.0.0
 - vector-th-unbox-0.2.1.3

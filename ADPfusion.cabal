@@ -68,7 +68,7 @@ library
                , mmorph             >= 1.0      && < 1.1
                , monad-primitive    >= 0.1      && < 0.2
                , mtl                >= 2.0      && < 2.3
-               , OrderedBits        >= 0.0.0.1  && < 0.0.1
+               , OrderedBits        >= 0.0.1.0  && < 0.0.2.0
                , primitive          >= 0.5.4    && < 0.7
                , PrimitiveArray     >= 0.7.0    && < 0.7.1
                , QuickCheck         >= 2.7      && < 2.9
