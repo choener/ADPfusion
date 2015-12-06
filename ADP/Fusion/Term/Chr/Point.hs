@@ -27,7 +27,7 @@ instance
   ( TmkCtx1 m ls (Chr r x) (PointL i)
   ) => MkStream m (ls :!: Chr r x) (PointL i) where
   mkStream (ls :!: Chr f xs) sv us is
-    = S.map (\(ss,ee,ii,oo) -> ElmChr ee ii oo ss) -- recover ElmChr
+    = S.map (\(ss,ee,ii) -> ElmChr ee ii ss) -- recover ElmChr
     . addTermStream1 (Chr f xs) sv us is
     $ mkStream ls (termStaticVar (Chr f xs) sv is) us (termStreamIndex (Chr f xs) sv is)
   {-# Inline mkStream #-}
@@ -45,7 +45,7 @@ instance
   ) => TermStream m (TermSymbol ts (Chr r x)) a (is:.PointL I) where
   termStream (ts:|Chr f xs) (cs:.IStatic d) (us:.PointL u) (is:.PointL i)
     = seq xs . staticCheck (i>0 && i<=u && i<= VG.length xs)
-    . S.map (\(TState s a b ii oo ee) -> TState s a b (ii:.PointL i) (oo:.PointL 0) (ee:. f xs (i-1)))
+    . S.map (\(TState s a ii ee) -> TState s a (ii:.:RiPlI i) (ee:. f xs (i-1)))
     . termStream ts cs us is
   {-# Inline termStream #-}
 
@@ -53,10 +53,9 @@ instance
   ( TstCtx1 m ts a is (PointL O)
   ) => TermStream m (TermSymbol ts (Chr r x)) a (is:.PointL O) where
   termStream (ts:|Chr f xs) (cs:.OStatic d) (us:.PointL u) (is:.PointL i)
-    = S.map (\(TState s a b ii oo ee) ->
-                let PointL k = getIndex a (Proxy :: Proxy (is:.PointL O))
-                    o        = getIndex b (Proxy :: Proxy (is:.PointL O))
-                in  TState s a b (ii:.PointL (k-d+1)) (oo:.o) (ee:.f xs (k-d-1)))
+    = S.map (\(TState s a ii ee) ->
+                let RiPlO k o = getIndex a (Proxy :: PRI is (PointL O))
+                in  TState s a (ii:.: RiPlO (k-d+1) o) (ee:.f xs (k-d-1)))
     . termStream ts cs us is
   {-# Inline termStream #-}
 

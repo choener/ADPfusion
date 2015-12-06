@@ -18,7 +18,7 @@ instance
   ( TmkCtx1 m ls (Strng v x) (PointL i)
   ) => MkStream m (ls :!: Strng v x) (PointL i) where
   mkStream (ls :!: strng@(Strng _ minL maxL xs)) sv us is
-    = S.map (\(ss,ee,ii,oo) -> ElmStrng ee ii oo ss)
+    = S.map (\(ss,ee,ii) -> ElmStrng ee ii ss)
     . addTermStream1 strng sv us is
     $ mkStream ls (termStaticVar strng sv is) us (termStreamIndex strng sv is)
   {-# Inline mkStream #-}
@@ -30,21 +30,20 @@ instance
   ) => TermStream m (TermSymbol ts (Strng v x)) a (is:.PointL I) where
   --
   termStream (ts:|Strng f minL maxL v) (cs:.IStatic d) (us:.PointL u) (is:.PointL i)
-    = S.map (\(TState s a b ii oo ee) ->
-                let PointL k = getIndex a (Proxy :: Proxy (is:.PointL I))
-                in  TState s a b (ii:.PointL i) (oo:.PointL 0) (ee:.f k (i-k) v))
+    = S.map (\(TState s a ii ee) ->
+                let RiPlI k = getIndex a (Proxy :: PRI is (PointL I))
+                in  TState s a (ii:.:RiPlI i) (ee:.f k (i-k) v))
     . termStream ts cs us is
   --
   termStream (ts:|Strng f minL maxL v) (cs:.IVariable d) (us:.PointL u) (is:.PointL i)
     = S.flatten mk step . termStream ts cs us is
-    where mk (tstate@(TState s a b ii oo ee)) =
-              let PointL k = getIndex a (Proxy :: Proxy (is:.PointL I))
+    where mk (tstate@(TState s a ii ee)) =
+              let RiPlI k = getIndex a (Proxy :: PRI is (PointL I))
               in  return (tstate, i-k-d-minL)
-          step (tstate@(TState s a b ii oo ee), z)
-            | z >= 0 && (l-k <= maxL) = return $ S.Yield (TState s a b (ii:.PointL l) (oo:.o) (ee:.f k (l-k+1) v)) (tstate, z-1)
+          step (tstate@(TState s a ii ee), z)
+            | z >= 0 && (l-k <= maxL) = return $ S.Yield (TState s a (ii:.:RiPlI l) (ee:.f k (l-k+1) v)) (tstate, z-1)
             | otherwise = return $ S.Done
-            where PointL k = getIndex a (Proxy :: Proxy (is:.PointL I))
-                  o        = PointL 0
+            where RiPlI k = getIndex a (Proxy :: PRI is (PointL I))
                   l        = i - z - d
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
@@ -55,23 +54,21 @@ instance
   ) => TermStream m (TermSymbol ts (Strng v x)) a (is:.PointL O) where
   --
   termStream (ts:|Strng f minL maxL v) (cs:.OStatic d) (us:.PointL u) (is:.PointL i)
-    = S.map (\(TState s a b ii oo ee) ->
-                let PointL k = getIndex a (Proxy :: Proxy (is:.PointL O))
-                    o        = getIndex b (Proxy :: Proxy (is:.PointL O))
-                in  TState s a b (ii:.PointL (i-d+1)) (oo:.o) (ee:.f k (i-k) v)) -- @i-d+1 or k-d+1@ ?
+    = S.map (\(TState s a ii ee) ->
+                let RiPlO k o = getIndex a (Proxy :: PRI is (PointL O))
+                in  TState s a (ii:.:RiPlO (i-d+1) o) (ee:.f k (i-k) v)) -- @i-d+1 or k-d+1@ ?
     . termStream ts cs us is
   --
   termStream (ts:|Strng f minL maxL v) (cs:.ORightOf d) (us:.PointL u) (is:.PointL i)
     = S.flatten mk step . termStream ts cs us is
-    where mk (tstate@(TState s a b ii oo ee)) =
-              let PointL k = getIndex a (Proxy :: Proxy (is:.PointL O))
+    where mk (tstate@(TState s a ii ee)) =
+              let RiPlO k _ = getIndex a (Proxy :: PRI is (PointL O))
               in  return (tstate, i-k-d-minL)
-          step (tstate@(TState s a b ii oo ee), z)
-            | z >= 0 && (l-k <= maxL) = return $ S.Yield (TState s a b (ii:.PointL l) (oo:.o) (ee:.f k (l-k+1) v)) (tstate, z-1)
+          step (tstate@(TState s a ii ee), z)
+            | z >= 0 && (l-k <= maxL) = return $ S.Yield (TState s a (ii:.:RiPlO l o) (ee:.f k (l-k+1) v)) (tstate, z-1)
             | otherwise = return $ S.Done
-            where PointL k = getIndex a (Proxy :: Proxy (is:.PointL O))
-                  o        = getIndex b (Proxy :: Proxy (is:.PointL O))
-                  l        = i - z - d
+            where RiPlO k o = getIndex a (Proxy :: PRI is (PointL O))
+                  l         = i - z - d
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline termStream #-}

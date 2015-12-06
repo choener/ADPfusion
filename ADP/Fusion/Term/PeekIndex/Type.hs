@@ -16,16 +16,14 @@ instance Build (PeekIndex i)
 instance
   ( Element ls i
   ) => Element (ls :!: PeekIndex i) i where
-    data Elm (ls :!: PeekIndex i) i = ElmPeekIndex !i !i !(Elm ls i)
-    type Arg (ls :!: PeekIndex i)   = Arg ls :. (i :. i)
-    getArg (ElmPeekIndex i o ls)    = getArg ls :. (i:.o)
-    getIdx (ElmPeekIndex i _ _ )    = i
-    getOmx (ElmPeekIndex _ o _ )    = o
+    data Elm (ls :!: PeekIndex i) i = ElmPeekIndex !(RunningIndex i) !(Elm ls i)
+    type Arg (ls :!: PeekIndex i)   = Arg ls :. RunningIndex i
+    getArg (ElmPeekIndex i ls)    = getArg ls :. i
+    getIdx (ElmPeekIndex i _ )    = i
     {-# Inline getArg #-}
     {-# Inline getIdx #-}
-    {-# Inline getOmx #-}
 
-deriving instance (Show i, Show (Elm ls i)) => Show (Elm (ls :!: PeekIndex i) i)
+deriving instance (Show i, Show (RunningIndex i), Show (Elm ls i)) => Show (Elm (ls :!: PeekIndex i) i)
 
 type instance TermArg (PeekIndex i) = PeekIndex i
 

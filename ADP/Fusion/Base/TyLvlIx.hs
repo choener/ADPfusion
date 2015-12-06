@@ -8,6 +8,8 @@ import GHC.TypeLits
 
 import Data.PrimitiveArray hiding (map)
 
+import ADP.Fusion.Base.Classes (RunningIndex (..))
+
 
 
 -- | Given some complete index list @ixTy@ and some lower-dimensional
@@ -38,6 +40,34 @@ instance GetIndexGo Z Z EQ where
   getIndexGo _ _ _ = Z
   {-# Inline getIndexGo #-}
 
+
+
+instance GetIndexGo (RunningIndex (ix:.i)) (RunningIndex (my:.m)) EQ where
+  type ResolvedIx (RunningIndex (ix:.i)) (RunningIndex (my:.m)) EQ = RunningIndex i
+  getIndexGo (ix:.:i) _ _ = i
+  {-# Inline getIndexGo #-}
+
+instance
+  ( GetIndexGo (RunningIndex ix) (RunningIndex (my:.m)) (CmpNat (ToNat (RunningIndex ix)) (ToNat (RunningIndex (my:.m))))
+  ) => GetIndexGo (RunningIndex (ix:.i)) (RunningIndex (my:.m)) GT where
+  type ResolvedIx (RunningIndex (ix:.i)) (RunningIndex (my:.m)) GT = ResolvedIx (RunningIndex ix) (RunningIndex (my:.m)) (CmpNat (ToNat (RunningIndex ix)) (ToNat (RunningIndex (my:.m))))
+  getIndexGo (ix:.:_) p _ = getIndexGo ix p (Proxy :: Proxy (CmpNat (ToNat (RunningIndex ix)) (ToNat (RunningIndex (my:.m)))))
+  {-# Inline getIndexGo #-}
+
+instance
+  ( GetIndexGo (RunningIndex ix) (RunningIndex Z) (CmpNat (ToNat (RunningIndex ix)) (ToNat (RunningIndex Z)))
+  ) => GetIndexGo (RunningIndex (ix:.i)) (RunningIndex Z) GT where
+  type ResolvedIx (RunningIndex (ix:.i)) (RunningIndex Z) GT = ResolvedIx (RunningIndex ix) (RunningIndex Z) (CmpNat (ToNat (RunningIndex ix)) (ToNat (RunningIndex Z)))
+  getIndexGo (ix:.:_) p _ = getIndexGo ix p (Proxy :: Proxy (CmpNat (ToNat (RunningIndex ix)) (ToNat (RunningIndex Z))))
+  {-# Inline getIndexGo #-}
+
+instance GetIndexGo (RunningIndex Z) (RunningIndex Z) EQ where
+  type ResolvedIx (RunningIndex Z) (RunningIndex Z) EQ = RunningIndex Z
+  getIndexGo _ _ _ = RiZ
+  {-# Inline getIndexGo #-}
+
+
+
 -- | Wrap @GetIndexGo@ and the type-level shenanigans.
 
 type GetIndex l r = GetIndexGo l r (CmpNat (ToNat l) (ToNat r))
@@ -64,6 +94,8 @@ type family ToNat x :: Nat
 
 type instance ToNat Z       = 0
 type instance ToNat (is:.i) = ToNat is + 1
+type instance ToNat (RunningIndex Z) = 0
+type instance ToNat (RunningIndex (is:.i)) = ToNat (RunningIndex is) + 1
 
 
 

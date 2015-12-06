@@ -14,14 +14,12 @@ data Deletion = Deletion
 instance Build Deletion
 
 instance (Element ls i) => Element (ls :!: Deletion) i where
-  data Elm (ls :!: Deletion) i = ElmDeletion !i !i !(Elm ls i)
+  data Elm (ls :!: Deletion) i = ElmDeletion !(RunningIndex i) !(Elm ls i)
   type Arg (ls :!: Deletion)   = Arg ls :. ()
-  getArg (ElmDeletion _ _ l) = getArg l :. ()
-  getIdx (ElmDeletion i _ _) = i
-  getOmx (ElmDeletion _ o _) = o
+  getArg (ElmDeletion _ l) = getArg l :. ()
+  getIdx (ElmDeletion i _) = i
   {-# Inline getArg #-}
   {-# Inline getIdx #-}
-  {-# Inline getOmx #-}
 
 type instance TermArg Deletion = ()
 

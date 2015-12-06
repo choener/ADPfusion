@@ -16,7 +16,7 @@ instance
   ( TmkCtx1 m ls Deletion (Unit i)
   ) => MkStream m (ls :!: Deletion) (Unit i) where
   mkStream (ls :!: Deletion) sv us is
-    = S.map (\(ss,ee,ii,oo) -> ElmDeletion ii oo ss)
+    = S.map (\(ss,ee,ii) -> ElmDeletion ii ss)
     . addTermStream1 Deletion sv us is
     $ mkStream ls (termStaticVar Deletion sv is) us (termStreamIndex Deletion sv is)
   {-# Inline mkStream #-}
@@ -27,7 +27,7 @@ instance
   ( TstCtx1 m ts a is (Unit I)
   ) => TermStream m (TermSymbol ts Deletion) a (is:.Unit I) where
   termStream (ts:|Deletion) (cs:.IStatic ()) (us:._) (is:._)
-    = S.map (\(TState s a b ii oo ee) -> TState s a b (ii:.Unit) (oo:.Unit) (ee:.()))
+    = S.map (\(TState s a ii ee) -> TState s a (ii:.:RiU) (ee:.()))
     . termStream ts cs us is
   {-# Inline termStream #-}
 
@@ -35,7 +35,7 @@ instance
   ( TstCtx1 m ts a is (Unit O)
   ) => TermStream m (TermSymbol ts Deletion) a (is:.Unit O) where
   termStream (ts:|Deletion) (cs:.OStatic ()) (us:._) (is:._)
-    = S.map (\(TState s a b ii oo ee) -> TState s a b (ii:.Unit) (oo:.Unit) (ee:.()))
+    = S.map (\(TState s a ii ee) -> TState s a (ii:.:RiU) (ee:.()))
     . termStream ts cs us is
   {-# Inline termStream #-}
 

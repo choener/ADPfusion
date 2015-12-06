@@ -144,6 +144,12 @@ instance
 
 -- | Actually collect split indices based on if we managed to find the
 -- right @Split@ synvar (based on the right symbol).
+--
+-- TODO this is not completely right, or? Since we should consider
+-- inside/outside?
+--
+-- TODO 'splitIxCol' will need the index type @i@ to combine running index
+-- and index into the actual lookup part.
 
 class SplitIxCol (uId::Symbol) (b::Bool) e where
   type SplitIxTy uId b e :: *
@@ -170,14 +176,14 @@ instance
   ( SplitIxCol uId (SameSid uId (Elm ls i)) (Elm ls i)
   ) => SplitIxCol   uId True (Elm (ls :!: Split sId splitType (ITbl m arr j x)) i) where
   type SplitIxTy uId True (Elm (ls :!: Split sId splitType (ITbl m arr j x)) i) = SplitIxTy uId (SameSid uId (Elm ls i)) (Elm ls i) :. i
-  splitIxCol p b (ElmSplitITbl _ _ i e) = collectIx p e :. i
+  splitIxCol p b (ElmSplitITbl _ _ i e) = collectIx p e :. (error "splitIxCol: RunningIndex i -> i conversion?") -- i
   {-# Inline splitIxCol #-}
 
 instance
   ( SplitIxCol uId (SameSid uId (Elm ls i)) (Elm ls i)
   ) => SplitIxCol   uId True (Elm (ls :!: Split sId splitType (Backtrack (ITbl mF arr j x) mF mB r)) i) where
   type SplitIxTy uId True (Elm (ls :!: Split sId splitType (Backtrack (ITbl mF arr j x) mF mB r)) i) = SplitIxTy uId (SameSid uId (Elm ls i)) (Elm ls i) :. i
-  splitIxCol p b (ElmSplitBtITbl _ _ i e) = collectIx p e :. i
+  splitIxCol p b (ElmSplitBtITbl _ _ i e) = collectIx p e :. (error "splitIxCol: RunningIndex i -> i conversion?") -- i
   {-# Inline splitIxCol #-}
 
 instance

@@ -20,7 +20,7 @@ instance
   ( TmkCtx1 m ls (Strng v x) (Subword i)
   ) => MkStream m (ls :!: Strng v x) (Subword i) where
   mkStream (ls :!: strng) sv us is
-    = S.map (\(ss,ee,ii,oo) -> ElmStrng ee ii oo ss)
+    = S.map (\(ss,ee,ii) -> ElmStrng ee ii ss)
     . addTermStream1 strng sv us is
     $ mkStream ls (termStaticVar strng sv is) us (termStreamIndex strng sv is)
   {-# Inline mkStream #-}
@@ -30,17 +30,23 @@ instance
   ) => TermStream m (TermSymbol ts (Strng v x)) a (is:.Subword I) where
   --
   termStream (ts:|Strng f minL maxL v) (cs:.IStatic d) (us:.Subword (ui:.uj)) (is:.Subword (i:.j))
-    = S.filter (\(TState _ a _ _ _ _) -> let Subword (k:.l) = getIndex a (Proxy :: Proxy (is:.Subword I)) in l-k <= maxL)
-    . S.map (\(TState s a b ii oo ee) ->
-                let Subword (_:.l) = getIndex a (Proxy :: Proxy (is:.Subword I))
-                    o              = getIndex b (Proxy :: Proxy (is:.Subword I))
-                in  TState s a b (ii:.subword l j) (oo:.o) (ee:.f l (j-l) v) )
+    = S.filter (\(TState s a _ _) ->
+                    -- let Subword (k:.l) = getIndex a (Proxy :: Proxy (is:.Subword I))
+                    let RiSwI l = getIndex a (Proxy :: PRI is (Subword I))
+                        -- RiSwI k = getIndex (getIdx $ getElm s) (Proxy :: PRI is (Subword I))
+                        k = undefined
+                    in l-k <= maxL)
+    . S.map (\(TState s a ii ee) ->
+                --let Subword (_:.l) = getIndex a (Proxy :: Proxy (is:.Subword I))
+                --    o              = getIndex b (Proxy :: Proxy (is:.Subword I))
+                let RiSwI l = getIndex a (Proxy :: PRI is (Subword I))
+                in  TState s a (ii:.:RiSwI j) (ee:.f l (j-l) v) )
     . termStream ts cs us is
   --
   termStream (ts:|Strng f minL maxL v) (cs:.IVariable d) (us:._) (is:.Subword (i:.j))
     = S.flatten mk step . termStream ts cs us is
-    where mk (tstate@(TState s a b ii oo ee)) =
-            let Subword (_:.k) = getIndex a (Proxy :: Proxy (is:.Subword I))
+    where mk (tstate@(TState s a ii ee)) =
+            let RiSwI k = getIndex a (Proxy :: PRI is (Subword I))
             in  return (tstate, k+minL, min j (k+maxL))
           step = undefined
           {-# Inline [0] mk   #-}

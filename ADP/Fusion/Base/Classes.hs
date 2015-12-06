@@ -38,6 +38,11 @@ data family RunningIndex i :: *
 
 data instance RunningIndex (is:.i) = RunningIndex is :.: RunningIndex i
 
+data instance RunningIndex Z = RiZ
+
+deriving instance Show (RunningIndex Z)
+
+
 -- | During construction of the stream, we need to extract individual elements
 -- from symbols in production rules. An element in a stream is fixed by both,
 -- the type @x@ of the actual argument we want to grab (say individual

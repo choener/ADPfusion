@@ -16,7 +16,7 @@ instance
   ( TmkCtx1 m ls Epsilon (Unit i)
   ) => MkStream m (ls :!: Epsilon) (Unit i) where
   mkStream (ls :!: Epsilon) sv us is
-    = S.map (\(ss,ee,ii,oo) -> ElmEpsilon ii oo ss)
+    = S.map (\(ss,ee,ii) -> ElmEpsilon ii ss)
     . addTermStream1 Epsilon sv us is
     $ mkStream ls (termStaticVar Epsilon sv is) us (termStreamIndex Epsilon sv is)
   {-# Inline mkStream #-}
@@ -27,7 +27,7 @@ instance
   ( TstCtx1 m ts a is (Unit I)
   ) => TermStream m (TermSymbol ts Epsilon) a (is:.Unit I) where
   termStream (ts:|Epsilon) (cs:.IStatic ()) (us:._) (is:._)
-    = S.map (\(TState s a b ii oo ee) -> TState s a b (ii:.Unit) (oo:.Unit) (ee:.()))
+    = S.map (\(TState s a ii ee) -> TState s a (ii:.:RiU) (ee:.()))
     . termStream ts cs us is
   {-# Inline termStream #-}
 
@@ -35,7 +35,7 @@ instance
   ( TstCtx1 m ts a is (Unit O)
   ) => TermStream m (TermSymbol ts Epsilon) a (is:.Unit O) where
   termStream (ts:|Epsilon) (cs:.OStatic ()) (us:._) (is:._)
-    = S.map (\(TState s a b ii oo ee) -> TState s a b (ii:.Unit) (oo:.Unit) (ee:.()))
+    = S.map (\(TState s a ii ee) -> TState s a (ii:.:RiU) (ee:.()))
     . termStream ts cs us is
   {-# Inline termStream #-}
 

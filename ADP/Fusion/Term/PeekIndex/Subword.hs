@@ -18,7 +18,7 @@ instance
   , MkStream m ls (Subword C)
   ) => MkStream m (ls :!: PeekIndex (Subword C)) (Subword C) where
   mkStream (ls :!: PeekIndex) Complemented h ij
-    = map (\s -> ElmPeekIndex (getIdx s) (getOmx s) s)
+    = map (\s -> ElmPeekIndex (getIdx s) s)
     $ mkStream ls Complemented h ij
   {-# Inline mkStream #-}
 

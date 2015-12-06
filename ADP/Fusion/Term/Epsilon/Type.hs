@@ -14,14 +14,12 @@ data Epsilon = Epsilon
 instance Build Epsilon
 
 instance (Element ls i) => Element (ls :!: Epsilon) i where
-  data Elm (ls :!: Epsilon) i = ElmEpsilon !i !i !(Elm ls i)
+  data Elm (ls :!: Epsilon) i = ElmEpsilon !(RunningIndex i) !(Elm ls i)
   type Arg (ls :!: Epsilon)   = Arg ls :. ()
-  getArg (ElmEpsilon _ _ l) = getArg l :. ()
-  getIdx (ElmEpsilon i _ _) = i
-  getOmx (ElmEpsilon _ o _) = o
+  getArg (ElmEpsilon _ l) = getArg l :. ()
+  getIdx (ElmEpsilon i _) = i
   {-# Inline getArg #-}
   {-# Inline getIdx #-}
-  {-# Inline getOmx #-}
 
 type instance TermArg Epsilon = ()
 

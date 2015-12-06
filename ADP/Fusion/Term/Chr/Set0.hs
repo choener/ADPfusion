@@ -26,7 +26,7 @@ instance
   ( TmkCtx1 m ls (Chr r x) (BitSet i)
   ) => MkStream m (ls :!: Chr r x) (BitSet i) where
   mkStream (ls :!: Chr f xs) sv us is
-    = S.map (\(ss,ee,ii,oo) -> ElmChr ee ii oo ss)
+    = S.map (\(ss,ee,ii) -> ElmChr ee ii ss)
     . addTermStream1 (Chr f xs) sv us is
     $ mkStream ls (termStaticVar (Chr f xs) sv is) us (termStreamIndex (Chr f xs) sv is)
   {-# Inline mkStream #-}
@@ -40,16 +40,16 @@ instance
           -- we task all set bits @bs@ and also the index @i@ and calculate
           -- the non-set bits @mask@. The mask should have a popcount equal
           -- to @rb + 1@. We then active bit 0 and proceed with @step@.
-    where mk svS = let bs = getIndex (tIx svS) (Proxy :: Proxy (is:.BitSet I))
+    where mk svS = let RiBsI bs = getIndex (tIx svS) (Proxy :: PRI is (BitSet I))
                        mask = i `xor` bs
-                   in  {- traceShow ("Chr",i,bs,mask,lsbZ mask) $ -} return (svS :. mask :. lsbZ mask)
+                   in  return (svS :. mask :. lsbZ mask)
           -- In case we can still do a step via @k>=0@, we active bit @k@
           -- in @aa@.
-          step (svS@(TState s a b ii oo ee) :. mask :. k )
+          step (svS@(TState s a ii ee) :. mask :. k )
             | k < 0 = return $ Done
             | otherwise =
-            let aa = getIndex a (Proxy :: Proxy (is:.BitSet I))
-            in  return $ Yield (TState s a b (ii:.setBit aa k) (oo:.0) (ee:.f xs k))
+            let RiBsI aa = getIndex a (Proxy :: PRI is (BitSet I))
+            in  return $ Yield (TState s a (ii:.: RiBsI (setBit aa k)) (ee:.f xs k))
                                (svS :. mask :. nextActiveZ k mask)
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}

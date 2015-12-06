@@ -41,16 +41,14 @@ instance Build (Strng v x)
 instance
   ( Element ls i
   ) => Element (ls :!: Strng v x) i where
-  data Elm (ls :!: Strng v x) i = ElmStrng !(v x) !i !i !(Elm ls i)
+  data Elm (ls :!: Strng v x) i = ElmStrng !(v x) !(RunningIndex i) !(Elm ls i)
   type Arg (ls :!: Strng v x)   = Arg ls :. v x
-  getArg (ElmStrng x _ _ ls) = getArg ls :. x
-  getIdx (ElmStrng _ i _ _ ) = i
-  getOmx (ElmStrng _ _ o _ ) = o
+  getArg (ElmStrng x _ ls) = getArg ls :. x
+  getIdx (ElmStrng _ i _ ) = i
   {-# Inline getArg #-}
   {-# Inline getIdx #-}
-  {-# Inline getOmx #-}
 
-deriving instance (Show i, Show (v x), Show (Elm ls i)) => Show (Elm (ls :!: Strng v x) i)
+deriving instance (Show i, Show (RunningIndex i), Show (v x), Show (Elm ls i)) => Show (Elm (ls :!: Strng v x) i)
 
 type instance TermArg (Strng v x) = v x
 

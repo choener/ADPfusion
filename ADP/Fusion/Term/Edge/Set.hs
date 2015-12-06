@@ -31,17 +31,17 @@ instance
             | j <  0 && popCount s >= 2 = return $ That (z,bits,maybeLsb bits)
             | popCount s <= max 1 rp    = return $ Naught
             | otherwise                 = error $ show ("Edge",s,i,j)
-            where (BS2 zs _ zk) = getIdx z
+            where RiBs2I (BS2 zs _ zk) = getIdx z
                   bits        = s `xor` zs
           step Naught   = return Done
           step (This z)
             | popCount zs == 0 = return $ Done
-            | otherwise = return $ Yield (ElmEdge (f (getIter zk) (getIter j)) sij undefbs2i z) Naught
-            where (BS2 zs _ zk) = getIdx z
+            | otherwise = return $ Yield (ElmEdge (f (getIter zk) (getIter j)) (RiBs2I sij) z) Naught
+            where RiBs2I (BS2 zs _ zk) = getIdx z
           step (That (z,bits,Nothing)) = return $ Done
-          step (That (z,bits,Just j')) = let (BS2 zs _ (Iter zk)) = getIdx z
-                                             tij'                 = BS2 (zs .|. bit j') (Iter zk) (Iter j')
-                                         in  return $ Yield (ElmEdge (f zk j') tij' undefbs2i z) (That (z,bits,maybeNextActive j' bits))
+          step (That (z,bits,Just j')) = let RiBs2I (BS2 zs _ (Iter zk)) = getIdx z
+                                             tij'                        = BS2 (zs .|. bit j') (Iter zk) (Iter j')
+                                         in  return $ Yield (ElmEdge (f zk j') (RiBs2I tij') z) (That (z,bits,maybeNextActive j' bits))
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline mkStream #-}

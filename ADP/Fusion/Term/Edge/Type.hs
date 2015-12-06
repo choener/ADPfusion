@@ -17,16 +17,14 @@ instance Build (Edge e)
 instance
   ( Element ls i
   ) => Element (ls :!: Edge e) i where
-    data Elm (ls :!: Edge e) i = ElmEdge !e !i !i (Elm ls i)
+    data Elm (ls :!: Edge e) i = ElmEdge !e !(RunningIndex i) (Elm ls i)
     type Arg (ls :!: Edge e)   = Arg ls :. e
-    getArg (ElmEdge e _ _ ls) = getArg ls :. e
-    getIdx (ElmEdge _ i _ _ ) = i
-    getOmx (ElmEdge _ _ o _ ) = o
+    getArg (ElmEdge e _ ls) = getArg ls :. e
+    getIdx (ElmEdge _ i _ ) = i
     {-# Inline getArg #-}
     {-# Inline getIdx #-}
-    {-# Inline getOmx #-}
 
-deriving instance (Show i, Show e, Show (Elm ls i)) => Show (Elm (ls :!: Edge e) i)
+deriving instance (Show i, Show (RunningIndex i), Show e, Show (Elm ls i)) => Show (Elm (ls :!: Edge e) i)
 
 type instance TermArg (Edge e) = e
 

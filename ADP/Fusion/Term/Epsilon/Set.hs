@@ -20,7 +20,7 @@ instance
   ( TmkCtx1 m ls Epsilon (BitSet i)
   ) => MkStream m (ls :!: Epsilon) (BitSet i) where
   mkStream (ls :!: Epsilon) sv us is
-    = map (\(ss,ee,ii,oo) -> ElmEpsilon ii oo ss)
+    = map (\(ss,ee,ii) -> ElmEpsilon ii ss)
     . addTermStream1 Epsilon sv us is
     $ mkStream ls (termStaticVar Epsilon sv is) us (termStreamIndex Epsilon sv is)
   {-# Inline mkStream #-}
@@ -32,8 +32,8 @@ instance
   ) => TermStream m (TermSymbol ts Epsilon) a (is:.BitSet I) where
   termStream (ts:|Epsilon) (cs:.IStatic r) (us:.u) (is:.i)
     = staticCheck (i==0)
-    . map (\(TState s a b ii oo ee) ->
-              TState s a b (ii:.0) (oo:.0) (ee:.()) )
+    . map (\(TState s a ii ee) ->
+              TState s a (ii:.:RiBsI 0) (ee:.()) )
     . termStream ts cs us is
   {-# Inline termStream #-}
 
@@ -42,8 +42,8 @@ instance
   ) => TermStream m (TermSymbol ts Epsilon) a (is:.BitSet O) where
   termStream (ts:|Epsilon) (cs:.OStatic r) (us:.u) (is:.i)
     = staticCheck (i==u)
-    . map (\(TState s a b ii oo ee) ->
-              TState s a b (ii:.u) (oo:.u) (ee:.()) )
+    . map (\(TState s a ii ee) ->
+              TState s a (ii:.:RiBsO u u) (ee:.()) )
     . termStream ts cs us is
   {-# Inline termStream #-}
 
@@ -69,7 +69,7 @@ instance
   ( TmkCtx1 m ls Epsilon (BS2 First Last i)
   ) => MkStream m (ls :!: Epsilon) (BS2 First Last i) where
   mkStream (ls :!: Epsilon) sv us is
-    = map (\(ss,ee,ii,oo) -> ElmEpsilon ii oo ss)
+    = map (\(ss,ee,ii) -> ElmEpsilon ii ss)
     . addTermStream1 Epsilon sv us is
     $ mkStream ls (termStaticVar Epsilon sv is) us (termStreamIndex Epsilon sv is)
   {-# Inline mkStream #-}
@@ -79,8 +79,8 @@ instance
   ) => TermStream m (TermSymbol ts Epsilon) a (is:.BS2 First Last I) where
   termStream (ts:|Epsilon) (cs:.IStatic r) (us:.u) (is:.BS2 bs _ _)
     = staticCheck (bs==0)
-    . map (\(TState s a b ii oo ee) ->
-              TState s a b (ii:.BS2 0 0 0) (oo:.BS2 0 0 0) (ee:.()) )
+    . map (\(TState s a ii ee) ->
+              TState s a (ii:.:RiBs2I (BS2 0 0 0)) (ee:.()) )
     . termStream ts cs us is
   {-# Inline termStream #-}
 
@@ -89,10 +89,9 @@ instance
   ) => TermStream m (TermSymbol ts Epsilon) a (is:.BS2 First Last O) where
   termStream (ts:|Epsilon) (cs:.OStatic r) (us:.BS2 ub uf ul) (is:.BS2 bs f l)
     = staticCheck (ub==bs)
-    . map (\(TState s a b ii oo ee) ->
-              let i' = getIndex a (Proxy :: Proxy (is:.BS2 First Last O))
-                  o' = getIndex b (Proxy :: Proxy (is:.BS2 First Last O))
-              in  TState s a b (ii:.i') (oo:.o') (ee:.()) )
+    . map (\(TState s a ii ee) ->
+              let io = getIndex a (Proxy :: PRI is (BS2 First Last O))
+              in  TState s a (ii:.:io) (ee:.()) )
     . termStream ts cs us is
   {-# Inline termStream #-}
 

@@ -47,16 +47,14 @@ instance Build (Chr r x)
 instance
   ( Element ls i
   ) => Element (ls :!: Chr r x) i where
-    data Elm (ls :!: Chr r x) i = ElmChr !r !i !i !(Elm ls i)
+    data Elm (ls :!: Chr r x) i = ElmChr !r !(RunningIndex i) !(Elm ls i)
     type Arg (ls :!: Chr r x)   = Arg ls :. r
-    getArg (ElmChr x _ _ ls) = getArg ls :. x
-    getIdx (ElmChr _ i _ _ ) = i
-    getOmx (ElmChr _ _ o _ ) = o
+    getArg (ElmChr x _ ls) = getArg ls :. x
+    getIdx (ElmChr _ i _ ) = i
     {-# Inline getArg #-}
     {-# Inline getIdx #-}
-    {-# Inline getOmx #-}
 
-deriving instance (Show i, Show r, Show (Elm ls i)) => Show (Elm (ls :!: Chr r x) i)
+deriving instance (Show i, Show (RunningIndex i), Show r, Show (Elm ls i)) => Show (Elm (ls :!: Chr r x) i)
 
 type instance TermArg (Chr r x) = r
 

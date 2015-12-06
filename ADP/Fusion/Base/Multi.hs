@@ -60,10 +60,6 @@ instance
     $ mkStream ls (termStaticVar ts sv i) lu (termStreamIndex ts sv i)
   {-# Inline mkStream #-}
 
-data instance RunningIndex Z = RiZ
-
-deriving instance Show (RunningIndex Z)
-
 -- | Handles each individual argument within a stack of terminal symbols.
 
 class TerminalStream m t i where
