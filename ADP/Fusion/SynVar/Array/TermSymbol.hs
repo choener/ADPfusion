@@ -32,21 +32,21 @@ instance
   ) => TermStream m (TermSymbol ts (ITbl m arr (Subword I) x)) a (is:.Subword I) where
   --
   termStream (ts:|ITbl _ _ _ t _) (cs:.IStatic ()) (us:.u) (is:.Subword (i:.j))
-    = map (\(TState s a b ii oo ee) ->
-              let Subword (_:.l) = getIndex a (Proxy :: Proxy (is:.Subword I))
-                  lj             = subword l j
-              in  TState s a b (ii:.lj) (oo:.subword 0 0) (ee:.t!lj) )
+    = map (\(TState s a ii ee) ->
+              let RiSwI l = getIndex a (Proxy :: PRI is (Subword I))
+                  lj      = subword l j
+              in  TState s a (ii:.:RiSwI j) (ee:.t!lj) )
     . termStream ts cs us is
   --
   termStream (ts:|ITbl _ _ _ t _) (cs:.IVariable ()) (us:.u) (is:.Subword (i:.j))
     = flatten mk step . termStream ts cs us is
-    where mk tstate@(TState s a b ii oo ee) =
-              let Subword (_:.l) = getIndex a (Proxy :: Proxy (is:.Subword I))
+    where mk tstate@(TState s a ii ee) =
+              let RiSwI l = getIndex a (Proxy :: PRI is (Subword I))
               in  return (tstate, l, j - l)
-          step (tstate@(TState s a b ii oo ee), k, z)
+          step (tstate@(TState s a ii ee), k, z)
             | z >= 0 = do let l  = j - z
                               kl = subword k l
-                          return $ Yield (TState s a b (ii:.kl) (oo:.subword 0 0) (ee:.t!kl)) (tstate, k, z-1)
+                          return $ Yield (TState s a (ii:.:RiSwI l) (ee:.t!kl)) (tstate, k, z-1)
             | otherwise = return $ Done
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
@@ -61,20 +61,20 @@ instance
   , PrimArrayOps arr (Subword I) x
   ) => TermStream mB (TermSymbol ts (Backtrack (ITbl mF arr (Subword I) x) mF mB r)) a (is:.Subword I) where
   termStream (ts:|BtITbl c t bt) (cs:.IStatic ()) (us:.u) (is:.Subword (i:.j))
-    = mapM (\(TState s a b ii oo ee) ->
-                let Subword (_:.l) = getIndex a (Proxy :: Proxy (is:.Subword I))
-                    lj             = subword l j
-                in  bt u lj >>= \ ~bb -> return $ TState s a b (ii:.lj) (oo:.subword 0 0) (ee:.(t!lj,bb)) )
+    = mapM (\(TState s a ii ee) ->
+                let RiSwI l = getIndex a (Proxy :: PRI is (Subword I))
+                    lj      = subword l j
+                in  bt u lj >>= \ ~bb -> return $ TState s a (ii:.:RiSwI j) (ee:.(t!lj,bb)) )
     . termStream ts cs us is
   termStream (ts:|BtITbl c t bt) (cs:.IVariable ()) (us:.u) (is:.Subword (i:.j))
     = flatten mk step . termStream ts cs us is
-    where mk tstate@(TState s a b ii oo ee) =
-              let Subword (_:.l) = getIndex a (Proxy :: Proxy (is:.Subword I))
+    where mk tstate@(TState s a ii ee) =
+              let RiSwI l = getIndex a (Proxy :: PRI is (Subword I))
               in  return (tstate, l, j - l)
-          step (tstate@(TState s a b ii oo ee), k, z)
+          step (tstate@(TState s a ii ee), k, z)
             | z >= 0 = do let l  = j - z
                               kl = subword k l
-                          bt u kl >>= \ ~bb -> return $ Yield (TState s a b (ii:.kl) (oo:.subword 0 0) (ee:.(t!kl,bb))) (tstate, k, z-1)
+                          bt u kl >>= \ ~bb -> return $ Yield (TState s a (ii:.:RiSwI l) (ee:.(t!kl,bb))) (tstate, k, z-1)
             | otherwise = return $ Done
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}

@@ -69,31 +69,27 @@ instance Build (Split uId splitType synVar)
 instance
   ( Element ls i
   ) => Element (ls :!: Split uId splitType (ITbl m arr j x)) i where
-  data Elm     (ls :!: Split uId splitType (ITbl m arr j x)) i = ElmSplitITbl !(Proxy uId) !(CalcSplitType splitType x) !i !i !(Elm ls i)
+  data Elm     (ls :!: Split uId splitType (ITbl m arr j x)) i = ElmSplitITbl !(Proxy uId) !(CalcSplitType splitType x) !(RunningIndex i) !(Elm ls i)
   type Arg     (ls :!: Split uId splitType (ITbl m arr j x))   = Arg ls :. (CalcSplitType splitType x)
   type RecElm  (ls :!: Split uId splitType (ITbl m arr j x)) i = Elm ls i
-  getArg (ElmSplitITbl _ x _ _ ls) = getArg ls :. x
-  getIdx (ElmSplitITbl _ _ i _ _ ) = i
-  getOmx (ElmSplitITbl _ _ _ o _ ) = o
-  getElm (ElmSplitITbl _ _ _ _ ls) = ls
+  getArg (ElmSplitITbl _ x _ ls) = getArg ls :. x
+  getIdx (ElmSplitITbl _ _ i _ ) = i
+  getElm (ElmSplitITbl _ _ _ ls) = ls
   {-# Inline getArg #-}
   {-# Inline getIdx #-}
-  {-# Inline getOmx #-}
   {-# Inline getElm #-}
 
 instance
   ( Element ls i
   ) => Element (ls :!: Split uId splitType (Backtrack (ITbl mF arr j x) mF mB r)) i where
-  data Elm     (ls :!: Split uId splitType (Backtrack (ITbl mF arr j x) mF mB r)) i = ElmSplitBtITbl !(Proxy uId) !(CalcSplitType splitType (x, [r])) !i !i !(Elm ls i)
+  data Elm     (ls :!: Split uId splitType (Backtrack (ITbl mF arr j x) mF mB r)) i = ElmSplitBtITbl !(Proxy uId) !(CalcSplitType splitType (x, [r])) !(RunningIndex i) !(Elm ls i)
   type Arg     (ls :!: Split uId splitType (Backtrack (ITbl mF arr j x) mF mB r))   = Arg ls :. (CalcSplitType splitType (x,[r]))
   type RecElm  (ls :!: Split uId splitType (Backtrack (ITbl mF arr j x) mF mB r)) i = Elm ls i
-  getArg (ElmSplitBtITbl _ xs _ _ ls) = getArg ls :. xs
-  getIdx (ElmSplitBtITbl _ _ i _ _ ) = i
-  getOmx (ElmSplitBtITbl _ _ _ o _ ) = o
-  getElm (ElmSplitBtITbl _ _ _ _ ls) = ls
+  getArg (ElmSplitBtITbl _ xs _ ls) = getArg ls :. xs
+  getIdx (ElmSplitBtITbl _ _  i _ ) = i
+  getElm (ElmSplitBtITbl _ _  _ ls) = ls
   {-# Inline getArg #-}
   {-# Inline getIdx #-}
-  {-# Inline getOmx #-}
   {-# Inline getElm #-}
 
 
@@ -157,7 +153,7 @@ class SplitIxCol (uId::Symbol) (b::Bool) e where
 
 instance SplitIxCol uId b (Elm S i) where
   type SplitIxTy uId b (Elm S i) = Z
-  splitIxCol p b (ElmS _ _) = Z
+  splitIxCol p b (ElmS _) = Z
   {-# Inline splitIxCol #-}
 
 
@@ -174,14 +170,14 @@ instance
   ( SplitIxCol uId (SameSid uId (Elm ls i)) (Elm ls i)
   ) => SplitIxCol   uId True (Elm (ls :!: Split sId splitType (ITbl m arr j x)) i) where
   type SplitIxTy uId True (Elm (ls :!: Split sId splitType (ITbl m arr j x)) i) = SplitIxTy uId (SameSid uId (Elm ls i)) (Elm ls i) :. i
-  splitIxCol p b (ElmSplitITbl _ _ i _ e) = collectIx p e :. i
+  splitIxCol p b (ElmSplitITbl _ _ i e) = collectIx p e :. i
   {-# Inline splitIxCol #-}
 
 instance
   ( SplitIxCol uId (SameSid uId (Elm ls i)) (Elm ls i)
   ) => SplitIxCol   uId True (Elm (ls :!: Split sId splitType (Backtrack (ITbl mF arr j x) mF mB r)) i) where
   type SplitIxTy uId True (Elm (ls :!: Split sId splitType (Backtrack (ITbl mF arr j x) mF mB r)) i) = SplitIxTy uId (SameSid uId (Elm ls i)) (Elm ls i) :. i
-  splitIxCol p b (ElmSplitBtITbl _ _ i _ e) = collectIx p e :. i
+  splitIxCol p b (ElmSplitBtITbl _ _ i e) = collectIx p e :. i
   {-# Inline splitIxCol #-}
 
 instance
@@ -189,6 +185,6 @@ instance
   , Zconcat (SplitIxTy uId (SameSid uId (Elm ls i)) (Elm ls i)) (SplitIxTy uId (SameSid uId (TermSymbol a b)) (TermSymbol a b))
   ) => SplitIxCol uId True (Elm (ls :!: TermSymbol a b) i) where
   type SplitIxTy uId True (Elm (ls :!: TermSymbol a b) i) = Zpp (SplitIxTy uId (SameSid uId (Elm ls i)) (Elm ls i)) (SplitIxTy uId (SameSid uId (TermSymbol a b)) (TermSymbol a b))
-  splitIxCol p b (ElmTS t i _ e) = collectIx p e `zconcat` (undefined p t :: SplitIxTy uId (SameSid uId (TermSymbol a b)) (TermSymbol a b))
+  splitIxCol p b (ElmTS t i e) = collectIx p e `zconcat` (undefined p t :: SplitIxTy uId (SameSid uId (TermSymbol a b)) (TermSymbol a b))
   {-# Inline splitIxCol #-}
 

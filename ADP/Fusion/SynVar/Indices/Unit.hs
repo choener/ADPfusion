@@ -17,42 +17,34 @@ import ADP.Fusion.SynVar.Indices.Classes
 
 
 instance
-  ( AddIndexDense a us is
-  , GetIndex a (is:.Unit I)
-  , GetIx a (is:.Unit I) ~ (Unit I)
+  ( IndexHdr a us (Unit I) is (Unit I)
   ) => AddIndexDense a (us:.Unit I) (is:.Unit I) where
   addIndexDenseGo (cs:._) (vs:.IStatic ()) (us:._) (is:._)
-    = map (\(SvS s a b t y' z') -> SvS s a b (t:.Unit) (y':.Unit) (z':.Unit))
+    = map (\(SvS s a t y') -> SvS s a (t:.Unit) (y':.:RiU))
     . addIndexDenseGo cs vs us is
   {-# Inline addIndexDenseGo #-}
 
 instance
-  ( AddIndexDense a us is
-  , GetIndex a (is:.Unit O)
-  , GetIx a (is:.Unit O) ~ (Unit O)
+  ( IndexHdr a us (Unit O) is (Unit O)
   ) => AddIndexDense a (us:.Unit O) (is:.Unit O) where
   addIndexDenseGo (cs:._) (vs:.OStatic ()) (us:._) (is:._)
-    = map (\(SvS s a b t y' z') -> SvS s a b (t:.Unit) (y':.Unit) (z':.Unit))
+    = map (\(SvS s a t y') -> SvS s a (t:.Unit) (y':.:RiU))
     . addIndexDenseGo cs vs us is
   {-# Inline addIndexDenseGo #-}
 
 instance
-  ( AddIndexDense a us is
-  , GetIndex a (is:.Unit C)
-  , GetIx a (is:.Unit C) ~ (Unit C)
+  ( IndexHdr a us (Unit I) is (Unit C)
   ) => AddIndexDense a (us:.Unit I) (is:.Unit C) where
   addIndexDenseGo (cs:._) (vs:.Complemented) (us:._) (is:._)
-    = map (\(SvS s a b t y' z') -> SvS s a b (t:.Unit) (y':.Unit) (z':.Unit))
+    = map (\(SvS s a t y') -> SvS s a (t:.Unit) (y':.:RiU))
     . addIndexDenseGo cs vs us is
   {-# Inline addIndexDenseGo #-}
 
 instance
-  ( AddIndexDense a us is
-  , GetIndex a (is:.Unit C)
-  , GetIx a (is:.Unit C) ~ (Unit C)
+  ( IndexHdr a us (Unit O) is (Unit C)
   ) => AddIndexDense a (us:.Unit O) (is:.Unit C) where
   addIndexDenseGo (cs:._) (vs:.Complemented) (us:._) (is:._)
-    = map (\(SvS s a b t y' z') -> SvS s a b (t:.Unit) (y':.Unit) (z':.Unit))
+    = map (\(SvS s a t y') -> SvS s a (t:.Unit) (y':.:RiU))
     . addIndexDenseGo cs vs us is
   {-# Inline addIndexDenseGo #-}
 

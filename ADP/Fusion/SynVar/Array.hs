@@ -42,7 +42,7 @@ iTblStream
   -> i
   -> Stream m (Elm (ls :!: ITbl m arr u x) i)
 iTblStream (ls :!: ITbl _ _ c t _) vs us is
-  = map (\(s,tt,ii',oo') -> ElmITbl (t!tt) ii' oo' s)
+  = map (\(s,tt,ii') -> ElmITbl (t!tt) ii' s)
   . addIndexDense1 c vs us is
   $ mkStream ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
 {-# Inline iTblStream #-}
@@ -57,7 +57,7 @@ btITblStream
   -> i
   -> Stream mB (Elm (ls :!: Backtrack (ITbl mF arr u x) mF mB r) i)
 btITblStream (ls :!: BtITbl c t bt) vs us is
-    = mapM (\(s,tt,ii',oo') -> bt us' tt >>= \ ~bb -> return $ ElmBtITbl (t!tt) bb ii' oo' s)
+    = mapM (\(s,tt,ii') -> bt us' tt >>= \ ~bb -> return $ ElmBtITbl (t!tt) bb ii' s)
     . addIndexDense1 c vs us is
     $ mkStream ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
     where !us' = snd $ bounds t

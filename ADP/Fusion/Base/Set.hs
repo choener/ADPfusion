@@ -43,6 +43,11 @@ instance RuleContext (BitSet C) where
   initialContext _ = Complemented
   {-# Inline initialContext #-}
 
+newtype instance RunningIndex (BitSet I) = RiBsI (BitSet I)
+
+data instance RunningIndex (BitSet O) = RiBsO !(BitSet O) !(BitSet O)
+
+data instance RunningIndex (BitSet C) = RiBsC !(BitSet C) !(BitSet C)
 
 
 instance RuleContext (BS2 First Last I) where
@@ -60,6 +65,12 @@ instance RuleContext (BS2 First Last C) where
   initialContext _ = Complemented
   {-# Inline initialContext #-}
 
+newtype instance RunningIndex (BS2 First Last I) = RiBs2I (BS2 First Last I)
+
+data instance RunningIndex (BS2 First Last O) = RiBs2O !(BS2 First Last O) !(BS2 First Last O)
+
+data instance RunningIndex (BS2 First Last C) = RiBs2C !(BS2 First Last C) !(BS2 First Last C)
+
 
 
 instance
@@ -71,7 +82,7 @@ instance
   -- @s@ has been recovered. Otherwise we would have an @IVariable@
   -- context.
   mkStream S (IStatic rb) u s
-    = staticCheck (rb <= ps) . map (\k -> ElmS (popShiftL s k) 0) $ unfoldr go strt
+    = staticCheck (rb <= ps) . map (\k -> ElmS . RiBsI $ popShiftL s k) $ unfoldr go strt
     where strt = Just $ BitSet $ 2^(ps - rb) - 1
           ps   = popCount s
           go Nothing  = Nothing
@@ -79,7 +90,7 @@ instance
   -- | Once we are variable, we do not reserve any bits, just check that
   -- the total reservation (if any) works.
   mkStream S (IVariable rb) u s
-    = staticCheck (rb <= popCount s) . singleton $ ElmS 0 0
+    = staticCheck (rb <= popCount s) . singleton . ElmS $ RiBsI 0
   {-# Inline mkStream #-}
 
 -- | Initial index construction for outside Bitsets. Bits set to @0@
@@ -100,11 +111,11 @@ instance
   ) => MkStream m S (BitSet O) where
   -- | Same argument as above for @BitSet O@ construction.
   mkStream S (OStatic rb) u s
-    = staticCheck (rb + popCount s <= popCount u) . singleton $ ElmS s s
+    = staticCheck (rb + popCount s <= popCount u) . singleton . ElmS $ RiBsO s s
   mkStream S (ORightOf _) u s
     = error "ADP.Fusion.Base.Set: Entered ORightOf/BitSet (this is probably wrong because it means we have an outside cfg with only terminals on the r.h.s, and the terminals are not a single Outside-Epsilon)"
   mkStream S (OFirstLeft rb) u s
-    = staticCheck (rb + popCount s <= popCount u) . singleton $ ElmS s s
+    = staticCheck (rb + popCount s <= popCount u) . singleton . ElmS $ RiBsO s s
 --  mkStream S (OLeftOf rp) u s
 --    = staticCheck (popCount s + rp <= popCount u) . singleton $ ElmS s s
   {-# Inline mkStream #-}
@@ -117,9 +128,9 @@ instance
   ( Monad m
   ) => MkStream m S (BS2 First Last I) where
   mkStream S (IStatic rp) u sij@(BS2 s (Iter i) _)
-    = staticCheck (popCount s == 0 && rp == 0) . singleton $ ElmS (BS2 0 (Iter i) (Iter i)) undefbs2i
+    = staticCheck (popCount s == 0 && rp == 0) . singleton . ElmS . RiBs2I $ BS2 0 (Iter i) (Iter i)
   mkStream S (IVariable rp) u sij@(BS2 s (Iter i) _)
-    = staticCheck (popCount s >= rp) . singleton $ ElmS (BS2 0 (Iter i) (Iter i)) undefbs2i
+    = staticCheck (popCount s >= rp) . singleton . ElmS . RiBs2I $ BS2 0 (Iter i) (Iter i)
   {-# Inline mkStream #-}
 
 instance

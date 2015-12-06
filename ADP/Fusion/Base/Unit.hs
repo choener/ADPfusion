@@ -32,18 +32,20 @@ instance RuleContext (Unit C) where
   initialContext _ = Complemented
   {-# Inline initialContext #-}
 
+data instance RunningIndex (Unit t) = RiU
+
 
 
 instance (Monad m) => MkStream m S (Unit I) where
-  mkStream S _ Unit Unit = singleton $ ElmS Unit Unit
+  mkStream S _ Unit Unit = singleton $ ElmS RiU
   {-# Inline mkStream #-}
 
 instance (Monad m) => MkStream m S (Unit O) where
-  mkStream S _ Unit Unit = singleton $ ElmS Unit Unit
+  mkStream S _ Unit Unit = singleton $ ElmS RiU
   {-# Inline mkStream #-}
 
 instance (Monad m) => MkStream m S (Unit C) where
-  mkStream S _ Unit Unit = singleton $ ElmS Unit Unit
+  mkStream S _ Unit Unit = singleton $ ElmS RiU
   {-# Inline mkStream #-}
 
 instance
@@ -51,7 +53,7 @@ instance
   , MkStream m S is
   ) => MkStream m S (is:.Unit I) where
   mkStream S (vs:._) (us:._) (is:._)
-    = map (\(ElmS zi zo) -> ElmS (zi:.Unit) (zo:.Unit))
+    = map (\(ElmS zi) -> ElmS $ zi :.: RiU)
     $ mkStream S vs us is
   {-# Inline mkStream #-}
 
@@ -60,7 +62,7 @@ instance
   , MkStream m S is
   ) => MkStream m S (is:.Unit O) where
   mkStream S (vs:._) (us:._) (is:._)
-    = map (\(ElmS zi zo) -> ElmS (zi:.Unit) (zo:.Unit))
+    = map (\(ElmS zi) -> ElmS $ zi :.: RiU)
     $ mkStream S vs us is
   {-# Inline mkStream #-}
 
@@ -69,7 +71,7 @@ instance
   , MkStream m S is
   ) => MkStream m S (is:.Unit C) where
   mkStream S (vs:._) (us:._) (is:._)
-    = map (\(ElmS zi zo) -> ElmS (zi:.Unit) (zo:.Unit))
+    = map (\(ElmS zi) -> ElmS $ zi :.: RiU)
     $ mkStream S vs us is
   {-# Inline mkStream #-}
 

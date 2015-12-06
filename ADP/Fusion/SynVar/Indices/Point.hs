@@ -14,60 +14,48 @@ import ADP.Fusion.SynVar.Indices.Classes
 
 
 instance
-  ( AddIndexDense a us is
-  , GetIndex a (is:.PointL I)
-  , GetIx a (is:.PointL I) ~ (PointL I)
+  ( IndexHdr a us (PointL I) is (PointL I)
   ) => AddIndexDense a (us:.PointL I) (is:.PointL I) where
   addIndexDenseGo (cs:._) (vs:.IStatic d) (us:.u) (is:.i)
-    = map (\(SvS s a b t y' z') -> SvS s a b (t:.i) (y':.i) (z':.PointL 0))
+    = map (\(SvS s a t y') -> SvS s a (t:.i) (y' :.: RiPlI (fromPointL i)))
     . addIndexDenseGo cs vs us is
   addIndexDenseGo (cs:.c) (vs:.IVariable d) (us:.u) (is:.PointL i)
     = flatten mk step . addIndexDenseGo cs vs us is
-    where mk svS = let PointL k = getIndex (sIx svS) (Proxy :: Proxy (is:.PointL I))
+    where mk svS = let RiPlI k = getIndex (sIx svS) (Proxy :: PRI is (PointL I))
                    in  return $ svS :. k
-          step (svS@(SvS s a b t y' z') :. k)
+          step (svS@(SvS s a t y') :. k)
             | k + csize > i = return $ Done
-            | otherwise     = return $ Yield (SvS s a b (t:.PointL k) (y':.PointL k) (z':.PointL 0)) (svS :. k+1)
+            | otherwise     = return $ Yield (SvS s a (t:.PointL k) (y' :.: RiPlI k)) (svS :. k+1)
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
           csize = delay_inline minSize c
   {-# Inline addIndexDenseGo #-}
 
 instance
-  ( AddIndexDense a us is
-  , GetIndex a (is:.PointL O)
-  , GetIx a (is:.PointL O) ~ (PointL O)
+  ( IndexHdr a us (PointL O) is (PointL O)
   ) => AddIndexDense a (us:.PointL O) (is:.PointL O) where
   addIndexDenseGo (cs:.c) (vs:.OStatic d) (us:.u) (is:.i)
-    = map (\(SvS s a b t y' z') -> let o = getIndex b (Proxy :: Proxy (is:.PointL O))
-                                   in  SvS s a b (t:.o) (y':.o) (z':.o))
+    = map (\(SvS s a t y') -> let RiPlO oi oo = getIndex a (Proxy :: PRI is (PointL O))
+                              in  SvS s a (t:.PointL oo) (y' :.: RiPlO oi oo) )
     . addIndexDenseGo cs vs us is
     where csize = delay_inline minSize c
   {-# Inline addIndexDenseGo #-}
 
 instance
-  ( AddIndexDense a us is
-  , GetIndex a (is:.PointL C)
-  , GetIx a (is:.PointL C) ~ (PointL C)
+  ( IndexHdr a us (PointL I) is (PointL C)
   ) => AddIndexDense a (us:.PointL I) (is:.PointL C) where
   addIndexDenseGo (cs:.c) (vs:.Complemented) (us:.u) (is:.i)
-    = map (\(SvS s a b t y z) -> let PointL k = getIndex a (Proxy :: Proxy (is:.PointL C))
-                                     kT = PointL k
-                                     kC = PointL k
-                                 in  SvS s a b (t:.kT) (y:.kC) (z:.kC))
+    = map (\(SvS s a t y) -> let RiPlC k _ = getIndex a (Proxy :: PRI is (PointL C))
+                             in  SvS s a (t:.PointL k) (y :.: RiPlC k k) )
     . addIndexDenseGo cs vs us is
   {-# Inline addIndexDenseGo #-}
 
 instance
-  ( AddIndexDense a us is
-  , GetIndex a (is:.PointL C)
-  , GetIx a (is:.PointL C) ~ (PointL C)
+  ( IndexHdr a us (PointL O) is (PointL C)
   ) => AddIndexDense a (us:.PointL O) (is:.PointL C) where
   addIndexDenseGo (cs:.c) (vs:.Complemented) (us:.u) (is:.i)
-    = map (\(SvS s a b t y z) -> let PointL k = getIndex a (Proxy :: Proxy (is:.PointL C))
-                                     kT = PointL k
-                                     kC = PointL k
-                                 in  SvS s a b (t:.kT) (y:.kC) (z:.kC))
+    = map (\(SvS s a t y) -> let RiPlC k _ = getIndex a (Proxy :: PRI is (PointL C))
+                             in  SvS s a (t:.PointL k) (y:.:RiPlC k k) )
     . addIndexDenseGo cs vs us is
   {-# Inline addIndexDenseGo #-}
 

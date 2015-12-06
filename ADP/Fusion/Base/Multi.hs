@@ -37,35 +37,32 @@ type instance TermArg M                = Z
 type instance TermArg (TermSymbol a b) = TermArg a :. TermArg b
 
 instance (Element ls i) => Element (ls :!: TermSymbol a b) i where
-  data Elm (ls :!: TermSymbol a b) i = ElmTS !(TermArg (TermSymbol a b)) !i !i !(Elm ls i)
+  data Elm (ls :!: TermSymbol a b) i = ElmTS !(TermArg (TermSymbol a b)) !(RunningIndex i) !(Elm ls i)
   type Arg (ls :!: TermSymbol a b)   = Arg ls :. TermArg (TermSymbol a b)
-  getArg (ElmTS a _ _ ls) = getArg ls :. a
-  getIdx (ElmTS _ i _ _ ) = i
-  getOmx (ElmTS _ _ o _ ) = o
+  getArg (ElmTS a _ ls) = getArg ls :. a
+  getIdx (ElmTS _ i _ ) = i
   {-# INLINE getArg #-}
   {-# INLINE getIdx #-}
 
-deriving instance (Show i, Show (TermArg (TermSymbol a b)), Show (Elm ls i)) => Show (Elm (ls :!: TermSymbol a b) i)
+deriving instance (Show i, Show (RunningIndex i), Show (TermArg (TermSymbol a b)), Show (Elm ls i)) => Show (Elm (ls :!: TermSymbol a b) i)
 
 instance
   ( Monad m
   , MkStream m ls i
   , Element ls i
---  , TerminalStream m (TermSymbol a b) i
   , TermStaticVar (TermSymbol a b) i
   , TermStream m (TermSymbol a b) i i
   ) => MkStream m (ls :!: TermSymbol a b) i where
   mkStream (ls :!: ts) sv lu i
-    = map (\(TState sS _ _ ii oo ee) -> ElmTS ee ii oo sS)
+    = map (\(TState sS _ ii ee) -> ElmTS ee ii sS)
     . termStream ts sv lu i
-    {-
-    = S.map fromTerminalStream
-    . terminalStream ts sv i
-    . S.map toTerminalStream
-    -}
-    . map (\s -> TState s (getIdx s) (getOmx s) Z Z Z)
+    . map (\s -> TState s (getIdx s) RiZ Z)
     $ mkStream ls (termStaticVar ts sv i) lu (termStreamIndex ts sv i)
   {-# Inline mkStream #-}
+
+data instance RunningIndex Z = RiZ
+
+deriving instance Show (RunningIndex Z)
 
 -- | Handles each individual argument within a stack of terminal symbols.
 
@@ -80,7 +77,7 @@ instance (Monad m) => TerminalStream m M Z where
   {-# INLINE terminalStream #-}
 
 instance Monad m => MkStream m S Z where
-  mkStream _ _ _ _ = S.singleton (ElmS Z Z)
+  mkStream _ _ _ _ = S.singleton (ElmS RiZ)
   {-# INLINE mkStream #-}
 
 -- | For multi-dimensional terminals we need to be able to calculate how the
@@ -118,11 +115,11 @@ data S7 a b c d e f g   = S7 !a !b !c !d !e !f !g
 
 data S8 a b c d e f g h = S8 !a !b !c !d !e !f !g !h
 
-fromTerminalStream (S6 s Z Z i o e) = ElmTS e i o s
-{-# INLINE fromTerminalStream #-}
+--fromTerminalStream (S6 s Z Z i o e) = ElmTS e i o s
+--{-# INLINE fromTerminalStream #-}
 
-toTerminalStream s = S5 s Z Z (getIdx s) (getOmx s)
-{-# INLINE toTerminalStream #-}
+--toTerminalStream s = S5 s Z Z (getIdx s) (getOmx s)
+--{-# INLINE toTerminalStream #-}
 
 instance RuleContext Z where
   type Context Z = Z
@@ -154,11 +151,8 @@ instance (TableStaticVar us is, TableStaticVar u i) => TableStaticVar (us:.u) (i
 
 data TermState s a i e = TState
   { tS  :: !s -- | state coming in from the left
-  , tIx :: !a -- | @I/C@ index from @sS@
-  , tOx :: !a -- | @O@ index from @sS@
---  , tt  :: !u -- | @I/C@ building up state to index the @table@.
-  , iIx :: !i -- | @I/C@ building up state to hand over to next symbol
-  , iOx :: !i -- | @O@ building up state to hand over to next symbol
+  , tIx :: !(RunningIndex a) -- | @I/C@ index from @sS@
+  , iIx :: !(RunningIndex i) -- | @I/C@ building up state to hand over to next symbol
   , eTS :: !e -- | element data
   }
 
@@ -182,11 +176,11 @@ addTermStream1
      , s ~ Elm x0 a
      , Element x0 a
      )
-  => t -> Context i -> i -> i -> Stream m s -> Stream m (s,TermArg t,i,i)
+  => t -> Context i -> i -> i -> Stream m s -> Stream m (s,TermArg t,RunningIndex i)
 addTermStream1 t c u i
-  = map (\(TState sS _ _ (Z:.ii) (Z:.oo) (Z:.ee)) -> (sS,ee,ii,oo))
+  = map (\(TState sS _ (RiZ:.:ii) (Z:.ee)) -> (sS,ee,ii))
   . termStream (M:|t) (Z:.c) (Z:.u) (Z:.i)
-  . map (\s -> TState s (Z:.getIdx s) (Z:.getOmx s) Z Z Z)
+  . map (\s -> TState s (RiZ:.:getIdx s) RiZ Z)
 {-# Inline addTermStream1 #-}
 
 -- | @Term MkStream@ context
@@ -204,7 +198,11 @@ type TmkCtx1 m ls t i
 type TstCtx1 m ts a is i
   = ( Monad m
     , TermStream m ts a is
-    , GetIndex a (is:.i)
-    , GetIx a (is:.i) ~ i
+    , GetIndex (RunningIndex a) (RunningIndex (is:.i))
+    , GetIx (RunningIndex a) (RunningIndex (is:.i)) ~ (RunningIndex i)
     )
+
+-- | Shorthand for proxifying @getIndex@
+
+type PRI is i = Proxy (RunningIndex (is:.i))
 

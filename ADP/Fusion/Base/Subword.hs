@@ -30,6 +30,21 @@ instance RuleContext (Subword C) where
   initialContext _ = Complemented
   {-# Inline initialContext #-}
 
+-- | The moving index @k@ in @Subword (i:.k)@.
+
+newtype instance RunningIndex (Subword I) = RiSwI Int
+
+-- | The moving indices @Inside (i:.j)@ and @Outside (k:.l)@ in order @i
+-- j k l@.
+--
+-- TODO can we do with 2x Int?
+
+data instance RunningIndex (Subword O) = RiSwO !Int !Int !Int !Int
+
+-- | The indices @Subword (i:.j)@ in order @i j@.
+
+data instance RunningIndex (Subword C) = RiSwC !Int !Int
+
 
 
 -- | NOTE it seems that a static check within an @IVariable@ context
@@ -45,21 +60,21 @@ instance (Monad m) => MkStream m S (Subword I) where
   mkStream S (IStatic ()) (Subword (_:.h)) (Subword (i:.j))
     = staticCheck (i>=0 && i==j && j<=h)
     . singleton
-    $ ElmS (subword i i) (subword 0 0)
+    . ElmS $ RiSwI i
   mkStream S (IVariable ()) (Subword (_:.h)) (Subword (i:.j))
-    = filter (const $ 0<=i && i<=j && j<=h) . singleton $ ElmS (subword i i) (subword 0 0)
+    = filter (const $ 0<=i && i<=j && j<=h) . singleton . ElmS $ RiSwI i
   {-# Inline mkStream #-}
 
 instance (Monad m) => MkStream m S (Subword O) where
   mkStream S (OStatic (di:.dj)) (Subword (_:.h)) (Subword (i:.j))
-    = staticCheck (i==0 && j+dj==h) . singleton $ ElmS (subword i j) (Subword (i:.j+dj))
+    = staticCheck (i==0 && j+dj==h) . singleton . ElmS $ RiSwO i j  i (j+dj)
   mkStream S (OFirstLeft (di:.dj)) (Subword (_:.h)) (Subword (i:.j))
     = let i' = i-di
-      in  staticCheck (0 <= i' && i<=j && j+dj<=h) . singleton $ ElmS (subword i' i') (subword i' i')
+      in  staticCheck (0 <= i' && i<=j && j+dj<=h) . singleton . ElmS $ RiSwO i' i' i' i'
   mkStream S (OLeftOf (di:.dj)) (Subword (_:.h)) (Subword (i:.j))
     = let i' = i-di
       in  staticCheck (0 <= i' && i<=j && j+dj<=h)
-    $ map (\k -> ElmS (subword 0 k) (subword k j))
+    $ map (\k -> ElmS $ RiSwO 0 k k j)
     $ enumFromStepN 0 1 (i'+1)
   mkStream S e _ _ = error $ show e ++ "maybe only inside syntactic terminals on the RHS of an outside rule?" -- TODO mostly because I'm not sure if that would be useful
   {-# Inline mkStream #-}
@@ -70,7 +85,7 @@ instance (Monad m) => MkStream m S (Subword O) where
 
 instance (Monad m) => MkStream m S (Subword C) where
   mkStream S Complemented (Subword (_:.h)) (Subword (i:.j))
-    = map (\(k,l) -> ElmS (subword k l) (subword k l))
+    = map (\(k,l) -> ElmS $ RiSwC k l)
     $ unfoldr go (i,i)
     where go (k,l)
             | k >h || k >j = Nothing
@@ -88,10 +103,10 @@ instance
   ) => MkStream m S (is:.Subword I) where
   mkStream S (vs:.IStatic ()) (lus:.Subword (_:.h)) (ixs:.Subword(i:.j))
     = staticCheck (i>=0 && i==j && j<=h)
-    . map (\(ElmS zi zo) -> ElmS (zi:.subword i i) (zo:.subword 0 0))
+    . map (\(ElmS zi) -> ElmS (zi:.:RiSwI i))
     $ mkStream S vs lus ixs
   mkStream S (vs:.IVariable ()) (lus:.Subword (_:.h)) (ixs:.Subword (i:.j))
-    = map (\(ElmS zi zo) -> ElmS (zi:.subword i i) (zo:.subword 0 0))
+    = map (\(ElmS zi) -> ElmS (zi:.:RiSwI i))
     . filter (const $ 0<=i && i<=j && j<=h)
     $ mkStream S vs lus ixs
   {-# Inline mkStream #-}

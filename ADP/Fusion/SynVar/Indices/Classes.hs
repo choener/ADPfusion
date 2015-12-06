@@ -6,6 +6,7 @@
 
 module ADP.Fusion.SynVar.Indices.Classes where
 
+import Data.Proxy (Proxy)
 import Data.Vector.Fusion.Stream.Monadic (map,Stream,head,mapM,flatten,Step(..))
 import Prelude hiding (map,head,mapM)
 
@@ -35,11 +36,9 @@ instance AddIndexDense a Z Z where
 
 data SvState s a u i = SvS
   { sS  :: !s -- | state coming in from the left
-  , sIx :: !a -- | @I/C@ index from @sS@
-  , sOx :: !a -- | @O@ index from @sS@
+  , sIx :: !(RunningIndex a) -- | @I/C@ index from @sS@
   , tx  :: !u -- | @I/C@ building up state to index the @table@.
-  , iIx :: !i -- | @I/C@ building up state to hand over to next symbol
-  , iOx :: !i -- | @O@ building up state to hand over to next symbol
+  , iIx :: !(RunningIndex i) -- | @I/C@ building up state to hand over to next symbol
   }
 
 
@@ -53,8 +52,8 @@ addIndexDense
      , s ~ Elm x0 a
      , Element x0 a
      )
-  => TblConstraint u -> Context i -> i -> i -> Stream m s -> Stream m (s,u,i,i)
-addIndexDense t c u i = map (\(SvS s _ _ z i' o') -> (s,z,i',o')) . addIndexDenseGo t c u i . map (\s -> (SvS s (getIdx s) (getOmx s) Z Z Z))
+  => TblConstraint u -> Context i -> i -> i -> Stream m s -> Stream m (s,u,RunningIndex i)
+addIndexDense t c u i = map (\(SvS s _ z i') -> (s,z,i')) . addIndexDenseGo t c u i . map (\s -> (SvS s (getIdx s) Z RiZ))
 {-# Inline addIndexDense #-}
 
 -- | In case of 1-dim tables, we wrap the index creation in a multi-dim
@@ -68,9 +67,17 @@ addIndexDense1
      , s ~ Elm x0 a
      , Element x0 a
      )
-  => TblConstraint u -> Context i -> i -> i -> Stream m s -> Stream m (s,u,i,i)
-addIndexDense1 t c u i = map (\(SvS s _ _ (Z:.z) (Z:.i') (Z:.o')) -> (s,z,i',o'))
+  => TblConstraint u -> Context i -> i -> i -> Stream m s -> Stream m (s,u,RunningIndex i)
+addIndexDense1 t c u i = map (\(SvS s _ (Z:.z) (RiZ:.:i')) -> (s,z,i'))
                        . addIndexDenseGo (Z:.t) (Z:.c) (Z:.u) (Z:.i)
-                       . map (\s -> (SvS s (Z:.getIdx s) (Z:.getOmx s) Z Z Z))
+                       . map (\s -> (SvS s (RiZ :.: getIdx s) Z RiZ))
 {-# Inline addIndexDense1 #-}
+
+-- | Instance headers, we typically need.
+
+type IndexHdr a us u is i =
+  ( AddIndexDense a us is
+  , GetIndex (RunningIndex a) (RunningIndex (is:.i))
+  , GetIx (RunningIndex a) (RunningIndex (is:.i)) ~ (RunningIndex i)
+  )
 

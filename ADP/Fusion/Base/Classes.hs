@@ -28,6 +28,16 @@ class RuleContext i where
   type Context i :: *
   initialContext :: i -> Context i
 
+-- | While we ostensibly use an index of type @i@ we typically do not need
+-- every element of an @i@. For example, when looking at 'Subword's, we do
+-- not need both element of @j:.k@ but only @k@.
+-- Also, inside grammars do need fewer moving indices than outside
+-- grammars.
+
+data family RunningIndex i :: *
+
+data instance RunningIndex (is:.i) = RunningIndex is :.: RunningIndex i
+
 -- | During construction of the stream, we need to extract individual elements
 -- from symbols in production rules. An element in a stream is fixed by both,
 -- the type @x@ of the actual argument we want to grab (say individual
@@ -41,8 +51,7 @@ class Element x i where
   type RecElm x i :: *
   type Arg    x   :: *
   getArg :: Elm x i -> Arg x
-  getIdx :: Elm x i -> i
-  getOmx :: Elm x i -> i
+  getIdx :: Elm x i -> RunningIndex i
   getElm :: Elm x i -> RecElm x i
 
 -- | @mkStream@ creates the actual stream of elements (@Elm@) that will be fed
@@ -80,16 +89,14 @@ data S = S
 instance
   (
   ) => Element S i where
-  data Elm S i = ElmS !i !i
+  data Elm S i = ElmS !(RunningIndex i)
   type Arg S   = Z
-  getArg (ElmS _ _) = Z
-  getIdx (ElmS i _) = i
-  getOmx (ElmS _ o) = o
+  getArg (ElmS _) = Z
+  getIdx (ElmS i) = i
   {-# Inline getArg #-}
   {-# Inline getIdx #-}
-  {-# Inline getOmx #-}
 
-deriving instance Show ix => Show (Elm S ix)
+deriving instance (Show (RunningIndex ix)) => Show (Elm S ix)
 
 -- | 'staticCheck' acts as a static filter. If 'b' is true, we keep all stream
 -- elements. If 'b' is false, we discard all stream elements.

@@ -55,24 +55,20 @@ instance
 
 
 instance Element ls i => Element (ls :!: IRec m i x) i where
-  data Elm (ls :!: IRec m i x) i = ElmIRec !x !i !i !(Elm ls i)
+  data Elm (ls :!: IRec m i x) i = ElmIRec !x !(RunningIndex i) !(Elm ls i)
   type Arg (ls :!: IRec m i x)   = Arg ls :. x
-  getArg (ElmIRec x _ _ ls) = getArg ls :. x
-  getIdx (ElmIRec _ i _ _ ) = i
-  getOmx (ElmIRec _ _ o _ ) = o
+  getArg (ElmIRec x _ ls) = getArg ls :. x
+  getIdx (ElmIRec _ i _ ) = i
   {-# Inline getArg #-}
   {-# Inline getIdx #-}
-  {-# Inline getOmx #-}
 
 instance Element ls i => Element (ls :!: (Backtrack (IRec mF i x) mF mB r)) i where
-  data Elm (ls :!: (Backtrack (IRec mF i x) mF mB r)) i = ElmBtIRec !x !(mB (Stream mB r)) !i !i !(Elm ls i)
+  data Elm (ls :!: (Backtrack (IRec mF i x) mF mB r)) i = ElmBtIRec !x !(mB (Stream mB r)) !(RunningIndex i) !(Elm ls i)
   type Arg (ls :!: (Backtrack (IRec mF i x) mF mB r))   = Arg ls :. (x, mB (Stream mB r))
-  getArg (ElmBtIRec x s _ _ ls) = getArg ls :. (x,s)
-  getIdx (ElmBtIRec _ _ i _ _ ) = i
-  getOmx (ElmBtIRec _ _ _ o _ ) = o
+  getArg (ElmBtIRec x s _ ls) = getArg ls :. (x,s)
+  getIdx (ElmBtIRec _ _ i _ ) = i
   {-# Inline getArg #-}
   {-# Inline getIdx #-}
-  {-# Inline getOmx #-}
 
 
 
