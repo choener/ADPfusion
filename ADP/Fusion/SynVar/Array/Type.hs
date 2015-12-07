@@ -49,7 +49,7 @@ instance
   ( Monad m
   , PrimArrayOps arr i x
   , IndexStream i
-  ) => Axiom (ITbl m arr c  i x) where
+  ) => Axiom (ITbl m arr c i x) where
   type AxiomStream (ITbl m arr c i x) = m x
   axiom (ITbl _ _ c arr _) = do
     k <- (head . uncurry streamDown) $ bounds arr

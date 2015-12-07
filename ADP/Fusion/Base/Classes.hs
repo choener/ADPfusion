@@ -159,11 +159,12 @@ minSize _        = 0
 --
 -- TODO Rewrite to generalize easily over multi-dim cases.
 
---class ModifyConstraint t where
---  type TNE t :: *
---  type TE  t :: *
---  toNonEmpty :: t -> TNE t
---  toEmpty    :: t -> TE  t
+class ModifyConstraint t where
+  type TNE t :: *
+  type TE  t :: *
+  toNonEmpty :: t -> TNE t
+  toEmpty    :: t -> TE  t
+
 --
 --instance ModifyConstraint EmptyOk
 --  type TNE EmptyOk = NonEmpty

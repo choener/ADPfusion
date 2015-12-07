@@ -108,10 +108,17 @@ instance
   mkStream = btITblStream
   {-# Inline mkStream #-}
 
+instance ModifyConstraint (ITbl m arr EmptyOk i x) where
+  type TNE (ITbl m arr EmptyOk i x) = ITbl m arr NonEmpty i x
+  type TE  (ITbl m arr EmptyOk i x) = ITbl m arr EmptyOk  i x
+  toNonEmpty (ITbl b l _ arr f) = ITbl b l NonEmpty arr f
+  {-# Inline toNonEmpty #-}
 
-toNonEmpty :: ITbl m arr EmptyOk i x -> ITbl m arr NonEmpty i x
-toNonEmpty (ITbl b l _ arr f) = ITbl b l NonEmpty arr f
-{-# Inline toNonEmpty #-}
+instance ModifyConstraint (Backtrack (ITbl mF arr EmptyOk i x) mF mB r) where
+  type TNE (Backtrack (ITbl mF arr EmptyOk i x) mF mB r) = Backtrack (ITbl mF arr NonEmpty i x) mF mB r
+  type TE  (Backtrack (ITbl mF arr EmptyOk i x) mF mB r) = Backtrack (ITbl mF arr EmptyOk  i x) mF mB r
+  toNonEmpty (BtITbl _ arr bt) = BtITbl NonEmpty arr bt
+  {-# Inline toNonEmpty #-}
 
 --instance ModifyConstraint (ITbl m arr EmptyOk (Subword t) x) where
 --  toNonEmpty (ITbl b l _ arr f) = ITbl b l NonEmpty arr f
