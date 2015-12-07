@@ -94,7 +94,7 @@ instance TableOrder Z where
   {-# Inline tableLittleOrder #-}
   {-# Inline tableBigOrder #-}
 
-instance (TableOrder ts) => TableOrder (ts:.ITbl im arr i x) where
+instance (TableOrder ts) => TableOrder (ts:.ITbl im arr c i x) where
   tableLittleOrder (ts:.ITbl _ tlo _ _ _) = tlo : tableLittleOrder ts
   tableBigOrder    (ts:.ITbl tbo _ _ _ _) = tbo : tableBigOrder ts
   {-# Inline tableLittleOrder #-}
@@ -108,7 +108,7 @@ instance
   , MutateCell CFG ts im om i
   , PrimMonad om
   , Show x, Show i
-  ) => MutateCell CFG (ts:.ITbl im arr i x) im om i where
+  ) => MutateCell CFG (ts:.ITbl im arr c i x) im om i where
   mutateCell h bo lo mrph (ts:.ITbl tbo tlo c arr f) lu i = do
     mutateCell h bo lo mrph ts lu i
     when (bo==tbo && lo==tlo) $ do
@@ -124,7 +124,7 @@ instance
   , MPrimArrayOps arr ZS2 x
   , MutateCell MonotoneMCFG ts im om ZS2
   , PrimMonad om
-  ) => MutateCell MonotoneMCFG (ts:.ITbl im arr ZS2 x) im om ZS2 where
+  ) => MutateCell MonotoneMCFG (ts:.ITbl im arr c ZS2 x) im om ZS2 where
   mutateCell h bo lo mrph (ts:.ITbl tbo tlo c arr f) lu iklj@(Z:.Subword (i:.k):.Subword(l:.j)) = do
     mutateCell h bo lo mrph ts lu iklj
     when (bo==tbo && lo==tlo && k<=l) $ do
@@ -138,7 +138,7 @@ instance
   , MPrimArrayOps arr (Subword I) x
   , MutateCell h ts im om (Z:.Subword I:.Subword I)
   , PrimMonad om
-  ) => MutateCell h (ts:.ITbl im arr (Subword I) x) im om (Z:.Subword I:.Subword I) where
+  ) => MutateCell h (ts:.ITbl im arr c (Subword I) x) im om (Z:.Subword I:.Subword I) where
   mutateCell h bo lo mrph (ts:.ITbl tbo tlo c arr f) lu@(Z:.Subword (l:._):.Subword(_:.u)) ix@(Z:.Subword (i1:.j1):.Subword (i2:.j2)) = do
     mutateCell h bo lo mrph ts lu ix
     when (bo==tbo && lo==tlo && i1==i2 && j1==j2) $ do
@@ -156,12 +156,12 @@ instance
 
 instance
   ( Monad om
-  , MutateCell h (ts:.ITbl im arr i x) im om i
+  , MutateCell h (ts:.ITbl im arr c i x) im om i
   , PrimArrayOps arr i x
   , Show i
   , IndexStream i
-  , TableOrder (ts:.ITbl im arr i x)
-  ) => MutateTables h (ts:.ITbl im arr i x) im om where
+  , TableOrder (ts:.ITbl im arr c i x)
+  ) => MutateTables h (ts:.ITbl im arr c i x) im om where
   mutateTables h mrph tt@(_:.ITbl _ _ _ arr _) = do
     let (from,to) = bounds arr
     -- TODO (1) find the set of orders for the synvars

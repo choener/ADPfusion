@@ -32,7 +32,7 @@ instance
   ( Monad m
   , Element ls (Subword I)
   , MkStream m ls (Subword I)
-  ) => MkStream m (ls :!: Split uId Fragment (ITbl m arr j x)) (Subword I) where
+  ) => MkStream m (ls :!: Split uId Fragment (ITbl m arr c j x)) (Subword I) where
   mkStream (ls :!: Split _) (IStatic ()) hh (Subword (i:.j))
     = map (\s -> let RiSwI l = getIdx s
                  in  ElmSplitITbl Proxy () (RiSwI j) s)
@@ -56,7 +56,8 @@ instance
   , SplitIxCol uId (SameSid uId (Elm ls (Subword I))) (Elm ls (Subword I))
   , (SplitIxTy uId (SameSid uId (Elm ls (Subword I))) (Elm ls (Subword I)) :. Subword I) ~ mix
   , (PrimArrayOps arr (SplitIxTy uId (SameSid uId (Elm ls (Subword I))) (Elm ls (Subword I)) :. Subword I) x)
-  ) => MkStream m (ls :!: Split uId Final (ITbl m arr mix x)) (Subword I) where
+  , MinSize c
+  ) => MkStream m (ls :!: Split uId Final (ITbl m arr (cs:.c) mix x)) (Subword I) where
   mkStream (ls :!: Split (ITbl _ _ (_:.c) t elm)) (IStatic ()) hh (Subword (i:.j))
     = map (\s -> let RiSwI l = getIdx s
                      fmbkm :: mix = collectIx (Proxy :: Proxy uId) s :. subword l j
@@ -83,7 +84,7 @@ instance
   ( Monad mB
   , Element ls (Subword I)
   , MkStream mB ls (Subword I)
-  ) => MkStream mB (ls :!: Split uId Fragment (Backtrack (ITbl mF arr j x) mF mB r)) (Subword I) where
+  ) => MkStream mB (ls :!: Split uId Fragment (Backtrack (ITbl mF arr c j x) mF mB r)) (Subword I) where
   mkStream (ls :!: Split (BtITbl _ _ _)) (IStatic ()) hh (Subword (i:.j))
     = map (\s -> let RiSwI l = getIdx s
                  in  ElmSplitBtITbl Proxy () (RiSwI j) s)
@@ -107,7 +108,8 @@ instance
   , SplitIxCol uId (SameSid uId (Elm ls (Subword I))) (Elm ls (Subword I))
   , (SplitIxTy uId (SameSid uId (Elm ls (Subword I))) (Elm ls (Subword I)) :. Subword I) ~ mix
   , (PrimArrayOps arr (SplitIxTy uId (SameSid uId (Elm ls (Subword I))) (Elm ls (Subword I)) :. Subword I) x)
-  ) => MkStream mB (ls :!: Split uId Final (Backtrack (ITbl mF arr mix x) mF mB r)) (Subword I) where
+  , MinSize c
+  ) => MkStream mB (ls :!: Split uId Final (Backtrack (ITbl mF arr (cs:.c) mix x) mF mB r)) (Subword I) where
   mkStream (ls :!: Split (BtITbl (_:.c) t bt)) (IStatic ()) hh (Subword (i:.j))
     = mapM (\s -> let RiSwI l      = getIdx s
                       lj           = subword l j

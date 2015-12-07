@@ -27,8 +27,9 @@ import ADP.Fusion.SynVar.Indices.Classes
 -- TODO outside and complement code
 
 instance
-  ( IndexHdr a us (BitSet I) is (BitSet I)
-  ) => AddIndexDense a (us:.BitSet I) (is:.BitSet I) where
+  ( IndexHdr a us (BitSet I) cs c is (BitSet I)
+  , MinSize c
+  ) => AddIndexDense a (us:.BitSet I) (cs:.c) (is:.BitSet I) where
   addIndexDenseGo (cs:.c) (vs:.IStatic rb) (us:.u) (is:.i)
     = flatten mk step . addIndexDenseGo cs vs us is
           -- @mk@ builds up the index we start with. First we ask in @l@
@@ -68,7 +69,7 @@ instance
                                                         ((svS :. mask :.) <$> setSucc 0 (2^pm -1) k)
             where pk = popCount k
                   pm = popCount mask
-          csize = delay_inline minSize c  -- minimal set size via constraints
+          !csize = minSize c  -- minimal set size via constraints
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   addIndexDenseGo (cs:.c) (vs:.IVariable rb) (us:.u) (is:.i)
@@ -78,18 +79,19 @@ instance
           -- bits left. If @cm==0@ then we immediately quit. If not, we
           -- activate one bit.
     where mk svS
-            | c==EmptyOk  = return $ Just (svS :. mask :. cm :. 0)
-            | cm == 0     = return $ Nothing
-            | c==NonEmpty = return $ Just (svS :. mask :. cm :. 1)
+            | csize==0  = return $ Just (svS :. mask :. cm :. csize)
+            | cm == 0   = return $ Nothing
+            | csize==1  = return $ Just (svS :. mask :. cm :. csize)
             where mask = i `xor` l
                   cm   = popCount mask
                   RiBsI l = getIndex (sIx svS) (Proxy :: PRI is (BitSet I))
-          step Nothing = return $ Done
+                  csize = BitSet $ minSize c
           -- if the possible popcount in @i@ is less than the total
           -- popcount in @kk@ and @l@ and the reserved bits in @rb@, then
           -- we continue. This means returning @kk@ as the bitset for
           -- indexing; @kk.|.l@ as all set bits. @setSucc@ will rotate
           -- through all permutations for each popcount and mask.
+          step Nothing = return $ Done
           step (Just (svS@(SvS s a t y') :. mask :. cm :. k))
             | popCount i < popCount (kk .|. l) + rb = return $ Done
             | otherwise = return $ Yield (SvS s a (t:.kk) (y' :.: RiBsI (kk.|.l)))
@@ -105,8 +107,9 @@ instance
 -- it is the final @RightOf@ object before we have the @FirstLeft@ object.
 
 instance
-  ( IndexHdr a us (BitSet O) is (BitSet O)
-  ) => AddIndexDense a (us:.BitSet O) (is:.BitSet O) where
+  ( IndexHdr a us (BitSet O) cs c is (BitSet O)
+  , MinSize c
+  ) => AddIndexDense a (us:.BitSet O) (cs:.c) (is:.BitSet O) where
   addIndexDenseGo (cs:.c) (vs:.OStatic rb) (us:.u) (is:.i)
     = flatten mk step . addIndexDenseGo cs vs us is
           -- We need to make the number of @0@s smaller, or make the number
@@ -134,7 +137,7 @@ instance
                 in  return $ Yield (SvS s a (t:.tt) (y' :.: RiBsO bsi tt))
                                    ((svS :. mask :.) <$> setSucc 0 (2^rb -1) k)
             where pk = popCount k
-          csize = delay_inline minSize c
+          csize = minSize c
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   addIndexDenseGo (cs:.c) (vs:.ORightOf rb) (us:.u) (is:.i)
@@ -144,10 +147,10 @@ instance
 -- |
 
 instance
-  ( AddIndexDense a us is
+  ( AddIndexDense a us cs is
   , GetIndex a (is:.BitSet O)
   , GetIx a (is:.BitSet O) ~ (BitSet O)
-  ) => AddIndexDense a (us:.BitSet I) (is:.BitSet O) where
+  ) => AddIndexDense a (us:.BitSet I) (cs:.c) (is:.BitSet O) where
 --  addIndexDenseGo (cs:.c) (vs:.OFirstLeft rb) (us:.u) (is:.i)
 --    = error "ping"
   {-# Inline addIndexDenseGo #-}

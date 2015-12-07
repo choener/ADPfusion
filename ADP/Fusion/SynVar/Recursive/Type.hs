@@ -13,19 +13,19 @@ import ADP.Fusion.SynVar.Axiom
 
 
 
-data IRec m i x where
-  IRec :: { iRecConstraint  :: !(TblConstraint i)
+data IRec m c i x where
+  IRec :: { iRecConstraint  :: !c
           , iRecFrom        :: !i
           , iRecTo          :: !i
           , iRecFun         :: !(i -> i -> m x)
-          } -> IRec m i x
+          } -> IRec m c i x
 
+{-
 
+instance Build (IRec m c i x)
 
-instance Build (IRec m i x)
-
-instance GenBacktrackTable (IRec mF i x) mF mB r where
-  data Backtrack (IRec mF i x) mF mB r = BtIRec !(TblConstraint i) !i !i (i -> i -> mB x) (i -> i -> mB [r]) -- (Stream mB r))
+instance GenBacktrackTable (IRec mF c i x) mF mB r where
+  data Backtrack (IRec mF i x) mF mB r = BtIRec !c !i !i (i -> i -> mB x) (i -> i -> mB [r]) -- (Stream mB r))
   type BacktrackIndex (IRec mF i x)         = i
   toBacktrack (IRec c iF iT f) mrph bt = BtIRec c iF iT (\lu i -> mrph $ f lu i) bt
   {-# INLINE toBacktrack #-}
@@ -70,6 +70,7 @@ instance Element ls i => Element (ls :!: (Backtrack (IRec mF i x) mF mB r)) i wh
   {-# Inline getArg #-}
   {-# Inline getIdx #-}
 
+-}
 
 
 -- TODO write multi-tape instances

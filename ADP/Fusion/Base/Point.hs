@@ -1,6 +1,7 @@
 
 module ADP.Fusion.Base.Point where
 
+import Data.Proxy
 import Data.Vector.Fusion.Stream.Monadic (singleton,map,filter,Step(..))
 import Debug.Trace
 import Prelude hiding (map,filter)
@@ -82,24 +83,18 @@ instance
     $ mkStream S vs us is
   {-# Inline mkStream #-}
 
-instance (TblConstraint u ~ TableConstraint) => TableStaticVar u (PointL I) where
+instance (MinSize c) => TableStaticVar u c (PointL I) where
   tableStaticVar _ _ (IStatic   d) _ = IVariable d
   tableStaticVar _ _ (IVariable d) _ = IVariable d
   -- NOTE this code used to destroy fusion. If we inline tableStreamIndex
   -- very late (after 'mkStream', probably) then everything works out.
-  tableStreamIndex _ c _ (PointL j)
-    | c==EmptyOk  = PointL j
-    | c==NonEmpty = PointL $ j-1
-    | c==OnlyZero = PointL j -- this should then actually request a size in 'tableStaticVar' ...
+  tableStreamIndex _ c _ (PointL j) = PointL $ j - minSize c
   {-# INLINE [0] tableStaticVar   #-}
   {-# INLINE [0] tableStreamIndex #-}
 
-instance (TblConstraint u ~ TableConstraint) => TableStaticVar u (PointL O) where
-  tableStaticVar   _ _ (OStatic d) _ = OFirstLeft d
-  tableStreamIndex _ c _ (PointL j)
-    | c==EmptyOk  = (PointL j)
-    | c==NonEmpty = (PointL $ j-1)
-    | c==OnlyZero = (PointL j) -- this should then actually request a size in 'tableStaticVar' ...
+instance (MinSize c) => TableStaticVar u c (PointL O) where
+  tableStaticVar   _ _ (OStatic d) _          = OFirstLeft d
+  tableStreamIndex _ c _           (PointL j) = PointL $ j - minSize c
   {-# INLINE [0] tableStaticVar   #-}
   {-# INLINE [0] tableStreamIndex #-}
 

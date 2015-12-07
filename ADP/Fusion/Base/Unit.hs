@@ -77,19 +77,19 @@ instance
 
 
 
-instance (TblConstraint u ~ TableConstraint) => TableStaticVar u (Unit I) where
+instance TableStaticVar c u (Unit I) where
   tableStaticVar _ _ _ _ = IStatic ()
   tableStreamIndex _ _ _ _ = Unit
   {-# Inline [0] tableStaticVar #-}
   {-# Inline [0] tableStreamIndex #-}
 
-instance (TblConstraint u ~ TableConstraint) => TableStaticVar u (Unit O) where
+instance TableStaticVar c u (Unit O) where
   tableStaticVar _ _ _ _ = OStatic ()
   tableStreamIndex _ _ _ _ = Unit
   {-# Inline [0] tableStaticVar #-}
   {-# Inline [0] tableStreamIndex #-}
 
-instance (TblConstraint u ~ TableConstraint) => TableStaticVar u (Unit C) where
+instance TableStaticVar c u (Unit C) where
   tableStaticVar _ _ _ _ = Complemented
   tableStreamIndex _ _ _ _ = Unit
   {-# Inline [0] tableStaticVar #-}

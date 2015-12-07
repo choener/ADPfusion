@@ -58,7 +58,7 @@ data instance RunningIndex (Subword C) = RiSwC !Int !Int
 
 instance (Monad m) => MkStream m S (Subword I) where
   mkStream S (IStatic ()) (Subword (_:.h)) (Subword (i:.j))
-    = staticCheck (i>=0 && i==j && j<=h)
+    = filter (const $ 0<=i && i<=j) -- staticCheck (i>=0 && i==j && j<=h)
     . singleton
     . ElmS $ RiSwI i
   mkStream S (IVariable ()) (Subword (_:.h)) (Subword (i:.j))
@@ -111,13 +111,10 @@ instance
     $ mkStream S vs lus ixs
   {-# Inline mkStream #-}
 
-instance (TblConstraint u ~ TableConstraint) => TableStaticVar u (Subword I) where
+instance (MinSize c) => TableStaticVar u c (Subword I) where
   tableStaticVar _ _ (IStatic   d) _ = IVariable d
   tableStaticVar _ _ (IVariable d) _ = IVariable d
-  tableStreamIndex _ c _ (Subword (i:.j))
-    | c==EmptyOk  = subword i j
-    | c==NonEmpty = subword i (j-1)
-    | c==NonEmpty = error "A.F.B.Subword ???"
+  tableStreamIndex _ c _ (Subword (i:.j)) = subword i (j - minSize c)
   {-# INLINE [0] tableStaticVar   #-}
   {-# INLINE [0] tableStreamIndex #-}
 
@@ -126,7 +123,7 @@ instance (TblConstraint u ~ TableConstraint) => TableStaticVar u (Subword I) whe
 --
 -- TODO @tableStreamIndex@ needs to be fixed
 
-instance TableStaticVar (u O) (Subword O) where
+instance TableStaticVar c (u O) (Subword O) where
   tableStaticVar _ _ (OStatic  d) _ = OFirstLeft d
   tableStaticVar _ _ (ORightOf d) _ = OFirstLeft d
   tableStreamIndex _ c _ (Subword (i:.j)) = subword i j
@@ -138,7 +135,7 @@ instance TableStaticVar (u O) (Subword O) where
 --
 -- TODO @tableStreamIndex@ needs to be fixed
 
-instance TableStaticVar (u I) (Subword O) where
+instance TableStaticVar c (u I) (Subword O) where
   tableStaticVar _ _ (OStatic    d) _ = ORightOf d
   tableStaticVar _ _ (ORightOf   d) _ = ORightOf d
   tableStaticVar _ _ (OFirstLeft d) _ = OLeftOf d
@@ -147,13 +144,13 @@ instance TableStaticVar (u I) (Subword O) where
   {-# INLINE [0] tableStaticVar   #-}
   {-# INLINE [0] tableStreamIndex #-}
 
-instance TableStaticVar (u I) (Subword C) where
+instance TableStaticVar c (u I) (Subword C) where
   tableStaticVar _ _ _ _ = Complemented
   tableStreamIndex _ c _ (Subword (i:.j)) = subword i j
   {-# INLINE [0] tableStaticVar   #-}
   {-# INLINE [0] tableStreamIndex #-}
 
-instance TableStaticVar (u O) (Subword C) where
+instance TableStaticVar c (u O) (Subword C) where
   tableStaticVar _ _ _ _ = Complemented
   tableStreamIndex _ c _ (Subword (i:.j)) = subword i j
   {-# INLINE [0] tableStaticVar   #-}

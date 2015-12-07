@@ -33,16 +33,17 @@ import ADP.Fusion.SynVar.Indices.Classes
 -- @
 
 instance
-  ( IndexHdr a us (Subword I) is (Subword I)
-  ) => AddIndexDense a (us:.Subword I) (is:.Subword I) where
+  ( IndexHdr a us (Subword I) cs c is (Subword I)
+  , MinSize c
+  ) => AddIndexDense a (us:.Subword I) (cs:.c) (is:.Subword I) where
   addIndexDenseGo (cs:._) (vs:.IStatic ()) (us:.Subword (_:.u)) (is:.Subword (i:.j))
-    = staticCheck (j<=u)
+    = id -- staticCheck (j<=u)
     . map (\(SvS s a t y') -> let RiSwI l = getIndex a (Proxy :: PRI is (Subword I))
                                   lj = subword l j
                               in  SvS s a (t:.lj) (y' :.: RiSwI j) )
     . addIndexDenseGo cs vs us is
   addIndexDenseGo (cs:.c) (vs:.IVariable ()) (us:.Subword (_:.u)) (is:.Subword (i:.j))
-    = staticCheck (j<=u)
+    = seq csize . id --  staticCheck (j<=u)
     . flatten mk step . addIndexDenseGo cs vs us is
     where mk   svS = let RiSwI l = getIndex (sIx svS) (Proxy :: PRI is (Subword I))
                      in  return $ svS :. (j - l - csize)
@@ -51,7 +52,7 @@ instance
                                l = j - zz ; kl = subword k l
                            return $ Yield (SvS s a (t:.kl) (y' :.: RiSwI l)) (svS :. zz-1)
             | otherwise =  return $ Done
-          csize = delay_inline minSize c
+          !csize = minSize c
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline addIndexDenseGo #-}
@@ -66,8 +67,8 @@ instance
 -- and the like.
 
 instance
-  ( IndexHdr a us (Subword O) is (Subword O)
-  ) => AddIndexDense a (us:.Subword O) (is:.Subword O) where
+  ( IndexHdr a us (Subword O) cs c is (Subword O)
+  ) => AddIndexDense a (us:.Subword O) (cs:.c) (is:.Subword O) where
   addIndexDenseGo (cs:.c) (vs:.OStatic (di:.dj)) (us:.u) (is:.Subword (i:.j))
     = map (\(SvS s a t y') -> let RiSwO _ _ k _ = getIndex a (Proxy :: PRI is (Subword O))
                                   kj = subword k (j+dj)
@@ -97,8 +98,9 @@ instance
 -- TODO take care of @c@
 
 instance
-  ( IndexHdr a us (Subword I) is (Subword O)
-  ) => AddIndexDense a (us:.Subword I) (is:.Subword O) where
+  ( IndexHdr a us (Subword I) cs c is (Subword O)
+  , MinSize c
+  ) => AddIndexDense a (us:.Subword I) (cs:.c) (is:.Subword O) where
   addIndexDenseGo (cs:.c) (vs:.OStatic (di:.dj)) (us:.u) (is:.Subword (i:.j))
     = map (\(SvS s a t y') -> let RiSwO _ k li l = getIndex a (Proxy :: PRI is (Subword O))
                                   klI = subword (k-dj) (l-dj)
@@ -147,8 +149,8 @@ instance
 -- @
 
 instance
-  ( IndexHdr a us (Subword I) is (Subword C)
-  ) => AddIndexDense a (us:.Subword I) (is:.Subword C) where
+  ( IndexHdr a us (Subword I) cs c is (Subword C)
+  ) => AddIndexDense a (us:.Subword I) (cs:.c) (is:.Subword C) where
   addIndexDenseGo (cs:.c) (vs:.Complemented) (us:.u) (is:.i)
     = map (\(SvS s a t y') -> let kk@(RiSwC ki kj) = getIndex a (Proxy :: PRI is (Subword C))
                               in  SvS s a (t:.subword ki kj) (y':.:kk))
@@ -162,8 +164,8 @@ instance
 -- @
 
 instance
-  ( IndexHdr a us (Subword O) is (Subword C)
-  ) => AddIndexDense a (us:.Subword O) (is:.Subword C) where
+  ( IndexHdr a us (Subword O) cs c is (Subword C)
+  ) => AddIndexDense a (us:.Subword O) (cs:.c) (is:.Subword C) where
   addIndexDenseGo (cs:.c) (vs:.Complemented) (us:.u) (is:.i)
     = map (\(SvS s a t y') -> let kk@(RiSwC ki kj) = getIndex a (Proxy :: PRI is (Subword C))
                               in  SvS s a (t:.subword ki kj) (y':.:kk))
@@ -177,8 +179,8 @@ instance
 -- @
 
 instance
-  ( IndexHdr a us (Subword C) is (Subword C)
-  ) => AddIndexDense a (us:.Subword C) (is:.Subword C) where
+  ( IndexHdr a us (Subword C) cs c is (Subword C)
+  ) => AddIndexDense a (us:.Subword C) (cs:.c) (is:.Subword C) where
   addIndexDenseGo (cs:.c) (vs:.Complemented) (us:.u) (is:.i)
     = map (\(SvS s a t y') -> let k = getIndex a (Proxy :: PRI is (Subword C))
                                   RiSwC ki kj = k

@@ -1,6 +1,7 @@
 
 module ADP.Fusion.Base.Classes where
 
+import           Data.Proxy
 import           Data.Strict.Tuple
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
@@ -126,35 +127,58 @@ data StaticCheck a b = CheckLeft Bool a | CheckRight b
 -- indices, or finally they can be 'OnlyZero' (only @i==j@ allowed) which is
 -- useful in multi-dimensional casese.
 
-data TableConstraint
-  = EmptyOk
-  | NonEmpty
-  | OnlyZero
-  deriving (Eq,Show)
+--data TableConstraint
+--  = EmptyOk
+--  | NonEmpty
+--  | OnlyZero
+--  deriving (Eq,Show)
 
+data EmptyOk = EmptyOk
+
+data NonEmpty = NonEmpty
+
+class MinSize c where
+  minSize :: c -> Int
+
+instance MinSize EmptyOk where
+  minSize EmptyOk = 0
+  {-# Inline minSize #-}
+
+instance MinSize NonEmpty where
+  minSize NonEmpty = 1
+  {-# Inline minSize #-}
+
+{-
 minSize :: TableConstraint -> Int
 minSize NonEmpty = 1
 minSize _        = 0
-{-# INLINE minSize #-}
+{-# Inline [0] minSize #-}
+-}
 
 -- |
 --
 -- TODO Rewrite to generalize easily over multi-dim cases.
 
-class ModifyConstraint t where
-  toNonEmpty :: t -> t
-  toEmpty    :: t -> t
+--class ModifyConstraint t where
+--  type TNE t :: *
+--  type TE  t :: *
+--  toNonEmpty :: t -> TNE t
+--  toEmpty    :: t -> TE  t
+--
+--instance ModifyConstraint EmptyOk
+--  type TNE EmptyOk = NonEmpty
+--  type TE  EmptyOk = 
 
 -- |
 
-type family   TblConstraint x       :: *
-
-type instance TblConstraint (is:.i) =  TblConstraint is :. TblConstraint i
-type instance TblConstraint Z       = Z
-
--- TODO move into the sub-modules
-
-type instance TblConstraint (PointL  t) = TableConstraint
-type instance TblConstraint (PointR  t) = TableConstraint
-type instance TblConstraint (Subword t) = TableConstraint
+--type family   TblConstraint x       :: *
+--
+--type instance TblConstraint (is:.i) =  TblConstraint is :. TblConstraint i
+--type instance TblConstraint Z       = Z
+--
+---- TODO move into the sub-modules
+--
+--type instance TblConstraint (PointL  t) = TableConstraint
+--type instance TblConstraint (PointR  t) = TableConstraint
+--type instance TblConstraint (Subword t) = TableConstraint
 

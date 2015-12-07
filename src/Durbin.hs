@@ -31,6 +31,7 @@ import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
 import           System.Environment (getArgs)
 import           Text.Printf
+import           Data.Char (ord)
 
 -- Import PrimitiveArray for low-level tables and automatic table
 -- filling.
@@ -61,7 +62,7 @@ bpmax = Durbin
   { nil = \ ()    -> 0
   , lef = \ _  x  -> x
   , rig = \ x  _  -> x
-  , pai = \ c x d -> if pairs c d then x+1 else -999999
+  , pai = \ c x d -> x + pairs' c d -- if pairs c d then x+1 else -999999
   , spl = \ x y   -> x+y
   , h   = SM.foldl' max 0
   }
@@ -75,6 +76,16 @@ pairs !c !d
   || c=='U' && d=='A'
   || c=='U' && d=='G'
 {-# INLINE pairs #-}
+
+pairs' !c !d = lkup_pairs ! (Z:.ord c:.ord d)
+{-# Inline pairs' #-}
+
+lkup_pairs :: Unboxed (Z:.Int:.Int) Int
+lkup_pairs = PA.fromAssocs (Z:.0:.0) (Z:.mx:.mx) (-999999) $ Prelude.map (\[p1,p2] -> ((Z:.p1:.p2),1)) ps
+  where mx = maximum $ Prelude.map ord "ACGU"
+        ps :: [[Int]]
+        ps = Prelude.map (Prelude.map ord) [ "AU", "CG", "GC", "GU", "UA", "UG" ]
+{-# NoInline lkup_pairs #-}
 
 pretty :: Monad m => Durbin m Char () String [String]
 pretty = Durbin
@@ -101,16 +112,16 @@ grammar Durbin{..} c t' =
 {-# INLINE grammar #-}
 
 runDurbin :: Int -> String -> (Int,[String])
-runDurbin k inp = (d, take k . unId $ axiom b) where
+runDurbin k inp = (d, [""]) where -- take k . unId $ axiom b) where
   i = VU.fromList . Prelude.map toUpper $ inp
   n = VU.length i
   !(Z:.t) = mutateTablesDefault
           $ grammar bpmax
               (chr i)
-              (ITbl 0 0 EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-999999) [])) :: Z:.ITbl Id Unboxed (Subword I) Int
+              (ITbl 0 0 EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-999999) [])) :: Z:.ITbl Id Unboxed EmptyOk (Subword I) Int
   -- d = let (ITbl _ _ arr _) = t in arr PA.! subword 0 n
   d = iTblArray t PA.! subword 0 n
-  !(Z:.b) = grammar (bpmax <|| pretty) (chr i) (toBacktrack t (undefined :: Id a -> Id a))
+  -- !(Z:.b) = grammar (bpmax <|| pretty) (chr i) (toBacktrack t (undefined :: Id a -> Id a))
 {-# NoInline runDurbin #-}
 
 main = do

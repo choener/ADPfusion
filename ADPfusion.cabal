@@ -171,131 +171,131 @@ library
 
 
 
--- Very simple two-sequence alignment.
-
-executable NeedlemanWunsch
-
-  if flag(examples)
-    buildable:
-      True
-    build-depends:  base
-                 ,  ADPfusion
-                 ,  PrimitiveArray
-                 ,  template-haskell
-                 ,  vector
-  else
-    buildable:
-      False
-  hs-source-dirs:
-    src
-  main-is:
-    NeedlemanWunsch.hs
-  default-language:
-    Haskell2010
-  default-extensions: BangPatterns
-                    , FlexibleContexts
-                    , FlexibleInstances
-                    , MultiParamTypeClasses
-                    , RecordWildCards
-                    , TemplateHaskell
-                    , TypeFamilies
-                    , TypeOperators
-  ghc-options:
-    -O2
-    -funbox-strict-fields
-    -funfolding-use-threshold1000
-    -funfolding-keeness-factor1000
-  if flag(debug)
-    ghc-options:
-      -ddump-to-file
-      -ddump-simpl
-      -dsuppress-all
-
-
-
--- Basic RNA secondary structure folding
-
-executable Nussinov
-
-  if flag(examples)
-    buildable:
-      True
-    build-depends:  base
-                 ,  ADPfusion
-                 ,  PrimitiveArray
-                 ,  template-haskell
-                 ,  vector
-  else
-    buildable:
-      False
-  hs-source-dirs:
-    src
-  main-is:
-    Nussinov.hs
-  default-language:
-    Haskell2010
-  default-extensions: BangPatterns
-                    , FlexibleContexts
-                    , FlexibleInstances
-                    , MultiParamTypeClasses
-                    , RecordWildCards
-                    , TemplateHaskell
-                    , TypeFamilies
-                    , TypeOperators
-                    , UndecidableInstances
-  ghc-options:
-    -O2
-    -funbox-strict-fields
-    -funfolding-use-threshold1000
-    -funfolding-keeness-factor1000
-  if flag(debug)
-    ghc-options:
-      -ddump-to-file
-      -ddump-simpl
-      -dsuppress-all
-
-
-
--- Basic RNA secondary structure folding with partition function calculations
-
-executable PartNussinov
-
-  if flag(examples)
-    buildable:
-      True
-    build-depends:  base
-                 ,  ADPfusion
-                 ,  log-domain        == 0.10.*
-                 ,  PrimitiveArray
-                 ,  template-haskell
-                 ,  vector
-  else
-    buildable:
-      False
-  hs-source-dirs:
-    src
-  main-is:
-    PartNussinov.hs
-  default-language:
-    Haskell2010
-  default-extensions: BangPatterns
-                    , FlexibleContexts
-                    , FlexibleInstances
-                    , MultiParamTypeClasses
-                    , RecordWildCards
-                    , TemplateHaskell
-                    , TypeFamilies
-                    , TypeOperators
-  ghc-options:
-    -O2
-    -funbox-strict-fields
-    -funfolding-use-threshold1000
-    -funfolding-keeness-factor1000
-  if flag(debug)
-    ghc-options:
-      -ddump-to-file
-      -ddump-simpl
-      -dsuppress-all
+-- -- Very simple two-sequence alignment.
+-- 
+-- executable NeedlemanWunsch
+-- 
+--   if flag(examples)
+--     buildable:
+--       True
+--     build-depends:  base
+--                  ,  ADPfusion
+--                  ,  PrimitiveArray
+--                  ,  template-haskell
+--                  ,  vector
+--   else
+--     buildable:
+--       False
+--   hs-source-dirs:
+--     src
+--   main-is:
+--     NeedlemanWunsch.hs
+--   default-language:
+--     Haskell2010
+--   default-extensions: BangPatterns
+--                     , FlexibleContexts
+--                     , FlexibleInstances
+--                     , MultiParamTypeClasses
+--                     , RecordWildCards
+--                     , TemplateHaskell
+--                     , TypeFamilies
+--                     , TypeOperators
+--   ghc-options:
+--     -O2
+--     -funbox-strict-fields
+--     -funfolding-use-threshold1000
+--     -funfolding-keeness-factor1000
+--   if flag(debug)
+--     ghc-options:
+--       -ddump-to-file
+--       -ddump-simpl
+--       -dsuppress-all
+-- 
+-- 
+-- 
+-- -- Basic RNA secondary structure folding
+-- 
+-- executable Nussinov
+-- 
+--   if flag(examples)
+--     buildable:
+--       True
+--     build-depends:  base
+--                  ,  ADPfusion
+--                  ,  PrimitiveArray
+--                  ,  template-haskell
+--                  ,  vector
+--   else
+--     buildable:
+--       False
+--   hs-source-dirs:
+--     src
+--   main-is:
+--     Nussinov.hs
+--   default-language:
+--     Haskell2010
+--   default-extensions: BangPatterns
+--                     , FlexibleContexts
+--                     , FlexibleInstances
+--                     , MultiParamTypeClasses
+--                     , RecordWildCards
+--                     , TemplateHaskell
+--                     , TypeFamilies
+--                     , TypeOperators
+--                     , UndecidableInstances
+--   ghc-options:
+--     -O2
+--     -funbox-strict-fields
+--     -funfolding-use-threshold1000
+--     -funfolding-keeness-factor1000
+--   if flag(debug)
+--     ghc-options:
+--       -ddump-to-file
+--       -ddump-simpl
+--       -dsuppress-all
+-- 
+-- 
+-- 
+-- -- Basic RNA secondary structure folding with partition function calculations
+-- 
+-- executable PartNussinov
+-- 
+--   if flag(examples)
+--     buildable:
+--       True
+--     build-depends:  base
+--                  ,  ADPfusion
+--                  ,  log-domain        == 0.10.*
+--                  ,  PrimitiveArray
+--                  ,  template-haskell
+--                  ,  vector
+--   else
+--     buildable:
+--       False
+--   hs-source-dirs:
+--     src
+--   main-is:
+--     PartNussinov.hs
+--   default-language:
+--     Haskell2010
+--   default-extensions: BangPatterns
+--                     , FlexibleContexts
+--                     , FlexibleInstances
+--                     , MultiParamTypeClasses
+--                     , RecordWildCards
+--                     , TemplateHaskell
+--                     , TypeFamilies
+--                     , TypeOperators
+--   ghc-options:
+--     -O2
+--     -funbox-strict-fields
+--     -funfolding-use-threshold1000
+--     -funfolding-keeness-factor1000
+--   if flag(debug)
+--     ghc-options:
+--       -ddump-to-file
+--       -ddump-simpl
+--       -dsuppress-all
 
 
 
@@ -339,198 +339,198 @@ executable Durbin
 
 
 
-executable Pseudoknot
-  if flag(examples)
-    buildable:
-      True
-    build-depends:  base
-                 ,  ADPfusion
-                 ,  PrimitiveArray
-                 ,  template-haskell
-                 ,  vector
-  else
-    buildable:
-      False
-  hs-source-dirs:
-    src
-  main-is:
-    Pseudoknot.hs
-  default-language:
-    Haskell2010
-  default-extensions: BangPatterns
-                    , DataKinds
-                    , FlexibleContexts
-                    , FlexibleInstances
-                    , MultiParamTypeClasses
-                    , RecordWildCards
-                    , TemplateHaskell
-                    , TypeFamilies
-                    , TypeOperators
-  ghc-options:
-    -O2
-    -funbox-strict-fields
-    -funfolding-use-threshold1000
-    -funfolding-keeness-factor1000
-  if flag(debug)
-    ghc-options:
-      -ddump-to-file
-      -ddump-simpl
-      -dsuppress-all
-
-
-
-executable OverlappingPalindromes
-  if flag(examples)
-    buildable:
-      True
-    build-depends:  base
-                 ,  ADPfusion
-                 ,  PrimitiveArray
-                 ,  template-haskell
-                 ,  vector
-  else
-    buildable:
-      False
-  hs-source-dirs:
-    src
-  main-is:
-    OverlappingPalindromes.hs
-  default-language:
-    Haskell2010
-  default-extensions: BangPatterns
-                    , FlexibleContexts
-                    , FlexibleInstances
-                    , MultiParamTypeClasses
-                    , RecordWildCards
-                    , TemplateHaskell
-                    , TypeFamilies
-                    , TypeOperators
-  ghc-options:
-    -O2
-    -funbox-strict-fields
-    -funfolding-use-threshold1000
-    -funfolding-keeness-factor1000
-  if flag(debug)
-    ghc-options:
-      -ddump-to-file
-      -ddump-simpl
-      -dsuppress-all
-
-
-
-executable SplitTests
-  if flag(examples)
-    buildable:
-      True
-    build-depends:  base
-                 ,  ADPfusion
-                 ,  PrimitiveArray
-                 ,  template-haskell
-                 ,  vector
-  else
-    buildable:
-      False
-  hs-source-dirs:
-    src
-  main-is:
-    SplitTests.hs
-  default-language:
-    Haskell2010
-  default-extensions: BangPatterns
-                    , FlexibleContexts
-                    , FlexibleInstances
-                    , MultiParamTypeClasses
-                    , RecordWildCards
-                    , TemplateHaskell
-                    , TypeFamilies
-                    , TypeOperators
-  ghc-options:
-    -O2
-    -funbox-strict-fields
-    -funfolding-use-threshold1000
-    -funfolding-keeness-factor1000
-  if flag(debug)
-    ghc-options:
-      -ddump-to-file
-      -ddump-simpl
-      -dsuppress-all
-
-
-
-test-suite properties
-  type:
-    exitcode-stdio-1.0
-  main-is:
-    properties.hs
-  other-modules:
-    QuickCheck.Common
-    QuickCheck.Point
-    QuickCheck.Set
-    QuickCheck.Subword
-  ghc-options:
-    -threaded -rtsopts -with-rtsopts=-N
-  hs-source-dirs:
-    tests
-  default-language:
-    Haskell2010
-  default-extensions: BangPatterns
-                    , CPP
-                    , FlexibleContexts
-                    , FlexibleInstances
-                    , MultiParamTypeClasses
-                    , TemplateHaskell
-                    , TypeFamilies
-                    , TypeOperators
-                    , TypeSynonymInstances
-  cpp-options:
-    -DADPFUSION_TEST_SUITE_PROPERTIES
-  build-depends: base
-               , ADPfusion
-               , bits
-               , OrderedBits
-               , PrimitiveArray
-               , QuickCheck
-               , strict
-               , test-framework               >= 0.8  && < 0.9
-               , test-framework-quickcheck2   >= 0.3  && < 0.4
-               , test-framework-th            >= 0.2  && < 0.3
-               , vector
-
-
-
-benchmark performance
-  type:
-    exitcode-stdio-1.0
-  main-is:
-    performance.hs
-  ghc-options:
-    -rtsopts -with-rtsopts=-N -with-rtsopts=-T
-    -O2
-    -funbox-strict-fields
-    -funfolding-use-threshold1000
-    -funfolding-keeness-factor1000
-  if flag(debug)
-    ghc-options:
-      -ddump-to-file
-      -ddump-simpl
-      -dsuppress-all
-  hs-source-dirs:
-    tests
-  default-language:
-    Haskell2010
-  default-extensions: BangPatterns
-                    , FlexibleContexts
-                    , TemplateHaskell
-                    , RecordWildCards
-                    , TypeFamilies
-                    , TypeOperators
-                    , StandaloneDeriving
-                    , DeriveGeneric
-  build-depends: base
-               , ADPfusion
-               , BenchmarkHistory   >= 0.0.0  && < 0.0.1
-               , PrimitiveArray
-               , vector
+--executable Pseudoknot
+--  if flag(examples)
+--    buildable:
+--      True
+--    build-depends:  base
+--                 ,  ADPfusion
+--                 ,  PrimitiveArray
+--                 ,  template-haskell
+--                 ,  vector
+--  else
+--    buildable:
+--      False
+--  hs-source-dirs:
+--    src
+--  main-is:
+--    Pseudoknot.hs
+--  default-language:
+--    Haskell2010
+--  default-extensions: BangPatterns
+--                    , DataKinds
+--                    , FlexibleContexts
+--                    , FlexibleInstances
+--                    , MultiParamTypeClasses
+--                    , RecordWildCards
+--                    , TemplateHaskell
+--                    , TypeFamilies
+--                    , TypeOperators
+--  ghc-options:
+--    -O2
+--    -funbox-strict-fields
+--    -funfolding-use-threshold1000
+--    -funfolding-keeness-factor1000
+--  if flag(debug)
+--    ghc-options:
+--      -ddump-to-file
+--      -ddump-simpl
+--      -dsuppress-all
+--
+--
+--
+--executable OverlappingPalindromes
+--  if flag(examples)
+--    buildable:
+--      True
+--    build-depends:  base
+--                 ,  ADPfusion
+--                 ,  PrimitiveArray
+--                 ,  template-haskell
+--                 ,  vector
+--  else
+--    buildable:
+--      False
+--  hs-source-dirs:
+--    src
+--  main-is:
+--    OverlappingPalindromes.hs
+--  default-language:
+--    Haskell2010
+--  default-extensions: BangPatterns
+--                    , FlexibleContexts
+--                    , FlexibleInstances
+--                    , MultiParamTypeClasses
+--                    , RecordWildCards
+--                    , TemplateHaskell
+--                    , TypeFamilies
+--                    , TypeOperators
+--  ghc-options:
+--    -O2
+--    -funbox-strict-fields
+--    -funfolding-use-threshold1000
+--    -funfolding-keeness-factor1000
+--  if flag(debug)
+--    ghc-options:
+--      -ddump-to-file
+--      -ddump-simpl
+--      -dsuppress-all
+--
+--
+--
+--executable SplitTests
+--  if flag(examples)
+--    buildable:
+--      True
+--    build-depends:  base
+--                 ,  ADPfusion
+--                 ,  PrimitiveArray
+--                 ,  template-haskell
+--                 ,  vector
+--  else
+--    buildable:
+--      False
+--  hs-source-dirs:
+--    src
+--  main-is:
+--    SplitTests.hs
+--  default-language:
+--    Haskell2010
+--  default-extensions: BangPatterns
+--                    , FlexibleContexts
+--                    , FlexibleInstances
+--                    , MultiParamTypeClasses
+--                    , RecordWildCards
+--                    , TemplateHaskell
+--                    , TypeFamilies
+--                    , TypeOperators
+--  ghc-options:
+--    -O2
+--    -funbox-strict-fields
+--    -funfolding-use-threshold1000
+--    -funfolding-keeness-factor1000
+--  if flag(debug)
+--    ghc-options:
+--      -ddump-to-file
+--      -ddump-simpl
+--      -dsuppress-all
+--
+--
+--
+--test-suite properties
+--  type:
+--    exitcode-stdio-1.0
+--  main-is:
+--    properties.hs
+--  other-modules:
+--    QuickCheck.Common
+--    QuickCheck.Point
+--    QuickCheck.Set
+--    QuickCheck.Subword
+--  ghc-options:
+--    -threaded -rtsopts -with-rtsopts=-N
+--  hs-source-dirs:
+--    tests
+--  default-language:
+--    Haskell2010
+--  default-extensions: BangPatterns
+--                    , CPP
+--                    , FlexibleContexts
+--                    , FlexibleInstances
+--                    , MultiParamTypeClasses
+--                    , TemplateHaskell
+--                    , TypeFamilies
+--                    , TypeOperators
+--                    , TypeSynonymInstances
+--  cpp-options:
+--    -DADPFUSION_TEST_SUITE_PROPERTIES
+--  build-depends: base
+--               , ADPfusion
+--               , bits
+--               , OrderedBits
+--               , PrimitiveArray
+--               , QuickCheck
+--               , strict
+--               , test-framework               >= 0.8  && < 0.9
+--               , test-framework-quickcheck2   >= 0.3  && < 0.4
+--               , test-framework-th            >= 0.2  && < 0.3
+--               , vector
+--
+--
+--
+--benchmark performance
+--  type:
+--    exitcode-stdio-1.0
+--  main-is:
+--    performance.hs
+--  ghc-options:
+--    -rtsopts -with-rtsopts=-N -with-rtsopts=-T
+--    -O2
+--    -funbox-strict-fields
+--    -funfolding-use-threshold1000
+--    -funfolding-keeness-factor1000
+--  if flag(debug)
+--    ghc-options:
+--      -ddump-to-file
+--      -ddump-simpl
+--      -dsuppress-all
+--  hs-source-dirs:
+--    tests
+--  default-language:
+--    Haskell2010
+--  default-extensions: BangPatterns
+--                    , FlexibleContexts
+--                    , TemplateHaskell
+--                    , RecordWildCards
+--                    , TypeFamilies
+--                    , TypeOperators
+--                    , StandaloneDeriving
+--                    , DeriveGeneric
+--  build-depends: base
+--               , ADPfusion
+--               , BenchmarkHistory   >= 0.0.0  && < 0.0.1
+--               , PrimitiveArray
+--               , vector
 
 
 

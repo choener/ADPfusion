@@ -127,17 +127,17 @@ instance (RuleContext is, RuleContext i) => RuleContext (is:.i) where
   initialContext (is:.i) = initialContext is:.initialContext i
   {-# INLINE initialContext #-}
 
-class TableStaticVar u i where
-  tableStaticVar   :: Proxy u -> TblConstraint u -> Context i -> i -> Context i
-  tableStreamIndex :: Proxy u -> TblConstraint u -> Context i -> i -> i
+class TableStaticVar u c i where
+  tableStaticVar   :: Proxy u -> c -> Context i -> i -> Context i
+  tableStreamIndex :: Proxy u -> c -> Context i -> i -> i
 
-instance TableStaticVar u Z where
+instance TableStaticVar c u Z where
   tableStaticVar   _ _ _ _ = Z
   tableStreamIndex _ _ _ _ = Z
   {-# INLINE [0] tableStaticVar   #-}
   {-# INLINE [0] tableStreamIndex #-}
 
-instance (TableStaticVar us is, TableStaticVar u i) => TableStaticVar (us:.u) (is:.i) where
+instance (TableStaticVar us cs is, TableStaticVar u c i) => TableStaticVar (us:.u) (cs:.c) (is:.i) where
   tableStaticVar   _ (cs:.c) (vs:.v) (is:.i) = tableStaticVar   (Proxy :: Proxy us) cs vs is :. tableStaticVar   (Proxy :: Proxy u) c v i
   tableStreamIndex _ (cs:.c) (vs:.v) (is:.i) = tableStreamIndex (Proxy :: Proxy us) cs vs is :. tableStreamIndex (Proxy :: Proxy u) c v i
   {-# INLINE [0] tableStaticVar   #-}

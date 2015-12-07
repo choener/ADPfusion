@@ -29,7 +29,7 @@ import ADP.Fusion.SynVar.Backtrack
 instance
   ( TstCtx1 m ts a is (Subword I)
   , PrimArrayOps arr (Subword I) x
-  ) => TermStream m (TermSymbol ts (ITbl m arr (Subword I) x)) a (is:.Subword I) where
+  ) => TermStream m (TermSymbol ts (ITbl m arr c (Subword I) x)) a (is:.Subword I) where
   --
   termStream (ts:|ITbl _ _ _ t _) (cs:.IStatic ()) (us:.u) (is:.Subword (i:.j))
     = map (\(TState s a ii ee) ->
@@ -59,7 +59,7 @@ instance
 instance
   ( TstCtx1 mB ts a is (Subword I)
   , PrimArrayOps arr (Subword I) x
-  ) => TermStream mB (TermSymbol ts (Backtrack (ITbl mF arr (Subword I) x) mF mB r)) a (is:.Subword I) where
+  ) => TermStream mB (TermSymbol ts (Backtrack (ITbl mF arr c (Subword I) x) mF mB r)) a (is:.Subword I) where
   termStream (ts:|BtITbl c t bt) (cs:.IStatic ()) (us:.u) (is:.Subword (i:.j))
     = mapM (\(TState s a ii ee) ->
                 let RiSwI l = getIndex a (Proxy :: PRI is (Subword I))
@@ -130,7 +130,7 @@ instance
 --  {-# Inline terminalStream #-}
 
 
-instance TermStaticVar (ITbl m arr (Subword I) x) (Subword I) where
+instance TermStaticVar (ITbl m arr c (Subword I) x) (Subword I) where
   termStaticVar _ (IStatic   d) _ = IVariable d
   termStaticVar _ (IVariable d) _ = IVariable d
   termStreamIndex (ITbl _ _ _ _ _) (IStatic   d) (Subword (i:.j)) = subword i j -- TODO minSize handling !
@@ -138,7 +138,7 @@ instance TermStaticVar (ITbl m arr (Subword I) x) (Subword I) where
   {-# Inline [0] termStaticVar   #-}
   {-# Inline [0] termStreamIndex #-}
 
-instance TermStaticVar (Backtrack (ITbl mF arr (Subword I) x) mF mB r) (Subword I) where
+instance TermStaticVar (Backtrack (ITbl mF arr c (Subword I) x) mF mB r) (Subword I) where
   termStaticVar _ (IStatic   d) _ = IVariable d
   termStaticVar _ (IVariable d) _ = IVariable d
   termStreamIndex (BtITbl _ _ _) (IStatic   d) (Subword (i:.j)) = subword i j -- TODO minSize handling !

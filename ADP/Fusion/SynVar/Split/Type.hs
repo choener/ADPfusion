@@ -54,13 +54,13 @@ newtype Split (uId :: Symbol) {- (zOrder :: Nat) -} (splitType :: SplitType) syn
 -- TODO Here, we probably want to default to a @NonEmpty@ condition. Or at
 -- least have different versions of @split@.
 
-split :: Proxy (uId::Symbol) -> {- Proxy (zOrder::Nat) -> -} Proxy (splitType::SplitType) -> synVar -> Split uId splitType synVar
-split _ _ = Split
-{-# Inline split #-}
-
-splitNE :: (ModifyConstraint synVar) => Proxy (uId::Symbol) -> {- Proxy (zOrder::Nat) -> -} Proxy (splitType::SplitType) -> synVar -> Split uId splitType synVar
-splitNE _ _ = Split . toNonEmpty
-{-# Inline splitNE #-}
+--split :: Proxy (uId::Symbol) -> {- Proxy (zOrder::Nat) -> -} Proxy (splitType::SplitType) -> synVar -> Split uId splitType synVar
+--split _ _ = Split
+--{-# Inline split #-}
+--
+--splitNE :: (ModifyConstraint synVar) => Proxy (uId::Symbol) -> {- Proxy (zOrder::Nat) -> -} Proxy (splitType::SplitType) -> synVar -> Split uId splitType synVar
+--splitNE _ _ = Split . toNonEmpty
+--{-# Inline splitNE #-}
 
 --type Spl uId zOrder splitType = forall synVar . Split uId zOrder splitType synVar
 
@@ -68,10 +68,10 @@ instance Build (Split uId splitType synVar)
 
 instance
   ( Element ls i
-  ) => Element (ls :!: Split uId splitType (ITbl m arr j x)) i where
-  data Elm     (ls :!: Split uId splitType (ITbl m arr j x)) i = ElmSplitITbl !(Proxy uId) !(CalcSplitType splitType x) !(RunningIndex i) !(Elm ls i)
-  type Arg     (ls :!: Split uId splitType (ITbl m arr j x))   = Arg ls :. (CalcSplitType splitType x)
-  type RecElm  (ls :!: Split uId splitType (ITbl m arr j x)) i = Elm ls i
+  ) => Element (ls :!: Split uId splitType (ITbl m arr c j x)) i where
+  data Elm     (ls :!: Split uId splitType (ITbl m arr c j x)) i = ElmSplitITbl !(Proxy uId) !(CalcSplitType splitType x) !(RunningIndex i) !(Elm ls i)
+  type Arg     (ls :!: Split uId splitType (ITbl m arr c j x))   = Arg ls :. (CalcSplitType splitType x)
+  type RecElm  (ls :!: Split uId splitType (ITbl m arr c j x)) i = Elm ls i
   getArg (ElmSplitITbl _ x _ ls) = getArg ls :. x
   getIdx (ElmSplitITbl _ _ i _ ) = i
   getElm (ElmSplitITbl _ _ _ ls) = ls
@@ -81,10 +81,10 @@ instance
 
 instance
   ( Element ls i
-  ) => Element (ls :!: Split uId splitType (Backtrack (ITbl mF arr j x) mF mB r)) i where
-  data Elm     (ls :!: Split uId splitType (Backtrack (ITbl mF arr j x) mF mB r)) i = ElmSplitBtITbl !(Proxy uId) !(CalcSplitType splitType (x, [r])) !(RunningIndex i) !(Elm ls i)
-  type Arg     (ls :!: Split uId splitType (Backtrack (ITbl mF arr j x) mF mB r))   = Arg ls :. (CalcSplitType splitType (x,[r]))
-  type RecElm  (ls :!: Split uId splitType (Backtrack (ITbl mF arr j x) mF mB r)) i = Elm ls i
+  ) => Element (ls :!: Split uId splitType (Backtrack (ITbl mF arr c j x) mF mB r)) i where
+  data Elm     (ls :!: Split uId splitType (Backtrack (ITbl mF arr c j x) mF mB r)) i = ElmSplitBtITbl !(Proxy uId) !(CalcSplitType splitType (x, [r])) !(RunningIndex i) !(Elm ls i)
+  type Arg     (ls :!: Split uId splitType (Backtrack (ITbl mF arr c j x) mF mB r))   = Arg ls :. (CalcSplitType splitType (x,[r]))
+  type RecElm  (ls :!: Split uId splitType (Backtrack (ITbl mF arr c j x) mF mB r)) i = Elm ls i
   getArg (ElmSplitBtITbl _ xs _ ls) = getArg ls :. xs
   getIdx (ElmSplitBtITbl _ _  i _ ) = i
   getElm (ElmSplitBtITbl _ _  _ ls) = ls
@@ -174,15 +174,15 @@ instance
 
 instance
   ( SplitIxCol uId (SameSid uId (Elm ls i)) (Elm ls i)
-  ) => SplitIxCol   uId True (Elm (ls :!: Split sId splitType (ITbl m arr j x)) i) where
-  type SplitIxTy uId True (Elm (ls :!: Split sId splitType (ITbl m arr j x)) i) = SplitIxTy uId (SameSid uId (Elm ls i)) (Elm ls i) :. i
+  ) => SplitIxCol   uId True (Elm (ls :!: Split sId splitType (ITbl m arr c j x)) i) where
+  type SplitIxTy uId True (Elm (ls :!: Split sId splitType (ITbl m arr c j x)) i) = SplitIxTy uId (SameSid uId (Elm ls i)) (Elm ls i) :. i
   splitIxCol p b (ElmSplitITbl _ _ i e) = collectIx p e :. (error "splitIxCol: RunningIndex i -> i conversion?") -- i
   {-# Inline splitIxCol #-}
 
 instance
   ( SplitIxCol uId (SameSid uId (Elm ls i)) (Elm ls i)
-  ) => SplitIxCol   uId True (Elm (ls :!: Split sId splitType (Backtrack (ITbl mF arr j x) mF mB r)) i) where
-  type SplitIxTy uId True (Elm (ls :!: Split sId splitType (Backtrack (ITbl mF arr j x) mF mB r)) i) = SplitIxTy uId (SameSid uId (Elm ls i)) (Elm ls i) :. i
+  ) => SplitIxCol   uId True (Elm (ls :!: Split sId splitType (Backtrack (ITbl mF arr c j x) mF mB r)) i) where
+  type SplitIxTy uId True (Elm (ls :!: Split sId splitType (Backtrack (ITbl mF arr c j x) mF mB r)) i) = SplitIxTy uId (SameSid uId (Elm ls i)) (Elm ls i) :. i
   splitIxCol p b (ElmSplitBtITbl _ _ i e) = collectIx p e :. (error "splitIxCol: RunningIndex i -> i conversion?") -- i
   {-# Inline splitIxCol #-}
 

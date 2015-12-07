@@ -5,6 +5,7 @@
 
 module ADP.Fusion.Base.Set where
 
+import Data.Proxy
 import Data.Vector.Fusion.Stream.Monadic (singleton,filter,enumFromStepN,map,unfoldr)
 import Debug.Trace
 import Prelude hiding (map,filter)
@@ -18,8 +19,8 @@ import ADP.Fusion.Base.Multi
 
 
 
-type instance TblConstraint (BitSet t)  = TableConstraint
-type instance TblConstraint (BS2 i j t) = TableConstraint
+--type instance TblConstraint (BitSet t)  = TableConstraint
+--type instance TblConstraint (BS2 i j t) = TableConstraint
 
 
 
@@ -153,23 +154,23 @@ undefi :: Interface i
 undefi = (-1)
 {-# Inline undefi #-}
 
-instance TableStaticVar (u O) (BitSet O) where
+instance TableStaticVar c (u O) (BitSet O) where
   tableStaticVar _ _ (OStatic  d) _ = OFirstLeft d
   tableStaticVar _ _ (ORightOf d) _ = OFirstLeft d
   tableStreamIndex _ c _ bs = bs
   {-# INLINE [0] tableStaticVar   #-}
   {-# INLINE [0] tableStreamIndex #-}
 
-instance TableStaticVar (u I) (BitSet O) where
+instance TableStaticVar c (u I) (BitSet O) where
 
-instance (TblConstraint u ~ TableConstraint) => TableStaticVar u (BitSet I) where
+instance (MinSize c) => TableStaticVar u c (BitSet I) where
   tableStaticVar _ c (IStatic   d) _ = IVariable $ d - minSize c -- TODO rly?
   tableStaticVar _ _ (IVariable d) _ = IVariable $ d
   tableStreamIndex _ c _ bitSet = bitSet -- TODO rly?
   {-# INLINE [0] tableStaticVar   #-}
   {-# INLINE [0] tableStreamIndex #-}
 
-instance (TblConstraint u ~ TableConstraint) => TableStaticVar u (BS2 i j I) where
+instance TableStaticVar c u (BS2 i j I) where
 
 -- | We sometimes need 
 

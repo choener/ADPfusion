@@ -31,7 +31,7 @@ instance
   ( TstCtx1 m ts a is (Subword I)
   ) => TermStream m (TermSymbol ts (Chr r x)) a (is:.Subword I) where
   termStream (ts:|Chr f xs) (cs:.IStatic ()) (us:.u) (is:.Subword (i:.j))
-    = staticCheck (i>=0 && i < j && j <= VG.length xs)
+    = id -- staticCheck (i>=0 && i < j && j <= VG.length xs)
     . map (\(TState s a ii ee) ->
               TState s a (ii:.: RiSwI j) (ee:.f xs (j-1)) )
     . termStream ts cs us is

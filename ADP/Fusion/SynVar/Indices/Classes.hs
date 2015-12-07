@@ -6,7 +6,7 @@
 
 module ADP.Fusion.SynVar.Indices.Classes where
 
-import Data.Proxy (Proxy)
+import Data.Proxy (Proxy(..))
 import Data.Vector.Fusion.Stream.Monadic (map,Stream,head,mapM,flatten,Step(..))
 import Prelude hiding (map,head,mapM)
 
@@ -20,12 +20,12 @@ import ADP.Fusion.Base
 -- cases. The type @a@ is the type of the /full stack/ of indices, i.e. the
 -- full multi-tape problem.
 
-class AddIndexDense a u i where
+class AddIndexDense a u c i where
   addIndexDenseGo
     :: (Monad m)
-    => TblConstraint u -> Context i -> i -> i -> Stream m (SvState s a Z Z) -> Stream m (SvState s a u i)
+    => c -> Context i -> i -> i -> Stream m (SvState s a Z Z) -> Stream m (SvState s a u i)
 
-instance AddIndexDense a Z Z where
+instance AddIndexDense a Z Z Z where
   addIndexDenseGo _ _ _ _ = id
   {-# Inline addIndexDenseGo #-}
 
@@ -47,12 +47,12 @@ data SvState s a u i = SvS
 
 addIndexDense
   :: ( Monad m
-     , AddIndexDense a u i
+     , AddIndexDense a u c i
      , GetIndex a i
      , s ~ Elm x0 a
      , Element x0 a
      )
-  => TblConstraint u -> Context i -> i -> i -> Stream m s -> Stream m (s,u,RunningIndex i)
+  => c -> Context i -> i -> i -> Stream m s -> Stream m (s,u,RunningIndex i)
 addIndexDense t c u i = map (\(SvS s _ z i') -> (s,z,i')) . addIndexDenseGo t c u i . map (\s -> (SvS s (getIdx s) Z RiZ))
 {-# Inline addIndexDense #-}
 
@@ -62,12 +62,12 @@ addIndexDense t c u i = map (\(SvS s _ z i') -> (s,z,i')) . addIndexDenseGo t c 
 
 addIndexDense1
   :: ( Monad m
-     , AddIndexDense (Z:.a) (Z:.u) (Z:.i)
+     , AddIndexDense (Z:.a) (Z:.u) (Z:.c) (Z:.i)
      , GetIndex (Z:.a) (Z:.i)
      , s ~ Elm x0 a
      , Element x0 a
      )
-  => TblConstraint u -> Context i -> i -> i -> Stream m s -> Stream m (s,u,RunningIndex i)
+  => c -> Context i -> i -> i -> Stream m s -> Stream m (s,u,RunningIndex i)
 addIndexDense1 t c u i = map (\(SvS s _ (Z:.z) (RiZ:.:i')) -> (s,z,i'))
                        . addIndexDenseGo (Z:.t) (Z:.c) (Z:.u) (Z:.i)
                        . map (\s -> (SvS s (RiZ :.: getIdx s) Z RiZ))
@@ -75,8 +75,8 @@ addIndexDense1 t c u i = map (\(SvS s _ (Z:.z) (RiZ:.:i')) -> (s,z,i'))
 
 -- | Instance headers, we typically need.
 
-type IndexHdr a us u is i =
-  ( AddIndexDense a us is
+type IndexHdr a us u cs c is i =
+  ( AddIndexDense a us cs is
   , GetIndex (RunningIndex a) (RunningIndex (is:.i))
   , GetIx (RunningIndex a) (RunningIndex (is:.i)) ~ (RunningIndex i)
   )
