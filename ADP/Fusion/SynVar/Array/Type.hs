@@ -119,11 +119,11 @@ instance
 instance
   ( Monad mB
   , Element ls (is:.i)
-  , TableStaticVar (us:.u) (cs:.Proxy c) (is:.i)
-  , AddIndexDense (is:.i) (us:.u) (cs:.Proxy c) (is:.i)
+  , TableStaticVar (us:.u) (cs:.c) (is:.i)
+  , AddIndexDense (is:.i) (us:.u) (cs:.c) (is:.i)
   , MkStream mB ls (is:.i)
   , PrimArrayOps arr (us:.u) x
-  ) => MkStream mB (ls :!: Backtrack (ITbl mF arr (cs:.Proxy c) (us:.u) x) mF mB r) (is:.i) where
+  ) => MkStream mB (ls :!: Backtrack (ITbl mF arr (cs:.c) (us:.u) x) mF mB r) (is:.i) where
   mkStream (ls :!: BtITbl c t bt) vs us is
     = mapM (\(s,tt,ii') -> bt us' tt >>= \ ~bb -> return $ ElmBtITbl (t!tt) bb ii' s)
     . addIndexDense c vs us is

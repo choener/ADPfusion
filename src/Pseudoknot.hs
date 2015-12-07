@@ -115,8 +115,8 @@ runPseudoknot k inp = (d, take k bs) where
   -}
 {-# NOINLINE runPseudoknot #-}
 
-type X = ITbl Id Unboxed (Subword I) Int
-type T = ITbl Id Unboxed (Z:.Subword I:.Subword I) Int
+type X = ITbl Id Unboxed EmptyOk (Subword I) Int
+type T = ITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.Subword I:.Subword I) Int
 
 runInsideForward :: VU.Vector Char -> Z:.X:.T:.T
 runInsideForward i = mutateTablesWithHints (Proxy :: Proxy MonotoneMCFG)

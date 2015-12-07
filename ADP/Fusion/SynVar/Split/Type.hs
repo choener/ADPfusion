@@ -54,10 +54,10 @@ newtype Split (uId :: Symbol) {- (zOrder :: Nat) -} (splitType :: SplitType) syn
 -- TODO Here, we probably want to default to a @NonEmpty@ condition. Or at
 -- least have different versions of @split@.
 
---split :: Proxy (uId::Symbol) -> {- Proxy (zOrder::Nat) -> -} Proxy (splitType::SplitType) -> synVar -> Split uId splitType synVar
---split _ _ = Split
---{-# Inline split #-}
---
+split :: Proxy (uId::Symbol) -> {- Proxy (zOrder::Nat) -> -} Proxy (splitType::SplitType) -> synVar -> Split uId splitType synVar
+split _ _ = Split
+{-# Inline split #-}
+
 --splitNE :: (ModifyConstraint synVar) => Proxy (uId::Symbol) -> {- Proxy (zOrder::Nat) -> -} Proxy (splitType::SplitType) -> synVar -> Split uId splitType synVar
 --splitNE _ _ = Split . toNonEmpty
 --{-# Inline splitNE #-}

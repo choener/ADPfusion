@@ -24,7 +24,7 @@ import           ADP.Fusion.Base
 data Chr r x where
   Chr :: VG.Vector v x
       => (v x -> Int -> r)
-      -> (v x)
+      -> !(v x)
       -> Chr r x
 
 -- | smart constructor for regular 1-character parsers

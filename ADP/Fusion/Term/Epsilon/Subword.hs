@@ -28,10 +28,10 @@ instance
   ( TstCtx1 m ts a is (Subword I)
   ) => TermStream m (TermSymbol ts Epsilon) a (is:.Subword I) where
   termStream (ts:|Epsilon) (cs:.IStatic ()) (us:.u) (is:.Subword (i:.j))
-    = id -- staticCheck (i==j)
-    . map (\(TState s a ii ee) ->
+    = map (\(TState s a ii ee) ->
               TState s a (ii:.:RiSwI j) (ee:.()) )
     . termStream ts cs us is
+    . staticCheck (i==j)
   {-# Inline termStream #-}
 
 instance
