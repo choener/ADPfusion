@@ -56,15 +56,15 @@ instance
   , MkStream m S is
   ) => MkStream m S (is:.PointL I) where
   mkStream S (vs:.IStatic d) (lus:.PointL u) (is:.PointL i)
-    = staticCheck (i>=0 && i<=d && i<=u)
-    . map (\(ElmS zi) -> ElmS $ zi :.: RiPlI 0)
+    = map (\(ElmS zi) -> ElmS $ zi :.: RiPlI 0)
+    . staticCheck (i>=0 && i<=d && i<=u)
     $ mkStream S vs lus is
   -- TODO here, we have a problem in the interplay of @staticCheck@ or
   -- @flatten@ and how we modify @is@. Apparently, once we demand to know
   -- about @i@, fusion breaks down.
   mkStream S (vs:.IVariable d) (lus:.PointL u) (is:.PointL i)
-    = staticCheck (i>=0 && i<=u)
-    $ map (\(ElmS zi) -> ElmS $ zi :.: RiPlI 0)
+    = map (\(ElmS zi) -> ElmS $ zi :.: RiPlI 0)
+    . staticCheck (i>=0 && i<=u)
     $ mkStream S vs lus is
   {-# INLINE mkStream #-}
 
