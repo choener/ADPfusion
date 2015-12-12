@@ -37,7 +37,7 @@ class RuleContext i where
 
 data family RunningIndex i :: *
 
-data instance RunningIndex (is:.i) = RunningIndex is :.: RunningIndex i
+data instance RunningIndex (is:.i) = !(RunningIndex is) :.: !(RunningIndex i)
 
 data instance RunningIndex Z = RiZ
 
