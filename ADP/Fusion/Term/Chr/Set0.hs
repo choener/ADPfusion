@@ -12,7 +12,7 @@ import           Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Generic as VG
 import           Prelude hiding (map)
 import           Data.Bits
-import           Data.Bits.Extras (msb)
+import           Data.Bits.Extras (msb,Ranked)
 import           Data.Bits.Ordered
 
 import           Data.PrimitiveArray hiding (map)
@@ -33,6 +33,7 @@ instance
 
 instance
   ( TstCtx1 m ts a is (BitSet I)
+  , Ranked (BitSet I)
   ) => TermStream m (TermSymbol ts (Chr r x)) a (is:.BitSet I) where
   termStream (ts:|Chr f xs) (cs:.IStatic rb) (us:.u) (is:.i)
     = staticCheck (rb <= popCount i && i <= u && VG.length xs > msb u)

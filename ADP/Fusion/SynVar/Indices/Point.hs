@@ -45,8 +45,8 @@ instance
   ( IndexHdr a us (PointL I) cs c is (PointL C)
   ) => AddIndexDense a (us:.PointL I) (cs:.c) (is:.PointL C) where
   addIndexDenseGo (cs:._) (vs:.Complemented) (us:.u) (is:.i)
-    = map (\(SvS s a t y) -> let RiPlC k _ = getIndex a (Proxy :: PRI is (PointL C))
-                             in  SvS s a (t:.PointL k) (y :.: RiPlC k k) )
+    = map (\(SvS s a t y) -> let RiPlC k = getIndex a (Proxy :: PRI is (PointL C))
+                             in  SvS s a (t:.PointL k) (y :.: RiPlC k) )
     . addIndexDenseGo cs vs us is
   {-# Inline addIndexDenseGo #-}
 
@@ -54,8 +54,8 @@ instance
   ( IndexHdr a us (PointL O) cs c is (PointL C)
   ) => AddIndexDense a (us:.PointL O) (cs:.c) (is:.PointL C) where
   addIndexDenseGo (cs:._) (vs:.Complemented) (us:.u) (is:.i)
-    = map (\(SvS s a t y) -> let RiPlC k _ = getIndex a (Proxy :: PRI is (PointL C))
-                             in  SvS s a (t:.PointL k) (y:.:RiPlC k k) )
+    = map (\(SvS s a t y) -> let RiPlC k = getIndex a (Proxy :: PRI is (PointL C))
+                             in  SvS s a (t:.PointL k) (y:.:RiPlC k) )
     . addIndexDenseGo cs vs us is
   {-# Inline addIndexDenseGo #-}
 

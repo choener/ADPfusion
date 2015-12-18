@@ -32,7 +32,8 @@ newtype instance RunningIndex (PointL I) = RiPlI Int
 
 data instance RunningIndex (PointL O) = RiPlO !Int !Int
 
-data instance RunningIndex (PointL C) = RiPlC !Int !Int
+data instance RunningIndex (PointL C) = RiPlC !Int
+
 
 
 instance (Monad m) => MkStream m S (PointL I) where
@@ -47,6 +48,11 @@ instance (Monad m) => MkStream m S (PointL O) where
     = staticCheck (i>=0 && i+d<=u && u == i) . singleton . ElmS $ RiPlO i (i+d)
   mkStream S (OFirstLeft d) (PointL u) (PointL i)
     = staticCheck (i>=0 && i+d<=u) . singleton . ElmS $ RiPlO i (i+d)
+  {-# Inline mkStream #-}
+
+instance (Monad m) => MkStream m S (PointL C) where
+  mkStream S Complemented (PointL u) (PointL i)
+    = staticCheck (i>=0 && i<=u) . singleton . ElmS $ RiPlC i
   {-# Inline mkStream #-}
 
 
@@ -95,6 +101,12 @@ instance (MinSize c) => TableStaticVar u c (PointL I) where
 instance (MinSize c) => TableStaticVar u c (PointL O) where
   tableStaticVar   _ _ (OStatic d) _          = OFirstLeft d
   tableStreamIndex _ c _           (PointL j) = PointL $ j - minSize c
+  {-# INLINE [0] tableStaticVar   #-}
+  {-# INLINE [0] tableStreamIndex #-}
+
+instance (MinSize c) => TableStaticVar u c (PointL C) where
+  tableStaticVar   _ _ Complemented _          = Complemented
+  tableStreamIndex _ c _            (PointL k) = PointL $ k - minSize c
   {-# INLINE [0] tableStaticVar   #-}
   {-# INLINE [0] tableStreamIndex #-}
 
