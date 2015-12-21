@@ -87,8 +87,8 @@ class TermStaticVar t i where
 instance TermStaticVar M Z where
   termStaticVar   _ _ _ = Z
   termStreamIndex _ _ _ = Z
-  {-# INLINE termStaticVar #-}
-  {-# INLINE termStreamIndex #-}
+  {-# INLINE [0] termStaticVar #-}
+  {-# INLINE [0] termStreamIndex #-}
 
 instance
   ( TermStaticVar a is
@@ -96,8 +96,8 @@ instance
   ) => TermStaticVar (TermSymbol a b) (is:.i) where
   termStaticVar   (a:|b) (vs:.v) (is:.i) = termStaticVar   a vs is :. termStaticVar   b v i
   termStreamIndex (a:|b) (vs:.v) (is:.i) = termStreamIndex a vs is :. termStreamIndex b v i
-  {-# INLINE termStaticVar #-}
-  {-# INLINE termStreamIndex #-}
+  {-# INLINE [0] termStaticVar #-}
+  {-# INLINE [0] termStreamIndex #-}
 
 data S3 a b c           = S3 !a !b !c
 
