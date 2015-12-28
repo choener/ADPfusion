@@ -16,6 +16,6 @@ flags:
     spectest: true
 
 ghc-options:
-  ADPfusion: -dshow-passes -fllvm -optlo-O3
+  ADPfusion: -dshow-passes -fllvm -optlo-O3 -keep-llvm-file
 #  ADPfusion: -fllvm -optlo-O3
 

@@ -53,13 +53,13 @@ grammar Signature{..} a' i1 i2 =
 --                booboo    <<< a % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2)    |||
 --                booboo    <<< a % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2)    |||
 --                booboo    <<< a % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2)    |||
-                booboo    <<< a % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2)    |||
-                booboo    <<< a % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2)    |||
-                booboo    <<< a % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2)    |||
-                booboo    <<< a % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2)    |||
-                booboo    <<< a % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2)    |||
-                booboo    <<< a % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2)    |||
-                booboo    <<< a % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2)    |||
+--                booboo    <<< a % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2)    |||
+--                booboo    <<< a % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2)    |||
+--                booboo    <<< a % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2)    |||
+--                booboo    <<< a % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2)    |||
+--                booboo    <<< a % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2)    |||
+--                booboo    <<< a % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2)    |||
+--                booboo    <<< a % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2)    |||
                 booboo    <<< a % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2)    |||
 --                nil_nil   <<< (M:|Epsilon:|Epsilon)       |||
 --                nil_nil   <<< (M:|Epsilon:|Epsilon)       |||
