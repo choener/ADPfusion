@@ -41,21 +41,21 @@ instance
 -- NOTE / TODO a bit faster with @seq xs@ ?
 
 instance
-  ( TstCtx1 m ts a is (PointL I)
-  ) => TermStream m (TermSymbol ts (Chr r x)) a (is:.PointL I) where
+  ( TstCtx m ts s x0 i0 is (PointL I)
+  ) => TermStream m (TermSymbol ts (Chr r x)) s (is:.PointL I) where
   termStream (ts:|Chr f xs) (cs:.IStatic d) (us:.PointL u) (is:.PointL i)
     = seq xs . staticCheck (i>0 && i<=u && i<= VG.length xs)
-    . S.map (\(TState s a ii ee) -> TState s a (ii:.:RiPlI i) (ee:. f xs (i-1)))
+    . S.map (\(TState s ii ee) -> TState s (ii:.:RiPlI i) (ee:. f xs (i-1)))
     . termStream ts cs us is
   {-# Inline termStream #-}
 
 instance
-  ( TstCtx1 m ts a is (PointL O)
-  ) => TermStream m (TermSymbol ts (Chr r x)) a (is:.PointL O) where
+  ( TstCtx m ts s x0 i0 is (PointL O)
+  ) => TermStream m (TermSymbol ts (Chr r x)) s (is:.PointL O) where
   termStream (ts:|Chr f xs) (cs:.OStatic d) (us:.PointL u) (is:.PointL i)
-    = S.map (\(TState s a ii ee) ->
-                let RiPlO k o = getIndex a (Proxy :: PRI is (PointL O))
-                in  TState s a (ii:.: RiPlO (k-d+1) o) (ee:.f xs (k-d-1)))
+    = S.map (\(TState s ii ee) ->
+                let RiPlO k o = getIndex (getIdx s) (Proxy :: PRI is (PointL O))
+                in  TState s (ii:.: RiPlO (k-d+1) o) (ee:.f xs (k-d-1)))
     . termStream ts cs us is
   {-# Inline termStream #-}
 

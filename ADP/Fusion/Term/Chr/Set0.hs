@@ -32,25 +32,25 @@ instance
   {-# Inline mkStream #-}
 
 instance
-  ( TstCtx1 m ts a is (BitSet I)
+  ( TstCtx m ts s x0 i0 is (BitSet I)
   , Ranked (BitSet I)
-  ) => TermStream m (TermSymbol ts (Chr r x)) a (is:.BitSet I) where
+  ) => TermStream m (TermSymbol ts (Chr r x)) s (is:.BitSet I) where
   termStream (ts:|Chr f xs) (cs:.IStatic rb) (us:.u) (is:.i)
     = staticCheck (rb <= popCount i && i <= u && VG.length xs > msb u)
     . S.flatten mk step . termStream ts cs us is
           -- we task all set bits @bs@ and also the index @i@ and calculate
           -- the non-set bits @mask@. The mask should have a popcount equal
           -- to @rb + 1@. We then active bit 0 and proceed with @step@.
-    where mk svS = let RiBsI bs = getIndex (tIx svS) (Proxy :: PRI is (BitSet I))
+    where mk svS = let RiBsI bs = getIndex (getIdx $ tS svS) (Proxy :: PRI is (BitSet I))
                        mask = i `xor` bs
                    in  return (svS :. mask :. lsbZ mask)
           -- In case we can still do a step via @k>=0@, we active bit @k@
           -- in @aa@.
-          step (svS@(TState s a ii ee) :. mask :. k )
+          step (svS@(TState s ii ee) :. mask :. k )
             | k < 0 = return $ Done
             | otherwise =
-            let RiBsI aa = getIndex a (Proxy :: PRI is (BitSet I))
-            in  return $ Yield (TState s a (ii:.: RiBsI (setBit aa k)) (ee:.f xs k))
+            let RiBsI aa = getIndex (getIdx s) (Proxy :: PRI is (BitSet I))
+            in  return $ Yield (TState s (ii:.: RiBsI (setBit aa k)) (ee:.f xs k))
                                (svS :. mask :. nextActiveZ k mask)
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}

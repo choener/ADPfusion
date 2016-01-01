@@ -38,6 +38,7 @@ grammar Signature{..} a' i1 i2 =
   let a = a'  ( --step_step <<< a % (M:|chr i1:|chr i2)     |||
 --                step_loop <<< a % (M:|chr i1:|Deletion  ) |||
 --                loop_step <<< a % (M:|Deletion  :|chr i2) |||
+                step_step <<< a % (M:|chr i1:|chr i2)     |||
 --                step_step <<< a % (M:|chr i1:|chr i2)     |||
 --                step_step <<< a % (M:|chr i1:|chr i2)     |||
 --                step_step <<< a % (M:|chr i1:|chr i2)     |||
@@ -45,7 +46,6 @@ grammar Signature{..} a' i1 i2 =
 --                step_step <<< a % (M:|chr i1:|chr i2)     |||
 --                step_step <<< a % (M:|chr i1:|chr i2)     |||
 --                step_step <<< a % (M:|chr i1:|chr i2)     |||
---                step_step <<< a % (M:|chr i1:|chr i2)     |||
 --                booboo    <<< a % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2)    |||
 --                booboo    <<< a % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2)    |||
 --                booboo    <<< a % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2)    |||
@@ -60,7 +60,7 @@ grammar Signature{..} a' i1 i2 =
 --                booboo    <<< a % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2)    |||
 --                booboo    <<< a % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2)    |||
 --                booboo    <<< a % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2)    |||
-                booboo    <<< a % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2)    |||
+--                booboo    <<< a % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2) % (M:|chr i1:|chr i2)    |||
 --                nil_nil   <<< (M:|Epsilon:|Epsilon)       |||
 --                nil_nil   <<< (M:|Epsilon:|Epsilon)       |||
 --                nil_nil   <<< (M:|Epsilon:|Epsilon)       |||
@@ -112,4 +112,5 @@ nwInsideForward i1 i2 = {-# SCC "nwInsideForward" #-} mutateTablesDefault $
 main = do
   ls <- lines <$> getContents
   print $ runNeedlemanWunsch 1 (ls!!0) (ls!!1)
+
 

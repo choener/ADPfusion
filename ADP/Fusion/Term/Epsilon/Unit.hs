@@ -24,18 +24,18 @@ instance
 
 
 instance
-  ( TstCtx1 m ts a is (Unit I)
-  ) => TermStream m (TermSymbol ts Epsilon) a (is:.Unit I) where
+  ( TstCtx m ts s x0 i0 is (Unit I)
+  ) => TermStream m (TermSymbol ts Epsilon) s (is:.Unit I) where
   termStream (ts:|Epsilon) (cs:.IStatic ()) (us:._) (is:._)
-    = S.map (\(TState s a ii ee) -> TState s a (ii:.:RiU) (ee:.()))
+    = S.map (\(TState s ii ee) -> TState s (ii:.:RiU) (ee:.()))
     . termStream ts cs us is
   {-# Inline termStream #-}
 
 instance
-  ( TstCtx1 m ts a is (Unit O)
-  ) => TermStream m (TermSymbol ts Epsilon) a (is:.Unit O) where
+  ( TstCtx m ts s x0 i0 is (Unit O)
+  ) => TermStream m (TermSymbol ts Epsilon) s (is:.Unit O) where
   termStream (ts:|Epsilon) (cs:.OStatic ()) (us:._) (is:._)
-    = S.map (\(TState s a ii ee) -> TState s a (ii:.:RiU) (ee:.()))
+    = S.map (\(TState s ii ee) -> TState s (ii:.:RiU) (ee:.()))
     . termStream ts cs us is
   {-# Inline termStream #-}
 

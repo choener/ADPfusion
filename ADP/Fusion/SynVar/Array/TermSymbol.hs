@@ -27,26 +27,26 @@ import ADP.Fusion.SynVar.Backtrack
 -- TODO need to handle @minSize@ conditions!
 
 instance
-  ( TstCtx1 m ts a is (Subword I)
+  ( TstCtx m ts s x0 i0 is (Subword I)
   , PrimArrayOps arr (Subword I) x
-  ) => TermStream m (TermSymbol ts (ITbl m arr c (Subword I) x)) a (is:.Subword I) where
+  ) => TermStream m (TermSymbol ts (ITbl m arr c (Subword I) x)) s (is:.Subword I) where
   --
   termStream (ts:|ITbl _ _ _ t _) (cs:.IStatic ()) (us:.u) (is:.Subword (i:.j))
-    = map (\(TState s a ii ee) ->
-              let RiSwI l = getIndex a (Proxy :: PRI is (Subword I))
+    = map (\(TState s ii ee) ->
+              let RiSwI l = getIndex (getIdx s) (Proxy :: PRI is (Subword I))
                   lj      = subword l j
-              in  TState s a (ii:.:RiSwI j) (ee:.t!lj) )
+              in  TState s (ii:.:RiSwI j) (ee:.t!lj) )
     . termStream ts cs us is
   --
   termStream (ts:|ITbl _ _ _ t _) (cs:.IVariable ()) (us:.u) (is:.Subword (i:.j))
     = flatten mk step . termStream ts cs us is
-    where mk tstate@(TState s a ii ee) =
-              let RiSwI l = getIndex a (Proxy :: PRI is (Subword I))
+    where mk tstate@(TState s ii ee) =
+              let RiSwI l = getIndex (getIdx s) (Proxy :: PRI is (Subword I))
               in  return (tstate, l, j - l)
-          step (tstate@(TState s a ii ee), k, z)
+          step (tstate@(TState s ii ee), k, z)
             | z >= 0 = do let l  = j - z
                               kl = subword k l
-                          return $ Yield (TState s a (ii:.:RiSwI l) (ee:.t!kl)) (tstate, k, z-1)
+                          return $ Yield (TState s (ii:.:RiSwI l) (ee:.t!kl)) (tstate, k, z-1)
             | otherwise = return $ Done
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
@@ -57,24 +57,24 @@ instance
 -- TODO can we combine the @ITbl@ and @BtITbl@ code again?
 
 instance
-  ( TstCtx1 mB ts a is (Subword I)
+  ( TstCtx mB ts s x0 i0 is (Subword I)
   , PrimArrayOps arr (Subword I) x
-  ) => TermStream mB (TermSymbol ts (Backtrack (ITbl mF arr c (Subword I) x) mF mB r)) a (is:.Subword I) where
+  ) => TermStream mB (TermSymbol ts (Backtrack (ITbl mF arr c (Subword I) x) mF mB r)) s (is:.Subword I) where
   termStream (ts:|BtITbl c t bt) (cs:.IStatic ()) (us:.u) (is:.Subword (i:.j))
-    = mapM (\(TState s a ii ee) ->
-                let RiSwI l = getIndex a (Proxy :: PRI is (Subword I))
+    = mapM (\(TState s ii ee) ->
+                let RiSwI l = getIndex (getIdx s) (Proxy :: PRI is (Subword I))
                     lj      = subword l j
-                in  bt u lj >>= \ ~bb -> return $ TState s a (ii:.:RiSwI j) (ee:.(t!lj,bb)) )
+                in  bt u lj >>= \ ~bb -> return $ TState s (ii:.:RiSwI j) (ee:.(t!lj,bb)) )
     . termStream ts cs us is
   termStream (ts:|BtITbl c t bt) (cs:.IVariable ()) (us:.u) (is:.Subword (i:.j))
     = flatten mk step . termStream ts cs us is
-    where mk tstate@(TState s a ii ee) =
-              let RiSwI l = getIndex a (Proxy :: PRI is (Subword I))
+    where mk tstate@(TState s ii ee) =
+              let RiSwI l = getIndex (getIdx s) (Proxy :: PRI is (Subword I))
               in  return (tstate, l, j - l)
-          step (tstate@(TState s a ii ee), k, z)
+          step (tstate@(TState s ii ee), k, z)
             | z >= 0 = do let l  = j - z
                               kl = subword k l
-                          bt u kl >>= \ ~bb -> return $ Yield (TState s a (ii:.:RiSwI l) (ee:.(t!kl,bb))) (tstate, k, z-1)
+                          bt u kl >>= \ ~bb -> return $ Yield (TState s (ii:.:RiSwI l) (ee:.(t!kl,bb))) (tstate, k, z-1)
             | otherwise = return $ Done
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}

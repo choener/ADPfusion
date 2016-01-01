@@ -51,26 +51,26 @@ instance
   , MkStream m ls i
   , Element ls i
   , TermStaticVar (TermSymbol a b) i
-  , TermStream m (TermSymbol a b) i i
+  , TermStream m (TermSymbol a b) (Elm ls i) i
   ) => MkStream m (ls :!: TermSymbol a b) i where
   mkStream (ls :!: ts) sv lu i
-    = map (\(TState sS _ ii ee) -> ElmTS ee ii sS)
+    = map (\(TState sS ii ee) -> ElmTS ee ii sS)
     . termStream ts sv lu i
-    . map (\s -> TState s (getIdx s) RiZ Z)
+    . map (\s -> TState s RiZ Z)
     $ mkStream ls (termStaticVar ts sv i) lu (termStreamIndex ts sv i)
   {-# Inline mkStream #-}
 
--- | Handles each individual argument within a stack of terminal symbols.
-
-class TerminalStream m t i where
-  terminalStream :: t -> Context i -> i -> S.Stream m (S5 s j j i i) -> S.Stream m (S6 s j j i i (TermArg t))
-
-iPackTerminalStream a sv    (ii:._)  = terminalStream a sv ii     . S.map (\(S5 s zi zo    (is:.i)     (os:.o) ) -> S5 s (zi:.i) (zo:.o)    is     os )
-{-# Inline iPackTerminalStream #-}
-
-instance (Monad m) => TerminalStream m M Z where
-  terminalStream M _ Z = S.map (\(S5 s j1 j2 Z Z) -> S6 s j1 j2 Z Z Z)
-  {-# INLINE terminalStream #-}
+---- | Handles each individual argument within a stack of terminal symbols.
+--
+--class TerminalStream m t i where
+--  terminalStream :: t -> Context i -> i -> S.Stream m (S5 s j j i i) -> S.Stream m (S6 s j j i i (TermArg t))
+--
+--iPackTerminalStream a sv    (ii:._)  = terminalStream a sv ii     . S.map (\(S5 s zi zo    (is:.i)     (os:.o) ) -> S5 s (zi:.i) (zo:.o)    is     os )
+--{-# Inline iPackTerminalStream #-}
+--
+--instance (Monad m) => TerminalStream m M Z where
+--  terminalStream M _ Z = S.map (\(S5 s j1 j2 Z Z) -> S6 s j1 j2 Z Z Z)
+--  {-# INLINE terminalStream #-}
 
 instance Monad m => MkStream m S Z where
   mkStream _ _ _ _ = S.singleton (ElmS RiZ)
@@ -99,17 +99,17 @@ instance
   {-# INLINE [0] termStaticVar #-}
   {-# INLINE [0] termStreamIndex #-}
 
-data S3 a b c           = S3 !a !b !c
-
-data S4 a b c d         = S4 !a !b !c !d
-
-data S5 a b c d e       = S5 !a !b !c !d !e
-
-data S6 a b c d e f     = S6 !a !b !c !d !e !f
-
-data S7 a b c d e f g   = S7 !a !b !c !d !e !f !g
-
-data S8 a b c d e f g h = S8 !a !b !c !d !e !f !g !h
+--data S3 a b c           = S3 !a !b !c
+--
+--data S4 a b c d         = S4 !a !b !c !d
+--
+--data S5 a b c d e       = S5 !a !b !c !d !e
+--
+--data S6 a b c d e f     = S6 !a !b !c !d !e !f
+--
+--data S7 a b c d e f g   = S7 !a !b !c !d !e !f !g
+--
+--data S8 a b c d e f g h = S8 !a !b !c !d !e !f !g !h
 
 --fromTerminalStream (S6 s Z Z i o e) = ElmTS e i o s
 --{-# INLINE fromTerminalStream #-}
@@ -145,18 +145,22 @@ instance (TableStaticVar us cs is, TableStaticVar u c i) => TableStaticVar (us:.
 
 
 
-data TermState s a i e = TState
+data TermState s i e = TState
   { tS  :: !s -- | state coming in from the left
-  , tIx :: !(RunningIndex a) -- | @I/C@ index from @sS@
+--  , tIx :: !(RunningIndex a) -- | @I/C@ index from @sS@
   , iIx :: !(RunningIndex i) -- | @I/C@ building up state to hand over to next symbol
   , eTS :: !e -- | element data
   }
 
-class TermStream m t a i where
-  termStream :: t -> Context i -> i -> i -> Stream m (TermState s a Z Z) -> Stream m (TermState s a i (TermArg t))
+--getTIX :: (Element x0 a, s ~ Elm x0 a) => TermState s a i e -> RunningIndex a
+--getTIX (TState s a i e) = getIdx s
+--{-# Inline getTIX #-}
 
-instance TermStream m M a Z where
-  termStream _ _ _ _ = id
+class TermStream m t s i where
+  termStream :: t -> Context i -> i -> i -> Stream m (TermState s Z Z) -> Stream m (TermState s i (TermArg t))
+
+instance (Monad m) => TermStream m M s Z where
+  termStream _ _ _ _ = map (\(!s) -> s)
   {-# Inline termStream #-}
 
 -- |
@@ -168,34 +172,50 @@ instance TermStream m M a Z where
 
 addTermStream1
   :: ( Monad m
-     , TermStream m (TermSymbol M t) (Z:.a) (Z:.i)
-     , s ~ Elm x0 a
-     , Element x0 a
+     , TermStream m (TermSymbol M t) (Term1 s) (Z:.i)
+--     , s ~ Elm x0 a
+--     , Element x0 a
      )
   => t -> Context i -> i -> i -> Stream m s -> Stream m (s,TermArg t,RunningIndex i)
 addTermStream1 t c u i
-  = map (\(TState sS _ (RiZ:.:ii) (Z:.ee)) -> (sS,ee,ii))
+  = map (\(TState (Term1 sS) (RiZ:.:ii) (Z:.ee)) -> (sS,ee,ii))
   . termStream (M:|t) (Z:.c) (Z:.u) (Z:.i)
-  . map (\s -> TState s (RiZ:.:getIdx s) RiZ Z)
+  . map (\s -> TState (Term1 s) RiZ Z)
 {-# Inline addTermStream1 #-}
+
+newtype Term1 s = Term1 { getTerm1 :: s }
+
+instance (s ~ Elm x0 i, Element x0 i) => Element (Term1 s) (Z:.i) where
+  newtype Elm (Term1 s) (Z:.i) = ElmTerm1 s
+  getIdx (ElmTerm1 s) = RiZ :.: getIdx s
+  {-# Inline getIdx #-}
 
 -- | @Term MkStream@ context
 
 type TmkCtx1 m ls t i
   = ( Monad m
     , MkStream m ls i
-    , TermStream m (TermSymbol M t) (Z:.i) (Z:.i)
+    , TermStream m (TermSymbol M t) (Term1 (Elm ls i)) (Z:.i)
     , Element ls i
     , TermStaticVar t i
     )
 
 -- | @Term TermStream@ context
 
-type TstCtx1 m ts a is i
+--type TstCtx1 m ts s sixty is i
+--  = ( Monad m
+--    , TermStream m ts s is
+--    , GetIndex (RunningIndex sixty) (RunningIndex (is:.i))
+--    , GetIx (RunningIndex sixty) (RunningIndex (is:.i)) ~ (RunningIndex i)
+--    )
+
+type TstCtx m ts s x0 sixty is i
   = ( Monad m
-    , TermStream m ts a is
-    , GetIndex (RunningIndex a) (RunningIndex (is:.i))
-    , GetIx (RunningIndex a) (RunningIndex (is:.i)) ~ (RunningIndex i)
+    , TermStream m ts s is
+    , GetIndex (RunningIndex sixty) (RunningIndex (is:.i))
+    , GetIx (RunningIndex sixty) (RunningIndex (is:.i)) ~ (RunningIndex i)
+    , Element x0 sixty
+    , s ~ Elm x0 sixty
     )
 
 -- | Shorthand for proxifying @getIndex@

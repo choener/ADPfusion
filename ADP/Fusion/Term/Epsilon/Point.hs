@@ -24,20 +24,20 @@ instance
 
 
 instance
-  ( TstCtx1 m ts a is (PointL I)
-  ) => TermStream m (TermSymbol ts Epsilon) a (is:.PointL I) where
+  ( TstCtx m ts s x0 i0 is (PointL I)
+  ) => TermStream m (TermSymbol ts Epsilon) s (is:.PointL I) where
   termStream (ts:|Epsilon) (cs:.IStatic d) (us:.PointL u) (is:.PointL i)
-    = S.map (\(TState s a ii ee) -> TState s a (ii:.:RiPlI i) (ee:.()))
+    = S.map (\(TState s ii ee) -> TState s (ii:.:RiPlI i) (ee:.()))
     . termStream ts cs us is
   {-# Inline termStream #-}
 
 instance
-  ( TstCtx1 m ts a is (PointL O)
-  ) => TermStream m (TermSymbol ts Epsilon) a (is:.PointL O) where
+  ( TstCtx m ts s x0 i0 is (PointL O)
+  ) => TermStream m (TermSymbol ts Epsilon) s (is:.PointL O) where
   termStream (ts:|Epsilon) (cs:.OStatic d) (us:.PointL u) (is:.PointL i)
-    = S.map (\(TState s a ii ee) ->
-                let io = getIndex a (Proxy :: PRI is (PointL O))
-                in  TState s a (ii:.:io) (ee:.()))
+    = S.map (\(TState s ii ee) ->
+                let io = getIndex (getIdx s) (Proxy :: PRI is (PointL O))
+                in  TState s (ii:.:io) (ee:.()))
     . termStream ts cs us is
   {-# Inline termStream #-}
 

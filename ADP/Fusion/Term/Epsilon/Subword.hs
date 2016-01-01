@@ -25,23 +25,23 @@ instance
 
 
 instance
-  ( TstCtx1 m ts a is (Subword I)
-  ) => TermStream m (TermSymbol ts Epsilon) a (is:.Subword I) where
+  ( TstCtx m ts s x0 i0 is (Subword I)
+  ) => TermStream m (TermSymbol ts Epsilon) s (is:.Subword I) where
   termStream (ts:|Epsilon) (cs:.IStatic ()) (us:.u) (is:.Subword (i:.j))
-    = map (\(TState s a ii ee) ->
-              TState s a (ii:.:RiSwI j) (ee:.()) )
+    = map (\(TState s ii ee) ->
+              TState s (ii:.:RiSwI j) (ee:.()) )
     . termStream ts cs us is
     . staticCheck (i==j)
   {-# Inline termStream #-}
 
 instance
-  ( TstCtx1 m ts a is (Subword O)
-  ) => TermStream m (TermSymbol ts Epsilon) a (is:.Subword O) where
+  ( TstCtx m ts s xi0 i0 is (Subword O)
+  ) => TermStream m (TermSymbol ts Epsilon) s (is:.Subword O) where
   termStream (ts:|Epsilon) (cs:.OStatic d) (us:.Subword (ui:.uj)) (is:.Subword (i:.j))
     = staticCheck (ui == i && uj == j) -- TODO correct ?
-    . map (\(TState s a ii ee) ->
-              let io = getIndex a (Proxy :: PRI is (Subword O))
-              in  TState s a (ii:.:io) (ee:.()) )
+    . map (\(TState s ii ee) ->
+              let io = getIndex (getIdx s) (Proxy :: PRI is (Subword O))
+              in  TState s (ii:.:io) (ee:.()) )
     . termStream ts cs us is
   {-# Inline termStream #-}
 

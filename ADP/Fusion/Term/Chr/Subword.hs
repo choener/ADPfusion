@@ -28,48 +28,48 @@ instance
 
 
 instance
-  ( TstCtx1 m ts a is (Subword I)
-  ) => TermStream m (TermSymbol ts (Chr r x)) a (is:.Subword I) where
+  ( TstCtx m ts s x0 i0 is (Subword I)
+  ) => TermStream m (TermSymbol ts (Chr r x)) s (is:.Subword I) where
   termStream (ts:|Chr f xs) (cs:.IStatic ()) (us:.u) (is:.Subword (i:.j))
     = id -- staticCheck (i>=0 && i < j && j <= VG.length xs)
-    . map (\(TState s a ii ee) ->
-              TState s a (ii:.: RiSwI j) (ee:.f xs (j-1)) )
+    . map (\(TState s ii ee) ->
+              TState s (ii:.: RiSwI j) (ee:.f xs (j-1)) )
     . termStream ts cs us is
   --
   termStream (ts:|Chr f xs) (cs:.IVariable ()) (us:.u) (is:.Subword (i:.j))
-    = map (\(TState s a ii ee) ->
-              let RiSwI l = getIndex a (Proxy :: PRI is (Subword I))
-              in  TState s a (ii:.:RiSwI (l+1)) (ee:.f xs l) )
+    = map (\(TState s ii ee) ->
+              let RiSwI l = getIndex (getIdx s) (Proxy :: PRI is (Subword I))
+              in  TState s (ii:.:RiSwI (l+1)) (ee:.f xs l) )
     . termStream ts cs us is
   {-# Inline termStream #-}
 
 instance
-  ( TstCtx1 m ts a is (Subword O)
-  ) => TermStream m (TermSymbol ts (Chr r x)) a (is:.Subword O) where
+  ( TstCtx m ts s x0 i0 is (Subword O)
+  ) => TermStream m (TermSymbol ts (Chr r x)) s (is:.Subword O) where
   termStream (ts:|Chr f xs) (cs:.OStatic (di:.dj)) (us:.u) (is:.Subword (i:.j))
-    = map (\(TState s a ii ee) ->
-              let RiSwO _ k oi oj = getIndex a (Proxy :: PRI is (Subword O))
+    = map (\(TState s ii ee) ->
+              let RiSwO _ k oi oj = getIndex (getIdx s) (Proxy :: PRI is (Subword O))
                   l              = k - dj
-              in  TState s a (ii:.: RiSwO k (k+1) oi oj) (ee:.f xs k) )
+              in  TState s (ii:.: RiSwO k (k+1) oi oj) (ee:.f xs k) )
     . termStream ts cs us is
   --
   termStream (ts:|Chr f xs) (cs:.ORightOf (di:.dj)) (us:.u) (is:.i)
-    = map (\(TState s a ii ee) ->
-              let RiSwO _ k oi oj = getIndex a (Proxy :: PRI is (Subword O))
+    = map (\(TState s ii ee) ->
+              let RiSwO _ k oi oj = getIndex (getIdx s) (Proxy :: PRI is (Subword O))
                   l              = k - dj - 1
-              in  TState s a (ii:.:RiSwO (k-1) k oi oj) (ee:.f xs l) )
+              in  TState s (ii:.:RiSwO (k-1) k oi oj) (ee:.f xs l) )
     . termStream ts cs us is
   --
   termStream (ts:|Chr f xs) (cs:.OFirstLeft (di:.dj)) (us:.u) (is:.i)
-    = map (\(TState s a ii ee) ->
-              let RiSwO _ k oi oj = getIndex a (Proxy :: PRI is (Subword O))
-              in  TState s a (ii:.:RiSwO k (k+1) oi oj) (ee:.f xs k) )
+    = map (\(TState s ii ee) ->
+              let RiSwO _ k oi oj = getIndex (getIdx s) (Proxy :: PRI is (Subword O))
+              in  TState s (ii:.:RiSwO k (k+1) oi oj) (ee:.f xs k) )
     . termStream ts cs us is
   --
   termStream (ts:|Chr f xs) (cs:.OLeftOf (di:.dj)) (us:.u) (is:.i)
-    = map (\(TState s a ii ee) ->
-              let RiSwO _ k oi oj = getIndex a (Proxy :: PRI is (Subword O))
-              in  TState s a (ii:.:RiSwO k (k+1) oi oj) (ee:.f xs k) )
+    = map (\(TState s ii ee) ->
+              let RiSwO _ k oi oj = getIndex (getIdx s) (Proxy :: PRI is (Subword O))
+              in  TState s (ii:.:RiSwO k (k+1) oi oj) (ee:.f xs k) )
     . termStream ts cs us is
   {-# Inline termStream #-}
 

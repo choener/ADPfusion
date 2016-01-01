@@ -26,27 +26,27 @@ instance
   {-# Inline mkStream #-}
 
 instance
-  ( TstCtx1 m ts a is (Subword I)
-  ) => TermStream m (TermSymbol ts (Strng v x)) a (is:.Subword I) where
+  ( TstCtx m ts s x0 i0 is (Subword I)
+  ) => TermStream m (TermSymbol ts (Strng v x)) s (is:.Subword I) where
   --
   termStream (ts:|Strng f minL maxL v) (cs:.IStatic d) (us:.Subword (ui:.uj)) (is:.Subword (i:.j))
-    = S.filter (\(TState s a _ _) ->
+    = S.filter (\(TState s _ _) ->
                     -- let Subword (k:.l) = getIndex a (Proxy :: Proxy (is:.Subword I))
-                    let RiSwI l = getIndex a (Proxy :: PRI is (Subword I))
+                    let RiSwI l = getIndex (getIdx s) (Proxy :: PRI is (Subword I))
                         -- RiSwI k = getIndex (getIdx $ getElm s) (Proxy :: PRI is (Subword I))
                         k = undefined
                     in l-k <= maxL)
-    . S.map (\(TState s a ii ee) ->
+    . S.map (\(TState s ii ee) ->
                 --let Subword (_:.l) = getIndex a (Proxy :: Proxy (is:.Subword I))
                 --    o              = getIndex b (Proxy :: Proxy (is:.Subword I))
-                let RiSwI l = getIndex a (Proxy :: PRI is (Subword I))
-                in  TState s a (ii:.:RiSwI j) (ee:.f l (j-l) v) )
+                let RiSwI l = getIndex (getIdx s) (Proxy :: PRI is (Subword I))
+                in  TState s (ii:.:RiSwI j) (ee:.f l (j-l) v) )
     . termStream ts cs us is
   --
   termStream (ts:|Strng f minL maxL v) (cs:.IVariable d) (us:._) (is:.Subword (i:.j))
     = S.flatten mk step . termStream ts cs us is
-    where mk (tstate@(TState s a ii ee)) =
-            let RiSwI k = getIndex a (Proxy :: PRI is (Subword I))
+    where mk (tstate@(TState s ii ee)) =
+            let RiSwI k = getIndex (getIdx s) (Proxy :: PRI is (Subword I))
             in  return (tstate, k+minL, min j (k+maxL))
           step = undefined
           {-# Inline [0] mk   #-}
