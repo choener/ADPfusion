@@ -61,18 +61,22 @@ addIndexDense t c u i = map (\(SvS s z i') -> (s,z,i')) . addIndexDenseGo t c u 
 
 addIndexDense1
   :: ( Monad m
-     , AddIndexDense (SynVar1 (Elm x0 a)) (Z:.u) (Z:.c) (Z:.i)
+     , AddIndexDense (Elm (SynVar1 (Elm x0 a)) (Z:.i)) (Z:.u) (Z:.c) (Z:.i)
      , GetIndex (Z:.a) (Z:.i)
      , s ~ Elm x0 a
      , Element x0 a
      )
   => c -> Context i -> i -> i -> Stream m s -> Stream m (s,u,RunningIndex i)
-addIndexDense1 t c u i = map (\(SvS (SynVar1 s) (Z:.z) (RiZ:.:i')) -> (s,z,i'))
+addIndexDense1 t c u i = map (\(SvS (ElmSynVar1 s) (Z:.z) (RiZ:.:i')) -> (s,z,i'))
                        . addIndexDenseGo (Z:.t) (Z:.c) (Z:.u) (Z:.i)
-                       . map (\s -> (SvS (SynVar1 s) Z RiZ))
+                       . map (\s -> (SvS (elmSynVar1 s i) Z RiZ))
 {-# Inline addIndexDense1 #-}
 
-newtype SynVar1 s = SynVar1 { getSynVar1 :: s }
+newtype SynVar1 s = SynVar1 s
+
+elmSynVar1 :: s -> i -> Elm (SynVar1 s) (Z:.i)
+elmSynVar1 s _ = ElmSynVar1 s
+{-# Inline elmSynVar1 #-}
 
 instance (s ~ Elm x0 i, Element x0 i) => Element (SynVar1 s) (Z:.i) where
   newtype Elm (SynVar1 s) (Z:.i) = ElmSynVar1 s

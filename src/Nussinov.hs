@@ -108,7 +108,7 @@ runNussinov k inp = (d, take k bs) where
   bs = runInsideBacktrack i t
 {-# NOINLINE runNussinov #-}
 
-runInsideForward :: VU.Vector Char -> Z:.ITbl Id Unboxed (Subword I) Int
+runInsideForward :: VU.Vector Char -> Z:.ITbl Id Unboxed EmptyOk (Subword I) Int
 runInsideForward i = mutateTablesDefault
                    $ grammar bpmax
                        (chr i)
@@ -116,7 +116,7 @@ runInsideForward i = mutateTablesDefault
   where n = VU.length i
 {-# NoInline runInsideForward #-}
 
-runInsideBacktrack :: VU.Vector Char -> ITbl Id Unboxed (Subword I) Int -> [String]
+runInsideBacktrack :: VU.Vector Char -> ITbl Id Unboxed EmptyOk (Subword I) Int -> [String]
 runInsideBacktrack i t = unId $ axiom b
   where !(Z:.b) = grammar (bpmax <|| pretty) (chr i) (toBacktrack t (undefined :: Id a -> Id a))
 {-# NoInline runInsideBacktrack #-}

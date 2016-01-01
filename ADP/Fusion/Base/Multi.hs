@@ -172,18 +172,20 @@ instance (Monad m) => TermStream m M s Z where
 
 addTermStream1
   :: ( Monad m
-     , TermStream m (TermSymbol M t) (Term1 s) (Z:.i)
---     , s ~ Elm x0 a
---     , Element x0 a
+     , TermStream m (TermSymbol M t) (Elm (Term1 s) (Z:.i)) (Z:.i)
      )
   => t -> Context i -> i -> i -> Stream m s -> Stream m (s,TermArg t,RunningIndex i)
 addTermStream1 t c u i
-  = map (\(TState (Term1 sS) (RiZ:.:ii) (Z:.ee)) -> (sS,ee,ii))
+  = map (\(TState (ElmTerm1 sS) (RiZ:.:ii) (Z:.ee)) -> (sS,ee,ii))
   . termStream (M:|t) (Z:.c) (Z:.u) (Z:.i)
-  . map (\s -> TState (Term1 s) RiZ Z)
+  . map (\s -> TState (elmTerm1 s i) RiZ Z)
 {-# Inline addTermStream1 #-}
 
-newtype Term1 s = Term1 { getTerm1 :: s }
+newtype Term1 s = Term1 s
+
+elmTerm1 :: s -> i -> Elm (Term1 s) (Z:.i)
+elmTerm1 s _ = ElmTerm1 s
+{-# Inline elmTerm1 #-}
 
 instance (s ~ Elm x0 i, Element x0 i) => Element (Term1 s) (Z:.i) where
   newtype Elm (Term1 s) (Z:.i) = ElmTerm1 s
@@ -195,7 +197,7 @@ instance (s ~ Elm x0 i, Element x0 i) => Element (Term1 s) (Z:.i) where
 type TmkCtx1 m ls t i
   = ( Monad m
     , MkStream m ls i
-    , TermStream m (TermSymbol M t) (Term1 (Elm ls i)) (Z:.i)
+    , TermStream m (TermSymbol M t) (Elm (Term1 (Elm ls i)) (Z:.i)) (Z:.i)
     , Element ls i
     , TermStaticVar t i
     )
