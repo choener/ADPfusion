@@ -20,7 +20,7 @@ import ADP.Fusion.Base
 -- cases. The type @a@ is the type of the /full stack/ of indices, i.e. the
 -- full multi-tape problem.
 
-class AddIndexDense a u c i where
+class AddIndexDense s u c i where
   addIndexDenseGo
     :: (Monad m)
     => c -> Context i -> i -> i -> Stream m (SvState s a Z Z) -> Stream m (SvState s a u i)
@@ -36,7 +36,7 @@ instance AddIndexDense a Z Z Z where
 
 data SvState s a u i = SvS
   { sS  :: !s -- | state coming in from the left
-  , sIx :: !(RunningIndex a) -- | @I/C@ index from @sS@
+--  , sIx :: !(RunningIndex a) -- | @I/C@ index from @sS@
   , tx  :: !u -- | @I/C@ building up state to index the @table@.
   , iIx :: !(RunningIndex i) -- | @I/C@ building up state to hand over to next symbol
   }
@@ -47,13 +47,12 @@ data SvState s a u i = SvS
 
 addIndexDense
   :: ( Monad m
-     , AddIndexDense a u c i
-     , GetIndex a i
-     , s ~ Elm x0 a
-     , Element x0 a
+     , AddIndexDense s u c i
+     , s ~ Elm x0 i0
+     , Element x0 i0
      )
   => c -> Context i -> i -> i -> Stream m s -> Stream m (s,u,RunningIndex i)
-addIndexDense t c u i = map (\(SvS s _ z i') -> (s,z,i')) . addIndexDenseGo t c u i . map (\s -> (SvS s (getIdx s) Z RiZ))
+addIndexDense t c u i = map (\(SvS s z i') -> (s,z,i')) . addIndexDenseGo t c u i . map (\s -> (SvS s Z RiZ))
 {-# Inline addIndexDense #-}
 
 -- | In case of 1-dim tables, we wrap the index creation in a multi-dim
@@ -62,22 +61,32 @@ addIndexDense t c u i = map (\(SvS s _ z i') -> (s,z,i')) . addIndexDenseGo t c 
 
 addIndexDense1
   :: ( Monad m
-     , AddIndexDense (Z:.a) (Z:.u) (Z:.c) (Z:.i)
+     , AddIndexDense (SynVar1 (Elm x0 a)) (Z:.u) (Z:.c) (Z:.i)
      , GetIndex (Z:.a) (Z:.i)
      , s ~ Elm x0 a
      , Element x0 a
      )
   => c -> Context i -> i -> i -> Stream m s -> Stream m (s,u,RunningIndex i)
-addIndexDense1 t c u i = map (\(SvS s _ (Z:.z) (RiZ:.:i')) -> (s,z,i'))
+addIndexDense1 t c u i = map (\(SvS (SynVar1 s) (Z:.z) (RiZ:.:i')) -> (s,z,i'))
                        . addIndexDenseGo (Z:.t) (Z:.c) (Z:.u) (Z:.i)
-                       . map (\s -> (SvS s (RiZ :.: getIdx s) Z RiZ))
+                       . map (\s -> (SvS (SynVar1 s) Z RiZ))
 {-# Inline addIndexDense1 #-}
+
+newtype SynVar1 s = SynVar1 { getSynVar1 :: s }
+
+instance (s ~ Elm x0 i, Element x0 i) => Element (SynVar1 s) (Z:.i) where
+  newtype Elm (SynVar1 s) (Z:.i) = ElmSynVar1 s
+  getIdx (ElmSynVar1 s) = RiZ :.: getIdx s
+  {-# Inline getIdx #-}
+
 
 -- | Instance headers, we typically need.
 
-type IndexHdr a us u cs c is i =
-  ( AddIndexDense a us cs is
-  , GetIndex (RunningIndex a) (RunningIndex (is:.i))
-  , GetIx (RunningIndex a) (RunningIndex (is:.i)) ~ (RunningIndex i)
+type IndexHdr s x0 i0 us u cs c is i =
+  ( AddIndexDense s us cs is
+  , GetIndex (RunningIndex i0) (RunningIndex (is:.i))
+  , GetIx (RunningIndex i0) (RunningIndex (is:.i)) ~ (RunningIndex i)
+  , Element x0 i0
+  , s ~ Elm x0 i0
   )
 

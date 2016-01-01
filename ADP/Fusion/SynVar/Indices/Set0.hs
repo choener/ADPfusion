@@ -27,9 +27,9 @@ import ADP.Fusion.SynVar.Indices.Classes
 -- TODO outside and complement code
 
 instance
-  ( IndexHdr a us (BitSet I) cs c is (BitSet I)
+  ( IndexHdr s x0 i0 us (BitSet I) cs c is (BitSet I)
   , MinSize c
-  ) => AddIndexDense a (us:.BitSet I) (cs:.c) (is:.BitSet I) where
+  ) => AddIndexDense s (us:.BitSet I) (cs:.c) (is:.BitSet I) where
   addIndexDenseGo (cs:.c) (vs:.IStatic rb) (us:.u) (is:.i)
     = flatten mk step . addIndexDenseGo cs vs us is
           -- @mk@ builds up the index we start with. First we ask in @l@
@@ -48,7 +48,7 @@ instance
             where k  = (BitSet $ 2^cm-1)
                   cm = popCount mask - rb
                   mask = i `xor` l
-                  RiBsI l = getIndex (sIx svS) (Proxy :: PRI is (BitSet I))
+                  RiBsI l = getIndex (getIdx $ sS svS) (Proxy :: PRI is (BitSet I))
           step Nothing = return $ Done
           -- @step Just ...@ performs a non-trivial step. First we
           -- calculate the population count of the index for this symbol as
@@ -61,11 +61,11 @@ instance
           --
           -- TODO is the stopping criterion actually right? Should'nd we
           -- look at all set bits? Also consider the comment above on @rb@.
-          step (Just (svS@(SvS s a t y') :. mask :. k))
+          step (Just (svS@(SvS s t y') :. mask :. k))
             | pk > popCount i - rb = return $ Done
             | otherwise            = let kk = popShiftL mask k
-                                         RiBsI aa = getIndex a (Proxy :: PRI is (BitSet I))
-                                     in  return $ Yield (SvS s a (t:.kk) (y' :.: RiBsI (kk.|.aa)))
+                                         RiBsI aa = getIndex (getIdx s) (Proxy :: PRI is (BitSet I))
+                                     in  return $ Yield (SvS s (t:.kk) (y' :.: RiBsI (kk.|.aa)))
                                                         ((svS :. mask :.) <$> setSucc 0 (2^pm -1) k)
             where pk = popCount k
                   pm = popCount mask
@@ -84,7 +84,7 @@ instance
             | csize==1  = return $ Just (svS :. mask :. cm :. csize)
             where mask = i `xor` l
                   cm   = popCount mask
-                  RiBsI l = getIndex (sIx svS) (Proxy :: PRI is (BitSet I))
+                  RiBsI l = getIndex (getIdx $ sS svS) (Proxy :: PRI is (BitSet I))
                   csize = BitSet $ minSize c
           -- if the possible popcount in @i@ is less than the total
           -- popcount in @kk@ and @l@ and the reserved bits in @rb@, then
@@ -92,12 +92,12 @@ instance
           -- indexing; @kk.|.l@ as all set bits. @setSucc@ will rotate
           -- through all permutations for each popcount and mask.
           step Nothing = return $ Done
-          step (Just (svS@(SvS s a t y') :. mask :. cm :. k))
+          step (Just (svS@(SvS s t y') :. mask :. cm :. k))
             | popCount i < popCount (kk .|. l) + rb = return $ Done
-            | otherwise = return $ Yield (SvS s a (t:.kk) (y' :.: RiBsI (kk.|.l)))
+            | otherwise = return $ Yield (SvS s (t:.kk) (y' :.: RiBsI (kk.|.l)))
                                          ((svS :. mask :. cm :.) <$> setSucc 0 (2^cm -1) k)
             where kk = popShiftL mask k
-                  RiBsI l  = getIndex a (Proxy :: PRI is (BitSet I))
+                  RiBsI l  = getIndex (getIdx s) (Proxy :: PRI is (BitSet I))
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline addIndexDenseGo #-}
@@ -107,9 +107,9 @@ instance
 -- it is the final @RightOf@ object before we have the @FirstLeft@ object.
 
 instance
-  ( IndexHdr a us (BitSet O) cs c is (BitSet O)
+  ( IndexHdr s x0 i0 us (BitSet O) cs c is (BitSet O)
   , MinSize c
-  ) => AddIndexDense a (us:.BitSet O) (cs:.c) (is:.BitSet O) where
+  ) => AddIndexDense s (us:.BitSet O) (cs:.c) (is:.BitSet O) where
   addIndexDenseGo (cs:.c) (vs:.OStatic rb) (us:.u) (is:.i)
     = flatten mk step . addIndexDenseGo cs vs us is
           -- We need to make the number of @0@s smaller, or make the number
@@ -118,7 +118,7 @@ instance
             -- not enough free bits with reserved count
             | rb + popCount bso >= popCount u = return $ Nothing
             | otherwise  = return $ Just (svS :. mask :. k)
-            where RiBsO bsi bso = getIndex (sIx svS) (Proxy :: PRI is (BitSet O))
+            where RiBsO bsi bso = getIndex (getIdx $ sS svS) (Proxy :: PRI is (BitSet O))
                   mask = u `xor` bso -- all bits available for permutations (upper bound, without already set bits)
                   k = BitSet $ 2 ^ rb - 1 -- the bits we want to trigger
           step Nothing = return $ Done
@@ -127,14 +127,14 @@ instance
           -- @outside@ provides the mask we can now plug additional
           -- @inside@ objects in -- but only in those plug-ports where @i@
           -- is zero.
-          step (Just (svS@(SvS s a t y') :. mask :. k))
+          step (Just (svS@(SvS s t y') :. mask :. k))
             -- drawing the next bitset ends up over the limit
             | pk > rb   = return $ Done
             | otherwise =
-                let RiBsO bsi bso = getIndex a (Proxy :: PRI is (BitSet O))
+                let RiBsO bsi bso = getIndex (getIdx s) (Proxy :: PRI is (BitSet O))
                     kk = popShiftL mask k
                     tt = kk .|. bso -- the (smaller, more @1@ bits) lookup index
-                in  return $ Yield (SvS s a (t:.tt) (y' :.: RiBsO bsi tt))
+                in  return $ Yield (SvS s (t:.tt) (y' :.: RiBsO bsi tt))
                                    ((svS :. mask :.) <$> setSucc 0 (2^rb -1) k)
             where pk = popCount k
           csize = minSize c

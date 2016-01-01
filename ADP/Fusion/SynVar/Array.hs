@@ -27,7 +27,7 @@ type ITblCx m ls arr x u c i =
   ( TableStaticVar u c i
   , MkStream m ls i
   , Element ls i
-  , AddIndexDense (Z:.i) (Z:.u) (Z:.c) (Z:.i)
+  , AddIndexDense (SynVar1 (Elm ls i)) (Z:.u) (Z:.c) (Z:.i)
   , PrimArrayOps arr u x
   )
 

@@ -106,7 +106,7 @@ instance
   ( Monad m
   , Element ls (is:.i)
   , TableStaticVar (us:.u) (cs:.c) (is:.i)
-  , AddIndexDense (is:.i) (us:.u) (cs:.c) (is:.i)
+  , AddIndexDense (Elm ls (is:.i)) (us:.u) (cs:.c) (is:.i)
   , MkStream m ls (is:.i)
   , PrimArrayOps arr (us:.u) x
   ) => MkStream m (ls :!: ITbl m arr (cs:.c) (us:.u) x) (is:.i) where
@@ -120,7 +120,7 @@ instance
   ( Monad mB
   , Element ls (is:.i)
   , TableStaticVar (us:.u) (cs:.c) (is:.i)
-  , AddIndexDense (is:.i) (us:.u) (cs:.c) (is:.i)
+  , AddIndexDense (Elm ls (is:.i)) (us:.u) (cs:.c) (is:.i)
   , MkStream mB ls (is:.i)
   , PrimArrayOps arr (us:.u) x
   ) => MkStream mB (ls :!: Backtrack (ITbl mF arr (cs:.c) (us:.u) x) mF mB r) (is:.i) where
