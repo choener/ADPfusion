@@ -34,6 +34,19 @@ class RuleContext i where
 -- not need both element of @j:.k@ but only @k@.
 -- Also, inside grammars do need fewer moving indices than outside
 -- grammars.
+--
+-- TODO Sometimes, the actual RunningIndex ctors are not erased. This could
+-- be due to <https://ghc.haskell.org/trac/ghc/ticket/2289>. To test, we
+-- should transform RunningIndex into a type class to give us access to the
+-- left and right member, also we should create instances a la
+-- @RunningIndex (is :. Subword I) = RiSwI !(RunningIndex is) !Int@.
+-- Hopefully, these are completely erased.
+
+{-
+class RunningIndexCl i where
+  type RecursiveRl i :: *
+  type ThisRI i :: *
+-}
 
 data family RunningIndex i :: *
 
