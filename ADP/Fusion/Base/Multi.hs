@@ -160,7 +160,7 @@ class TermStream m t s i where
   termStream :: t -> Context i -> i -> i -> Stream m (TermState s Z Z) -> Stream m (TermState s i (TermArg t))
 
 instance (Monad m) => TermStream m M s Z where
-  termStream _ _ _ _ = map (\(!s) -> s)
+  termStream _ _ _ _ = id -- map (\(!s) -> s)
   {-# Inline termStream #-}
 
 -- |
