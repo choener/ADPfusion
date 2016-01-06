@@ -123,7 +123,7 @@ instance (MinSize c) => TableStaticVar u c (Subword I) where
 --
 -- TODO @tableStreamIndex@ needs to be fixed
 
-instance TableStaticVar c (u O) (Subword O) where
+instance TableStaticVar (u O) c (Subword O) where
   tableStaticVar _ _ (OStatic  d) _ = OFirstLeft d
   tableStaticVar _ _ (ORightOf d) _ = OFirstLeft d
   tableStreamIndex _ c _ (Subword (i:.j)) = subword i j
@@ -135,7 +135,7 @@ instance TableStaticVar c (u O) (Subword O) where
 --
 -- TODO @tableStreamIndex@ needs to be fixed
 
-instance TableStaticVar c (u I) (Subword O) where
+instance TableStaticVar (u I) c (Subword O) where
   tableStaticVar _ _ (OStatic    d) _ = ORightOf d
   tableStaticVar _ _ (ORightOf   d) _ = ORightOf d
   tableStaticVar _ _ (OFirstLeft d) _ = OLeftOf d
@@ -144,13 +144,13 @@ instance TableStaticVar c (u I) (Subword O) where
   {-# INLINE [0] tableStaticVar   #-}
   {-# INLINE [0] tableStreamIndex #-}
 
-instance TableStaticVar c (u I) (Subword C) where
+instance TableStaticVar (u I) c (Subword C) where
   tableStaticVar _ _ _ _ = Complemented
   tableStreamIndex _ c _ (Subword (i:.j)) = subword i j
   {-# INLINE [0] tableStaticVar   #-}
   {-# INLINE [0] tableStreamIndex #-}
 
-instance TableStaticVar c (u O) (Subword C) where
+instance TableStaticVar (u O) c (Subword C) where
   tableStaticVar _ _ _ _ = Complemented
   tableStreamIndex _ c _ (Subword (i:.j)) = subword i j
   {-# INLINE [0] tableStaticVar   #-}

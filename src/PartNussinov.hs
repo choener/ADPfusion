@@ -134,11 +134,11 @@ ensemble
   -> NussinovEnsemble
         m
         (Log Double)
-        (Subword C:.Subword C)
+        (Subword C)
         (Subword C, Log Double)
         [(Subword C, Log Double)]
 ensemble z = NussinovEnsemble
-  { ens = \ x (Subword k:._) y -> ( Subword k , x * y / z )
+  { ens = \ x i y -> ( i , x * y / z )
   , hhh = SM.toList
   }
 {-# Inline ensemble #-}

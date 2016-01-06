@@ -16,10 +16,10 @@ instance Build (PeekIndex i)
 instance
   ( Element ls i
   ) => Element (ls :!: PeekIndex i) i where
-    data Elm (ls :!: PeekIndex i) i = ElmPeekIndex !(RunningIndex i) !(Elm ls i)
-    type Arg (ls :!: PeekIndex i)   = Arg ls :. RunningIndex i
-    getArg (ElmPeekIndex i ls)    = getArg ls :. i
-    getIdx (ElmPeekIndex i _ )    = i
+    data Elm (ls :!: PeekIndex i) i = ElmPeekIndex !i !(RunningIndex i) !(Elm ls i)
+    type Arg (ls :!: PeekIndex i)   = Arg ls :. i
+    getArg (ElmPeekIndex x _  ls)    = getArg ls :. x
+    getIdx (ElmPeekIndex _ i  _ )    = i
     {-# Inline getArg #-}
     {-# Inline getIdx #-}
 
