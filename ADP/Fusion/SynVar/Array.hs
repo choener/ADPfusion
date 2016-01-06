@@ -27,7 +27,6 @@ type ITblCx m ls arr x u c i =
   ( TableStaticVar u c i
   , MkStream m ls i
   , Element ls i
---  , AddIndexDense (SynVar1 (Elm ls i))              (Z:.u) (Z:.c) (Z:.i)
   , AddIndexDense (Elm (SynVar1 (Elm ls i)) (Z:.i)) (Z:.u) (Z:.c) (Z:.i)
   , PrimArrayOps arr u x
   )
@@ -120,34 +119,4 @@ instance ModifyConstraint (Backtrack (ITbl mF arr EmptyOk i x) mF mB r) where
   type TE  (Backtrack (ITbl mF arr EmptyOk i x) mF mB r) = Backtrack (ITbl mF arr EmptyOk  i x) mF mB r
   toNonEmpty (BtITbl _ arr bt) = BtITbl NonEmpty arr bt
   {-# Inline toNonEmpty #-}
-
---instance ModifyConstraint (ITbl m arr EmptyOk (Subword t) x) where
---  toNonEmpty (ITbl b l _ arr f) = ITbl b l NonEmpty arr f
---  toEmpty    = id
---  {-# Inline toNonEmpty #-}
---  {-# Inline toEmpty #-}
---
---instance ModifyConstraint (ITbl m arr NonEmpty (Subword t) x) where
---  toNonEmpty = id
---  toEmpty    (ITbl b l _ arr f) = ITbl b l EmptyOk arr f
---  {-# Inline toNonEmpty #-}
---  {-# Inline toEmpty #-}
-
---instance ModifyConstraint (ITbl m arr (Z:.Subword t:.Subword t) x) where
---  toNonEmpty (ITbl b l _ arr f) = ITbl b l (Z:.NonEmpty:.NonEmpty) arr f
---  toEmpty    (ITbl b l _ arr f) = ITbl b l (Z:.EmptyOk :.EmptyOk ) arr f
---  {-# Inline toNonEmpty #-}
---  {-# Inline toEmpty #-}
---
---instance ModifyConstraint (Backtrack (ITbl mF arr (Subword t) x) mF mB r) where
---  toNonEmpty (BtITbl _ arr bt) = BtITbl NonEmpty arr bt
---  toEmpty    (BtITbl _ arr bt) = BtITbl EmptyOk  arr bt
---  {-# Inline toNonEmpty #-}
---  {-# Inline toEmpty #-}
---
---instance ModifyConstraint (Backtrack (ITbl mF arr (Z:.Subword t:.Subword t) x) mF mB r) where
---  toNonEmpty (BtITbl _ arr bt) = BtITbl (Z:.NonEmpty:.NonEmpty) arr bt
---  toEmpty    (BtITbl _ arr bt) = BtITbl (Z:.EmptyOk :.EmptyOk ) arr bt
---  {-# Inline toNonEmpty #-}
---  {-# Inline toEmpty #-}
 

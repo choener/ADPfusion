@@ -4,17 +4,17 @@
 
 module ADP.Fusion.SynVar.Array.Type where
 
+import Data.Proxy
 import Data.Strict.Tuple hiding (uncurry,snd)
 import Data.Vector.Fusion.Stream.Monadic (map,Stream,head,mapM,Step(..))
 import Debug.Trace
 import Prelude hiding (map,head,mapM)
-import Data.Proxy
 
 import Data.PrimitiveArray hiding (map)
 
 import ADP.Fusion.Base
-import ADP.Fusion.SynVar.Backtrack
 import ADP.Fusion.SynVar.Axiom
+import ADP.Fusion.SynVar.Backtrack
 import ADP.Fusion.SynVar.Indices
 
 
@@ -34,7 +34,7 @@ instance Build (ITbl m arr c i x)
 type instance TermArg (ITbl m arr c i x) = x
 
 instance GenBacktrackTable (ITbl mF arr c i x) mF mB r where
-  data Backtrack (ITbl mF arr c i x) mF mB r = BtITbl !c !(arr i x) (i -> i -> mB [r])
+  data Backtrack (ITbl mF arr c i x) mF mB r = BtITbl !c !(arr i x) !(i -> i -> mB [r])
   type BacktrackIndex (ITbl mF arr c i x) = i
   toBacktrack (ITbl _ _ c arr _) _ bt = BtITbl c arr bt
   {-# Inline toBacktrack #-}
@@ -130,41 +130,4 @@ instance
     $ mkStream ls (tableStaticVar (Proxy :: Proxy (us:.u)) c vs is) us (tableStreamIndex (Proxy :: Proxy (us:.u)) c vs is)
     where !us' = snd $ bounds t
   {-# Inline mkStream #-}
-
-{-
-instance
-  ( Monad m
-  , Element ls (Outside (is:.i))
-  , TableStaticVar (Outside (is:.i))
-  , TableIndices (Outside (is:.i))
-  , MkStream m ls (Outside (is:.i))
-  , PrimArrayOps arr (Outside (is:.i)) x
-  , Show (is:.i)
-  ) => MkStream m (ls :!: ITbl m arr (Outside (is:.i)) x) (Outside (is:.i)) where
-  mkStream (ls :!: ITbl _ _ c t _) vs lu is
-    = map (\(S5 s _ _ i o) -> ElmITbl (t ! o) i o s)
-    . tableIndices c vs is
-    . map (\s -> S5 s Z Z (getIdx s) (getOmx s))
-    $ mkStream ls (tableStaticVar vs is) lu (tableStreamIndex c vs is)
-  {-# Inline mkStream #-}
--}
-
-{-
-instance
-  ( Monad mB
-  , Element ls (Outside (is:.i))
-  , TableStaticVar (Outside (is:.i))
-  , TableIndices (Outside (is:.i))
-  , MkStream mB ls (Outside (is:.i))
-  , PrimArrayOps arr (Outside (is:.i)) x
-  , Show (is:.i)
-  ) => MkStream mB (ls :!: Backtrack (ITbl mF arr (Outside (is:.i)) x) mF mB r) (Outside (is:.i)) where
-  mkStream (ls :!: BtITbl c t bt) vs us is
-    = mapM (\(S5 s _ _ i o) -> bt us o >>= \bb -> return $ ElmBtITbl (t ! o) (bb {-bt us o-}) i o s)
-    . tableIndices c vs is
-    . map (\s -> S5 s Z Z (getIdx s) (getOmx s))
-    $ mkStream ls (tableStaticVar vs is) us (tableStreamIndex c vs is)
-  {-# Inline mkStream #-}
--}
-
 
