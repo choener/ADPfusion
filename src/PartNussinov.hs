@@ -202,8 +202,8 @@ neat i = do let (es,z,ys) = runNussinov i
             forM_ es $ \ (Subword (i:.j),v) -> printf "%3d %3d  %0.4f\n" i j (exp $ ln v)
             putStrLn ""
 
-type TblI = ITbl Id Unboxed (Subword I) (Log Double)
-type TblO = ITbl Id Unboxed (Subword O) (Log Double)
+type TblI = ITbl Id Unboxed EmptyOk (Subword I) (Log Double)
+type TblO = ITbl Id Unboxed EmptyOk (Subword O) (Log Double)
 
 runInsideForward :: VU.Vector Char -> Z:.TblI:.TblI
 runInsideForward i = mutateTablesDefault
@@ -229,7 +229,7 @@ runEnsembleForward z i o = unId $ axiom g
   where (Z:.g) = ensembleGrammar (ensemble z)
                    i o
                    (IRec EmptyOk (Subword l) (Subword h))
-                 :: Z :. IRec Id (Subword C) [(Subword C, Log Double)]
+                 :: Z :. IRec Id EmptyOk (Subword C) [(Subword C, Log Double)]
         (Subword l,Subword h) = let (ITbl _ _ _ arr _) = i in bounds arr
 {-# NoInline runEnsembleForward #-}
 
