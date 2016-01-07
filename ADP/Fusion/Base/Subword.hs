@@ -58,11 +58,15 @@ data instance RunningIndex (Subword C) = RiSwC !Int !Int
 
 instance (Monad m) => MkStream m S (Subword I) where
   mkStream S (IStatic ()) (Subword (_:.h)) (Subword (i:.j))
-    = filter (const $ 0<=i && i<=j) -- staticCheck (i>=0 && i==j && j<=h)
+    -- = staticCheck (0<=i && i<=j)
+    = filter (const $ 0<=i && i<=j)
     . singleton
     . ElmS $ RiSwI i
   mkStream S (IVariable ()) (Subword (_:.h)) (Subword (i:.j))
-    = filter (const $ 0<=i && i<=j && j<=h) . singleton . ElmS $ RiSwI i
+    -- = staticCheck (0<=i && i<=j)
+    = filter (const $ 0<=i && i<=j && j<=h)
+    . singleton
+    . ElmS $ RiSwI i
   {-# Inline mkStream #-}
 
 instance (Monad m) => MkStream m S (Subword O) where
@@ -102,12 +106,12 @@ instance
 --  , Context (is:.Subword) ~ (Context is:.(InsideContext ()))
   ) => MkStream m S (is:.Subword I) where
   mkStream S (vs:.IStatic ()) (lus:.Subword (_:.h)) (ixs:.Subword(i:.j))
-    = staticCheck (i>=0 && i==j && j<=h)
+    = staticCheck (0<=i && i==j) -- && j<=h)
     . map (\(ElmS zi) -> ElmS (zi:.:RiSwI i))
     $ mkStream S vs lus ixs
   mkStream S (vs:.IVariable ()) (lus:.Subword (_:.h)) (ixs:.Subword (i:.j))
     = map (\(ElmS zi) -> ElmS (zi:.:RiSwI i))
-    . filter (const $ 0<=i && i<=j && j<=h)
+    . staticCheck (0<=i && i<=j) -- filter (const $ 0<=i && i<=j && j<=h)
     $ mkStream S vs lus ixs
   {-# Inline mkStream #-}
 

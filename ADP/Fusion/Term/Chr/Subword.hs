@@ -27,6 +27,12 @@ instance
 
 
 
+-- |
+--
+-- NOTE We do not run 'staticCheck'. Running @staticCheck@ costs about
+-- @10%@ performance and we assume that the frontend will take care of
+-- correct indices anyway.
+
 instance
   ( TstCtx m ts s x0 i0 is (Subword I)
   ) => TermStream m (TermSymbol ts (Chr r x)) s (is:.Subword I) where

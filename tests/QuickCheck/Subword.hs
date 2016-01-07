@@ -36,7 +36,7 @@ import           ADP.Fusion
 -- B*_ik -> A*_ij C_kj
 -- C*_kj -> B_ik  A*_ij
 
-prop_sv_OI ox@(Subword (i:.k)) = zs == ls where
+prop_O_sv_OI ox@(Subword (i:.k)) = zs === ls where
   toa = ITbl 0 0 EmptyOk xoS (\ _ _ -> Id (1,1))
   tic = ITbl 0 0 EmptyOk xsS (\ _ _ -> Id (1,1))
   zs = ((,) <<< toa % tic ... stoList) maxSWo ox
@@ -44,7 +44,7 @@ prop_sv_OI ox@(Subword (i:.k)) = zs == ls where
          , unsafeIndex xsS (subword k j) )
        | j <- [ k .. highest ] ]
 
-prop_sv_IO ox@(Subword (k:.j)) = zs == ls where
+prop_O_sv_IO ox@(Subword (k:.j)) = zs === ls where
   tib = ITbl 0 0 EmptyOk xsS (\ _ _ -> Id (1,1))
   toa = ITbl 0 0 EmptyOk xoS (\ _ _ -> Id (1,1))
   zs = ((,) <<< tib % toa ... stoList) maxSWo ox
@@ -61,7 +61,7 @@ prop_sv_IO ox@(Subword (k:.j)) = zs == ls where
 -- C*_kl -> B_ik  A*_ij D_lj
 -- D*_lj -> B_ik  C_kl  A*_ij
 
-prop_sv_OII ox@(Subword (i:.k)) = zs == ls where
+prop_O_sv_OII ox@(Subword (i:.k)) = zs === ls where
   toa = ITbl 0 0 EmptyOk xoS (\ _ _ -> Id (1,1))
   tic = ITbl 0 0 EmptyOk xsS (\ _ _ -> Id (1,1))
   tid = ITbl 0 0 EmptyOk xsS (\ _ _ -> Id (1,1))
@@ -71,7 +71,7 @@ prop_sv_OII ox@(Subword (i:.k)) = zs == ls where
          , unsafeIndex xsS (subword l j) )
        | j <- [ k .. highest ], l <- [ k .. j ] ]
 
-prop_sv_IOI ox@(Subword (k:.l)) = zs == ls where
+prop_O_sv_IOI ox@(Subword (k:.l)) = zs === ls where
   tib = ITbl 0 0 EmptyOk xsS (\ _ _ -> Id (1,1))
   toa = ITbl 0 0 EmptyOk xoS (\ _ _ -> Id (1,1))
   tid = ITbl 0 0 EmptyOk xsS (\ _ _ -> Id (1,1))
@@ -81,7 +81,7 @@ prop_sv_IOI ox@(Subword (k:.l)) = zs == ls where
          , unsafeIndex xsS (subword l j) )
        | i <- [ 0 .. k ], j <- [ l .. highest ] ]
 
-prop_sv_IIO ox@(Subword (l:.j)) = zs == ls where
+prop_O_sv_IIO ox@(Subword (l:.j)) = zs === ls where
   tib = ITbl 0 0 EmptyOk xsS (\ _ _ -> Id (1,1))
   tic = ITbl 0 0 EmptyOk xsS (\ _ _ -> Id (1,1))
   toa = ITbl 0 0 EmptyOk xoS (\ _ _ -> Id (1,1))
@@ -97,7 +97,7 @@ prop_sv_IIO ox@(Subword (l:.j)) = zs == ls where
 
 -- ** Non-terminal and terminal combinations
 
-prop_cOc ox@(Subword (i:.j)) = zs == ls where
+prop_O_cOc ox@(Subword (i:.j)) = zs === ls where
   toa = ITbl 0 0 EmptyOk xoS (\ _ _ -> Id (1,1))
   zs  = ((,,) <<< chr csS % toa % chr csS ... stoList) maxSWo ox
   ls  = [ ( csS VU.! (i-1)
@@ -105,7 +105,7 @@ prop_cOc ox@(Subword (i:.j)) = zs == ls where
           , csS VU.! (j  ) )
         | i > 0 && j < highest ]
 
-prop_ccOcc ox@(Subword (i:.j)) = zs == ls where
+prop_O_ccOcc ox@(Subword (i:.j)) = zs === ls where
   toa = ITbl 0 0 EmptyOk xoS (\ _ _ -> Id (1,1))
   zs  = ((,,,,) <<< chr csS % chr csS % toa % chr csS % chr csS ... stoList) maxSWo ox
   ls  = [ ( csS VU.! (i-2)
@@ -115,7 +115,7 @@ prop_ccOcc ox@(Subword (i:.j)) = zs == ls where
           , csS VU.! (j+1) )
         | i > 1 && j < highest -1 ]
 
-prop_cOccc ox@(Subword (i:.j)) = zs == ls where
+prop_O_cOccc ox@(Subword (i:.j)) = zs === ls where
   toa = ITbl 0 0 EmptyOk xoS (\ _ _ -> Id (1,1))
   zs  = ((,,,,) <<< chr csS % toa % chr csS % chr csS % chr csS ... stoList) maxSWo ox
   ls  = [ ( csS VU.! (i-1)
@@ -127,7 +127,7 @@ prop_cOccc ox@(Subword (i:.j)) = zs == ls where
 
 -- ** Terminals, syntactic terminals, and non-terminals
 
-prop_cOcIc ox@(Subword (i:.k)) = zs == ls where
+prop_O_cOcIc ox@(Subword (i:.k)) = zs === ls where
   toa = ITbl 0 0 EmptyOk xoS (\ _ _ -> Id (1,1))
   tic = ITbl 0 0 EmptyOk xsS (\ _ _ -> Id (1,1))
   zs = ((,,,,) <<< chr csS % toa % chr csS % tic % chr csS ... stoList) maxSWo ox
@@ -138,7 +138,7 @@ prop_cOcIc ox@(Subword (i:.k)) = zs == ls where
          , csS VU.! (j-1) )
        | i > 0, j <- [ k+2 .. highest ] ]
 
-prop_cIcOc ox@(Subword (k:.j)) = zs == ls where
+prop_O_cIcOc ox@(Subword (k:.j)) = zs === ls where
   tib = ITbl 0 0 EmptyOk xsS (\ _ _ -> Id (1,1))
   toa = ITbl 0 0 EmptyOk xoS (\ _ _ -> Id (1,1))
   zs = ((,,,,) <<< chr csS % tib % chr csS % toa % chr csS ... stoList) maxSWo ox
@@ -151,19 +151,19 @@ prop_cIcOc ox@(Subword (k:.j)) = zs == ls where
 
 -- ** Epsilonness
 
-prop_Epsilon ox@(Subword (i:.j)) = zs == ls where
+prop_O_Epsilon ox@(Subword (i:.j)) = zs === ls where
   zs = (id <<< Epsilon ... stoList) (maxSWo) ox
   ls = [ () | i==0 && j==highest ]
 
 
 -- ** Multi-tape cases
 
-prop_2dimIt ix@(Z:.Subword (i:.j):.Subword (k:.l)) = zs == ls where
+prop_I_2dimIt ix@(Z:.Subword (i:.j):.Subword (k:.l)) = zs === ls where
   t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsSS (\ _ _ -> Id ((1,1),(1,1)))
   zs = (id <<< t ... stoList) (Z:.subword 0 highest:.subword 0 highest) ix
   ls = [ ( unsafeIndex xsSS ix ) | j<=highest && l<=highest ]
 
-prop_2dimcIt ix@(Z:.Subword(i:.j):.Subword(k:.l)) = {- traceShow (zs,ls) $ -} zs == ls where
+prop_I_2dimcIt ix@(Z:.Subword(i:.j):.Subword(k:.l)) = {- traceShow (zs,ls) $ -} zs === ls where
   t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsSS (\ _ _ -> Id ((1,1),(1,1)))
   zs = ((,) <<< (M:|chr csS:|chr csS) % t ... stoList) (Z:.subwordI 0 highest:.subwordI 0 highest) ix
   ls = [ ( Z :. (csS VU.! i) :. (csS VU.! k)
@@ -171,7 +171,7 @@ prop_2dimcIt ix@(Z:.Subword(i:.j):.Subword(k:.l)) = {- traceShow (zs,ls) $ -} zs
        | j<=highest && l<=highest
        , i+1<=j && k+1<=l ]
 
-prop_2dimItc ix@(Z:.Subword(i:.j):.Subword(k:.l)) = {- traceShow (zs,ls) $ -} zs == ls where
+prop_I_2dimItc ix@(Z:.Subword(i:.j):.Subword(k:.l)) = (j<=highest && l<=highest) ==> zs === ls where
   t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsSS (\ _ _ -> Id ((1,1),(1,1)))
   zs = ((,) <<< t % (M:|chr csS:|chr csS)  ... stoList) (Z:.subwordI 0 highest:.subwordI 0 highest) ix
   ls = [ ( unsafeIndex xsSS (Z :. subword i (j-1) :. subword k (l-1))
@@ -179,7 +179,7 @@ prop_2dimItc ix@(Z:.Subword(i:.j):.Subword(k:.l)) = {- traceShow (zs,ls) $ -} zs
        | j<=highest && l<=highest
        , i+1<=j && k+1<=l ]
 
-prop_2dimcItc ix@(Z:.Subword(i:.j):.Subword(k:.l)) = {- traceShow (zs,ls) $ -} zs == ls where
+prop_I_2dimcItc ix@(Z:.Subword(i:.j):.Subword(k:.l)) = (j<=highest && l<=highest) ==> zs === ls where
   t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsSS (\ _ _ -> Id ((1,1),(1,1)))
   zs = ((,,) <<< (M:|chr csS:|chr csS) % t % (M:|chr csS:| chr csS) ... stoList) (Z:.subwordI 0 highest:.subwordI 0 highest) ix
   ls = [ ( Z :. (csS VU.! i) :. (csS VU.! k)
@@ -192,7 +192,7 @@ prop_2dimcItc ix@(Z:.Subword(i:.j):.Subword(k:.l)) = {- traceShow (zs,ls) $ -} z
 
 stoList = unId . SM.toList
 
-highest = 10
+highest = 20
 
 maxSWi :: Subword I
 maxSWi = subword 0 highest
