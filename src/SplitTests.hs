@@ -120,8 +120,8 @@ opForward i =
         i
 {-# NoInline opForward #-}
 
-type X = ITbl Id Unboxed (Subword I) Int
-type T = ITbl Id Unboxed (Z:.Subword I:.Subword I) Int
+type X = ITbl Id Unboxed EmptyOk (Subword I) Int
+type T = ITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.Subword I:.Subword I) Int
 
 
 main :: IO ()

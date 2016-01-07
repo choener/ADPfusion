@@ -154,7 +154,7 @@ undefi :: Interface i
 undefi = (-1)
 {-# Inline undefi #-}
 
-instance TableStaticVar c (u O) (BitSet O) where
+instance TableStaticVar (u O) c (BitSet O) where
   tableStaticVar _ _ (OStatic  d) _ = OFirstLeft d
   tableStaticVar _ _ (ORightOf d) _ = OFirstLeft d
   tableStreamIndex _ c _ bs = bs

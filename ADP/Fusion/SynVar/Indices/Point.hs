@@ -4,6 +4,7 @@ module ADP.Fusion.SynVar.Indices.Point where
 import Data.Proxy
 import Data.Vector.Fusion.Stream.Monadic (map,Stream,head,mapM,Step(..))
 import Data.Vector.Fusion.Util (delay_inline)
+import Debug.Trace
 import Prelude hiding (map,head,mapM)
 
 import Data.PrimitiveArray hiding (map)

@@ -28,7 +28,7 @@ import ADP.Fusion
 
 -- * Epsilon cases
 
-prop_Epsilon ix@(PointL j) = zs == ls where
+prop_I_Epsilon ix@(PointL j) = zs == ls where
   zs = (id <<< Epsilon ... stoList) maxPLi ix
   ls = [ () | j == 0 ]
 
@@ -52,7 +52,7 @@ prop_O_ZEpsilonEpsilon ix@(Z:.PointL j:.PointL l) = zs == ls where
 
 -- * Deletion cases
 
-prop_ItNC ix@(PointL j) = zs == ls where
+prop_I_ItNC ix@(PointL j) = zs == ls where
   t = ITbl 0 0 EmptyOk xsP (\ _ _ -> Id 1)
   zs = ((,,) <<< t % Deletion % chr xs ... stoList) maxPLi ix
   ls = [ ( unsafeIndex xsP (PointL $ j-1)
@@ -85,7 +85,7 @@ prop_O_2dimIt_NC_CN ix@(Z:.PointL j:.PointL l) = zs == ls where
          , Z:.xs VU.! (j+0):.()
          ) | j>=0, l>=0, j<=(maxI-1), l<=(maxI-1) ]
 
-prop_2dimIt_NC_CN ix@(Z:.PointL j:.PointL l) = zs == ls where
+prop_I_2dimIt_NC_CN ix@(Z:.PointL j:.PointL l) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsPP (\ _ _ -> Id 1)
   zs = ((,,) <<< t % (M:|Deletion:|chr xs) % (M:|chr xs:|Deletion) ... stoList) (Z:.maxPLi:.maxPLi) ix
   ls = [ ( unsafeIndex xsPP (Z:.PointL (j-1):.PointL (l-1))
@@ -99,7 +99,7 @@ prop_2dimIt_NC_CN ix@(Z:.PointL j:.PointL l) = zs == ls where
 
 -- | A single character terminal
 
-prop_Tt ix@(Z:.PointL j) = zs == ls where
+prop_I_Tt ix@(Z:.PointL j) = zs == ls where
   zs = (id <<< (M:|chr xs) ... stoList) (Z:.maxPLi) ix
   ls = [ (Z:.xs VU.! (j-1)) | 1==j ]
 
@@ -109,13 +109,13 @@ prop_Tt ix@(Z:.PointL j) = zs == ls where
 
 -- | Two single-character terminals
 
-prop_CC ix@(Z:.PointL i) = zs == ls where
+prop_I_CC ix@(Z:.PointL i) = zs == ls where
   zs = ((,) <<< (M:|chr xs) % (M:|chr xs) ... stoList) (Z:.maxPLi) ix
   ls = [ (Z:.xs VU.! (i-2), Z:.xs VU.! (i-1)) | 2==i ]
 
 -- | Just a table
 
-prop_It ix@(PointL j) = zs == ls where
+prop_I_It ix@(PointL j) = zs == ls where
   t = ITbl 0 0 EmptyOk xsP (\ _ _ -> Id 1)
   zs = (id <<< t ... stoList) maxPLi ix
   ls = [ unsafeIndex xsP ix | j>=0, j<=maxI ]
@@ -125,7 +125,7 @@ prop_O_It ix@(PointL j) = zs == ls where
   zs = (id <<< t ... stoList) maxPLo ix
   ls = [ unsafeIndex xsPo ix | j>=0, j<=maxI ]
 
-prop_ZIt ix@(Z:.PointL j) = zs == ls where
+prop_I_ZIt ix@(Z:.PointL j) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk) xsZP (\ _ _ -> Id 1)
   zs = (id <<< t ... stoList) (Z:.maxPLi) ix
   ls = [ unsafeIndex xsZP ix | j>=0, j<=maxI ]
@@ -137,7 +137,7 @@ prop_O_ZIt ix@(Z:.PointL j) = zs == ls where
 
 -- | Table, then single terminal
 
-prop_ItC ix@(PointL j) = zs == ls where
+prop_I_ItC ix@(PointL j) = zs == ls where
   t = ITbl 0 0 EmptyOk xsP (\ _ _ -> Id 1)
   zs = ((,) <<< t % chr xs ... stoList) maxPLi ix
   ls = [ ( unsafeIndex xsP (PointL $ j-1)
@@ -151,7 +151,7 @@ prop_O_ItC ix@(PointL j) = zs == ls where
   zs = ((,) <<< t % chr xs ... stoList) maxPLo ix
   ls = [ ( unsafeIndex xsPo (PointL $ j+1)
          , xs VU.! (j+0)
-         ) | j >= 0, j < maxI ]
+         ) | j >= 0, j <= (maxI-1) ]
 
 prop_O_ItCC ix@(PointL j) = zs == ls where
   t = ITbl 0 0 EmptyOk xsPo (\ _ _ -> Id 1)
@@ -160,7 +160,15 @@ prop_O_ItCC ix@(PointL j) = zs == ls where
          , xs VU.! (j+0)
          , xs VU.! (j+1)
          ) | j >= 0, j <= (maxI-2) ]
-{-# Noinline prop_O_ItCC #-}
+
+prop_O_ItCCC ix@(PointL j) = zs == ls where
+  t = ITbl 0 0 EmptyOk xsPo (\ _ _ -> Id 1)
+  zs = ((,,,) <<< t % chr xs % chr xs % chr xs ... stoList) maxPLo ix
+  ls = [ ( unsafeIndex xsPo (PointL $ j+3)
+         , xs VU.! (j+0)
+         , xs VU.! (j+1)
+         , xs VU.! (j+2)
+         ) | j >= 0, j <= (maxI-3) ]
 
 prop_O_ZItCC ix@(Z:.PointL j) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk) xsZPo (\ _ _ -> Id 1)
@@ -172,7 +180,7 @@ prop_O_ZItCC ix@(Z:.PointL j) = zs == ls where
 
 -- | synvar followed by a 2-tape character terminal
 
-prop_2dimItCC ix@(Z:.PointL j:.PointL l) = zs == ls where
+prop_I_2dimItCC ix@(Z:.PointL j:.PointL l) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsPP (\ _ _ -> Id 1)
   zs = ((,,) <<< t % (M:|chr xs:|chr xs) % (M:|chr xs:|chr xs) ... stoList) (Z:.maxPLi:.maxPLi) ix
   ls = [ ( unsafeIndex xsPP (Z:.PointL (j-2):.PointL (l-2))
@@ -200,11 +208,11 @@ xprop_O_ixZItCC ix@(O (Z:.PointL j)) = zs where
 
 -- ** Just the 'Strng' terminal
 
-prop_ManyS ix@(PointL j) = zs == ls where
+prop_I_ManyS ix@(PointL j) = zs == ls where
   zs = (id <<< manyS xs ... stoList) maxPLi ix
   ls = [ (VU.slice 0 j xs) ]
 
-prop_SomeS ix@(PointL j) = zs == ls where
+prop_I_SomeS ix@(PointL j) = zs == ls where
   zs = (id <<< someS xs ... stoList) maxPLi ix
   ls = [ (VU.slice 0 j xs) | j>0 ]
 
@@ -218,32 +226,32 @@ prop_SomeS ix@(PointL j) = zs == ls where
 
 -- ** Together with a syntactic variable.
 
-prop_Itbl_ManyS ix@(PointL i) = zs == ls where
+prop_I_Itbl_ManyS ix@(PointL i) = zs == ls where
   t = ITbl 0 0 EmptyOk xsP (\ _ _ -> Id 1)
   zs = ((,) <<< t % manyS xs ... stoList) maxPLi ix
   ls = [ (unsafeIndex xsP (PointL k), VU.slice k (i-k) xs) | k <- [0..i] ]
 
-prop_Itbl_SomeS ix@(PointL i) = zs == ls where
+prop_I_Itbl_SomeS ix@(PointL i) = zs == ls where
   t = ITbl 0 0 EmptyOk xsP (\ _ _ -> Id 1)
   zs = ((,) <<< t % someS xs ... stoList) maxPLi ix
   ls = [ (unsafeIndex xsP (PointL k), VU.slice k (i-k) xs) | k <- [0..i-1] ]
 
-prop_1dim_Itbl_ManyS ix@(Z:.PointL i) = zs == ls where
+prop_I_1dim_Itbl_ManyS ix@(Z:.PointL i) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk) xsZP (\ _ _ -> Id 1)
   zs = ((,) <<< t % (M:|manyS xs) ... stoList) (Z:.maxPLi) ix
   ls = [ (unsafeIndex xsZP (Z:.PointL k), Z:. VU.slice k (i-k) xs) | k <- [0..i] ]
 
-prop_1dim_Itbl_SomeS ix@(Z:.PointL i) = zs == ls where
+prop_I_1dim_Itbl_SomeS ix@(Z:.PointL i) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk) xsZP (\ _ _ -> Id 1)
   zs = ((,) <<< t % (M:|someS xs) ... stoList) (Z:.maxPLi) ix
   ls = [ (unsafeIndex xsZP (Z:.PointL k), Z:. VU.slice k (i-k) xs) | k <- [0..i-1] ]
 
-prop_2dim_Itbl_ManyS_ManyS ix@(Z:.PointL i:.PointL j) = zs == ls where
+prop_I_2dim_Itbl_ManyS_ManyS ix@(Z:.PointL i:.PointL j) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsPP (\ _ _ -> Id 1)
   zs = ((,) <<< t % (M:|manyS xs:|manyS xs) ... stoList) (Z:.maxPLi:.maxPLi) ix
   ls = [ (unsafeIndex xsPP (Z:.PointL k:.PointL l), Z:. VU.slice k (i-k) xs :. VU.slice l (j-l) xs) | k <- [0..i], l <- [0..j] ]
 
-prop_2dim_Itbl_SomeS_SomeS ix@(Z:.PointL i:.PointL j) = zs == ls where
+prop_I_2dim_Itbl_SomeS_SomeS ix@(Z:.PointL i:.PointL j) = zs == ls where
   t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsPP (\ _ _ -> Id 1)
   zs = ((,) <<< t % (M:|someS xs:|someS xs) ... stoList) (Z:.maxPLi:.maxPLi) ix
   ls = [ (unsafeIndex xsPP (Z:.PointL k:.PointL l), Z:. VU.slice k (i-k) xs :. VU.slice l (j-l) xs) | k <- [0..i-1], l <- [0..j-1] ]
@@ -254,22 +262,6 @@ stoList = unId . SM.toList
 
 infixl 8 >>>
 (>>>) f xs = \lu ij -> SM.map f . mkStream (build xs) (initialContext ij) lu $ ij
-
-class GetIxs x i where
-  type R x i :: *
-  getIxs :: Elm x i -> R x i
-
-instance GetIxs S i where
-  type R S i = Z:.(i,i)
-  getIxs e = Z:.(getIdx e, getOmx e)
-
-instance GetIxs ls i => GetIxs (ls :!: Chr a b) i where
-  type R (ls :!: Chr a b) i = R ls i :. (i,i)
-  getIxs (ElmChr _ i o s) = getIxs s :. (i,o)
-
-instance GetIxs ls i => GetIxs (ls :!: ITbl m a i x) i where
-  type R (ls :!: ITbl m a i x) i = R ls i :. (i,i)
-  getIxs (ElmITbl _ i o s) = getIxs s :. (i,o)
 
 xsP :: Unboxed (PointL I) Int
 xsP = fromList (PointL 0) maxPLi [0 ..]

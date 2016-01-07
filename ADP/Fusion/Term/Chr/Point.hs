@@ -55,7 +55,7 @@ instance
   termStream (ts:|Chr f xs) (cs:.OStatic d) (us:.PointL u) (is:.PointL i)
     = S.map (\(TState s ii ee) ->
                 let RiPlO k o = getIndex (getIdx s) (Proxy :: PRI is (PointL O))
-                in  TState s (ii:.: RiPlO (k-d+1) o) (ee:.f xs (k-d-1)))
+                in  TState s (ii:.: RiPlO (k+1) o) (ee:.f xs k))
     . termStream ts cs us is
   {-# Inline termStream #-}
 
@@ -68,7 +68,7 @@ instance TermStaticVar (Chr r x) (PointL I) where
   {-# Inline [0] termStreamIndex #-}
 
 instance TermStaticVar (Chr r x) (PointL O) where
-  termStaticVar   _ (OStatic d) _ = OStatic (d+1) 
+  termStaticVar   _ (OStatic d) _ = OStatic (d+1)
   termStreamIndex _ _           j = j
   {-# Inline [0] termStaticVar #-}
   {-# Inline [0] termStreamIndex #-}
