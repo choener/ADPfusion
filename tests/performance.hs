@@ -66,7 +66,7 @@ runLeft (!i, !arr) k = seq k d where
   d = unId $ axiom t
 {-# NoInline runLeft #-}
 
-runLeftForward :: VU.Vector Int -> Unboxed (Subword I) Int -> Z:.ITbl Id Unboxed (Subword I) Int
+runLeftForward :: VU.Vector Int -> Unboxed (Subword I) Int -> Z:.ITbl Id Unboxed EmptyOk (Subword I) Int
 runLeftForward !i !arr = mutateTablesDefault
                $ gLeft algMax
                    i
