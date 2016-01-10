@@ -17,6 +17,7 @@ import           Data.Proxy
 import           Data.PrimitiveArray
 
 import           ADP.Fusion.SynVar.Array -- TODO we want to keep only classes in here, move instances to the corresponding modules
+import           ADP.Fusion.SynVar.Recursive
 
 import           Debug.Trace
 
@@ -100,7 +101,23 @@ instance (TableOrder ts) => TableOrder (ts:.ITbl im arr c i x) where
   {-# Inline tableLittleOrder #-}
   {-# Inline tableBigOrder #-}
 
+-- | @IRec@s do not need an order, given that they do not memoize.
+
+instance (TableOrder ts) => TableOrder (ts:.IRec im c i x) where
+  tableLittleOrder (ts:._) = tableLittleOrder ts
+  tableBigOrder    (ts:._) = tableBigOrder ts
+  {-# Inline tableLittleOrder #-}
+  {-# Inline tableBigOrder #-}
+
 -- ** individual instances for filling a *single cell*
+
+instance
+  ( MutateCell CFG ts im om i
+  , PrimMonad om
+  ) => MutateCell CFG (ts:.IRec im c i x) im om i where
+  mutateCell h bo lo mrph (ts:._) lu i = do
+    mutateCell h bo lo mrph ts lu i
+  {-# Inline mutateCell #-}
 
 instance
   ( PrimArrayOps  arr i x
