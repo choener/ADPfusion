@@ -124,7 +124,7 @@ instance
   , MPrimArrayOps arr i x
   , MutateCell CFG ts im om i
   , PrimMonad om
-  , Show x, Show i
+--  , Show x, Show i
   ) => MutateCell CFG (ts:.ITbl im arr c i x) im om i where
   mutateCell h bo lo mrph (ts:.ITbl tbo tlo c arr f) lu i = do
     mutateCell h bo lo mrph ts lu i
