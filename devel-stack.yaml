@@ -1,7 +1,9 @@
-resolver: lts-4.0
+resolver: lts-5.1
 packages:
 - '.'
-- location: ../Lib-PrimitiveArray/
+- location:
+    git: /homes/brauerei2/choener/Repository/Lib-PrimitiveArray
+    commit: abbd079536772b0abf84ab4ac25d692184a5c1d4
   extra-dep: true
 
 extra-deps:
@@ -9,7 +11,6 @@ extra-deps:
 - OneTuple-0.2.1
 - OrderedBits-0.0.1.0
 - PrimitiveArray-0.7.0.0
-- safecopy-0.8.6
 - tuple-0.3.0.2
 - vector-0.11.0.0
 - vector-th-unbox-0.2.1.3
