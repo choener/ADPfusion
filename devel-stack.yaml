@@ -2,7 +2,7 @@ resolver: lts-5.1
 packages:
 - '.'
 - location:
-    git: /homes/brauerei2/choener/Repository/Lib-PrimitiveArray
+    git: guldendraak.bioinf.uni-leipzig.de:/homes/brauerei2/choener/Repository/Lib-PrimitiveArray
     commit: abbd079536772b0abf84ab4ac25d692184a5c1d4
   extra-dep: true
 
