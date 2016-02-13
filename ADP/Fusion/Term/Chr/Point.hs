@@ -44,7 +44,7 @@ instance
   ( TstCtx m ts s x0 i0 is (PointL I)
   ) => TermStream m (TermSymbol ts (Chr r x)) s (is:.PointL I) where
   termStream (ts:|Chr f xs) (cs:.IStatic d) (us:.PointL u) (is:.PointL i)
-    = seq xs . staticCheck (i>0 && i<=u && i<= VG.length xs)
+    = id -- seq xs . staticCheck (i>0 && i<=u && i<= VG.length xs)
     . S.map (\(TState s ii ee) -> TState s (ii:.:RiPlI i) (ee:. f xs (i-1)))
     . termStream ts cs us is
   {-# Inline termStream #-}

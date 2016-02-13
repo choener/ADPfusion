@@ -182,8 +182,10 @@ instance
   mutateTables h mrph tt@(_:.ITbl _ _ _ arr _) = do
     let (from,to) = bounds arr
     -- TODO (1) find the set of orders for the synvars
-    let !tbos = VU.fromList . nub . sort $ tableBigOrder tt
-    let !tlos = VU.fromList . nub . sort $ tableLittleOrder tt
+    let tbos = VU.fromList . nub . sort $ tableBigOrder tt
+        {-# Inline tbos #-}
+    let tlos = VU.fromList . nub . sort $ tableLittleOrder tt
+        {-# Inline tlos #-}
     VU.forM_ tbos $ \bo ->
       flip SM.mapM_ (streamUp from to) $ \k ->
         VU.forM_ tlos $ \lo ->
