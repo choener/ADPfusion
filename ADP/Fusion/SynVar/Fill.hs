@@ -112,6 +112,12 @@ instance (TableOrder ts) => TableOrder (ts:.IRec im c i x) where
 -- ** individual instances for filling a *single cell*
 
 instance
+  ( Monad om
+  ) => MutateCell p Z im om i where
+  mutateCell _ _ _ _ Z _ _ = return ()
+  {-# INLINE mutateCell #-}
+
+instance
   ( MutateCell CFG ts im om i
   , PrimMonad om
   ) => MutateCell CFG (ts:.IRec im c i x) im om i where
@@ -124,7 +130,6 @@ instance
   , MPrimArrayOps arr i x
   , MutateCell CFG ts im om i
   , PrimMonad om
---  , Show x, Show i
   ) => MutateCell CFG (ts:.ITbl im arr c i x) im om i where
   mutateCell h bo lo mrph (ts:.ITbl tbo tlo c arr f) lu i = do
     mutateCell h bo lo mrph ts lu i
@@ -182,23 +187,18 @@ instance
   mutateTables h mrph tt@(_:.ITbl _ _ _ arr _) = do
     let (from,to) = bounds arr
     -- TODO (1) find the set of orders for the synvars
-    let tbos = VU.fromList . nub . sort $ tableBigOrder tt
-        {-# Inline tbos #-}
-    let tlos = VU.fromList . nub . sort $ tableLittleOrder tt
-        {-# Inline tlos #-}
+    let !tbos = VU.fromList . nub . sort $ tableBigOrder tt
+    let !tlos = VU.fromList . nub . sort $ tableLittleOrder tt
     VU.forM_ tbos $ \bo ->
-      flip SM.mapM_ (streamUp from to) $ \k ->
-        VU.forM_ tlos $ \lo ->
-          --traceShow (bo,k,lo) $
-          mutateCell h bo lo (inline mrph) tt to k
+      case (VU.length tlos) of
+        1 -> let lo = VU.head tlos
+             in  flip SM.mapM_ (streamUp from to) $ \k ->
+                  mutateCell h bo lo (inline mrph) tt to k
+        _ -> flip SM.mapM_ (streamUp from to) $ \k ->
+              VU.forM_ tlos $ \lo ->
+                mutateCell h bo lo (inline mrph) tt to k
     return tt
   {-# INLINE mutateTables #-}
-
-instance
-  ( Monad om
-  ) => MutateCell p Z im om i where
-  mutateCell _ _ _ _ Z _ _ = return ()
-  {-# INLINE mutateCell #-}
 
 -- | Default table filling, assuming that the forward monad is just @IO@.
 --
