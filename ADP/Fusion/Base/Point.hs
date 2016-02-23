@@ -37,25 +37,13 @@ data instance RunningIndex (PointL C) = RiPlC !Int
 
 
 instance (Monad m) => MkStream m S (PointL I) where
-  mkStream S (IStatic d) (PointL u) (PointL j)
-    = staticCheck (j>=0 && j<=d) . singleton . ElmS $ RiPlI 0
-  mkStream S (IVariable _) (PointL u) (PointL j)
-    = staticCheck (0<=j) . singleton . ElmS $ RiPlI 0
+  mkStream S (IStatic d) (PointL u) (PointL i)
+    = staticCheck (i>=0 && i<=d && i<=u)
+    . singleton . ElmS $ RiPlI 0
+  mkStream S (IVariable _) (PointL u) (PointL i)
+    = staticCheck (i>=0 && i<=u)
+    . singleton . ElmS $ RiPlI 0
   {-# Inline mkStream #-}
-
-instance (Monad m) => MkStream m S (PointL O) where
-  mkStream S (OStatic d) (PointL u) (PointL i)
-    = staticCheck (i>=0 && i+d<=u && u == i) . singleton . ElmS $ RiPlO i (i+d)
-  mkStream S (OFirstLeft d) (PointL u) (PointL i)
-    = staticCheck (i>=0 && i+d<=u) . singleton . ElmS $ RiPlO i (i+d)
-  {-# Inline mkStream #-}
-
-instance (Monad m) => MkStream m S (PointL C) where
-  mkStream S Complemented (PointL u) (PointL i)
-    = staticCheck (i>=0 && i<=u) . singleton . ElmS $ RiPlC i
-  {-# Inline mkStream #-}
-
-
 
 instance
   ( Monad m
@@ -65,19 +53,24 @@ instance
     = map (\(ElmS zi) -> ElmS $ zi :.: RiPlI 0)
     . staticCheck (i>=0 && i<=d && i<=u)
     $ mkStream S vs lus is
-  -- TODO here, we have a problem in the interplay of @staticCheck@ or
-  -- @flatten@ and how we modify @is@. Apparently, once we demand to know
-  -- about @i@, fusion breaks down.
   mkStream S (vs:.IVariable d) (lus:.PointL u) (is:.PointL i)
     = map (\(ElmS zi) -> ElmS $ zi :.: RiPlI 0)
     . staticCheck (i>=0 && i<=u)
     $ mkStream S vs lus is
   {-# INLINE mkStream #-}
 
+
+
+instance (Monad m) => MkStream m S (PointL O) where
+  mkStream S (OStatic d) (PointL u) (PointL i)
+    = staticCheck (i>=0 && i+d<=u && u == i) . singleton . ElmS $ RiPlO i (i+d)
+  mkStream S (OFirstLeft d) (PointL u) (PointL i)
+    = staticCheck (i>=0 && i+d<=u) . singleton . ElmS $ RiPlO i (i+d)
+  {-# Inline mkStream #-}
+
 instance
   ( Monad m
   , MkStream m S is
---  , Context (Outside (is:.PointL)) ~ (Context (Outside is) :. OutsideContext Int)
   ) => MkStream m S (is:.PointL O) where
   mkStream S (vs:.OStatic d) (lus:.PointL u) (is:.PointL i)
     = staticCheck (i>=0 && i+d == u)
@@ -88,6 +81,15 @@ instance
     . map (\(ElmS zi) -> ElmS $ zi :.: RiPlO i (i+d))
     $ mkStream S vs us is
   {-# Inline mkStream #-}
+
+
+
+instance (Monad m) => MkStream m S (PointL C) where
+  mkStream S Complemented (PointL u) (PointL i)
+    = staticCheck (i>=0 && i<=u) . singleton . ElmS $ RiPlC i
+  {-# Inline mkStream #-}
+
+
 
 instance (MinSize c) => TableStaticVar u c (PointL I) where
   tableStaticVar _ _ (IStatic   d) _ = IVariable d
