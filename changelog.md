@@ -1,3 +1,9 @@
+0.5.1.0
+-------
+
+- improved table filling algorithm performance
+- some optimizations to terminal symbols
+
 0.5.0.0
 -------
 
