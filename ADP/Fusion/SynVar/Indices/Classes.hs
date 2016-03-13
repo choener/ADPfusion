@@ -35,10 +35,10 @@ instance AddIndexDense a Z Z Z where
 -- this will not be true -- herein for @Set@ index structures.
 
 data SvState s a u i = SvS
-  { sS  :: !s -- | state coming in from the left
---  , sIx :: !(RunningIndex a) -- | @I/C@ index from @sS@
-  , tx  :: !u -- | @I/C@ building up state to index the @table@.
-  , iIx :: !(RunningIndex i) -- | @I/C@ building up state to hand over to next symbol
+  { sS  :: !s -- ^ state coming in from the left
+--  , sIx :: !(RunningIndex a) --  @I/C@ index from @sS@
+  , tx  :: !u -- ^ @I/C@ building up state to index the @table@.
+  , iIx :: !(RunningIndex i) -- ^ @I/C@ building up state to hand over to next symbol
   }
 
 

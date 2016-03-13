@@ -146,10 +146,10 @@ instance (TableStaticVar us cs is, TableStaticVar u c i) => TableStaticVar (us:.
 
 
 data TermState s i e = TState
-  { tS  :: !s -- | state coming in from the left
---  , tIx :: !(RunningIndex a) -- | @I/C@ index from @sS@
-  , iIx :: !(RunningIndex i) -- | @I/C@ building up state to hand over to next symbol
-  , eTS :: !e -- | element data
+  { tS  :: !s -- ^ state coming in from the left
+--  , tIx :: !(RunningIndex a) --  @I/C@ index from @sS@
+  , iIx :: !(RunningIndex i) -- ^ @I/C@ building up state to hand over to next symbol
+  , eTS :: !e -- ^ element data
   }
 
 --getTIX :: (Element x0 a, s ~ Elm x0 a) => TermState s a i e -> RunningIndex a
