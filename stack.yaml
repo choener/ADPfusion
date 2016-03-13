@@ -17,5 +17,5 @@ flags:
 
 ghc-options:
 #  ADPfusion: -dshow-passes -fllvm -optlo-O3 -keep-llvm-file -optlo-dot-callgraph
-  ADPfusion: -fllvm -optlo-O3
+#  ADPfusion: -fllvm -optlo-O3
 
