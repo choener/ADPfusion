@@ -140,8 +140,9 @@ data StaticCheck a b = CheckLeft Bool a | CheckRight b
 staticCheck# :: Monad m => Int# -> S.Stream m a -> S.Stream m a
 staticCheck# !b (S.Stream step t) = S.Stream snew (SL t b) where
   {-# Inline [0] snew #-}
-  snew (SL s k) | 1# <- k   = return $ S.Skip (SR s)
-                | otherwise = return $ S.Done
+  snew (SL s k)
+    | 1# <- k   = return $ S.Skip (SR s)
+    | otherwise = return $ S.Done
   snew (SR s  ) = do r <- step s
                      case r of
                        S.Yield x s' -> return $ S.Yield x (SR s')
