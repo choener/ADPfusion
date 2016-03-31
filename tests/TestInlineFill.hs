@@ -25,6 +25,8 @@ data Simple m x r c = Simple
   , h   :: Stream m x -> m r
   }
 
+-- |
+
 simple :: (Monad m) => Simple m Int Int Int
 simple = Simple
   { nil = \ () -> 0
@@ -33,12 +35,16 @@ simple = Simple
   }
 {-# Inline simple #-}
 
+-- |
+
 max' :: Int -> Int -> Int
 max' (I# l) (I# r) =
   case l <=# r of
     0# -> I# l
     1# -> I# r
 {-# Inline max' #-}
+
+-- |
 
 grammar Simple{..} !c !(ILol a b l d) =
   let t = ITbl a b l d ( nil <<< Epsilon |||
@@ -84,7 +90,7 @@ mutateNew (Z:.ITbl bo lo uuu arr f) = Z:.ITbl bo lo uuu arr' f where
             return arr
 {-# Inline [0] mutateNew #-}
 
--- |
+-- | Type of tables.
 
 type T = ITbl Id Unboxed EmptyOk (PointL I) Int
 
