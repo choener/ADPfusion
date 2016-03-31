@@ -1,3 +1,11 @@
+0.5.2.0
+-------
+
+- table filling fully inlined in the forward algorithm
+- experimental PrimBool operations
+- note: these optimizations are mostly of interest for linear languages, where
+  is rule (or function call) is comparatively expensive
+
 0.5.1.0
 -------
 
