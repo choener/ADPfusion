@@ -17,6 +17,8 @@ import ADP.Fusion
 
 
 
+-- |
+
 data Simple m x r c = Simple
   { nil :: () -> x
   , unp :: x -> c -> x
