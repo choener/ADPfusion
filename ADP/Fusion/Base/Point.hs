@@ -41,10 +41,14 @@ data instance RunningIndex (PointL C) = RiPlC !Int
 
 instance (Monad m) => MkStream m S (PointL I) where
   mkStream S (IStatic (I# d)) (PointL (I# u)) (PointL (I# i))
-    = staticCheck (tagToEnum# ( (i >=# 0#) `andI#` (i <=# d) `andI#` (i <=# d) ) ) -- (i>=0 && i<=d && i<=u)
+--    = staticCheck (isTrue# ( (i >=# 0#) `andI#` (i <=# d) `andI#` (i <=# d) ) ) -- (i>=0 && i<=d && i<=u)
+    = staticCheck# ( (i >=# 0#) `andI#` (i <=# d) `andI#` (i <=# d) )
+--    = filter (const (isTrue# ( (i >=# 0#) `andI#` (i <=# d) `andI#` (i <=# d) ) ))
     . singleton . ElmS $ RiPlI 0
   mkStream S (IVariable _) (PointL (I# u)) (PointL (I# i))
-    = staticCheck (tagToEnum# ( (i >=# 0#) `andI#` (i <=# u) ) ) -- (i>=0 && i<=u)
+--    = staticCheck (isTrue# ( (i >=# 0#) `andI#` (i <=# u) ) ) -- (i>=0 && i<=u)
+    = staticCheck# ( (i >=# 0#) `andI#` (i <=# u) )
+--    = filter (const (isTrue# ( (i >=# 0#) `andI#` (i <=# u) ) ))
     . singleton . ElmS $ RiPlI 0
   {-# Inline mkStream #-}
 

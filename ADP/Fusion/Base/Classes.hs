@@ -1,8 +1,11 @@
 
+{-# Language MagicHash #-}
+
 module ADP.Fusion.Base.Classes where
 
 import           Data.Proxy
 import           Data.Strict.Tuple
+import           GHC.Exts hiding (build)
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
 import           Data.PrimitiveArray
@@ -134,6 +137,20 @@ staticCheck b (S.Stream step t) = b `seq` S.Stream snew (CheckLeft b t) where
 
 data StaticCheck a b = CheckLeft Bool a | CheckRight b
 
+staticCheck# :: Monad m => Int# -> S.Stream m a -> S.Stream m a
+staticCheck# !b (S.Stream step t) = S.Stream snew (SL t b) where
+  {-# Inline [0] snew #-}
+  snew (SL s k) | 1# <- k   = return $ S.Skip (SR s)
+                | otherwise = return $ S.Done
+  snew (SR s  ) = do r <- step s
+                     case r of
+                       S.Yield x s' -> return $ S.Yield x (SR s')
+                       S.Skip    s' -> return $ S.Skip    (SR s')
+                       S.Done       -> return $ S.Done
+{-# Inline staticCheck# #-}
+
+
+data SLR z = SL !z !Int# | SR !z
 
 -- | Constrains the behaviour of the memoizing tables. They may be 'EmptyOk' if
 -- @i==j@ is allowed (empty subwords or similar); or they may need 'NonEmpty'

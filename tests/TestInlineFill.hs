@@ -1,11 +1,13 @@
 
+{-# Language MagicHash #-}
+
 module Main where
 
 import Criterion.Main
 import Data.Vector.Fusion.Stream.Monadic (Stream,foldl',mapM_)
 import Data.Vector.Fusion.Util
 import Data.Vector.Unboxed (Vector, fromList)
-import GHC.Exts (inline)
+import GHC.Exts (inline, Int(..), (<=#) )
 import Prelude hiding (mapM_)
 import System.IO.Unsafe
 
@@ -25,9 +27,16 @@ simple :: (Monad m) => Simple m Int Int Int
 simple = Simple
   { nil = \ () -> 0
   , unp = \ x c -> x + c
-  , h = foldl' max 0
+  , h = foldl' max' 0
   }
 {-# Inline simple #-}
+
+max' :: Int -> Int -> Int
+max' (I# l) (I# r) =
+  case l <=# r of
+    0# -> I# l
+    1# -> I# r
+{-# Inline max' #-}
 
 grammar Simple{..} !c !(ILol a b l d) =
   let t = ITbl a b l d ( nil <<< Epsilon |||
@@ -41,7 +50,7 @@ grammar Simple{..} !c !(ILol a b l d) =
 -- This is "dangerous" because we violate purity.
 
 forwardDefault :: Vector Int -> Unboxed (PointL I) Int -> Int
-forwardDefault cs t = unId $ axiom u
+forwardDefault !cs !t = unId $ axiom u
   where (Z:.u) = mutateTablesDefault
                $ grammar simple
                    (chr cs)
@@ -52,7 +61,7 @@ forwardDefault cs t = unId $ axiom u
 -- |
 
 forwardNew :: Vector Int -> Unboxed (PointL I) Int -> Int
-forwardNew cs t = unId $ axiom u
+forwardNew !cs !t = unId $ axiom u
   where (Z:.u) = mutateNew
                $ grammar simple
                    (chr cs)
