@@ -1,4 +1,4 @@
-resolver: lts-5.2
+resolver: lts-5.10
 packages:
 - '.'
 
@@ -11,9 +11,10 @@ extra-deps:
 
 flags:
   ADPfusion:
-    examples: true
-    spectest: true
+    examples: false
+    spectest: false
     debug: true
+    devel: true
 
 ghc-options:
 #  ADPfusion: -dshow-passes -fllvm -optlo-O3 -keep-llvm-file -optlo-dot-callgraph
