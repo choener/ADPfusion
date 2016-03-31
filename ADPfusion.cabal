@@ -616,13 +616,13 @@ benchmark TestInlineFill
                     , TypeOperators
   ghc-options:
     -O2
-    -funbox-strict-fields
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000
   if flag(debug)
     ghc-options:
       -ddump-to-file
       -ddump-simpl
+      -ddump-cmm
       -dsuppress-all
 
 

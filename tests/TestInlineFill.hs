@@ -1,12 +1,13 @@
 
 module Main where
 
-import System.IO.Unsafe
 import Criterion.Main
 import Data.Vector.Fusion.Stream.Monadic (Stream,foldl',mapM_)
-import Data.Vector.Unboxed (Vector, fromList)
 import Data.Vector.Fusion.Util
+import Data.Vector.Unboxed (Vector, fromList)
+import GHC.Exts (inline)
 import Prelude hiding (mapM_)
+import System.IO.Unsafe
 
 import Data.PrimitiveArray hiding (fromList)
 
@@ -28,10 +29,10 @@ simple = Simple
   }
 {-# Inline simple #-}
 
-grammar Simple{..} c t' =
-  let t = t' ( nil <<< Epsilon |||
-               unp <<< t % c   ... h
-             )
+grammar Simple{..} !c !(ILol a b l d) =
+  let t = ITbl a b l d ( nil <<< Epsilon |||
+                         unp <<< t % c   ... h
+                       )
   in Z:.t
 
 -- | Measure table filling only. We hand over the table to be filled and
@@ -44,19 +45,22 @@ forwardDefault cs t = unId $ axiom u
   where (Z:.u) = mutateTablesDefault
                $ grammar simple
                    (chr cs)
-                   (ITbl 0 0 EmptyOk t)
+                   (ILol 0 0 EmptyOk t)
                :: Z :. T
 {-# NoInline forwardDefault #-}
+
+-- |
 
 forwardNew :: Vector Int -> Unboxed (PointL I) Int -> Int
 forwardNew cs t = unId $ axiom u
   where (Z:.u) = mutateNew
                $ grammar simple
                    (chr cs)
-                   (ITbl 0 0 EmptyOk t)
+                   (ILol 0 0 EmptyOk t)
                :: Z :. T
 {-# NoInline forwardNew #-}
 
+-- |
 
 mutateNew :: Z:.T -> Z:.T
 mutateNew (Z:.ITbl bo lo uuu arr f) = Z:.ITbl bo lo uuu arr' f where
@@ -64,18 +68,23 @@ mutateNew (Z:.ITbl bo lo uuu arr f) = Z:.ITbl bo lo uuu arr' f where
   arr' = unsafePerformIO $ do
             marr <- unsafeThaw arr
             flip mapM_ (streamUp from to) $ \k -> do
-              z <- (return . unId) $ f to k
+              !z <- (return . unId) $ inline $ f to k
               writeM marr k z
             return arr
-{-# Inline mutateNew #-}
+{-# Inline [0] mutateNew #-}
+
+-- |
 
 type T = ITbl Id Unboxed EmptyOk (PointL I) Int
 
+-- |
 
 main :: IO ()
 main = do
-  let !cs = fromList [1..20]
-      !t  = fromAssocs (pointLI 0) (pointLI 20) (-999999) []
+  let !from = 0
+  let !to   = 1000000
+  let !cs = fromList [from + 1 .. to]
+      !t  = fromAssocs (pointLI from) (pointLI to) (-999999) []
   let !s1 = forwardNew cs t
   let !rr = forwardDefault cs t
   let !s2 = forwardNew cs t

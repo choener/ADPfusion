@@ -22,11 +22,16 @@ import ADP.Fusion.SynVar.Indices
 -- | Immutable table.
 
 data ITbl m arr c i x where
-  ITbl :: { iTblBigOrder    :: !Int
-          , iTblLittleOrder :: !Int
+  ITbl :: { iTblBigOrder    :: {-# Unpack #-} !Int
+          , iTblLittleOrder :: {-# Unpack #-} !Int
           , iTblConstraint  :: !c
           , iTblArray       :: !(arr i x)
           , iTblFun         :: !(i -> i -> m x)
+          } -> ITbl m arr c i x
+  ILol :: { iTblBigOrder    :: {-# Unpack #-} !Int
+          , iTblLittleOrder :: {-# Unpack #-} !Int
+          , iTblConstraint  :: !c
+          , iTblArray       :: !(arr i x)
           } -> ITbl m arr c i x
 
 instance Build (ITbl m arr c i x)
