@@ -58,18 +58,18 @@ makeAlgebraProduct ''Signature
 -- @
 
 grammar Signature{..} x' a' b' i =
-  let x = x'  ( ovrlap <<< (split (Proxy :: Proxy "a") (Proxy :: Proxy Fragment) a)
-                        %  (split (Proxy :: Proxy "b") (Proxy :: Proxy Fragment) b)
-                        %  (split (Proxy :: Proxy "a") (Proxy :: Proxy Final   ) a)
-                        %  (split (Proxy :: Proxy "b") (Proxy :: Proxy Final   ) b) -- ... h
-                        %  (split (Proxy :: Proxy "c") (Proxy :: Proxy Fragment) b) ... h
+  let x = TW x' ( ovrlap <<< (split (Proxy :: Proxy "a") (Proxy :: Proxy Fragment) a)
+                          %  (split (Proxy :: Proxy "b") (Proxy :: Proxy Fragment) b)
+                          %  (split (Proxy :: Proxy "a") (Proxy :: Proxy Final   ) a)
+                          %  (split (Proxy :: Proxy "b") (Proxy :: Proxy Final   ) b)
+                          %  (split (Proxy :: Proxy "c") (Proxy :: Proxy Fragment) b) ... h
               )
-      a = a'  ( nilnil <<< (M:|Epsilon:|Epsilon)                           |||
-                brckts <<< (M:|chr i:|Deletion) % a % (M:|Deletion:|chr i) ... h
-              )
-      b = b'  ( nilnil <<< (M:|Epsilon:|Epsilon)                           |||
-                braces <<< (M:|chr i:|Deletion) % b % (M:|Deletion:|chr i) ... h
-              )
+      a = TW a' ( nilnil <<< (M:|Epsilon:|Epsilon)                           |||
+                  brckts <<< (M:|chr i:|Deletion) % a % (M:|Deletion:|chr i) ... h
+                )
+      b = TW b' ( nilnil <<< (M:|Epsilon:|Epsilon)                           |||
+                  braces <<< (M:|chr i:|Deletion) % b % (M:|Deletion:|chr i) ... h
+                )
   in Z:.x:.a:.b
 {-# Inline grammar #-}
 
@@ -114,19 +114,12 @@ overlappingPalindromes inp = (d,bs) where
   a :: T
   b :: T
   (Z:.x:.a:.b) = opForward i
-  {-
-  (Z:.x:.a:.b) = mutateTablesDefault $
-                   grammar score
-                   (ITbl 1 0 EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-999999) []))
-                   (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.subword 0 0:.subword 0 0) (Z:.subword 0 n:.subword 0 n) (-999999) []))
-                   (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.subword 0 0:.subword 0 0) (Z:.subword 0 n:.subword 0 n) (-999999) []))
-                   i
-                   -}
   (Z:.x':.a':.b') = grammar (score <|| pretty)
                       (toBacktrack x (undefined :: Id a -> Id a))
                       (toBacktrack a (undefined :: Id a -> Id a))
                       (toBacktrack b (undefined :: Id a -> Id a))
                       i
+                      :: Z:.XB:.TB:.TB
 {-# NoInline overlappingPalindromes #-}
 
 opForward :: VU.Vector Char -> Z:.X:.T:.T
@@ -140,9 +133,11 @@ opForward i =
         i
 {-# NoInline opForward #-}
 
-type X = ITbl Id Unboxed EmptyOk (Subword I) Int
-type T = ITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.Subword I:.Subword I) Int
+type X = TwITbl Id Unboxed EmptyOk (Subword I) Int
+type T = TwITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.Subword I:.Subword I) Int
 
+type XB = TwITblBt Unboxed EmptyOk (Subword I) Int Id Id [String]
+type TB = TwITblBt Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.Subword I:.Subword I) Int Id Id [String]
 
 main :: IO ()
 main = do

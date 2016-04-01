@@ -82,20 +82,20 @@ pretty = Nussinov
 -- |
 
 grammar Nussinov{..} t' u' v' c =
-  let t = t'  ( unp <<< t % c           |||
-                jux <<< t % c % t % c   |||
-                nil <<< Epsilon         |||
-                pse <<< (split (Proxy :: Proxy "U") (Proxy :: Proxy Fragment) u)
-                     %  (split (Proxy :: Proxy "V") (Proxy :: Proxy Fragment) v)
-                     %  (split (Proxy :: Proxy "U") (Proxy :: Proxy Final)    u)
-                     %  (split (Proxy :: Proxy "V") (Proxy :: Proxy Final)    v)  ... h
+  let t = TW t' ( unp <<< t % c           |||
+                  jux <<< t % c % t % c   |||
+                  nil <<< Epsilon         |||
+                  pse <<< (split (Proxy :: Proxy "U") (Proxy :: Proxy Fragment) u)
+                       %  (split (Proxy :: Proxy "V") (Proxy :: Proxy Fragment) v)
+                       %  (split (Proxy :: Proxy "U") (Proxy :: Proxy Final)    u)
+                       %  (split (Proxy :: Proxy "V") (Proxy :: Proxy Final)    v)  ... h
               )
-      u = u'  ( pk1 <<< (M:|t:|Deletion) % (M:|c:|Deletion) % u % (M:|Deletion:|t) % (M:|Deletion:|c) |||
-                nll <<< (M:|Epsilon:|Epsilon)                                                                 ... h
-              )
-      v = v'  ( pk2 <<< (M:|t:|Deletion) % (M:|c:|Deletion) % v % (M:|Deletion:|t) % (M:|Deletion:|c) |||
-                nll <<< (M:|Epsilon:|Epsilon)                                                                 ... h
-              )
+      u = TW u' ( pk1 <<< (M:|t:|Deletion) % (M:|c:|Deletion) % u % (M:|Deletion:|t) % (M:|Deletion:|c) |||
+                  nll <<< (M:|Epsilon:|Epsilon)                                                         ... h
+                )
+      v = TW v' ( pk2 <<< (M:|t:|Deletion) % (M:|c:|Deletion) % v % (M:|Deletion:|t) % (M:|Deletion:|c) |||
+                  nll <<< (M:|Epsilon:|Epsilon)                                                         ... h
+                )
   in Z:.t:.u:.v
 {-# INLINE grammar #-}
 
@@ -115,8 +115,11 @@ runPseudoknot k inp = (d, take k bs) where
   -}
 {-# NOINLINE runPseudoknot #-}
 
-type X = ITbl Id Unboxed EmptyOk (Subword I) Int
-type T = ITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.Subword I:.Subword I) Int
+type X = TwITbl Id Unboxed EmptyOk (Subword I) Int
+type T = TwITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.Subword I:.Subword I) Int
+
+type XB = TwITblBt Unboxed EmptyOk (Subword I) Int Id Id [String]
+type TB = TwITblBt Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.Subword I:.Subword I) Int Id Id [String]
 
 runInsideForward :: VU.Vector Char -> Z:.X:.T:.T
 runInsideForward i = mutateTablesWithHints (Proxy :: Proxy MonotoneMCFG)
@@ -135,6 +138,7 @@ runInsideBacktrack i (Z:.t:.u:.v) = unId $ axiom b
                           (toBacktrack u (undefined :: Id a -> Id a))
                           (toBacktrack v (undefined :: Id a -> Id a))
                           (chr i)
+                          :: Z:.XB:.TB:.TB
 {-# NoInline runInsideBacktrack #-}
 
 main = do

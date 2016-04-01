@@ -57,12 +57,12 @@ makeAlgebraProduct ''Signature
 -- @
 
 grammar Signature{..} x' a' i =
-  let x = x'  ( ovrlap <<< (split (Proxy :: Proxy "a") (Proxy :: Proxy Fragment) a)
-                        %  (split (Proxy :: Proxy "a") (Proxy :: Proxy Final   ) a) ... h
-              )
-      a = a'  ( nilnil <<< (M:|Epsilon:|Epsilon)                           |||
-                brckts <<< (M:|chr i:|Deletion) % a % (M:|Deletion:|chr i) ... h
-              )
+  let x = TW x' ( ovrlap <<< (split (Proxy :: Proxy "a") (Proxy :: Proxy Fragment) a)
+                          %  (split (Proxy :: Proxy "a") (Proxy :: Proxy Final   ) a) ... h
+                )
+      a = TW a' ( nilnil <<< (M:|Epsilon:|Epsilon)                           |||
+                  brckts <<< (M:|chr i:|Deletion) % a % (M:|Deletion:|chr i) ... h
+                )
   in Z:.x:.a
 {-# Inline grammar #-}
 
@@ -108,6 +108,7 @@ overlappingPalindromes inp = (d,bs) where
                   (toBacktrack x (undefined :: Id a -> Id a))
                   (toBacktrack a (undefined :: Id a -> Id a))
                   i
+                  :: Z:.XB:.TB
 {-# NoInline overlappingPalindromes #-}
 
 opForward :: VU.Vector Char -> Z:.X:.T
@@ -120,8 +121,11 @@ opForward i =
         i
 {-# NoInline opForward #-}
 
-type X = ITbl Id Unboxed EmptyOk (Subword I) Int
-type T = ITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.Subword I:.Subword I) Int
+type X = TwITbl Id Unboxed EmptyOk (Subword I) Int
+type T = TwITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.Subword I:.Subword I) Int
+
+type XB = TwITblBt Unboxed EmptyOk (Subword I) Int Id Id [String]
+type TB = TwITblBt Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.Subword I:.Subword I) Int Id Id [String]
 
 
 main :: IO ()

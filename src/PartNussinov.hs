@@ -89,12 +89,12 @@ pretty = Nussinov
 
 -- insideGrammar :: Nussinov m Char () x r -> c' -> t' -> (t', Subword -> m r)
 insideGrammar Nussinov{..} c a' p' =
-  let a = a'  ( unp <<< a % c     |||
-                jux <<< a % p     |||
-                nil <<< Epsilon   ... h
-              )
-      p = p'  ( pai <<< c % a % c ... h
-              )
+  let a = TW a' ( unp <<< a % c     |||
+                  jux <<< a % p     |||
+                  nil <<< Epsilon   ... h
+                )
+      p = TW p' ( pai <<< c % a % c ... h
+                )
   in Z:.p:.a
 {-# INLINE insideGrammar #-}
 
@@ -108,14 +108,14 @@ insideGrammar Nussinov{..} c a' p' =
 -- Q -> A B
 -- @
 
-outsideGrammar Nussinov{..} c a p b' q' =
-  let b = b'  ( unp <<< b % c         |||
-                jux <<< b % p         |||
-                pai <<< c % q % c     |||
-                nil <<< Epsilon       ... h
-              )
-      q = q'  ( jux <<< a % b         ... h
-              )
+outsideGrammar Nussinov{..} !c !a !p !b' !q' =
+  let b = TW b' ( unp <<< b % c         |||
+                  jux <<< b % p         |||
+                  pai <<< c % q % c     |||
+                  nil <<< Epsilon       ... h
+                )
+      q = TW q' ( jux <<< a % b         ... h
+                )
   in Z:.b:.q
 {-# INLINE outsideGrammar #-}
 
@@ -143,8 +143,8 @@ ensemble z = NussinovEnsemble
   }
 {-# Inline ensemble #-}
 
-ensembleGrammar NussinovEnsemble{..} i o v' =
-  let v = v' ( ens <<< i % (PeekIndex :: PeekIndex (Subword C)) % o ... hhh )
+ensembleGrammar NussinovEnsemble{..} !i !o !v' =
+  let v = TW v' ( ens <<< i % (PeekIndex :: PeekIndex (Subword C)) % o ... hhh )
   in  Z:.v
 {-# Inline ensembleGrammar #-}
 
@@ -161,10 +161,10 @@ runNussinov inp = (es,z,ys) where
   !(Z:.p:.a) = runInsideForward i
   !(Z:.b:.q) = runOutsideForward i a p
   es = runEnsembleForward z p q
-  za = let (ITbl _ _ _ arr _) = a in arr PA.! subword 0 n
-  zp = let (ITbl _ _ _ arr _) = p in arr PA.! subword 0 n
+  za = let (TW (ITbl _ _ _ arr) _) = a in arr PA.! subword 0 n
+  zp = let (TW (ITbl _ _ _ arr) _) = p in arr PA.! subword 0 n
   z  = za
-  e = let (ITbl _ _ _ arr _) = b in Log.sum [ arr PA.! (subword k k) | k <- [0 .. n] ]
+  e = let (TW (ITbl _ _ _ arr) _) = b in Log.sum [ arr PA.! (subword k k) | k <- [0 .. n] ]
   ys =  [ ( k
           , l
           , fwda PA.! subword k l
@@ -172,10 +172,10 @@ runNussinov inp = (es,z,ys) where
           , bwdb PA.! subword k l
           , bwdq PA.! subword k l
           )
-        | let (ITbl _ _ _ fwda _) = a
-        , let (ITbl _ _ _ fwdp _) = p
-        , let (ITbl _ _ _ bwdb _) = b
-        , let (ITbl _ _ _ bwdq _) = q
+        | let (TW (ITbl _ _ _ fwda) _) = a
+        , let (TW (ITbl _ _ _ fwdp) _) = p
+        , let (TW (ITbl _ _ _ bwdb) _) = b
+        , let (TW (ITbl _ _ _ bwdq) _) = q
         , k <- [0 .. n]
         , l <- [k .. n]
         ]
@@ -202,8 +202,8 @@ neat i = do let (es,z,ys) = runNussinov i
             forM_ es $ \ (Subword (i:.j),v) -> printf "%3d %3d  %0.4f\n" i j (exp $ ln v)
             putStrLn ""
 
-type TblI = ITbl Id Unboxed EmptyOk (Subword I) (Log Double)
-type TblO = ITbl Id Unboxed EmptyOk (Subword O) (Log Double)
+type TblI = TwITbl Id Unboxed EmptyOk (Subword I) (Log Double)
+type TblO = TwITbl Id Unboxed EmptyOk (Subword O) (Log Double)
 
 runInsideForward :: VU.Vector Char -> Z:.TblI:.TblI
 runInsideForward i = mutateTablesDefault
@@ -229,8 +229,8 @@ runEnsembleForward z i o = unId $ axiom g
   where (Z:.g) = ensembleGrammar (ensemble z)
                    i o
                    (IRec EmptyOk (Subword l) (Subword h))
-                 :: Z :. IRec Id EmptyOk (Subword C) [(Subword C, Log Double)]
-        (Subword l,Subword h) = let (ITbl _ _ _ arr _) = i in bounds arr
+                 :: Z :. TwIRec Id EmptyOk (Subword C) [(Subword C, Log Double)]
+        (Subword l,Subword h) = let (TW (ITbl _ _ _ arr) _) = i in bounds arr
 {-# NoInline runEnsembleForward #-}
 
 {-
