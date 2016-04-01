@@ -252,7 +252,7 @@ nwInsideForward i1 i2 = {-# SCC "nwInsideForward" #-} mutateTablesDefault $
 nwInsideBacktrack :: VU.Vector Char -> VU.Vector Char -> TwITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int -> [[String]]
 nwInsideBacktrack i1 i2 t = {-# SCC "nwInsideBacktrack" #-} unId $ axiom b
   where !(Z:.b) = grammar (sScore <|| sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
-                    :: Z:.TwITblBt Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int Id Id [String]
+--                    :: Z:.TwITblBt Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int Id Id [String]
 {-# NoInline nwInsideBacktrack #-}
 
 -- | The outside version of the Needleman-Wunsch alignment algorithm. The
@@ -270,7 +270,7 @@ runOutsideNeedlemanWunsch k i1' i2' = {-# SCC "runOutside" #-} (d, take k . unId
   -- d = let (ITbl _ _ arr _) = t in arr PA.! (O (Z:.PointL 0:.PointL 0))
   d = unId $ axiom t -- iTblArray t PA.! (Z:.PointL 0:.PointL 0)
   !(Z:.b) = grammar (sScore <|| sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
-              :: Z:.TwITblBt Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL O:.PointL O) Int Id Id [String]
+--              :: Z:.TwITblBt Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL O:.PointL O) Int Id Id [String]
 {-# Noinline runOutsideNeedlemanWunsch #-}
 
 -- | Again, to be able to observe performance, we have extracted the

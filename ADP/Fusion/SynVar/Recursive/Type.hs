@@ -62,8 +62,10 @@ instance
 instance
   ( Monad mB
   , IndexStream i
-  ) => Axiom (TwIRecBt c i x mF mB r) where
-  type AxiomStream (TwIRecBt c i x mF mB r) = mB [r]
+  , i ~ j
+  , m ~ mB
+  ) => Axiom (TW (Backtrack (TwIRec mF c i x) mF mB) (j -> j -> m [r])) where
+  type AxiomStream (TW (Backtrack (TwIRec mF c i x) mF mB) (j -> j -> m [r])) = mB [r]
   axiom (TW (BtIRec c l h fun) btfun) = do
     k <- head $ streamDown l h
     btfun h k

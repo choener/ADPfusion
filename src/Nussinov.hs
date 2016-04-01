@@ -119,7 +119,7 @@ runInsideForward i = mutateTablesDefault
 runInsideBacktrack :: VU.Vector Char -> TwITbl Id Unboxed EmptyOk (Subword I) Int -> [String]
 runInsideBacktrack i t = unId $ axiom b
   where !(Z:.b) = grammar (bpmax <|| pretty) (chr i) (toBacktrack t (undefined :: Id a -> Id a))
-                    :: Z:.TwITblBt Unboxed EmptyOk (Subword I) Int Id Id String
+--                    :: Z:.TwITblBt Unboxed EmptyOk (Subword I) Int Id Id String
 {-# NoInline runInsideBacktrack #-}
 
 main = do

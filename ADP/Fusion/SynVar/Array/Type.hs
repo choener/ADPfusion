@@ -62,12 +62,17 @@ instance
     return $ arr ! k
   {-# Inline axiom #-}
 
+-- | We need this somewhat annoying instance construction (@i ~ j@ and @m
+-- ~ mB@) in order to force selection of this instance.
+
 instance
   ( Monad mB
   , PrimArrayOps arr i x
   , IndexStream i
-  ) => Axiom (TwITblBt arr c i x mF mB r) where
-  type AxiomStream (TwITblBt arr c i x mF mB r) = mB [r]
+  , j ~ i
+  , m ~ mB
+  ) => Axiom (TW (Backtrack (TwITbl mF arr c i x) mF mB) (j -> j -> m [r])) where
+  type AxiomStream (TW (Backtrack (TwITbl mF arr c i x) mF mB) (j -> j -> m [r])) = mB [r]
   axiom (TW (BtITbl c arr) bt) = do
     h <- (head . uncurry streamDown) $ bounds arr
     bt (snd $ bounds arr) h

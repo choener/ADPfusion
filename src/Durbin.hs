@@ -122,7 +122,8 @@ runDurbin k inp = (d, take k . unId $ axiom b) where
               (chr i)
               (ITbl 0 0 EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-999999) [])) :: Z:.TwITbl Id Unboxed EmptyOk (Subword I) Int
   d = unId $ axiom t -- iTblArray t PA.! subword 0 n
-  !(Z:.b) = grammar (bpmax <|| pretty) (chr i) (toBacktrack t (undefined :: Id a -> Id a)) :: Z:.TwITblBt Unboxed EmptyOk (Subword I) Int Id Id String
+  !(Z:.b) = grammar (bpmax <|| pretty) (chr i) (toBacktrack t (undefined :: Id a -> Id a))
+              -- :: Z:.TwITblBt Unboxed EmptyOk (Subword I) Int Id Id String
 {-# NoInline runDurbin #-}
 
 main = do
