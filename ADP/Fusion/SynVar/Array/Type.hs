@@ -22,15 +22,14 @@ import ADP.Fusion.SynVar.TableWrap
 
 -- | Immutable table.
 
-data ITbl (m :: * -> *) arr c i x where
+data ITbl arr c i x where
   ITbl :: { iTblBigOrder    :: {-# Unpack #-} !Int
           , iTblLittleOrder :: {-# Unpack #-} !Int
           , iTblConstraint  :: !c
           , iTblArray       :: !(arr i x)
---          , iTblFun         :: !(i -> i -> m x)
-          } -> ITbl m arr c i x
+          } -> ITbl arr c i x
 
-type TwITbl m arr c i x = TW (ITbl m arr c i x) (i -> i -> m x)
+type TwITbl m arr c i x = TW (ITbl arr c i x) (i -> i -> m x)
 
 type TwITblBt arr c i x mF mB r = TW (Backtrack (TwITbl mF arr c i x) mF mB) (i -> i -> mB [r])
 

@@ -161,12 +161,12 @@ makeAlgebraProduct ''Signature
 -- indices. Just as in the spiritual father of @ADPfusion@, Robert
 -- Giegerichs @ADP@, we hide the actual index calculations.
 
-grammar Signature{..} a' i1 i2 =
-  let a = a'  ( step_step <<< a % (M:|chr i1:|chr i2)     |||
-                step_loop <<< a % (M:|chr i1:|Deletion  ) |||
-                loop_step <<< a % (M:|Deletion  :|chr i2) |||
-                nil_nil   <<< (M:|Epsilon:|Epsilon)       ... h
-              )
+grammar Signature{..} !a' !i1 !i2 =
+  let a = TW a' ( step_step <<< a % (M:|chr i1:|chr i2)     |||
+                  step_loop <<< a % (M:|chr i1:|Deletion  ) |||
+                  loop_step <<< a % (M:|Deletion  :|chr i2) |||
+                  nil_nil   <<< (M:|Epsilon:|Epsilon)       ... h
+                )
   in Z:.a
 {-# INLINE grammar #-}
 
@@ -240,7 +240,7 @@ runNeedlemanWunsch k i1' i2' = (d, take k bs) where
 -- For your own code, you can write as done here, or in the way of
 -- 'runOutsideNeedlemanWunsch'.
 
-nwInsideForward :: VU.Vector Char -> VU.Vector Char -> Z:.ITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int
+nwInsideForward :: VU.Vector Char -> VU.Vector Char -> Z:.TwITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int
 nwInsideForward i1 i2 = {-# SCC "nwInsideForward" #-} mutateTablesDefault $
                           grammar sScore
                           (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n1:.PointL n2) (-999999) []))
@@ -249,9 +249,10 @@ nwInsideForward i1 i2 = {-# SCC "nwInsideForward" #-} mutateTablesDefault $
         n2 = VU.length i2
 {-# NoInline nwInsideForward #-}
 
-nwInsideBacktrack :: VU.Vector Char -> VU.Vector Char -> ITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int -> [[String]]
+nwInsideBacktrack :: VU.Vector Char -> VU.Vector Char -> TwITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int -> [[String]]
 nwInsideBacktrack i1 i2 t = {-# SCC "nwInsideBacktrack" #-} unId $ axiom b
   where !(Z:.b) = grammar (sScore <|| sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
+                    :: Z:.TwITblBt Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int Id Id [String]
 {-# NoInline nwInsideBacktrack #-}
 
 -- | The outside version of the Needleman-Wunsch alignment algorithm. The
@@ -267,14 +268,15 @@ runOutsideNeedlemanWunsch k i1' i2' = {-# SCC "runOutside" #-} (d, take k . unId
   n2 = VU.length i2
   !(Z:.t) = nwOutsideForward i1 i2
   -- d = let (ITbl _ _ arr _) = t in arr PA.! (O (Z:.PointL 0:.PointL 0))
-  d = iTblArray t PA.! (Z:.PointL 0:.PointL 0)
+  d = unId $ axiom t -- iTblArray t PA.! (Z:.PointL 0:.PointL 0)
   !(Z:.b) = grammar (sScore <|| sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
+              :: Z:.TwITblBt Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL O:.PointL O) Int Id Id [String]
 {-# Noinline runOutsideNeedlemanWunsch #-}
 
 -- | Again, to be able to observe performance, we have extracted the
 -- outside-table-filling part.
 
-nwOutsideForward :: VU.Vector Char -> VU.Vector Char -> Z:.ITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL O:.PointL O) Int
+nwOutsideForward :: VU.Vector Char -> VU.Vector Char -> Z:.TwITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL O:.PointL O) Int
 nwOutsideForward i1 i2 = {-# SCC "nwOutsideForward" #-} mutateTablesDefault $
                            grammar sScore
                            (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n1:.PointL n2) (-999999) []))

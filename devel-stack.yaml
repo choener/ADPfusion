@@ -13,10 +13,10 @@ extra-deps:
 
 flags:
   ADPfusion:
-    examples: false
+    examples: true
     spectest: false
-    debug: false
-    devel: false
+    debug: true
+    devel: true
     btstruc: true
 
 ghc-options:

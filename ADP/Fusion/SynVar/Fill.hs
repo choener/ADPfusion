@@ -104,7 +104,7 @@ instance (TableOrder ts) => TableOrder (ts:.TwITbl im arr c i x) where
 
 -- | @IRec@s do not need an order, given that they do not memoize.
 
-instance (TableOrder ts) => TableOrder (ts:.IRec im c i x) where
+instance (TableOrder ts) => TableOrder (ts:.TwIRec im c i x) where
   tableLittleOrder (ts:._) = tableLittleOrder ts
   tableBigOrder    (ts:._) = tableBigOrder ts
   {-# Inline tableLittleOrder #-}
@@ -121,7 +121,7 @@ instance
 instance
   ( MutateCell CFG ts im om i
   , PrimMonad om
-  ) => MutateCell CFG (ts:.IRec im c i x) im om i where
+  ) => MutateCell CFG (ts:.TwIRec im c i x) im om i where
   mutateCell h bo lo mrph (ts:._) lu i = do
     mutateCell h bo lo mrph ts lu i
   {-# Inline mutateCell #-}

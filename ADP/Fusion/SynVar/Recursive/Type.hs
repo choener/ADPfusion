@@ -27,20 +27,19 @@ import ADP.Fusion.SynVar.TableWrap
 -- if there is only a (small) constant number of parses of an @IRec@
 -- synvar.
 
-data IRec (m :: * -> *) c i x where
+data IRec c i x where
   IRec :: { iRecConstraint  :: !c
           , iRecFrom        :: !i
           , iRecTo          :: !i
---          , iRecFun         :: !(i -> i -> m x)
-          } -> IRec m c i x
+          } -> IRec c i x
 
-type TwIRec m c i x = TW (IRec m c i x) (i -> i -> m x)
+type TwIRec m c i x = TW (IRec c i x) (i -> i -> m x)
 
 type TwIRecBt c i x mF mB r = TW (Backtrack (TwIRec mF c i x) mF mB) (i -> i -> mB [r])
 
-instance Build (IRec m c i x)
+instance Build (TwIRec m c i x)
 
-type instance TermArg (IRec m c i x) = x
+type instance TermArg (TwIRec m c i x) = x
 
 instance GenBacktrackTable (TwIRec mF c i x) mF mB where
   data Backtrack (TwIRec mF c i x) mF mB = BtIRec !c !i !i !(i -> i -> mB x) -- !(i -> i -> mB [r])

@@ -99,13 +99,13 @@ pretty = Durbin
 {-# INLINE pretty #-}
 
 -- grammar :: Durbin m Char () x r -> c' -> t' -> (t', Subword -> m r)
-grammar Durbin{..} c t' =
-  let t = t'  ( nil <<< Epsilon     |||
-                lef <<< c  % t      |||
-                rig <<< t  % c      |||
-                pai <<< c  % t  % c |||
-                spl <<< tt % tt     ... h
-              )
+grammar Durbin{..} !c !t' =
+  let t = TW t' ( nil <<< Epsilon     |||
+                  lef <<< c  % t      |||
+                  rig <<< t  % c      |||
+                  pai <<< c  % t  % c |||
+                  spl <<< tt % tt     ... h
+                )
       tt = toNonEmpty t
       {-# Inline tt #-}
   in (Z:.t)
@@ -120,9 +120,9 @@ runDurbin k inp = (d, take k . unId $ axiom b) where
   !(Z:.t) = mutateTablesDefault
           $ grammar bpmax
               (chr i)
-              (ITbl 0 0 EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-999999) [])) :: Z:.ITbl Id Unboxed EmptyOk (Subword I) Int
-  d = iTblArray t PA.! subword 0 n
-  !(Z:.b) = grammar (bpmax <|| pretty) (chr i) (toBacktrack t (undefined :: Id a -> Id a)) -- :: Z:.Backtrack (ITbl Id Unboxed EmptyOk (Subword I) Int) Id Id String
+              (ITbl 0 0 EmptyOk (PA.fromAssocs (subword 0 0) (subword 0 n) (-999999) [])) :: Z:.TwITbl Id Unboxed EmptyOk (Subword I) Int
+  d = unId $ axiom t -- iTblArray t PA.! subword 0 n
+  !(Z:.b) = grammar (bpmax <|| pretty) (chr i) (toBacktrack t (undefined :: Id a -> Id a)) :: Z:.TwITblBt Unboxed EmptyOk (Subword I) Int Id Id String
 {-# NoInline runDurbin #-}
 
 main = do

@@ -125,6 +125,7 @@ library
     ADP.Fusion.SynVar.Split
     ADP.Fusion.SynVar.Split.Subword
     ADP.Fusion.SynVar.Split.Type
+    ADP.Fusion.SynVar.TableWrap
     ADP.Fusion.Term
     ADP.Fusion.Term.Chr
     ADP.Fusion.Term.Chr.Point
