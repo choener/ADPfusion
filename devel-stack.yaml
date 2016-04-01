@@ -15,8 +15,9 @@ flags:
   ADPfusion:
     examples: false
     spectest: false
-    debug: true
-    devel: true
+    debug: false
+    devel: false
+    btstruc: true
 
 ghc-options:
 #  ADPfusion: -dshow-passes -fllvm -optlo-O3 -keep-llvm-file -optlo-dot-callgraph

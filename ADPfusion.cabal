@@ -69,6 +69,11 @@ flag devel
   default:      False
   manual:       True
 
+flag btstruc
+  description:  performance test for backtracking structures
+  default:      False
+  manual:       True
+
 
 
 library
@@ -624,6 +629,40 @@ benchmark TestInlineFill
       -ddump-simpl
       -ddump-cmm
       -dsuppress-all
+
+benchmark TestBacktrackingStructures
+  type:
+    exitcode-stdio-1.0
+
+  if flag(btstruc)
+    buildable:
+      True
+    build-depends: base
+                 , template-haskell
+                 , fmlist             >= 0.9  &&  < 0.10
+                 , vector
+                 , criterion          >= 1.1  &&  < 1.2
+  else
+    buildable:
+      False
+  hs-source-dirs:
+    tests
+  main-is:
+    BacktrackingStructures.hs
+  default-language:
+    Haskell2010
+  default-extensions: BangPatterns
+                    , FlexibleContexts
+                    , FlexibleInstances
+                    , MultiParamTypeClasses
+                    , RecordWildCards
+                    , TemplateHaskell
+                    , TypeFamilies
+                    , TypeOperators
+  ghc-options:
+    -O2
+    -funfolding-use-threshold1000
+    -funfolding-keeness-factor1000
 
 
 
