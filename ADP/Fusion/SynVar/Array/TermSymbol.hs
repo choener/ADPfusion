@@ -19,6 +19,7 @@ import Data.PrimitiveArray hiding (map)
 import ADP.Fusion.Base
 import ADP.Fusion.SynVar.Array.Type
 import ADP.Fusion.SynVar.Backtrack
+import ADP.Fusion.SynVar.TableWrap
 
 
 
@@ -29,16 +30,16 @@ import ADP.Fusion.SynVar.Backtrack
 instance
   ( TstCtx m ts s x0 i0 is (Subword I)
   , PrimArrayOps arr (Subword I) x
-  ) => TermStream m (TermSymbol ts (ITbl m arr c (Subword I) x)) s (is:.Subword I) where
+  ) => TermStream m (TermSymbol ts (TwITbl m arr c (Subword I) x)) s (is:.Subword I) where
   --
-  termStream (ts:|ITbl _ _ _ t _) (cs:.IStatic ()) (us:.u) (is:.Subword (i:.j))
+  termStream (ts:|TW (ITbl _ _ _ t) _) (cs:.IStatic ()) (us:.u) (is:.Subword (i:.j))
     = map (\(TState s ii ee) ->
               let RiSwI l = getIndex (getIdx s) (Proxy :: PRI is (Subword I))
                   lj      = subword l j
               in  TState s (ii:.:RiSwI j) (ee:.t!lj) )
     . termStream ts cs us is
   --
-  termStream (ts:|ITbl _ _ _ t _) (cs:.IVariable ()) (us:.u) (is:.Subword (i:.j))
+  termStream (ts:|TW (ITbl _ _ _ t) _) (cs:.IVariable ()) (us:.u) (is:.Subword (i:.j))
     = flatten mk step . termStream ts cs us is
     where mk tstate@(TState s ii ee) =
               let RiSwI l = getIndex (getIdx s) (Proxy :: PRI is (Subword I))
@@ -59,14 +60,14 @@ instance
 instance
   ( TstCtx mB ts s x0 i0 is (Subword I)
   , PrimArrayOps arr (Subword I) x
-  ) => TermStream mB (TermSymbol ts (Backtrack (ITbl mF arr c (Subword I) x) mF mB r)) s (is:.Subword I) where
-  termStream (ts:|BtITbl c t bt) (cs:.IStatic ()) (us:.u) (is:.Subword (i:.j))
+  ) => TermStream mB (TermSymbol ts (TwITblBt arr c (Subword I) x mF mB r)) s (is:.Subword I) where
+  termStream (ts:|TW (BtITbl c t) bt) (cs:.IStatic ()) (us:.u) (is:.Subword (i:.j))
     = mapM (\(TState s ii ee) ->
                 let RiSwI l = getIndex (getIdx s) (Proxy :: PRI is (Subword I))
                     lj      = subword l j
                 in  bt u lj >>= \ ~bb -> return $ TState s (ii:.:RiSwI j) (ee:.(t!lj,bb)) )
     . termStream ts cs us is
-  termStream (ts:|BtITbl c t bt) (cs:.IVariable ()) (us:.u) (is:.Subword (i:.j))
+  termStream (ts:|TW (BtITbl c t) bt) (cs:.IVariable ()) (us:.u) (is:.Subword (i:.j))
     = flatten mk step . termStream ts cs us is
     where mk tstate@(TState s ii ee) =
               let RiSwI l = getIndex (getIdx s) (Proxy :: PRI is (Subword I))
@@ -130,19 +131,19 @@ instance
 --  {-# Inline terminalStream #-}
 
 
-instance TermStaticVar (ITbl m arr c (Subword I) x) (Subword I) where
+instance TermStaticVar (TwITbl m arr c (Subword I) x) (Subword I) where
   termStaticVar _ (IStatic   d) _ = IVariable d
   termStaticVar _ (IVariable d) _ = IVariable d
-  termStreamIndex (ITbl _ _ _ _ _) (IStatic   d) (Subword (i:.j)) = subword i j -- TODO minSize handling !
-  termStreamIndex (ITbl _ _ _ _ _) (IVariable d) (Subword (i:.j)) = subword i j -- TODO minsize handling
+  termStreamIndex (TW (ITbl _ _ _ _) _) (IStatic   d) (Subword (i:.j)) = subword i j -- TODO minSize handling !
+  termStreamIndex (TW (ITbl _ _ _ _) _) (IVariable d) (Subword (i:.j)) = subword i j -- TODO minsize handling
   {-# Inline [0] termStaticVar   #-}
   {-# Inline [0] termStreamIndex #-}
 
-instance TermStaticVar (Backtrack (ITbl mF arr c (Subword I) x) mF mB r) (Subword I) where
+instance TermStaticVar (TwITblBt arr c (Subword I) x mF mB r) (Subword I) where
   termStaticVar _ (IStatic   d) _ = IVariable d
   termStaticVar _ (IVariable d) _ = IVariable d
-  termStreamIndex (BtITbl _ _ _) (IStatic   d) (Subword (i:.j)) = subword i j -- TODO minSize handling !
-  termStreamIndex (BtITbl _ _ _) (IVariable d) (Subword (i:.j)) = subword i j -- TODO minsize handling
+  termStreamIndex (TW (BtITbl _ _) _) (IStatic   d) (Subword (i:.j)) = subword i j -- TODO minSize handling !
+  termStreamIndex (TW (BtITbl _ _) _) (IVariable d) (Subword (i:.j)) = subword i j -- TODO minsize handling
   {-# Inline [0] termStaticVar   #-}
   {-# Inline [0] termStreamIndex #-}
 

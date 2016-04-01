@@ -8,6 +8,7 @@ module ADP.Fusion.SynVar
   , module ADP.Fusion.SynVar.Fill
   , module ADP.Fusion.SynVar.Recursive
   , module ADP.Fusion.SynVar.Split
+  , module ADP.Fusion.SynVar.TableWrap
   ) where
 
 import ADP.Fusion.SynVar.Array
@@ -16,4 +17,5 @@ import ADP.Fusion.SynVar.Backtrack
 import ADP.Fusion.SynVar.Fill
 import ADP.Fusion.SynVar.Recursive
 import ADP.Fusion.SynVar.Split
+import ADP.Fusion.SynVar.TableWrap
 

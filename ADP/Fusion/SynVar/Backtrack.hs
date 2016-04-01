@@ -7,6 +7,7 @@ module ADP.Fusion.SynVar.Backtrack where
 import Data.Vector.Fusion.Stream.Monadic (Stream)
 
 import ADP.Fusion.Base
+import ADP.Fusion.SynVar.TableWrap
 
 
 
@@ -19,10 +20,10 @@ import ADP.Fusion.Base
 -- @mB@ so as to be able to extract forward results in the backtracking
 -- phase.
 
-class GenBacktrackTable t (mF :: * -> *) (mB :: * -> *) r where
-  data Backtrack t (mF :: * -> *) (mB :: * -> *) r :: *
+class GenBacktrackTable t (mF :: * -> *) (mB :: * -> *) where
+  data Backtrack t (mF :: * -> *) (mB :: * -> *) :: *
   type BacktrackIndex t :: *
-  toBacktrack :: t -> (forall a . mF a -> mB a) -> (BacktrackIndex t -> BacktrackIndex t -> mB [r]) -> Backtrack t mF mB r
+  toBacktrack :: t -> (forall a . mF a -> mB a) {- -> (BacktrackIndex t -> BacktrackIndex t -> mB [r]) -} -> Backtrack t mF mB
 
-instance Build (Backtrack t mF mB r)
+-- instance Build (TW (Backtrack t mF mB) f)
 

@@ -18,6 +18,7 @@ import ADP.Fusion.SynVar.Indices
 
 import ADP.Fusion.SynVar.Array.TermSymbol
 import ADP.Fusion.SynVar.Array.Type
+import ADP.Fusion.SynVar.TableWrap
 
 
 
@@ -35,12 +36,12 @@ type ITblCx m ls arr x u c i =
 
 iTblStream
   :: forall m ls arr x u c i . ITblCx m ls arr x u c i
-  => Pair ls (ITbl m arr c u x)
+  => Pair ls (TwITbl m arr c u x)
   -> Context i
   -> i
   -> i
-  -> Stream m (Elm (ls :!: ITbl m arr c u x) i)
-iTblStream (ls :!: ITbl _ _ c t _) vs us is
+  -> Stream m (Elm (ls :!: TwITbl m arr c u x) i)
+iTblStream (ls :!: TW (ITbl _ _ c t) _) vs us is
   = map (\(s,tt,ii') -> ElmITbl (t!tt) ii' s)
   . addIndexDense1 c vs us is
   $ mkStream ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
@@ -50,12 +51,12 @@ iTblStream (ls :!: ITbl _ _ c t _) vs us is
 
 btITblStream
   :: forall mB mF ls arr x r u c i . ITblCx mB ls arr x u c i
-  => Pair ls (Backtrack (ITbl mF arr c u x) mF mB r)
+  => Pair ls (TwITblBt arr c u x mF mB r)
   -> Context i
   -> i
   -> i
-  -> Stream mB (Elm (ls :!: Backtrack (ITbl mF arr c u x) mF mB r) i)
-btITblStream (ls :!: BtITbl c t bt) vs us is
+  -> Stream mB (Elm (ls :!: TwITblBt arr c u x mF mB r) i)
+btITblStream (ls :!: TW (BtITbl c t) bt) vs us is
     = mapM (\(s,tt,ii') -> bt us' tt >>= \ ~bb -> return $ ElmBtITbl (t!tt) bb ii' s)
     . addIndexDense1 c vs us is
     $ mkStream ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
@@ -69,54 +70,54 @@ btITblStream (ls :!: BtITbl c t bt) vs us is
 instance
   ( Monad m
   , ITblCx m ls arr x u c (i I)
-  ) => MkStream m (ls :!: ITbl m arr c u x) (i I) where
+  ) => MkStream m (ls :!: TwITbl m arr c u x) (i I) where
   mkStream = iTblStream
   {-# Inline mkStream #-}
 
 instance
   ( Monad m
   , ITblCx m ls arr x u c (i O)
-  ) => MkStream m (ls :!: ITbl m arr c u x) (i O) where
+  ) => MkStream m (ls :!: TwITbl m arr c u x) (i O) where
   mkStream = iTblStream
   {-# Inline mkStream #-}
 
 instance
   ( Monad m
   , ITblCx m ls arr x u c (i C)
-  ) => MkStream m (ls :!: ITbl m arr c u x) (i C) where
+  ) => MkStream m (ls :!: TwITbl m arr c u x) (i C) where
   mkStream = iTblStream
   {-# Inline mkStream #-}
 
 instance
   ( Monad mB
   , ITblCx mB ls arr x u c (i I)
-  ) => MkStream mB (ls :!: Backtrack (ITbl mF arr c u x) mF mB r) (i I) where
+  ) => MkStream mB (ls :!: TwITblBt arr c u x mF mB r) (i I) where
   mkStream = btITblStream
   {-# Inline mkStream #-}
 
 instance
   ( Monad mB
   , ITblCx mB ls arr x u c (i O)
-  ) => MkStream mB (ls :!: Backtrack (ITbl mF arr c u x) mF mB r) (i O) where
+  ) => MkStream mB (ls :!: TwITblBt arr c u x mF mB r) (i O) where
   mkStream = btITblStream
   {-# Inline mkStream #-}
 
 instance
   ( Monad mB
   , ITblCx mB ls arr x u c (i C)
-  ) => MkStream mB (ls :!: Backtrack (ITbl mF arr c u x) mF mB r) (i C) where
+  ) => MkStream mB (ls :!: TwITblBt arr c u x mF mB r) (i C) where
   mkStream = btITblStream
   {-# Inline mkStream #-}
 
-instance ModifyConstraint (ITbl m arr EmptyOk i x) where
-  type TNE (ITbl m arr EmptyOk i x) = ITbl m arr NonEmpty i x
-  type TE  (ITbl m arr EmptyOk i x) = ITbl m arr EmptyOk  i x
-  toNonEmpty (ITbl b l _ arr f) = ITbl b l NonEmpty arr f
+instance ModifyConstraint (TwITbl m arr EmptyOk i x) where
+  type TNE (TwITbl m arr EmptyOk i x) = TwITbl m arr NonEmpty i x
+  type TE  (TwITbl m arr EmptyOk i x) = TwITbl m arr EmptyOk  i x
+  toNonEmpty (TW (ITbl b l _ arr) f) = TW (ITbl b l NonEmpty arr) f
   {-# Inline toNonEmpty #-}
 
-instance ModifyConstraint (Backtrack (ITbl mF arr EmptyOk i x) mF mB r) where
-  type TNE (Backtrack (ITbl mF arr EmptyOk i x) mF mB r) = Backtrack (ITbl mF arr NonEmpty i x) mF mB r
-  type TE  (Backtrack (ITbl mF arr EmptyOk i x) mF mB r) = Backtrack (ITbl mF arr EmptyOk  i x) mF mB r
-  toNonEmpty (BtITbl _ arr bt) = BtITbl NonEmpty arr bt
+instance ModifyConstraint (TwITblBt arr EmptyOk i x mF mB r) where
+  type TNE (TwITblBt arr EmptyOk i x mF mB r) = TwITblBt arr NonEmpty i x mF mB r
+  type TE  (TwITblBt arr EmptyOk i x mF mB r) = TwITblBt arr EmptyOk  i x mF mB r
+  toNonEmpty (TW (BtITbl _ arr) bt) = TW (BtITbl NonEmpty arr) bt
   {-# Inline toNonEmpty #-}
 

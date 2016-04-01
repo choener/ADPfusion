@@ -13,6 +13,7 @@ import ADP.Fusion.Base
 import ADP.Fusion.SynVar.Axiom
 import ADP.Fusion.SynVar.Backtrack
 import ADP.Fusion.SynVar.Indices
+import ADP.Fusion.SynVar.TableWrap
 
 
 
@@ -26,21 +27,25 @@ import ADP.Fusion.SynVar.Indices
 -- if there is only a (small) constant number of parses of an @IRec@
 -- synvar.
 
-data IRec m c i x where
+data IRec (m :: * -> *) c i x where
   IRec :: { iRecConstraint  :: !c
           , iRecFrom        :: !i
           , iRecTo          :: !i
-          , iRecFun         :: !(i -> i -> m x)
+--          , iRecFun         :: !(i -> i -> m x)
           } -> IRec m c i x
+
+type TwIRec m c i x = TW (IRec m c i x) (i -> i -> m x)
+
+type TwIRecBt c i x mF mB r = TW (Backtrack (TwIRec mF c i x) mF mB) (i -> i -> mB [r])
 
 instance Build (IRec m c i x)
 
 type instance TermArg (IRec m c i x) = x
 
-instance GenBacktrackTable (IRec mF c i x) mF mB r where
-  data Backtrack (IRec mF c i x) mF mB r = BtIRec !c !i !i !(i -> i -> mB x) !(i -> i -> mB [r])
-  type BacktrackIndex (IRec mF c i x) = i
-  toBacktrack (IRec c iF iT f) mrph bt = BtIRec c iF iT (\lu i -> mrph $ f lu i) bt
+instance GenBacktrackTable (TwIRec mF c i x) mF mB where
+  data Backtrack (TwIRec mF c i x) mF mB = BtIRec !c !i !i !(i -> i -> mB x) -- !(i -> i -> mB [r])
+  type BacktrackIndex (TwIRec mF c i x) = i
+  toBacktrack (TW (IRec c iF iT) f) mrph = BtIRec c iF iT (\lu i -> mrph $ f lu i)
   {-# Inline toBacktrack #-}
 
 
@@ -48,9 +53,9 @@ instance GenBacktrackTable (IRec mF c i x) mF mB r where
 instance
   ( Monad m
   , IndexStream i
-  ) => Axiom (IRec m c i x) where
-  type AxiomStream (IRec m c i x) = m x
-  axiom (IRec _ l h fun) = do
+  ) => Axiom (TwIRec m c i x) where
+  type AxiomStream (TwIRec m c i x) = m x
+  axiom (TW (IRec _ l h) fun) = do
     k <- head $ streamDown l h
     fun h k
   {-# Inline axiom #-}
@@ -58,26 +63,26 @@ instance
 instance
   ( Monad mB
   , IndexStream i
-  ) => Axiom (Backtrack (IRec mF c i x) mF mB r) where
-  type AxiomStream (Backtrack (IRec mF c i x) mF mB r) = mB [r]
-  axiom (BtIRec c l h fun btfun) = do
+  ) => Axiom (TwIRecBt c i x mF mB r) where
+  type AxiomStream (TwIRecBt c i x mF mB r) = mB [r]
+  axiom (TW (BtIRec c l h fun) btfun) = do
     k <- head $ streamDown l h
     btfun h k
   {-# Inline axiom #-}
 
 
 
-instance Element ls i => Element (ls :!: IRec m c u x) i where
-  data Elm (ls :!: IRec m c u x) i = ElmIRec !x !(RunningIndex i) !(Elm ls i)
-  type Arg (ls :!: IRec m c u x)   = Arg ls :. x
+instance Element ls i => Element (ls :!: TwIRec m c u x) i where
+  data Elm (ls :!: TwIRec m c u x) i = ElmIRec !x !(RunningIndex i) !(Elm ls i)
+  type Arg (ls :!: TwIRec m c u x)   = Arg ls :. x
   getArg (ElmIRec x _ ls) = getArg ls :. x
   getIdx (ElmIRec _ i _ ) = i
   {-# Inline getArg #-}
   {-# Inline getIdx #-}
 
-instance Element ls i => Element (ls :!: (Backtrack (IRec mF c u x) mF mB r)) i where
-  data Elm (ls :!: (Backtrack (IRec mF c u x) mF mB r)) i = ElmBtIRec !x [r] !(RunningIndex i) !(Elm ls i)
-  type Arg (ls :!: (Backtrack (IRec mF c u x) mF mB r))   = Arg ls :. (x, [r])
+instance Element ls i => Element (ls :!: TwIRecBt c u x mF mB r) i where
+  data Elm (ls :!: (TwIRecBt c u x mF mB r)) i = ElmBtIRec !x [r] !(RunningIndex i) !(Elm ls i)
+  type Arg (ls :!: (TwIRecBt c u x mF mB r))   = Arg ls :. (x, [r])
   getArg (ElmBtIRec x s _ ls) = getArg ls :. (x,s)
   getIdx (ElmBtIRec _ _ i _ ) = i
   {-# Inline getArg #-}
@@ -89,8 +94,8 @@ instance
   , TableStaticVar (us:.u) (cs:.c) (is:.i)
   , AddIndexDense (Elm ls (is:.i)) (us:.u) (cs:.c) (is:.i)
   , MkStream m ls (is:.i)
-  ) => MkStream m (ls :!: IRec m (cs:.c) (us:.u) x) (is:.i) where
-  mkStream (ls :!: IRec c l h fun) vs us is
+  ) => MkStream m (ls :!: TwIRec m (cs:.c) (us:.u) x) (is:.i) where
+  mkStream (ls :!: TW (IRec c l h) fun) vs us is
     = mapM (\(s,tt,ii) -> (\res -> ElmIRec res ii s) <$> fun h tt)
     . addIndexDense c vs us is
     $ mkStream ls (tableStaticVar (Proxy :: Proxy (us:.u)) c vs is) us (tableStreamIndex (Proxy :: Proxy (us:.u)) c vs is)
@@ -102,8 +107,8 @@ instance
   , TableStaticVar (us:.u) (cs:.c) (is:.i)
   , AddIndexDense (Elm ls (is:.i)) (us:.u) (cs:.c) (is:.i)
   , MkStream mB ls (is:.i)
-  ) => MkStream mB (ls :!: Backtrack (IRec mF (cs:.c) (us:.u) x) mF mB r) (is:.i) where
-  mkStream (ls :!: BtIRec c l h fun bt) vs us is
+  ) => MkStream mB (ls :!: TwIRecBt (cs:.c) (us:.u) x mF mB r) (is:.i) where
+  mkStream (ls :!: TW (BtIRec c l h fun) bt) vs us is
     = mapM (\(s,tt,ii) -> (\res bb -> ElmBtIRec res bb ii s) <$> fun h tt <*> bt h tt)
     . addIndexDense c vs us is
     $ mkStream ls (tableStaticVar (Proxy :: Proxy (us:.u)) c vs is) us (tableStreamIndex (Proxy :: Proxy (us:.u)) c vs is)
