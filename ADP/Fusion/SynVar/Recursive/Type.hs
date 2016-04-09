@@ -37,7 +37,9 @@ type TwIRec m c i x = TW (IRec c i x) (i -> i -> m x)
 
 type TwIRecBt c i x mF mB r = TW (Backtrack (TwIRec mF c i x) mF mB) (i -> i -> mB [r])
 
-instance Build (TwIRec m c i x)
+instance Build (TwIRec   m c i x)
+
+instance Build (TwIRecBt c i x mF mB r)
 
 type instance TermArg (TwIRec m c i x) = x
 
