@@ -77,8 +77,8 @@ flag btstruc
 
 
 library
-  build-depends: base               >= 4.7      && < 4.9
-               , bits               >= 0.4      && < 0.5
+  build-depends: base               >= 4.7      && < 5.0
+               , bits               >= 0.4      && < 0.6
                , containers
                , mmorph             >= 1.0      && < 1.1
                , mtl                >= 2.0      && < 2.3
@@ -89,7 +89,7 @@ library
                , strict             >= 0.3      && < 0.4
                , template-haskell   >= 2.0      && < 3.0
                , th-orphans         >= 0.12     && < 0.14
-               , transformers       >= 0.3      && < 0.5
+               , transformers       >= 0.3      && < 0.6
                , tuple              >= 0.3      && < 0.4
                , vector             >= 0.11     && < 0.12
 
@@ -341,7 +341,6 @@ executable Durbin
                     , TypeOperators
   ghc-options:
     -O2
-    -fcpr-off
     -funbox-strict-fields
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000

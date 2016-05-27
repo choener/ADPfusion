@@ -50,7 +50,11 @@ makeProductInstances :: Name -> Q [Dec]
 makeProductInstances tyconName = do
   t <- reify tyconName
   case t of
+#if MIN_VERSION_template_haskell(2,11,0)
+    TyConI (DataD ctx tyConName args maybeKind cs d) -> do
+#else
     TyConI (DataD ctx tyConName args cs d) -> do
+#endif
       let m = getMonadName args
       case cs of
         [RecC dataconName funs] -> do

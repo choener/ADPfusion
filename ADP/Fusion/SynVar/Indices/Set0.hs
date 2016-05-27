@@ -153,5 +153,5 @@ instance
   ) => AddIndexDense a (us:.BitSet I) (cs:.c) (is:.BitSet O) where
 --  addIndexDenseGo (cs:.c) (vs:.OFirstLeft rb) (us:.u) (is:.i)
 --    = error "ping"
-  {-# Inline addIndexDenseGo #-}
+--  {-# Inline addIndexDenseGo #-}
 

@@ -37,8 +37,8 @@ import           ADP.Fusion
 -- C*_kj -> B_ik  A*_ij
 
 prop_O_sv_OI ox@(Subword (i:.k)) = zs === ls where
-  toa = ITbl 0 0 EmptyOk xoS (\ _ _ -> Id (1,1))
-  tic = ITbl 0 0 EmptyOk xsS (\ _ _ -> Id (1,1))
+  toa = TW (ITbl 0 0 EmptyOk xoS) (\ _ _ -> Id (1,1))
+  tic = TW (ITbl 0 0 EmptyOk xsS) (\ _ _ -> Id (1,1))
   zs = ((,) <<< toa % tic ... stoList) maxSWo ox
   ls = [ ( unsafeIndex xoS (subword i j)
          , unsafeIndex xsS (subword k j) )
