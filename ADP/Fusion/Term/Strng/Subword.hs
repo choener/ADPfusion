@@ -33,9 +33,7 @@ instance
     = S.filter (\(TState s _ _) ->
                     -- let Subword (k:.l) = getIndex a (Proxy :: Proxy (is:.Subword I))
                     let RiSwI l = getIndex (getIdx s) (Proxy :: PRI is (Subword I))
-                        -- RiSwI k = getIndex (getIdx $ getElm s) (Proxy :: PRI is (Subword I))
-                        k = undefined
-                    in l-k <= maxL)
+                    in j-l <= maxL)
     . S.map (\(TState s ii ee) ->
                 --let Subword (_:.l) = getIndex a (Proxy :: Proxy (is:.Subword I))
                 --    o              = getIndex b (Proxy :: Proxy (is:.Subword I))
@@ -47,11 +45,23 @@ instance
     = S.flatten mk step . termStream ts cs us is
     where mk (tstate@(TState s ii ee)) =
             let RiSwI k = getIndex (getIdx s) (Proxy :: PRI is (Subword I))
-            in  return (tstate, k+minL, min j (k+maxL))
-          step = undefined
+            in  return (tstate, k+minL, min j (k+maxL), k+minL)
+          step ( TState s ii ee, minK, maxK, curK )
+            | curK > maxK = return $ S.Done
+            | otherwise   = let RiSwI k = getIndex (getIdx s) (Proxy :: PRI is (Subword I))
+                            in  do return $ S.Yield (TState s (ii:.:RiSwI curK) (ee:.f k (curK-k) v)) (TState s ii ee, minK, maxK, curK +1)
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline termStream #-}
+
+-- | TODO this is almost certainlywrong
+
+instance TermStaticVar (Strng v x) (Subword I) where
+  termStaticVar _ (IStatic d) _ = IVariable d
+  termStaticVar _ (IVariable d) _ = IVariable d
+  termStreamIndex _ _ (Subword (i:.j)) = subword i (j-1)
+  {-# Inline [0] termStaticVar   #-}
+  {-# Inline [0] termStreamIndex #-}
 
 {-
 
