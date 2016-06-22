@@ -1,26 +1,16 @@
-resolver: nightly-2016-05-27
+resolver: nightly-2016-06-21
 
 packages:
 - .
-- location:
-    git: https://github.com/ekmett/bits
-    commit: ff98de1305cd39f2e888135e33b08b3c1592ae53
-  extra-dep: true
 - location: ../Lib-OrderedBits
   extra-dep: true
 - location: ../Lib-PrimitiveArray
   extra-dep: true
 - location: ../Lib-BenchmarkHistory
   extra-dep: true
-- location:
-    git: https://github.com/acid-state/safecopy
-    commit: ab81c6b6973360f4db37318550b63739710073dc
-
 
 extra-deps:
 - cereal-vector-0.2.0.1
-- log-domain-0.10.3.1
-- hashable-extras-0.2.3
 
 flags:
   ADPfusion:
