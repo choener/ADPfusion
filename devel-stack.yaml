@@ -1,14 +1,14 @@
 resolver: lts-5.10
 packages:
 - '.'
-- location: ../Lib-PrimitiveArray/
+- location: ../Lib-PrimitiveArray
+  extra-dep: true
+- location: ../Lib-OrderedBits
   extra-dep: true
 
 extra-deps:
 - BenchmarkHistory-0.0.0.2
 - OneTuple-0.2.1
-- OrderedBits-0.0.1.0
-- PrimitiveArray-0.7.0.1
 - tuple-0.3.0.2
 
 flags:
