@@ -14,7 +14,7 @@
 module ADP.Fusion.TH
   ( makeAlgebraProduct
   , (<||)
-  , (***)
+  , (**>)
   ) where
 
 import           Data.List

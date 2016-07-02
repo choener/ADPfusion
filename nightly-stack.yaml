@@ -1,4 +1,4 @@
-resolver: nightly-2016-06-21
+resolver: nightly-2016-07-01
 
 packages:
 - .
@@ -24,5 +24,5 @@ allow-newer: true
 
 ghc-options:
 #  ADPfusion: -dshow-passes -fllvm -optlo-O3 -keep-llvm-file -optlo-dot-callgraph
-  ADPfusion: -fllvm -optlo-O3 -optlo-mem2reg -optlo-indvars -optlo-loop-simplify
+#  ADPfusion: -fllvm -optlo-O3 -optlo-mem2reg -optlo-indvars -optlo-loop-simplify
 

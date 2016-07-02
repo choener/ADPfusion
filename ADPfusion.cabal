@@ -77,21 +77,21 @@ flag btstruc
 
 
 library
-  build-depends: base               >= 4.7      && < 5.0
-               , bits               >= 0.4      && < 0.6
+  build-depends: base               >= 4.7    && < 5.0
+               , bits               >= 0.4    && < 0.6
                , containers
-               , mmorph             >= 1.0      && < 1.1
-               , mtl                >= 2.0      && < 2.3
-               , OrderedBits        >= 0.0.1.0  && < 0.0.2.0
-               , primitive          >= 0.5.4    && < 0.7
-               , PrimitiveArray     >= 0.7.0    && < 0.7.1
-               , QuickCheck         >= 2.7      && < 2.9
-               , strict             >= 0.3      && < 0.4
-               , template-haskell   >= 2.0      && < 3.0
-               , th-orphans         >= 0.12     && < 0.14
-               , transformers       >= 0.3      && < 0.6
-               , tuple              >= 0.3      && < 0.4
-               , vector             >= 0.11     && < 0.12
+               , mmorph             >= 1.0    && < 1.1
+               , mtl                >= 2.0    && < 2.3
+               , OrderedBits        >= 0.0.1  && < 0.0.2
+               , primitive          >= 0.5.4  && < 0.7
+               , PrimitiveArray     >= 0.7.0  && < 0.7.1
+               , QuickCheck         >= 2.7    && < 2.9
+               , strict             >= 0.3    && < 0.4
+               , template-haskell   >= 2.0    && < 3.0
+               , th-orphans         >= 0.12   && < 0.14
+               , transformers       >= 0.3    && < 0.6
+               , tuple              >= 0.3    && < 0.4
+               , vector             >= 0.11   && < 0.12
 
   exposed-modules:
     ADP.Fusion

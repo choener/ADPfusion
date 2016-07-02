@@ -22,10 +22,13 @@ import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Generic as VG
 import qualified Data.Vector.Generic.Mutable as VGM
 import qualified Data.Vector.Mutable as VM
+import qualified Data.Set as S
 
 import           Data.PrimitiveArray ( (:.)(..) , Z(..) )
 
 import           ADP.Fusion.TH.Common
+
+import Control.Monad.Reader
 
 
 
@@ -39,10 +42,13 @@ class ProductBacktracking sigF sigB where
 
 -- | The ADP-established product operation. Returns a vector of results,
 -- along the lines of what the ADP @f *** b@ provides.
+--
+-- @f **> g@ assumes a vector-to-vector function @f@, and
+-- a vector-to-scalar function @g@.
 
 class ProductCombining sigF sigB where
   type SigCombining sigF sigB :: *
-  (***) :: sigF -> sigB -> SigCombining sigF sigB
+  (**>) :: sigF -> sigB -> SigCombining sigF sigB
 
 -- | Creates instances for all products given a signature data type.
 
@@ -65,11 +71,10 @@ makeProductInstances tyconName = do
           mR <- newName "mR"
           xR <- newName "xR"
           rR <- newName "rR"
---          let lType    = buildLeftType  tyconName (m', x, r) (mL, xL)        args
           let lType    = buildRightType tyconName (m', x, r) (mL, xL, rL)    args
           let rType    = buildRightType tyconName (m', x, r) (mR, xR, rR)    args
           let (fs,hs) = partition ((`notElem` [h]) . sel1) funs
-          let sigBType = buildSigBacktrackingType  tyconName (m', x, r) xL (mR, xR, rR) args
+          sigBType <- buildSigBacktrackingType  tyconName (m', x, r) xL (mR, xR, rR) args
           Clause psB (NormalB bB) dsB <- genAlgProdFunctions buildBacktrackingChoice dataconName funs fs hs
           iB <- [d| instance (Monad $(varT mL), Monad $(varT mR), Eq $(varT xL), $(varT mL) ~ $(varT mR), $(varT xL) ~ $(varT rL))
                       => ProductBacktracking $(return lType) $(return rType) where
@@ -82,16 +87,13 @@ makeProductInstances tyconName = do
           vG <- newName "vG"
           sigPType <- buildSigCombiningType tyconName vG (m', x, r) (mL, xL, rL) (mR, xR, rR) args
           Clause psC (NormalB bC) dsC <- genAlgProdFunctions buildCombiningChoice    dataconName funs fs hs
-          iC <- [d| instance (Monad $(varT mL), Monad $(varT mR), Eq $(varT xL), $(varT mL) ~ $(varT mR) {- , VG.Vector $(varT vG) ($(varT rL),$(varT rR)) -} )
+          iC <- [d| instance (Monad $(varT mL), Monad $(varT mR), Eq $(varT xL), Ord $(varT xL), Ord $(varT xR), $(varT mL) ~ $(varT mR) ) -- , VG.Vector $(varT vG) ($(varT rL),$(varT rR)) )
                       => ProductCombining $(return lType) $(return rType) where
                           type SigCombining $(return lType) $(return rType) = $(return sigPType)
-                          (***) = undefined
-                          {-
-                           - (***) = $(return $ LamE psC $ LetE dsC bC)
-                           - -}
-                          {-# Inline (***) #-}
+                          (**>) = $(return $ LamE psC $ LetE dsC bC)
+                          {-# Inline (**>) #-}
                 |]
-          return $ iB -- ++ iC
+          return $ iB ++ iC
 
 -- | Returns the 'Name' of the monad variable.
 
@@ -143,23 +145,26 @@ buildRightType tycon (m, x, r) (mR, xR, rR) = foldl AppT (ConT tycon) . map (Var
 -- return type. Hence, we have @AppT ListT (VarT xR)@ ; i.e. we want to
 -- return results in a list.
 
-buildSigBacktrackingType :: Name -> (Name, Name, Name) -> (Name) -> (Name, Name, Name) -> [TyVarBndr] -> Type
-buildSigBacktrackingType tycon (m, x, r) (xL) (mR, xR, rR) = foldl AppT (ConT tycon) . map go
+buildSigBacktrackingType :: Name -> (Name, Name, Name) -> (Name) -> (Name, Name, Name) -> [TyVarBndr] -> TypeQ
+buildSigBacktrackingType tycon (m, x, r) (xL) (mR, xR, rR) = foldl appT (conT tycon) . map go
   where go (PlainTV z)
-          | z == m    = VarT mR
-          | z == x    = (AppT (AppT (TupleT 2) (VarT xL)) (AppT ListT (VarT xR)))
-          | z == r    = VarT rR
-          | otherwise = VarT z
+          | z == m    = varT mR
+          | z == x    = [t| ($(varT xL) , [ $(varT xR) ] ) |]
+          | z == r    = varT rR
+          | otherwise = varT z
         go (KindedTV z _) = go (PlainTV z)
 
--- | Build up the type for backtracking. We want laziness in the right
--- return type. Hence, we have @AppT ListT (VarT xR)@.
+-- |
+--
+-- [1] we want a list for @[xR]@ because this will make it lazy here. At
+-- least that was the reason for backtracking. For forward mode, we may not
+-- want this. We will have to change the function combination then?
 
 buildSigCombiningType :: Name -> Name -> (Name, Name, Name) -> (Name, Name, Name) -> (Name, Name, Name) -> [TyVarBndr] -> TypeQ
 buildSigCombiningType tycon vG (m, x, r) (mL, xL, rL) (mR, xR, rR) = foldl appT (conT tycon) . map go
   where go (PlainTV z)
           | z == m    = varT mR
-          | z == x    = [t| ($(varT xL) , $(varT xR)) |]
+          | z == x    = [t| ($(varT xL) , [ $(varT xR) ] ) |]   -- [1]
           | z == r    = [t| V.Vector ($(varT rL) , $(varT rR)) |]
           | otherwise = varT z
         go (KindedTV z _) = go (PlainTV z)
@@ -253,15 +258,7 @@ recBuildLamPat
 recBuildLamPat nts fL' fR' ts = do
   -- here we just run through all arguments, either creating an @x@ and
   -- a @ys@ for a non-term or a @t@ for a term.
-  -- ps <- sequence [ if t `elem` nts then tupP [newName "x" >>= varP, newName "ys" >>= varP] else (newName "t" >>= varP) | t<-ts]
   ps <- mapM argTyArgs ts
-  {-
-  let buildLfun f (SynVar (TupP [VarP v,_])) = appE f (varE v)
-      buildLfun f (Term   (VarP v         )) = appE f (varE v)
-      buildLfun f (StackedVars vs) =
-        let
-        in  error "buildLfun: WRITE ME" -- appE f (varE $ mkName "foo")
-  -}
   lamPat <- buildLamPat ps
   lfun <- buildLns (VarE fL') ps -- foldl buildLfun (varE fL') ps
   rfun <- buildRns (VarE fR') ps
@@ -303,14 +300,27 @@ buildLns f' ps = foldl go (return f') ps
         get (SynVar (TupP [VarP v,_])) = v
         get (Term   (VarP t)         ) = t
 
--- |
+-- | Build the right-hand side of a function combined in @f <|| g@. This
+-- splits the paired synvars @(x,xs)@ such that we calculate @f x@ and @g
+-- xs@.
 --
--- NOTE
+-- NOTE If we want to write
 --
 -- @
 -- [ f x | x <- xs ]
+-- @
+--
+-- then in template haskell, this looks like this:
+--
+-- @
 -- CompE [BindS (VarP x) (VarE xs), NoBindS (AppE (VarE f) (VarE x))]
 -- @
+--
+-- The @NoBindS@ is the final binding of @f@ to the individual @x@'s, while
+-- the prior @x <- xs@ comes from @BindS (VarP x) (VarE xs)@.
+--
+-- TODO This is where we might be able to improve performance if we can
+-- optimize @[f x y | x <- xs, y <- ys]@ for @concatMap@ in @vector@.
 
 buildRns
   :: Exp
@@ -335,31 +345,6 @@ buildRns f' ps = do
   funApp <- foldl go (return f') ps
   return . CompE $ rs ++ [NoBindS funApp]
 
-{-
-  -- helper function for the argument build-up
-  let go :: [ArgTy Pat] -> [Name]
-      go [] = []
-      go ((SynVar      k       ):ks) = sy M.! k  : go ks
-      go ((Term        (VarP v)):ks) = v         : go ks -- should also cover StackedTerms, NilVar ! (because we build this earlier in @argTypArgs@)
-      go ((StackedVars ls      ):ks) = (error "here") : go ks -- need to work more
-  -- more verbose build-up of the arguments for @funApp@.
-  let xs = go ps
-  -- function application
-  funApp <- noBindS $ foldl (\g z -> appE g (varE z)) (return f) xs
-  return . CompE $ rs ++ [funApp]
--}
-{-
-buildRns f ps = do
-  ys <- sequence [ newName "y" | TupP [_,VarP v] <- ps ]
-  let vs = zipWith (\y v -> (BindS (VarP y) (VarE v))) ys [ v | TupP [_,VarP v] <- ps ]
-  let xs = go ps ys
-  ff <- noBindS $ foldl (\g z -> appE g (varE z)) (return f) xs
-  return $ CompE $ vs ++ [ff]
-  where go [] [] = []
-        go (VarP v : gs) ys     = v : go gs ys  -- keep terminal binders
-        go (TupP _ : gs) (v:ys) = v : go gs ys  -- insert new binders
-        go as bs = error $ show ("not done?", as, bs)
--}
 
 -- | Type for backtracking functions.
 --
@@ -379,65 +364,59 @@ type Choice = Name -> Name -> Q Exp
 -- lazily created backtracking from this!
 --
 -- This means strict optimization AND lazy backtracking
+--
+-- TODO in principle, we do more work than necessary. The line
+-- @hFres <- ...@ evaluates the optimal choice from the @fst@ elements
+-- again. As long as the cost is small compared to the evaluation of @snd@
+-- (or the list-comprehension based creation of all parses), this won't
+-- matter much.
 
 buildBacktrackingChoice :: Choice
 buildBacktrackingChoice hL' hR' =
-  [| \xs -> do        -- first, create a boxed, mutable vector from the results
-               ysM <- streamToVector xs -- VGM.unstream xs :: m (VM.MVector s (t1,[t2]))
-                      -- apply first choice
-               hFres <- $(varE hL') $ SM.map fst $ vectorToStream ysM
-                     -- second choice on snd elements, then concat'ed up
-                     -- TODO good candidate for rewriting into flatten
-                     -- operation!
-               {-
-                - $(varE hR') $ SM.concatMap (SM.fromList . snd) $ SM.filter ((hFres==) . fst) $ vectorToStream ysM
-                -}
-               $(varE hR') $ SM.fromList $ concatMap snd $ filter ((hFres==) . fst) $ V.toList ysM
+  [| \xs -> do
+      -- turn the stream into a list
+      ysM <- SM.toList xs
+      -- based only on the @fst@ elements, select optimal value
+      hFres <- $(varE hL') $ SM.map fst $ SM.fromList ysM
+      -- filter accordingly
+      $(varE hR') $ SM.fromList $ concatMap snd $ filter ((hFres==) . fst) $ ysM
   |]
+
+-- | We assume parses of type @(x,y)@ in a vector @<(x,y)>@. the function
+-- acting on @x@ will produce a subset @<x>@ (in vector form). the function
+-- acting on @y@ produces scalars @y@. We have @actFst :: <x> -> <x>@ and
+-- @actSnd :: <y> -> y@. This in total should yield @<(x,y)> -> <(x,y)>@.
+--
+-- TODO This should create @generic@ vectors, that are specialized by the
+-- table they are stored into.
 
 buildCombiningChoice :: Choice
 buildCombiningChoice hL' hR' =
-  [| \xs -> do       -- first, create a boxed, mutable vector from the results
-               --ys <- streamToVector xs
-               --      -- apply first choice
-               --fs <- $(varE hL') $ SM.map fst $ vectorToStream ys
-               --      -- generate a vector of vectors, one for each
-               --      -- surviving @f@
-               --vs <- V.forM fs $ \f -> do
-               --        -- keep only those @ys@ that have @f@
-               --        let as = V.filter ((f==) . fst) ys
-               --        -- apply @hR'@ to those, but only to the @snd@
-               --        -- elements
-               --        bs <- streamToVector =<< $(varE hR') $ SM.map snd $ vectorToStream $ as
-               --        -- return the combined result, with @f@ attached.
-               --        return $ V.map (\z -> (f,z)) bs
-               undefined
-               {-
-                - $ V.concat $ V.toList vs
-                -}
-               -- TODO we should return a @newtype Many x = forall (G.Vector v x) => Many { v x }
-               -- Together with a closed type family, this gives us a good
-               -- way to encode that we have classified DP
+  [| \xs -> do
+      -- -- lets begin with the list of parses
+      -- ys <- SM.toList xs
+      -- -- but now, we actually get a list of co-optimals to keep. Yes,
+      -- -- a @[fst]@ list.
+      -- cooptFsts <- S.fromList <$> ( ( $(varE hL') $ SM.map fst $ SM.fromList ys ) >>= SM.toList )
+      -- -- now we create a map with all the coopts, where we collect in the
+      -- -- value parts the list of parses for each co-optimal @snd@ for
+      -- -- a @fst@.
+      -- let cooptMap = M.fromListWith (++) [ y | y <- ys, y `S.member` cooptFsts ]
+      -- -- We now need to map @actSnd@ over the resulting intermediates
+      -- actSnd <- mapM (\y -> $(varE hR') (SM.fromList y)) cooptMap
+      -- -- a vector with co-optimals, each one associated with its optimal
+      -- -- @snd@.
+      -- return . VG.fromList . M.toList $ actSnd
+      return undefined
   |]
 
--- | Transform a monadic stream monadically into a vector.
+-- | Turn a stream into a vector.
 --
--- TODO Improve code!
+-- TODO need to be improved in terms of performance.
 
-streamToVector :: (Monad m) => SM.Stream m x -> m (V.Vector x)
-streamToVector xs = do
-  l <- SM.toList xs
-  let v = V.fromList l
-  return v
-{-# Inline streamToVector #-}
-
--- | Transform a vector into a monadic stream.
---
--- TODO improve code!
-
-vectorToStream :: (Monad m) => V.Vector x -> SM.Stream m x
-vectorToStream = SM.fromList . V.toList
-{-# Inline vectorToStream #-}
+streamToVectorM :: (Monad m, VG.Vector v a) => SM.Stream m a -> m (v a)
+streamToVectorM s = SM.toList s >>= return . VG.fromList
+{-# Inline streamToVectorM #-}
 
 -- | Gets the names used in the evaluation function. This returns one
 -- 'Name' for each variable.
@@ -481,15 +460,6 @@ getRuleSynVarNames nts t' = go t' where
 )
 -}
 
-{-
-getRuleSynVarNames nts t' = undefined where -- go t' where
-  go t
-    | VarT x <- t = [x]
-    | AppT (AppT ArrowT (VarT x  )) y <- t = x : go y   -- this is a single-dim variable, return the name that the incoming data is bound to (not necessarily syntactic)
-    | AppT (AppT ArrowT (AppT _ _)) y <- t = mkName "[]" : go y   -- this captures that we have a multi-dim terminal.
-    | AppT (AppT ArrowT (TupleT 0)) y <- t = mkName "()" : go y   -- this case captures things like @nil :: () -> x@ for rules like @nil <<< Epsilon@.
-    | otherwise            = error $ "getRuleSynVarNames error: " ++ show t ++ "    in:    " ++ show t'
--}
 
 data ArgTy x
   -- | This @SynVar@ spans the full column of tapes; i.e. it is a normal
