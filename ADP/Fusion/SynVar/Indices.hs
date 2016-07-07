@@ -7,14 +7,12 @@ module ADP.Fusion.SynVar.Indices
   ( module ADP.Fusion.SynVar.Indices.Classes
   , module ADP.Fusion.SynVar.Indices.Point
   , module ADP.Fusion.SynVar.Indices.Set0
-  , module ADP.Fusion.SynVar.Indices.Subword
   , module ADP.Fusion.SynVar.Indices.Unit
   ) where
 
 import ADP.Fusion.SynVar.Indices.Classes
 import ADP.Fusion.SynVar.Indices.Point
 import ADP.Fusion.SynVar.Indices.Set0
-import ADP.Fusion.SynVar.Indices.Subword
 import ADP.Fusion.SynVar.Indices.Unit
 
 

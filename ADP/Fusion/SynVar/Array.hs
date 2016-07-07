@@ -16,7 +16,6 @@ import ADP.Fusion.Base
 import ADP.Fusion.SynVar.Backtrack
 import ADP.Fusion.SynVar.Indices
 
-import ADP.Fusion.SynVar.Array.TermSymbol
 import ADP.Fusion.SynVar.Array.Type
 import ADP.Fusion.SynVar.TableWrap
 

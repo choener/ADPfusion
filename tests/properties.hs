@@ -10,10 +10,9 @@ import Test.Framework
 
 import QuickCheck.Point   (testgroup_point)
 import QuickCheck.Set     (testgroup_set)
-import QuickCheck.Subword (testgroup_subword)
 
 
 
 main :: IO ()
-main = defaultMain [testgroup_point, testgroup_set, testgroup_subword]
+main = defaultMain [testgroup_point, testgroup_set]
 

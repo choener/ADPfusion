@@ -2,11 +2,9 @@
 module ADP.Fusion.SynVar.Recursive
   ( module ADP.Fusion.SynVar.Recursive.Type
   , module ADP.Fusion.SynVar.Recursive.Point
-  , module ADP.Fusion.SynVar.Recursive.Subword
   ) where
 
 import ADP.Fusion.SynVar.Recursive.Point
-import ADP.Fusion.SynVar.Recursive.Subword
 import ADP.Fusion.SynVar.Recursive.Type
 
 
