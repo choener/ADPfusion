@@ -29,23 +29,42 @@ data ITbl arr c i x where
           , iTblArray       :: !(arr i x)
           } -> ITbl arr c i x
 
+data instance TW m (ITbl arr c i x) =
+  TwITbl
+    { twITblMemo :: !(ITbl arr c i x)
+    , twITblFun  :: i -> i -> m x
+    }
+
+-- data instance TW m (Backtrack (TW m (ITbl arr c i x) mF mB) r)
+
+{-
+
 type TwITbl m arr c i x = TW (ITbl arr c i x) (i -> i -> m x)
 
 type TwITblBt arr c i x mF mB r = TW (Backtrack (TwITbl mF arr c i x) mF mB) (i -> i -> mB [r])
 
-instance Build (TwITbl m arr c i x)
+-}
 
-instance Build (TwITblBt arr c i x mF mB r)
+--instance Build (TwITbl m arr c i x)
 
-type instance TermArg (TwITbl m arr c i x) = x
+instance Build (TW m (ITbl arr c i x))
 
-instance GenBacktrackTable (TwITbl mF arr c i x) mF mB where
-  data Backtrack (TwITbl mF arr c i x) mF mB = BtITbl !c !(arr i x) -- !(i -> i -> mB [r])
-  type BacktrackIndex (TwITbl mF arr c i x) = i
-  toBacktrack (TW (ITbl _ _ c arr) _) _ = BtITbl c arr
+-- instance Build (TwITblBt arr c i x mF mB r)
+
+type instance TermArg (TW m (ITbl arr c i x)) = x
+
+-- type instance TermArg (TwITbl m arr c i x) = x
+
+instance GenBacktrackTable (TW mF (ITbl arr c i x)) mF mB where
+  data Backtrack (TW mF (ITbl arr c i x)) mF mB = BtITbl !c !(arr i x) -- !(i -> i -> mB [r])
+  type BacktrackIndex (TW mF (ITbl arr c i x)) = i
+  toBacktrack (TwITbl (ITbl _ _ c arr) _) _ = BtITbl c arr
   {-# Inline toBacktrack #-}
 
-type instance TermArg (TwITblBt arr c i x mF mB r) = (x,[r])
+data instance TW mB (Backtrack (TW mF (ITbl arr c i x)) mF mB) =
+  
+
+--type instance TermArg (TwITblBt arr c i x mF mB r) = (x,[r])
 
 
 
@@ -55,12 +74,14 @@ instance
   ( Monad m
   , PrimArrayOps arr i x
   , IndexStream i
-  ) => Axiom (TwITbl m arr c i x) where
-  type AxiomStream (TwITbl m arr c i x) = m x
-  axiom (TW (ITbl _ _ c arr) _) = do
+  ) => Axiom (TW m (ITbl arr c i x)) where
+  type AxiomStream (TW m (ITbl arr c i x)) = m x
+  axiom (TwITbl (ITbl _ _ c arr) _) = do
     k <- (head . uncurry streamDown) $ bounds arr
     return $ arr ! k
   {-# Inline axiom #-}
+
+{-
 
 -- | We need this somewhat annoying instance construction (@i ~ j@ and @m
 -- ~ mB@) in order to force selection of this instance.
@@ -78,14 +99,14 @@ instance
     bt (snd $ bounds arr) h
   {-# Inline axiom #-}
 
-
+-}
 
 -- * 'Element'
 
-instance Element ls i => Element (ls :!: TwITbl m arr c j x) i where
-  data Elm    (ls :!: TwITbl m arr c j x) i = ElmITbl !x !(RunningIndex i) !(Elm ls i)
-  type Arg    (ls :!: TwITbl m arr c j x)   = Arg ls :. x
-  type RecElm (ls :!: TwITbl m arr c j x) i = Elm ls i
+instance Element ls i => Element (ls :!: TW m (ITbl arr c j x)) i where
+  data Elm    (ls :!: TW m (ITbl arr c j x)) i = ElmITbl !x !(RunningIndex i) !(Elm ls i)
+  type Arg    (ls :!: TW m (ITbl arr c j x))   = Arg ls :. x
+  type RecElm (ls :!: TW m (ITbl arr c j x)) i = Elm ls i
   getArg (ElmITbl x _ ls) = getArg ls :. x
   getIdx (ElmITbl _ i _ ) = i
   getElm (ElmITbl _ _ ls) = ls
@@ -93,7 +114,9 @@ instance Element ls i => Element (ls :!: TwITbl m arr c j x) i where
   {-# Inline getIdx #-}
   {-# Inline getElm #-}
 
-deriving instance (Show i, Show (RunningIndex i), Show (Elm ls i), Show x) => Show (Elm (ls :!: TwITbl m arr c j x) i)
+deriving instance (Show i, Show (RunningIndex i), Show (Elm ls i), Show x) => Show (Elm (ls :!: TW m (ITbl arr c j x)) i)
+
+{-
 
 instance Element ls i => Element (ls :!: TwITblBt arr c j x mF mB r) i where
   data Elm    (ls :!: TwITblBt arr c j x mF mB r) i = ElmBtITbl !x [r] !(RunningIndex i) !(Elm ls i)
@@ -109,7 +132,7 @@ instance Element ls i => Element (ls :!: TwITblBt arr c j x mF mB r) i where
 instance (Show x, Show i, Show (RunningIndex i), Show (Elm ls i)) => Show (Elm (ls :!: TwITblBt arr c i x mF mB r) i) where
   show (ElmBtITbl x _ i s) = show (x,i) ++ " " ++ show s
 
-
+-}
 
 -- * Multi-dim extensions
 
@@ -120,12 +143,14 @@ instance
   , AddIndexDense (Elm ls (is:.i)) (us:.u) (cs:.c) (is:.i)
   , MkStream m ls (is:.i)
   , PrimArrayOps arr (us:.u) x
-  ) => MkStream m (ls :!: TwITbl m arr (cs:.c) (us:.u) x) (is:.i) where
-  mkStream (ls :!: TW (ITbl _ _ c t) _) vs us is
+  ) => MkStream m (ls :!: TW m (ITbl arr (cs:.c) (us:.u) x)) (is:.i) where
+  mkStream (ls :!: TwITbl (ITbl _ _ c t) _) vs us is
     = map (\(s,tt,ii') -> ElmITbl (t!tt) ii' s)
     . addIndexDense c vs us is
     $ mkStream ls (tableStaticVar (Proxy :: Proxy (us:.u)) c vs is) us (tableStreamIndex (Proxy :: Proxy (us:.u)) c vs is)
   {-# Inline mkStream #-}
+
+{-
 
 instance
   ( Monad mB
@@ -141,4 +166,7 @@ instance
     $ mkStream ls (tableStaticVar (Proxy :: Proxy (us:.u)) c vs is) us (tableStreamIndex (Proxy :: Proxy (us:.u)) c vs is)
     where !us' = snd $ bounds t
   {-# Inline mkStream #-}
+
+-}
+
 

@@ -20,8 +20,8 @@ import ADP.Fusion.SynVar.TableWrap
 -- @mB@ so as to be able to extract forward results in the backtracking
 -- phase.
 
-class GenBacktrackTable t (mF :: * -> *) (mB :: * -> *) where
-  data Backtrack t (mF :: * -> *) (mB :: * -> *) :: *
+class GenBacktrackTable (mF :: * -> *) (mB :: * -> *) t r where
+  data Backtrack (mF :: * -> *) (mB :: * -> *) t r :: *
   type BacktrackIndex t :: *
   toBacktrack :: t -> (forall a . mF a -> mB a) {- -> (BacktrackIndex t -> BacktrackIndex t -> mB [r]) -} -> Backtrack t mF mB
 
