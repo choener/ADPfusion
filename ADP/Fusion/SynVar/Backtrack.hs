@@ -11,6 +11,10 @@ import ADP.Fusion.SynVar.TableWrap
 
 
 
+newtype Backtrack ty = Backtrack ty
+
+{-
+
 -- |
 --
 -- TODO this should go into @ADP.Fusion.Table.Backtrack@, more than just
@@ -23,7 +27,9 @@ import ADP.Fusion.SynVar.TableWrap
 class GenBacktrackTable (mF :: * -> *) (mB :: * -> *) t r where
   data Backtrack (mF :: * -> *) (mB :: * -> *) t r :: *
   type BacktrackIndex t :: *
-  toBacktrack :: t -> (forall a . mF a -> mB a) {- -> (BacktrackIndex t -> BacktrackIndex t -> mB [r]) -} -> Backtrack t mF mB
+  toBacktrack :: t -> (forall a . mF a -> mB a) {- -> (BacktrackIndex t -> BacktrackIndex t -> mB [r]) -} -> Backtrack mF mB t r
 
 -- instance Build (TW (Backtrack t mF mB) f)
+
+-}
 

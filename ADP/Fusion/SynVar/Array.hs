@@ -40,7 +40,7 @@ iTblStream
   -> i
   -> i
   -> Stream m (Elm (ls :!: TwITbl m arr c u x) i)
-iTblStream (ls :!: TW (ITbl _ _ c t) _) vs us is
+iTblStream (ls :!: TwITbl (ITbl _ _ c t) _) vs us is
   = map (\(s,tt,ii') -> ElmITbl (t!tt) ii' s)
   . addIndexDense1 c vs us is
   $ mkStream ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
@@ -50,12 +50,12 @@ iTblStream (ls :!: TW (ITbl _ _ c t) _) vs us is
 
 btITblStream
   :: forall mB mF ls arr x r u c i . ITblCx mB ls arr x u c i
-  => Pair ls (TwITblBt arr c u x mF mB r)
+  => Pair ls (TwITblBt mB mF arr c u x r)
   -> Context i
   -> i
   -> i
-  -> Stream mB (Elm (ls :!: TwITblBt arr c u x mF mB r) i)
-btITblStream (ls :!: TW (BtITbl c t) bt) vs us is
+  -> Stream mB (Elm (ls :!: TwITblBt mB mF arr c u x r) i)
+btITblStream (ls :!: TwITblBt (ITbl _ _ c t) bt) vs us is
     = mapM (\(s,tt,ii') -> bt us' tt >>= \ ~bb -> return $ ElmBtITbl (t!tt) bb ii' s)
     . addIndexDense1 c vs us is
     $ mkStream ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
@@ -90,33 +90,33 @@ instance
 instance
   ( Monad mB
   , ITblCx mB ls arr x u c (i I)
-  ) => MkStream mB (ls :!: TwITblBt arr c u x mF mB r) (i I) where
+  ) => MkStream mB (ls :!: TwITblBt mB mF arr c u x r) (i I) where
   mkStream = btITblStream
   {-# Inline mkStream #-}
 
 instance
   ( Monad mB
   , ITblCx mB ls arr x u c (i O)
-  ) => MkStream mB (ls :!: TwITblBt arr c u x mF mB r) (i O) where
+  ) => MkStream mB (ls :!: TwITblBt mB mF arr c u x r) (i O) where
   mkStream = btITblStream
   {-# Inline mkStream #-}
 
 instance
   ( Monad mB
   , ITblCx mB ls arr x u c (i C)
-  ) => MkStream mB (ls :!: TwITblBt arr c u x mF mB r) (i C) where
+  ) => MkStream mB (ls :!: TwITblBt mB mF arr c u x r) (i C) where
   mkStream = btITblStream
   {-# Inline mkStream #-}
 
 instance ModifyConstraint (TwITbl m arr EmptyOk i x) where
   type TNE (TwITbl m arr EmptyOk i x) = TwITbl m arr NonEmpty i x
   type TE  (TwITbl m arr EmptyOk i x) = TwITbl m arr EmptyOk  i x
-  toNonEmpty (TW (ITbl b l _ arr) f) = TW (ITbl b l NonEmpty arr) f
+  toNonEmpty (TwITbl (ITbl b l _ arr) f) = TwITbl (ITbl b l NonEmpty arr) f
   {-# Inline toNonEmpty #-}
 
-instance ModifyConstraint (TwITblBt arr EmptyOk i x mF mB r) where
-  type TNE (TwITblBt arr EmptyOk i x mF mB r) = TwITblBt arr NonEmpty i x mF mB r
-  type TE  (TwITblBt arr EmptyOk i x mF mB r) = TwITblBt arr EmptyOk  i x mF mB r
-  toNonEmpty (TW (BtITbl _ arr) bt) = TW (BtITbl NonEmpty arr) bt
+instance ModifyConstraint (TwITblBt mB mF arr EmptyOk i x r) where
+  type TNE (TwITblBt mB mF arr EmptyOk i x r) = TwITblBt mB mF arr NonEmpty i x r
+  type TE  (TwITblBt mB mF arr EmptyOk i x r) = TwITblBt mB mF arr EmptyOk  i x r
+  toNonEmpty (TwITblBt (ITbl b l _ arr) bt) = TwITblBt (ITbl b l NonEmpty arr) bt
   {-# Inline toNonEmpty #-}
 

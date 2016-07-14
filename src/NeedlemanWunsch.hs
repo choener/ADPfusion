@@ -162,7 +162,7 @@ makeAlgebraProduct ''Signature
 -- Giegerichs @ADP@, we hide the actual index calculations.
 
 grammar Signature{..} !a' !i1 !i2 =
-  let a = TW a' ( step_step <<< a % (M:|chr i1:|chr i2)     |||
+  let a = tw a' ( step_step <<< a % (M:|chr i1:|chr i2)     |||
                   step_loop <<< a % (M:|chr i1:|Deletion  ) |||
                   loop_step <<< a % (M:|Deletion  :|chr i2) |||
                   nil_nil   <<< (M:|Epsilon:|Epsilon)       ... h
@@ -251,9 +251,11 @@ nwInsideForward i1 i2 = {-# SCC "nwInsideForward" #-} mutateTablesDefault $
 
 nwInsideBacktrack :: VU.Vector Char -> VU.Vector Char -> TwITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int -> [[String]]
 nwInsideBacktrack i1 i2 t = {-# SCC "nwInsideBacktrack" #-} unId $ axiom b
-  where !(Z:.b) = grammar (sScore <|| sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
---                    :: Z:.TwITblBt Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int Id Id [String]
+  where !(Z:.b) = grammar (sScore <|| sPretty) (Backtrack t) i1 i2
+                    :: Z:.TwITblBt Id Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int [String]
 {-# NoInline nwInsideBacktrack #-}
+
+{-
 
 -- | The outside version of the Needleman-Wunsch alignment algorithm. The
 -- outside grammar is identical to the inside grammar! This is not
@@ -269,7 +271,7 @@ runOutsideNeedlemanWunsch k i1' i2' = {-# SCC "runOutside" #-} (d, take k . unId
   !(Z:.t) = nwOutsideForward i1 i2
   -- d = let (ITbl _ _ arr _) = t in arr PA.! (O (Z:.PointL 0:.PointL 0))
   d = unId $ axiom t -- iTblArray t PA.! (Z:.PointL 0:.PointL 0)
-  !(Z:.b) = grammar (sScore <|| sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
+  !(Z:.b) = grammar (sScore <|| sPretty) (Backtrack t) i1 i2
 --              :: Z:.TwITblBt Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL O:.PointL O) Int Id Id [String]
 {-# Noinline runOutsideNeedlemanWunsch #-}
 
@@ -321,4 +323,6 @@ main = do
   let k = if null as then 1 else read $ head as
   ls <- lines <$> getContents
   align k ls
+
+-}
 
