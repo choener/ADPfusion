@@ -9,10 +9,10 @@ module Main where
 import Test.Framework
 
 import QuickCheck.Point   (testgroup_point)
-import QuickCheck.Set     (testgroup_set)
+--import QuickCheck.Set     (testgroup_set)
 
 
 
 main :: IO ()
-main = defaultMain [testgroup_point, testgroup_set]
+main = defaultMain [testgroup_point] -- , testgroup_set]
 
