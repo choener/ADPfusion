@@ -10,13 +10,11 @@ module ADP.Fusion.SynVar.TableWrap where
 
 --data TW t f = TW !t f
 
--- | Capture the combination of a memo-table with type @memoTy@.
 
-class MkTW (monad :: * -> *) (memoTy :: *) (elemTy :: *) where
-  data TW monad memoTy elemTy  :: *
-  type TWTblTy monad memoTy elemTy :: *
-  type TWFunTy monad memoTy elemTy :: *
-  tw :: TWTblTy monad memoTy elemTy -> TWFunTy monad memoTy elemTy -> TW monad memoTy elemTy
+
+data family TW (monad :: * -> *) (memoTy :: *) :: *
+
+
 
 {-
 data family Hallo x :: *

@@ -29,39 +29,42 @@ data ITbl arr c i x where
           , iTblArray       :: !(arr i x)
           } -> ITbl arr c i x
 
-type TwITbl m arr c i x = TW m (ITbl arr c i x) x
+data instance TW m (ITbl arr c i x) =
+  TwITbl
+    { twITblMemo :: !(ITbl arr c i x)
+    , twITblFun  :: i -> i -> m x
+    }
 
-instance MkTW m (ITbl arr c i x) x where
-  data TW m (ITbl arr c i x) x =
-    TwITbl
-      { twITblMemo :: !(ITbl arr c i x)
-      , twITblFun  :: i -> i -> m x
-      }
-  type TWTblTy m (ITbl arr c i x) x = ITbl arr c i x
-  type TWFunTy m (ITbl arr c i x) x = i -> i -> m x
-  tw = TwITbl
-  {-# Inline tw #-}
+-- data instance TW m (Backtrack (TW m (ITbl arr c i x) mF mB) r)
 
-type TwITblBt m m' arr c i x r = TW m (Backtrack (TW m' (ITbl arr c i x) x)) r
+{-
 
-instance MkTW m (Backtrack (TW m' (ITbl arr c i x) x)) r where
-  data TW m (Backtrack (TW m' (ITbl arr c i x) x)) r =
-    TwITblBt
-      { twBtITbl :: ITbl arr c i x
-      , twBtFun  :: i -> i -> m [r]
-      }
-  type TWTblTy m (Backtrack (TW m' (ITbl arr c i x) x)) r = Backtrack (TwITbl m arr c i x)
-  type TWFunTy m (Backtrack (TW m' (ITbl arr c i x) x)) r = i -> i -> m [r]
-  tw = \(Backtrack (TwITbl t _)) f -> TwITblBt t f
-  {-# Inline tw #-}
+type TwITbl m arr c i x = TW (ITbl arr c i x) (i -> i -> m x)
 
-instance Build (TW m (ITbl arr c i x) x)
+type TwITblBt arr c i x mF mB r = TW (Backtrack (TwITbl mF arr c i x) mF mB) (i -> i -> mB [r])
 
-instance Build (TW m (Backtrack (TW m' (ITbl arr c i x) x)) r)
+-}
 
-type instance TermArg (TW m (ITbl arr c i x) x) = x
+--instance Build (TwITbl m arr c i x)
 
-type instance TermArg (TW m (Backtrack (TW m (ITbl arr c i x) x)) r) = (x,[r])
+instance Build (TW m (ITbl arr c i x))
+
+-- instance Build (TwITblBt arr c i x mF mB r)
+
+type instance TermArg (TW m (ITbl arr c i x)) = x
+
+-- type instance TermArg (TwITbl m arr c i x) = x
+
+instance GenBacktrackTable (TW mF (ITbl arr c i x)) mF mB where
+  data Backtrack (TW mF (ITbl arr c i x)) mF mB = BtITbl !c !(arr i x) -- !(i -> i -> mB [r])
+  type BacktrackIndex (TW mF (ITbl arr c i x)) = i
+  toBacktrack (TwITbl (ITbl _ _ c arr) _) _ = BtITbl c arr
+  {-# Inline toBacktrack #-}
+
+data instance TW mB (Backtrack (TW mF (ITbl arr c i x)) mF mB) =
+  
+
+--type instance TermArg (TwITblBt arr c i x mF mB r) = (x,[r])
 
 
 
@@ -71,25 +74,15 @@ instance
   ( Monad m
   , PrimArrayOps arr i x
   , IndexStream i
-  ) => Axiom (TW m (ITbl arr c i x) x) where
-  type AxiomStream (TW m (ITbl arr c i x) x) = m x
+  ) => Axiom (TW m (ITbl arr c i x)) where
+  type AxiomStream (TW m (ITbl arr c i x)) = m x
   axiom (TwITbl (ITbl _ _ c arr) _) = do
     k <- (head . uncurry streamDown) $ bounds arr
     return $ arr ! k
   {-# Inline axiom #-}
 
-instance
-  ( Monad m
-  , PrimArrayOps arr i x
-  , IndexStream i
-  ) => Axiom (TW m (Backtrack (TW m' (ITbl arr c i x) x)) r) where
-  type AxiomStream (TW m (Backtrack (TW m' (ITbl arr c i x) x)) r) = m [r]
-  axiom (TwITblBt (ITbl _ _ _ arr) bt) = do
-    h <- (head . uncurry streamDown) $ bounds arr
-    bt (snd $ bounds arr) h
-  {-# Inline axiom #-}
-
 {-
+
 -- | We need this somewhat annoying instance construction (@i ~ j@ and @m
 -- ~ mB@) in order to force selection of this instance.
 
@@ -105,14 +98,15 @@ instance
     h <- (head . uncurry streamDown) $ bounds arr
     bt (snd $ bounds arr) h
   {-# Inline axiom #-}
+
 -}
 
 -- * 'Element'
 
-instance Element ls i => Element (ls :!: TW m (ITbl arr c j x) x) i where
-  data Elm    (ls :!: TW m (ITbl arr c j x) x) i = ElmITbl !x !(RunningIndex i) !(Elm ls i)
-  type Arg    (ls :!: TW m (ITbl arr c j x) x)   = Arg ls :. x
-  type RecElm (ls :!: TW m (ITbl arr c j x) x) i = Elm ls i
+instance Element ls i => Element (ls :!: TW m (ITbl arr c j x)) i where
+  data Elm    (ls :!: TW m (ITbl arr c j x)) i = ElmITbl !x !(RunningIndex i) !(Elm ls i)
+  type Arg    (ls :!: TW m (ITbl arr c j x))   = Arg ls :. x
+  type RecElm (ls :!: TW m (ITbl arr c j x)) i = Elm ls i
   getArg (ElmITbl x _ ls) = getArg ls :. x
   getIdx (ElmITbl _ i _ ) = i
   getElm (ElmITbl _ _ ls) = ls
@@ -120,12 +114,14 @@ instance Element ls i => Element (ls :!: TW m (ITbl arr c j x) x) i where
   {-# Inline getIdx #-}
   {-# Inline getElm #-}
 
-deriving instance (Show i, Show (RunningIndex i), Show (Elm ls i), Show x) => Show (Elm (ls :!: TW m (ITbl arr c j x) x) i)
+deriving instance (Show i, Show (RunningIndex i), Show (Elm ls i), Show x) => Show (Elm (ls :!: TW m (ITbl arr c j x)) i)
 
-instance Element ls i => Element (ls :!: TW m (Backtrack (TW m' (ITbl arr c j x) x)) r) i where
-  data Elm    (ls :!: TW m (Backtrack (TW m' (ITbl arr c j x) x)) r) i = ElmBtITbl !x [r] !(RunningIndex i) !(Elm ls i)
-  type Arg    (ls :!: TW m (Backtrack (TW m' (ITbl arr c j x) x)) r)   = Arg ls :. (x, [r])
-  type RecElm (ls :!: TW m (Backtrack (TW m' (ITbl arr c j x) x)) r) i = Elm ls i
+{-
+
+instance Element ls i => Element (ls :!: TwITblBt arr c j x mF mB r) i where
+  data Elm    (ls :!: TwITblBt arr c j x mF mB r) i = ElmBtITbl !x [r] !(RunningIndex i) !(Elm ls i)
+  type Arg    (ls :!: TwITblBt arr c j x mF mB r)   = Arg ls :. (x, [r])
+  type RecElm (ls :!: TwITblBt arr c j x mF mB r) i = Elm ls i
   getArg (ElmBtITbl x s _ ls) = getArg ls :. (x,s)
   getIdx (ElmBtITbl _ _ i _ ) = i
   getElm (ElmBtITbl _ _ _ ls) = ls
@@ -133,8 +129,10 @@ instance Element ls i => Element (ls :!: TW m (Backtrack (TW m' (ITbl arr c j x)
   {-# Inline getIdx #-}
   {-# Inline getElm #-}
 
---instance (Show x, Show i, Show (RunningIndex i), Show (Elm ls i)) => Show (Elm (ls :!: TwITblBt arr c i x mF mB r) i) where
---  show (ElmBtITbl x _ i s) = show (x,i) ++ " " ++ show s
+instance (Show x, Show i, Show (RunningIndex i), Show (Elm ls i)) => Show (Elm (ls :!: TwITblBt arr c i x mF mB r) i) where
+  show (ElmBtITbl x _ i s) = show (x,i) ++ " " ++ show s
+
+-}
 
 -- * Multi-dim extensions
 
@@ -145,25 +143,30 @@ instance
   , AddIndexDense (Elm ls (is:.i)) (us:.u) (cs:.c) (is:.i)
   , MkStream m ls (is:.i)
   , PrimArrayOps arr (us:.u) x
-  ) => MkStream m (ls :!: TW m (ITbl arr (cs:.c) (us:.u) x) x) (is:.i) where
+  ) => MkStream m (ls :!: TW m (ITbl arr (cs:.c) (us:.u) x)) (is:.i) where
   mkStream (ls :!: TwITbl (ITbl _ _ c t) _) vs us is
     = map (\(s,tt,ii') -> ElmITbl (t!tt) ii' s)
     . addIndexDense c vs us is
     $ mkStream ls (tableStaticVar (Proxy :: Proxy (us:.u)) c vs is) us (tableStreamIndex (Proxy :: Proxy (us:.u)) c vs is)
   {-# Inline mkStream #-}
 
+{-
+
 instance
-  ( Monad m
+  ( Monad mB
   , Element ls (is:.i)
   , TableStaticVar (us:.u) (cs:.c) (is:.i)
   , AddIndexDense (Elm ls (is:.i)) (us:.u) (cs:.c) (is:.i)
-  , MkStream m ls (is:.i)
+  , MkStream mB ls (is:.i)
   , PrimArrayOps arr (us:.u) x
-  ) => MkStream m (ls :!: TW m (Backtrack (TW m' (ITbl arr (cs:.c) (us:.u) x) x)) r) (is:.i) where
-  mkStream (ls :!: TwITblBt (ITbl _ _ c t) bt) vs us is
+  ) => MkStream mB (ls :!: TwITblBt arr (cs:.c) (us:.u) x mF mB r) (is:.i) where
+  mkStream (ls :!: TW (BtITbl c t) bt) vs us is
     = mapM (\(s,tt,ii') -> bt us' tt >>= \ ~bb -> return $ ElmBtITbl (t!tt) bb ii' s)
     . addIndexDense c vs us is
     $ mkStream ls (tableStaticVar (Proxy :: Proxy (us:.u)) c vs is) us (tableStreamIndex (Proxy :: Proxy (us:.u)) c vs is)
     where !us' = snd $ bounds t
   {-# Inline mkStream #-}
+
+-}
+
 
