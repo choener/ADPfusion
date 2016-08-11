@@ -17,7 +17,7 @@ import           Data.Proxy
 import           Data.PrimitiveArray
 
 import           ADP.Fusion.SynVar.Array -- TODO we want to keep only classes in here, move instances to the corresponding modules
-import           ADP.Fusion.SynVar.Recursive
+import           ADP.Fusion.SynVar.Recursive.Type
 import           ADP.Fusion.SynVar.TableWrap
 
 import           Debug.Trace

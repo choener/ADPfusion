@@ -82,9 +82,7 @@ library
                , containers
                , mmorph             >= 1.0    && < 1.1
                , mtl                >= 2.0    && < 2.3
-               , OrderedBits        >= 0.0.1  && < 0.0.2
                , primitive          >= 0.5.4  && < 0.7
-               , PrimitiveArray     >= 0.7.0  && < 0.7.2
                , QuickCheck         >= 2.7    && < 2.9
                , strict             >= 0.3    && < 0.4
                , template-haskell   >= 2.0    && < 3.0
@@ -92,60 +90,61 @@ library
                , transformers       >= 0.3    && < 0.6
                , tuple              >= 0.3    && < 0.4
                , vector             >= 0.11   && < 0.12
+               --
+               , DPutils            >= 0.0.0  && < 0.0.1
+               , OrderedBits        >= 0.0.1  && < 0.0.2
+               , PrimitiveArray     >= 0.7.0  && < 0.7.2
 
   exposed-modules:
-    ADP.Fusion
+    -- multi imports
+    ADP.Fusion.Core
+    ADP.Fusion.Point
+    ADP.Fusion.Set0
+    ADP.Fusion.Unit
+    -- core system
     ADP.Fusion.Apply
-    ADP.Fusion.Base
     ADP.Fusion.Base.Classes
     ADP.Fusion.Base.Multi
-    ADP.Fusion.Base.Point
-    ADP.Fusion.Base.Set
     ADP.Fusion.Base.Term
     ADP.Fusion.Base.TyLvlIx
-    ADP.Fusion.Base.Unit
-    ADP.Fusion.SynVar
     ADP.Fusion.SynVar.Array
     ADP.Fusion.SynVar.Array.Type
     ADP.Fusion.SynVar.Axiom
     ADP.Fusion.SynVar.Backtrack
     ADP.Fusion.SynVar.Fill
-    ADP.Fusion.SynVar.Indices
     ADP.Fusion.SynVar.Indices.Classes
-    ADP.Fusion.SynVar.Indices.Point
-    ADP.Fusion.SynVar.Indices.Set0
-    ADP.Fusion.SynVar.Indices.Unit
-    ADP.Fusion.SynVar.Recursive
-    ADP.Fusion.SynVar.Recursive.Point
     ADP.Fusion.SynVar.Recursive.Type
-    ADP.Fusion.SynVar.Split
     ADP.Fusion.SynVar.Split.Type
     ADP.Fusion.SynVar.TableWrap
-    ADP.Fusion.Term
-    ADP.Fusion.Term.Chr
-    ADP.Fusion.Term.Chr.Point
-    ADP.Fusion.Term.Chr.Set0
     ADP.Fusion.Term.Chr.Type
-    ADP.Fusion.Term.Deletion
-    ADP.Fusion.Term.Deletion.Point
     ADP.Fusion.Term.Deletion.Type
-    ADP.Fusion.Term.Deletion.Unit
-    ADP.Fusion.Term.Edge
-    ADP.Fusion.Term.Edge.Set
     ADP.Fusion.Term.Edge.Type
-    ADP.Fusion.Term.Epsilon
-    ADP.Fusion.Term.Epsilon.Point
-    ADP.Fusion.Term.Epsilon.Set
     ADP.Fusion.Term.Epsilon.Type
-    ADP.Fusion.Term.Epsilon.Unit
-    ADP.Fusion.Term.PeekIndex
     ADP.Fusion.Term.PeekIndex.Type
-    ADP.Fusion.Term.Strng
-    ADP.Fusion.Term.Strng.Point
     ADP.Fusion.Term.Strng.Type
     ADP.Fusion.TH
     ADP.Fusion.TH.Backtrack
     ADP.Fusion.TH.Common
+    -- Point
+    ADP.Fusion.Base.Point
+    ADP.Fusion.SynVar.Indices.Point
+    ADP.Fusion.SynVar.Recursive.Point
+    ADP.Fusion.Term.Chr.Point
+    ADP.Fusion.Term.Deletion.Point
+    ADP.Fusion.Term.Epsilon.Point
+    ADP.Fusion.Term.Strng.Point
+    -- Set
+    ADP.Fusion.Base.Set
+    ADP.Fusion.SynVar.Indices.Set0
+    ADP.Fusion.Term.Chr.Set0
+    ADP.Fusion.Term.Edge.Set
+    ADP.Fusion.Term.Epsilon.Set
+    -- Unit
+    ADP.Fusion.Base.Unit
+    ADP.Fusion.SynVar.Indices.Unit
+    ADP.Fusion.Term.Deletion.Unit
+    ADP.Fusion.Term.Epsilon.Unit
+    --
 
   default-extensions: BangPatterns
                     , ConstraintKinds
@@ -258,39 +257,39 @@ test-suite properties
 
 
 
-benchmark performance
-  type:
-    exitcode-stdio-1.0
-  main-is:
-    performance.hs
-  ghc-options:
-    -rtsopts -with-rtsopts=-N -with-rtsopts=-T
-    -O2
-    -funbox-strict-fields
-    -funfolding-use-threshold1000
-    -funfolding-keeness-factor1000
-  if flag(debug)
-    ghc-options:
-      -ddump-to-file
-      -ddump-simpl
-      -dsuppress-all
-  hs-source-dirs:
-    tests
-  default-language:
-    Haskell2010
-  default-extensions: BangPatterns
-                    , FlexibleContexts
-                    , TemplateHaskell
-                    , RecordWildCards
-                    , TypeFamilies
-                    , TypeOperators
-                    , StandaloneDeriving
-                    , DeriveGeneric
-  build-depends: base
-               , ADPfusion
-               , BenchmarkHistory   >= 0.0.0  && < 0.0.1
-               , PrimitiveArray
-               , vector
+--benchmark performance
+--  type:
+--    exitcode-stdio-1.0
+--  main-is:
+--    performance.hs
+--  ghc-options:
+--    -rtsopts -with-rtsopts=-N -with-rtsopts=-T
+--    -O2
+--    -funbox-strict-fields
+--    -funfolding-use-threshold1000
+--    -funfolding-keeness-factor1000
+--  if flag(debug)
+--    ghc-options:
+--      -ddump-to-file
+--      -ddump-simpl
+--      -dsuppress-all
+--  hs-source-dirs:
+--    tests
+--  default-language:
+--    Haskell2010
+--  default-extensions: BangPatterns
+--                    , FlexibleContexts
+--                    , TemplateHaskell
+--                    , RecordWildCards
+--                    , TypeFamilies
+--                    , TypeOperators
+--                    , StandaloneDeriving
+--                    , DeriveGeneric
+--  build-depends: base
+--               , ADPfusion
+--               , BenchmarkHistory   >= 0.0.0  && < 0.0.1
+--               , PrimitiveArray
+--               , vector
 
 
 
@@ -336,46 +335,46 @@ executable spectest
 
 -- test if we can further inline the fused rules into the fillTables function.
 
-benchmark TestInlineFill
-  type:
-    exitcode-stdio-1.0
-
-  if flag(devel)
-    buildable:
-      True
-    build-depends:  base
-                 ,  ADPfusion
-                 ,  PrimitiveArray
-                 ,  template-haskell
-                 ,  vector
-                 ,  criterion         >= 1.1  &&  < 1.2
-  else
-    buildable:
-      False
-  hs-source-dirs:
-    tests
-  main-is:
-    TestInlineFill.hs
-  default-language:
-    Haskell2010
-  default-extensions: BangPatterns
-                    , FlexibleContexts
-                    , FlexibleInstances
-                    , MultiParamTypeClasses
-                    , RecordWildCards
-                    , TemplateHaskell
-                    , TypeFamilies
-                    , TypeOperators
-  ghc-options:
-    -O2
-    -funfolding-use-threshold1000
-    -funfolding-keeness-factor1000
-  if flag(debug)
-    ghc-options:
-      -ddump-to-file
-      -ddump-simpl
-      -ddump-cmm
-      -dsuppress-all
+--benchmark TestInlineFill
+--  type:
+--    exitcode-stdio-1.0
+--
+--  if flag(devel)
+--    buildable:
+--      True
+--    build-depends:  base
+--                 ,  ADPfusion
+--                 ,  PrimitiveArray
+--                 ,  template-haskell
+--                 ,  vector
+--                 ,  criterion         >= 1.1  &&  < 1.2
+--  else
+--    buildable:
+--      False
+--  hs-source-dirs:
+--    tests
+--  main-is:
+--    TestInlineFill.hs
+--  default-language:
+--    Haskell2010
+--  default-extensions: BangPatterns
+--                    , FlexibleContexts
+--                    , FlexibleInstances
+--                    , MultiParamTypeClasses
+--                    , RecordWildCards
+--                    , TemplateHaskell
+--                    , TypeFamilies
+--                    , TypeOperators
+--  ghc-options:
+--    -O2
+--    -funfolding-use-threshold1000
+--    -funfolding-keeness-factor1000
+--  if flag(debug)
+--    ghc-options:
+--      -ddump-to-file
+--      -ddump-simpl
+--      -ddump-cmm
+--      -dsuppress-all
 
 benchmark TestBacktrackingStructures
   type:

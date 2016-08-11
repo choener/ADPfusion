@@ -1,17 +1,35 @@
 
 -- | Generalized fusion system for grammars.
 --
+-- This module re-exports only the core functionality (and Unit indices).
+--
 -- NOTE Symbols typically do not check bound data for consistency. If you, say,
 -- bind a terminal symbol to an input of length 0 and then run your grammar,
 -- you probably get errors, garbled data or random crashes. Such checks are
 -- done via asserts in non-production code.
 
-module ADP.Fusion
-  ( module ADP.Fusion
+module ADP.Fusion.Core
+  ( module ADP.Fusion.Core
   , module ADP.Fusion.Apply
-  , module ADP.Fusion.Base
-  , module ADP.Fusion.Term
-  , module ADP.Fusion.SynVar
+  , module ADP.Fusion.Base.Classes
+  , module ADP.Fusion.Base.Multi
+  , module ADP.Fusion.Base.Set
+  , module ADP.Fusion.Base.TyLvlIx
+  , module ADP.Fusion.Base.Unit
+  , module ADP.Fusion.SynVar.Array.Type
+  , module ADP.Fusion.SynVar.Axiom
+  , module ADP.Fusion.SynVar.Backtrack
+  , module ADP.Fusion.SynVar.Fill
+  , module ADP.Fusion.SynVar.Indices.Classes
+  , module ADP.Fusion.SynVar.Recursive.Type
+  , module ADP.Fusion.SynVar.Split.Type
+  , module ADP.Fusion.SynVar.TableWrap
+  , module ADP.Fusion.Term.Chr.Type
+  , module ADP.Fusion.Term.Deletion.Type
+  , module ADP.Fusion.Term.Edge.Type
+  , module ADP.Fusion.Term.Epsilon.Type
+  , module ADP.Fusion.Term.PeekIndex.Type
+  , module ADP.Fusion.Term.Strng.Type
   , module ADP.Fusion.TH
   ) where
 
@@ -19,15 +37,29 @@ import           Data.Strict.Tuple
 import           GHC.Exts (inline)
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
-import           ADP.Fusion.Apply
-import           ADP.Fusion.Base
-import           ADP.Fusion.SynVar
-import           ADP.Fusion.Term
-import           ADP.Fusion.TH
-
-import qualified Data.Vector.Unboxed as VU
-
 import           Data.PrimitiveArray
+
+import           ADP.Fusion.Apply
+import           ADP.Fusion.Base.Classes hiding (iIx)
+import           ADP.Fusion.Base.Multi hiding (iIx)
+import           ADP.Fusion.Base.Set
+import           ADP.Fusion.Base.TyLvlIx
+import           ADP.Fusion.Base.Unit
+import           ADP.Fusion.SynVar.Array.Type
+import           ADP.Fusion.SynVar.Axiom
+import           ADP.Fusion.SynVar.Backtrack
+import           ADP.Fusion.SynVar.Fill
+import           ADP.Fusion.SynVar.Indices.Classes
+import           ADP.Fusion.SynVar.Recursive.Type
+import           ADP.Fusion.SynVar.Split.Type
+import           ADP.Fusion.SynVar.TableWrap
+import           ADP.Fusion.Term.Chr.Type
+import           ADP.Fusion.Term.Deletion.Type
+import           ADP.Fusion.Term.Edge.Type
+import           ADP.Fusion.Term.Epsilon.Type
+import           ADP.Fusion.Term.PeekIndex.Type
+import           ADP.Fusion.Term.Strng.Type
+import           ADP.Fusion.TH
 
 
 

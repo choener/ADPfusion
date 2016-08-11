@@ -5,7 +5,8 @@ import Data.Strict.Tuple
 
 import Data.PrimitiveArray
 
-import ADP.Fusion.Base
+import ADP.Fusion.Base.Classes
+import ADP.Fusion.Base.Multi
 
 
 

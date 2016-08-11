@@ -21,12 +21,8 @@ import qualified Control.Arrow as A
 import Data.PrimitiveArray as PA
 import Data.PrimitiveArray.Zero as PA
 
-import ADP.Fusion hiding (empty)
-import ADP.Fusion.Empty hiding (empty)
-import ADP.Fusion.Chr
-import ADP.Fusion.Table
-import Data.Array.Repa.Index.Subword
-import ADP.Fusion.TH
+import ADP.Fusion.Point hiding (empty)
+
 
 
 

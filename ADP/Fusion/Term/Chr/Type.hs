@@ -12,7 +12,9 @@ import qualified Data.Vector.Generic as VG
 
 import           Data.PrimitiveArray
 
-import           ADP.Fusion.Base
+import           ADP.Fusion.Base.Classes
+import           ADP.Fusion.Base.Multi
+
 
 
 -- | A generic Character parser that reads a single character but allows

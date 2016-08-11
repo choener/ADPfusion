@@ -22,7 +22,7 @@ import           Test.Framework.Providers.QuickCheck2
 
 import           Data.PrimitiveArray
 
-import ADP.Fusion
+import ADP.Fusion.Point
 
 
 

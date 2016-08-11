@@ -33,7 +33,7 @@ import           Data.Array.Repa.Index.Subword
 import           Data.PrimitiveArray as PA
 import           Data.PrimitiveArray.Zero as PA
 
-import           ADP.Fusion
+import           ADP.Fusion.Point
 
 
 

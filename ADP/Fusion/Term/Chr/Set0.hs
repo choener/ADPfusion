@@ -17,8 +17,7 @@ import           Data.Bits.Ordered
 
 import           Data.PrimitiveArray hiding (map)
 
-import           ADP.Fusion.Base
-import           ADP.Fusion.Term.Chr.Type
+import           ADP.Fusion.Core
 
 
 

@@ -44,7 +44,7 @@ import           Data.PrimitiveArray as PA hiding (map)
 -- @ADP.Fusion@ exposes everything necessary for higher-level DP
 -- algorithms.
 
-import           ADP.Fusion
+import           ADP.Fusion.Point
 
 
 

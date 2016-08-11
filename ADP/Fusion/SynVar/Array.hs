@@ -12,11 +12,11 @@ import Prelude hiding (map,mapM)
 
 import Data.PrimitiveArray hiding (map)
 
-import ADP.Fusion.Base
-import ADP.Fusion.SynVar.Backtrack
-import ADP.Fusion.SynVar.Indices
-
+import ADP.Fusion.Base.Classes
+import ADP.Fusion.Base.Multi
 import ADP.Fusion.SynVar.Array.Type
+import ADP.Fusion.SynVar.Backtrack
+import ADP.Fusion.SynVar.Indices.Classes
 import ADP.Fusion.SynVar.TableWrap
 
 

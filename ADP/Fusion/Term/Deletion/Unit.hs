@@ -7,8 +7,7 @@ import qualified Data.Vector.Fusion.Stream.Monadic as S
 
 import           Data.PrimitiveArray
 
-import           ADP.Fusion.Base
-import           ADP.Fusion.Term.Deletion.Type
+import           ADP.Fusion.Core
 
 
 

@@ -5,6 +5,9 @@
 - experimental PrimBool operations
 - note: these optimizations are mostly of interest for linear languages, where
   is rule (or function call) is comparatively expensive
+- major re-arrangement of modules: import ADP.Fusion.Core for development of
+  novel DP systems. Import ADP.Fusion.Point if you want to write a sequence
+  alignment algorithm
 
 0.5.1.0
 -------

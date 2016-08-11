@@ -13,7 +13,7 @@ import System.IO.Unsafe
 
 import Data.PrimitiveArray hiding (fromList)
 
-import ADP.Fusion
+import ADP.Fusion.Point
 
 
 

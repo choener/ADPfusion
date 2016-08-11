@@ -10,8 +10,7 @@ import Prelude hiding (map)
 import Data.PrimitiveArray hiding (map)
 import Data.Bits.Ordered
 
-import ADP.Fusion.Base
-import ADP.Fusion.Term.Edge.Type
+import ADP.Fusion.Core
 
 
 

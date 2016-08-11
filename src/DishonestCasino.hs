@@ -27,7 +27,7 @@ import           Text.Printf
 
 import           Data.PrimitiveArray as PA hiding (map)
 
-import           ADP.Fusion
+import           ADP.Fusion.Point
 
 
 

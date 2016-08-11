@@ -9,8 +9,7 @@ import Prelude hiding (map)
 import Data.Bits.Ordered
 import Data.PrimitiveArray hiding (map)
 
-import ADP.Fusion.Base
-import ADP.Fusion.Term.Epsilon.Type
+import ADP.Fusion.Core
 
 
 

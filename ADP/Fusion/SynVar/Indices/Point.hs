@@ -9,7 +9,8 @@ import Prelude hiding (map,head,mapM)
 
 import Data.PrimitiveArray hiding (map)
 
-import ADP.Fusion.Base
+import ADP.Fusion.Core
+import ADP.Fusion.Base.Point
 import ADP.Fusion.SynVar.Indices.Classes
 
 

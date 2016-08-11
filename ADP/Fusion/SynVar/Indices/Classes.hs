@@ -12,7 +12,9 @@ import Prelude hiding (map,head,mapM)
 
 import Data.PrimitiveArray hiding (map)
 
-import ADP.Fusion.Base
+import ADP.Fusion.Base.Classes
+import ADP.Fusion.Base.Multi
+import ADP.Fusion.Base.TyLvlIx
 
 
 

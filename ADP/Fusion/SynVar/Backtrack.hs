@@ -6,7 +6,6 @@ module ADP.Fusion.SynVar.Backtrack where
 
 import Data.Vector.Fusion.Stream.Monadic (Stream)
 
-import ADP.Fusion.Base
 import ADP.Fusion.SynVar.TableWrap
 
 

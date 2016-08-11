@@ -9,7 +9,8 @@ import qualified Data.Vector.Generic as VG
 
 import           Data.PrimitiveArray
 
-import           ADP.Fusion.Base
+import           ADP.Fusion.Core
+import           ADP.Fusion.Base.Point
 import           ADP.Fusion.Term.Chr.Type
 
 import           ADP.Fusion.Base.Term
