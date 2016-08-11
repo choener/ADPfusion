@@ -84,7 +84,7 @@ library
                , mtl                >= 2.0    && < 2.3
                , OrderedBits        >= 0.0.1  && < 0.0.2
                , primitive          >= 0.5.4  && < 0.7
-               , PrimitiveArray     >= 0.7.0  && < 0.7.1
+               , PrimitiveArray     >= 0.7.0  && < 0.7.2
                , QuickCheck         >= 2.7    && < 2.9
                , strict             >= 0.3    && < 0.4
                , template-haskell   >= 2.0    && < 3.0
