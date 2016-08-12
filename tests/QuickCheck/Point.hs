@@ -36,7 +36,7 @@ prop_O_Epsilon ix@(PointL j) = zs == ls where
   zs = (id <<< Epsilon ... stoList) maxPLo ix
   ls = [ () | j == maxI ]
 
-prop_ZEpsilon ix@(Z:.PointL j) = zs == ls where
+prop_I_ZEpsilon ix@(Z:.PointL j) = zs == ls where
   zs = (id <<< (M:|Epsilon) ... stoList) (Z:.maxPLi) ix
   ls = [ Z:.() | j == 0 ]
 
