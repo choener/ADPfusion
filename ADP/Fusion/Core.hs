@@ -13,7 +13,6 @@ module ADP.Fusion.Core
   , module ADP.Fusion.Apply
   , module ADP.Fusion.Base.Classes
   , module ADP.Fusion.Base.Multi
-  , module ADP.Fusion.Base.Set
   , module ADP.Fusion.Base.TyLvlIx
   , module ADP.Fusion.Base.Unit
   , module ADP.Fusion.SynVar.Array.Type
@@ -42,7 +41,6 @@ import           Data.PrimitiveArray
 import           ADP.Fusion.Apply
 import           ADP.Fusion.Base.Classes hiding (iIx)
 import           ADP.Fusion.Base.Multi hiding (iIx)
-import           ADP.Fusion.Base.Set
 import           ADP.Fusion.Base.TyLvlIx
 import           ADP.Fusion.Base.Unit
 import           ADP.Fusion.SynVar.Array.Type
