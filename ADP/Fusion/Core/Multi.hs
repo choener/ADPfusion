@@ -1,5 +1,5 @@
 
-module ADP.Fusion.Base.Multi where
+module ADP.Fusion.Core.Multi where
 
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 import           Data.Vector.Fusion.Stream.Monadic
@@ -9,8 +9,8 @@ import           Prelude hiding (map)
 
 import           Data.PrimitiveArray hiding (map)
 
-import           ADP.Fusion.Base.Classes
-import           ADP.Fusion.Base.TyLvlIx
+import           ADP.Fusion.Core.Classes
+import           ADP.Fusion.Core.TyLvlIx
 
 
 

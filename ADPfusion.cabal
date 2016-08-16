@@ -101,11 +101,10 @@ library
     ADP.Fusion.Point
     ADP.Fusion.Unit
     -- core system
-    ADP.Fusion.Apply
-    ADP.Fusion.Base.Classes
-    ADP.Fusion.Base.Multi
-    ADP.Fusion.Base.Term
-    ADP.Fusion.Base.TyLvlIx
+    ADP.Fusion.Core.Apply
+    ADP.Fusion.Core.Classes
+    ADP.Fusion.Core.Multi
+    ADP.Fusion.Core.TyLvlIx
     ADP.Fusion.SynVar.Array
     ADP.Fusion.SynVar.Array.Type
     ADP.Fusion.SynVar.Axiom
@@ -125,7 +124,7 @@ library
     ADP.Fusion.TH.Backtrack
     ADP.Fusion.TH.Common
     -- Point
-    ADP.Fusion.Base.Point
+    ADP.Fusion.Core.Point
     ADP.Fusion.SynVar.Indices.Point
     ADP.Fusion.SynVar.Recursive.Point
     ADP.Fusion.Term.Chr.Point
@@ -133,7 +132,7 @@ library
     ADP.Fusion.Term.Epsilon.Point
     ADP.Fusion.Term.Strng.Point
     -- Unit
-    ADP.Fusion.Base.Unit
+    ADP.Fusion.Core.Unit
     ADP.Fusion.SynVar.Indices.Unit
     ADP.Fusion.Term.Deletion.Unit
     ADP.Fusion.Term.Epsilon.Unit

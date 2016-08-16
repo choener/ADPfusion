@@ -1,7 +1,7 @@
 
 {-# Language MagicHash #-}
 
-module ADP.Fusion.Base.Classes where
+module ADP.Fusion.Core.Classes where
 
 import           Data.Proxy
 import           Data.Strict.Tuple

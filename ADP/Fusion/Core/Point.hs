@@ -1,7 +1,7 @@
 
 {-# Language MagicHash #-}
 
-module ADP.Fusion.Base.Point where
+module ADP.Fusion.Core.Point where
 
 import Data.Proxy
 import Data.Vector.Fusion.Stream.Monadic (singleton,map,filter,Step(..))
@@ -11,8 +11,8 @@ import GHC.Exts
 
 import Data.PrimitiveArray hiding (map)
 
-import ADP.Fusion.Base.Classes
-import ADP.Fusion.Base.Multi
+import ADP.Fusion.Core.Classes
+import ADP.Fusion.Core.Multi
 
 
 

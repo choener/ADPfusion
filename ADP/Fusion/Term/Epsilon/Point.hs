@@ -8,7 +8,7 @@ import qualified Data.Vector.Fusion.Stream.Monadic as S
 import           Data.PrimitiveArray
 
 import           ADP.Fusion.Core
-import           ADP.Fusion.Base.Point
+import           ADP.Fusion.Core.Point
 import           ADP.Fusion.Term.Epsilon.Type
 
 

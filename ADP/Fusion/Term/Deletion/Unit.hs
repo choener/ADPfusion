@@ -8,6 +8,7 @@ import qualified Data.Vector.Fusion.Stream.Monadic as S
 import           Data.PrimitiveArray
 
 import           ADP.Fusion.Core
+import           ADP.Fusion.Core.Unit
 
 
 

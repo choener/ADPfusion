@@ -10,7 +10,7 @@ import qualified Data.Vector.Generic as VG
 import           Data.PrimitiveArray
 
 import           ADP.Fusion.Core
-import           ADP.Fusion.Base.Point
+import           ADP.Fusion.Core.Point
 import           ADP.Fusion.Term.Strng.Type
 
 

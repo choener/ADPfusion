@@ -1,5 +1,5 @@
 
-module ADP.Fusion.Apply where
+module ADP.Fusion.Core.Apply where
 
 --import Data.Array.Repa.Index
 import Data.PrimitiveArray (Z(..), (:.)(..))

@@ -1,14 +1,14 @@
 
 -- | Type-level indexing functionality
 
-module ADP.Fusion.Base.TyLvlIx where
+module ADP.Fusion.Core.TyLvlIx where
 
 import Data.Proxy
 import GHC.TypeLits
 
 import Data.PrimitiveArray hiding (map)
 
-import ADP.Fusion.Base.Classes (RunningIndex (..))
+import ADP.Fusion.Core.Classes (RunningIndex (..))
 
 
 

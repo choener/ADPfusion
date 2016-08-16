@@ -4,7 +4,7 @@
 -- TODO the 'mkStream' instances here are probably wonky for everything
 -- that is non-static.
 
-module ADP.Fusion.Base.Unit where
+module ADP.Fusion.Core.Unit where
 
 import Data.Vector.Fusion.Stream.Monadic (singleton,map,filter,Step(..))
 import Debug.Trace
@@ -12,8 +12,8 @@ import Prelude hiding (map,filter)
 
 import Data.PrimitiveArray hiding (map)
 
-import ADP.Fusion.Base.Classes
-import ADP.Fusion.Base.Multi
+import ADP.Fusion.Core.Classes
+import ADP.Fusion.Core.Multi
 
 
 

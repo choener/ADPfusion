@@ -1,7 +1,7 @@
 
 -- | Generalized fusion system for grammars.
 --
--- This module re-exports only the core functionality (and Unit indices).
+-- This module re-exports only the core functionality.
 --
 -- NOTE Symbols typically do not check bound data for consistency. If you, say,
 -- bind a terminal symbol to an input of length 0 and then run your grammar,
@@ -10,11 +10,10 @@
 
 module ADP.Fusion.Core
   ( module ADP.Fusion.Core
-  , module ADP.Fusion.Apply
-  , module ADP.Fusion.Base.Classes
-  , module ADP.Fusion.Base.Multi
-  , module ADP.Fusion.Base.TyLvlIx
-  , module ADP.Fusion.Base.Unit
+  , module ADP.Fusion.Core.Apply
+  , module ADP.Fusion.Core.Classes
+  , module ADP.Fusion.Core.Multi
+  , module ADP.Fusion.Core.TyLvlIx
   , module ADP.Fusion.SynVar.Array.Type
   , module ADP.Fusion.SynVar.Axiom
   , module ADP.Fusion.SynVar.Backtrack
@@ -38,11 +37,10 @@ import qualified Data.Vector.Fusion.Stream.Monadic as S
 
 import           Data.PrimitiveArray
 
-import           ADP.Fusion.Apply
-import           ADP.Fusion.Base.Classes hiding (iIx)
-import           ADP.Fusion.Base.Multi hiding (iIx)
-import           ADP.Fusion.Base.TyLvlIx
-import           ADP.Fusion.Base.Unit
+import           ADP.Fusion.Core.Apply
+import           ADP.Fusion.Core.Classes hiding (iIx)
+import           ADP.Fusion.Core.Multi hiding (iIx)
+import           ADP.Fusion.Core.TyLvlIx
 import           ADP.Fusion.SynVar.Array.Type
 import           ADP.Fusion.SynVar.Axiom
 import           ADP.Fusion.SynVar.Backtrack

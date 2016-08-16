@@ -12,6 +12,7 @@ import Prelude hiding (map,head,mapM)
 import Data.PrimitiveArray hiding (map)
 
 import ADP.Fusion.Core
+import ADP.Fusion.Core.Unit
 
 
 
