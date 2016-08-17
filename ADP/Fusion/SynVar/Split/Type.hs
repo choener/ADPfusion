@@ -71,12 +71,14 @@ instance Build (Split uId splitType synVar)
 instance
   ( Element ls i
   ) => Element (ls :!: Split uId splitType (TwITbl m arr c j x)) i where
-  data Elm     (ls :!: Split uId splitType (TwITbl m arr c j x)) i = ElmSplitITbl !(Proxy uId) !(CalcSplitType splitType x) !(RunningIndex i) !(Elm ls i)
+  -- | @ElmSplitITbl@ carry one additional element of type @i@. We need
+  -- those to be able to extract the full index via @collectIx@.
+  data Elm     (ls :!: Split uId splitType (TwITbl m arr c j x)) i = ElmSplitITbl !(Proxy uId) !(CalcSplitType splitType x) !(RunningIndex i) !(Elm ls i) !i
   type Arg     (ls :!: Split uId splitType (TwITbl m arr c j x))   = Arg ls :. (CalcSplitType splitType x)
   type RecElm  (ls :!: Split uId splitType (TwITbl m arr c j x)) i = Elm ls i
-  getArg (ElmSplitITbl _ x _ ls) = getArg ls :. x
-  getIdx (ElmSplitITbl _ _ i _ ) = i
-  getElm (ElmSplitITbl _ _ _ ls) = ls
+  getArg (ElmSplitITbl _ x _ ls _) = getArg ls :. x
+  getIdx (ElmSplitITbl _ _ i _  _) = i
+  getElm (ElmSplitITbl _ _ _ ls _) = ls
   {-# Inline getArg #-}
   {-# Inline getIdx #-}
   {-# Inline getElm #-}
@@ -84,12 +86,12 @@ instance
 instance
   ( Element ls i
   ) => Element (ls :!: Split uId splitType (TwITblBt arr c j x mF mB r)) i where
-  data Elm     (ls :!: Split uId splitType (TwITblBt arr c j x mF mB r)) i = ElmSplitBtITbl !(Proxy uId) !(CalcSplitType splitType (x, [r])) !(RunningIndex i) !(Elm ls i)
+  data Elm     (ls :!: Split uId splitType (TwITblBt arr c j x mF mB r)) i = ElmSplitBtITbl !(Proxy uId) !(CalcSplitType splitType (x, [r])) !(RunningIndex i) !(Elm ls i) !i
   type Arg     (ls :!: Split uId splitType (TwITblBt arr c j x mF mB r))   = Arg ls :. (CalcSplitType splitType (x,[r]))
   type RecElm  (ls :!: Split uId splitType (TwITblBt arr c j x mF mB r)) i = Elm ls i
-  getArg (ElmSplitBtITbl _ xs _ ls) = getArg ls :. xs
-  getIdx (ElmSplitBtITbl _ _  i _ ) = i
-  getElm (ElmSplitBtITbl _ _  _ ls) = ls
+  getArg (ElmSplitBtITbl _ xs _ ls _) = getArg ls :. xs
+  getIdx (ElmSplitBtITbl _ _  i _  _) = i
+  getElm (ElmSplitBtITbl _ _  _ ls _) = ls
   {-# Inline getArg #-}
   {-# Inline getIdx #-}
   {-# Inline getElm #-}
@@ -178,14 +180,14 @@ instance
   ( SplitIxCol uId (SameSid uId (Elm ls i)) (Elm ls i)
   ) => SplitIxCol   uId True (Elm (ls :!: Split sId splitType (TwITbl m arr c j x)) i) where
   type SplitIxTy uId True (Elm (ls :!: Split sId splitType (TwITbl m arr c j x)) i) = SplitIxTy uId (SameSid uId (Elm ls i)) (Elm ls i) :. i
-  splitIxCol p b (ElmSplitITbl _ _ i e) = collectIx p e :. (error "splitIxCol: RunningIndex i -> i conversion?") -- i
+  splitIxCol p b (ElmSplitITbl _ _ i e ix) = collectIx p e :. ix
   {-# Inline splitIxCol #-}
 
 instance
   ( SplitIxCol uId (SameSid uId (Elm ls i)) (Elm ls i)
   ) => SplitIxCol   uId True (Elm (ls :!: Split sId splitType (TwITblBt arr c j x mF mB r)) i) where
   type SplitIxTy uId True (Elm (ls :!: Split sId splitType (TwITblBt arr c j x mF mB r)) i) = SplitIxTy uId (SameSid uId (Elm ls i)) (Elm ls i) :. i
-  splitIxCol p b (ElmSplitBtITbl _ _ i e) = collectIx p e :. (error "splitIxCol: RunningIndex i -> i conversion?") -- i
+  splitIxCol p b (ElmSplitBtITbl _ _ i e ix) = collectIx p e :. ix
   {-# Inline splitIxCol #-}
 
 instance
@@ -193,6 +195,6 @@ instance
   , Zconcat (SplitIxTy uId (SameSid uId (Elm ls i)) (Elm ls i)) (SplitIxTy uId (SameSid uId (TermSymbol a b)) (TermSymbol a b))
   ) => SplitIxCol uId True (Elm (ls :!: TermSymbol a b) i) where
   type SplitIxTy uId True (Elm (ls :!: TermSymbol a b) i) = Zpp (SplitIxTy uId (SameSid uId (Elm ls i)) (Elm ls i)) (SplitIxTy uId (SameSid uId (TermSymbol a b)) (TermSymbol a b))
-  splitIxCol p b (ElmTS t i e) = collectIx p e `zconcat` (undefined p t :: SplitIxTy uId (SameSid uId (TermSymbol a b)) (TermSymbol a b))
+  splitIxCol p b (ElmTS t i e) = collectIx p e `zconcat` ((error "ElmTS / splitIxCol") {- p t -} :: SplitIxTy uId (SameSid uId (TermSymbol a b)) (TermSymbol a b))
   {-# Inline splitIxCol #-}
 
