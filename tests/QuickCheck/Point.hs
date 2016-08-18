@@ -19,10 +19,9 @@ import           Test.Framework.TH
 import           Test.Framework.Providers.QuickCheck2
 #endif
 
-
 import           Data.PrimitiveArray
 
-import ADP.Fusion.Point
+import           ADP.Fusion.Point
 
 
 
@@ -60,38 +59,38 @@ prop_I_ItNC ix@(PointL j) = zs == ls where
          , xs VU.! (j-1)
          ) | j >= 1, j <= (maxI) ]
 
---prop_O_ItNC ix@(PointL j) = zs == ls where
---  t = ITbl 0 0 EmptyOk xsPo (\ _ _ -> Id 1)
---  zs = ((,,) <<< t % Deletion % chr xs ... stoList) maxPLo ix
---  ls = [ ( unsafeIndex xsPo (PointL $ j+1)
---         , ()
---         , xs VU.! (j+0)
---         ) | j >= 0, j <= (maxI-1) ]
---{-# Noinline prop_O_ItNC #-}
---
---prop_O_ZItNC ix@(Z:.PointL j) = zs == ls where
---  t = ITbl 0 0 (Z:.EmptyOk) xsZPo (\ _ _ -> Id 1)
---  zs = ((,,) <<< t % (M:|Deletion) % (M:|chr xs) ... stoList) (Z:.maxPLo) ix
---  ls = [ ( unsafeIndex xsZPo (Z:.PointL (j+1))
---         , Z:.()
---         , Z:.xs VU.! (j+0)
---         ) | j >= 0, j <= (maxI-1) ]
---
---prop_O_2dimIt_NC_CN ix@(Z:.PointL j:.PointL l) = zs == ls where
---  t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsPPo (\ _ _ -> Id 1)
---  zs = ((,,) <<< t % (M:|Deletion:|chr xs) % (M:|chr xs:|Deletion) ... stoList) (Z:.maxPLo:.maxPLo) ix
---  ls = [ ( unsafeIndex xsPPo (Z:.PointL (j+1):.PointL (l+1))
---         , Z:.()           :.xs VU.! (l+0)
---         , Z:.xs VU.! (j+0):.()
---         ) | j>=0, l>=0, j<=(maxI-1), l<=(maxI-1) ]
---
---prop_I_2dimIt_NC_CN ix@(Z:.PointL j:.PointL l) = zs == ls where
---  t = ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsPP (\ _ _ -> Id 1)
---  zs = ((,,) <<< t % (M:|Deletion:|chr xs) % (M:|chr xs:|Deletion) ... stoList) (Z:.maxPLi:.maxPLi) ix
---  ls = [ ( unsafeIndex xsPP (Z:.PointL (j-1):.PointL (l-1))
---         , Z:.()           :.xs VU.! (l-1)
---         , Z:.xs VU.! (j-1):.()
---         ) | j>=1, l>=1, j<=maxI, l<=maxI ]
+prop_O_ItNC ix@(PointL j) = zs == ls where
+  t = TW (ITbl 0 0 EmptyOk xsPo) (\ (_::PointL O) (_::PointL O) -> Id (1::Int))
+  zs = ((,,) <<< t % Deletion % chr xs ... stoList) maxPLo ix
+  ls = [ ( unsafeIndex xsPo (PointL $ j+1)
+         , ()
+         , xs VU.! (j+0)
+         ) | j >= 0, j <= (maxI-1) ]
+{-# Noinline prop_O_ItNC #-}
+
+prop_O_ZItNC ix@(Z:.PointL j) = zs == ls where
+  t = TW (ITbl 0 0 (Z:.EmptyOk) xsZPo) (\ (_::Z:.PointL O) (_::Z:.PointL O) -> Id (1::Int))
+  zs = ((,,) <<< t % (M:|Deletion) % (M:|chr xs) ... stoList) (Z:.maxPLo) ix
+  ls = [ ( unsafeIndex xsZPo (Z:.PointL (j+1))
+         , Z:.()
+         , Z:.xs VU.! (j+0)
+         ) | j >= 0, j <= (maxI-1) ]
+
+prop_O_2dimIt_NC_CN ix@(Z:.PointL j:.PointL l) = zs == ls where
+  t = TW (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsPPo) (\ (_::Z:.PointL O:.PointL O) (_::Z:.PointL O:.PointL O) -> Id (1::Int))
+  zs = ((,,) <<< t % (M:|Deletion:|chr xs) % (M:|chr xs:|Deletion) ... stoList) (Z:.maxPLo:.maxPLo) ix
+  ls = [ ( unsafeIndex xsPPo (Z:.PointL (j+1):.PointL (l+1))
+         , Z:.()           :.xs VU.! (l+0)
+         , Z:.xs VU.! (j+0):.()
+         ) | j>=0, l>=0, j<=(maxI-1), l<=(maxI-1) ]
+
+prop_I_2dimIt_NC_CN ix@(Z:.PointL j:.PointL l) = zs == ls where
+  t = TW (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsPP) (\ (_::Z:.PointL I:.PointL I) (_::Z:.PointL I:.PointL I) -> Id (1::Int))
+  zs = ((,,) <<< t % (M:|Deletion:|chr xs) % (M:|chr xs:|Deletion) ... stoList) (Z:.maxPLi:.maxPLi) ix
+  ls = [ ( unsafeIndex xsPP (Z:.PointL (j-1):.PointL (l-1))
+         , Z:.()           :.xs VU.! (l-1)
+         , Z:.xs VU.! (j-1):.()
+         ) | j>=1, l>=1, j<=maxI, l<=maxI ]
 
 
 
