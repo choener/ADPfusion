@@ -136,7 +136,8 @@ library
     ADP.Fusion.SynVar.Indices.Unit
     ADP.Fusion.Term.Deletion.Unit
     ADP.Fusion.Term.Epsilon.Unit
-    --
+    -- tutorials
+    ADP.Fusion.Tutorial.NeedlemanWunsch
 
   default-extensions: BangPatterns
                     , ConstraintKinds

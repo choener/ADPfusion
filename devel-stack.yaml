@@ -15,11 +15,11 @@ extra-deps:
 
 flags:
   ADPfusion:
-    examples: true
-    spectest: false
-    debug: true
-    devel: true
-    btstruc: true
+#    examples: true
+#    spectest: false
+#    debug: true
+#    devel: true
+#    btstruc: true
 
 ghc-options:
 #  ADPfusion: -dshow-passes -fllvm -optlo-O3 -keep-llvm-file -optlo-dot-callgraph
