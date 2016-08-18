@@ -104,6 +104,9 @@ library
     ADP.Fusion.Core.Apply
     ADP.Fusion.Core.Classes
     ADP.Fusion.Core.Multi
+    ADP.Fusion.Core.TH
+    ADP.Fusion.Core.TH.Backtrack
+    ADP.Fusion.Core.TH.Common
     ADP.Fusion.Core.TyLvlIx
     ADP.Fusion.SynVar.Array
     ADP.Fusion.SynVar.Array.Type
@@ -120,9 +123,6 @@ library
     ADP.Fusion.Term.Epsilon.Type
     ADP.Fusion.Term.PeekIndex.Type
     ADP.Fusion.Term.Strng.Type
-    ADP.Fusion.TH
-    ADP.Fusion.TH.Backtrack
-    ADP.Fusion.TH.Common
     -- Point
     ADP.Fusion.Core.Point
     ADP.Fusion.SynVar.Indices.Point

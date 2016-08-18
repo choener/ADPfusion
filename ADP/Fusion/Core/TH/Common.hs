@@ -1,5 +1,5 @@
 
-module ADP.Fusion.TH.Common where
+module ADP.Fusion.Core.TH.Common where
 
 import           Data.Tuple.Select
 import           Language.Haskell.TH

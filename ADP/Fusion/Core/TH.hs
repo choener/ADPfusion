@@ -11,7 +11,7 @@
 --
 -- TODO note the comments in @buildBacktrackingChoice@
 
-module ADP.Fusion.TH
+module ADP.Fusion.Core.TH
   ( makeAlgebraProduct
   , (<||)
   , (**>)
@@ -23,8 +23,8 @@ import           Language.Haskell.TH
 import           Language.Haskell.TH.Syntax
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 
-import           ADP.Fusion.TH.Backtrack -- (makeBacktrackingProductInstance,(<||))
-import           ADP.Fusion.TH.Common (getRuleResultType)
+import           ADP.Fusion.Core.TH.Backtrack -- (makeBacktrackingProductInstance,(<||))
+import           ADP.Fusion.Core.TH.Common (getRuleResultType)
 
 
 

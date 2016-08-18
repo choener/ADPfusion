@@ -4,7 +4,7 @@
 -- allows for fusion to happen. The hope is that this improves total
 -- performance in those cases, where backtracking has significant costs.
 
-module ADP.Fusion.TH.Backtrack where
+module ADP.Fusion.Core.TH.Backtrack where
 
 import           Control.Applicative ( (<$>) )
 import           Control.Monad
@@ -26,7 +26,7 @@ import qualified Data.Set as S
 
 import           Data.PrimitiveArray ( (:.)(..) , Z(..) )
 
-import           ADP.Fusion.TH.Common
+import           ADP.Fusion.Core.TH.Common
 
 import Control.Monad.Reader
 

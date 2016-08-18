@@ -13,6 +13,7 @@ module ADP.Fusion.Core
   , module ADP.Fusion.Core.Apply
   , module ADP.Fusion.Core.Classes
   , module ADP.Fusion.Core.Multi
+  , module ADP.Fusion.Core.TH
   , module ADP.Fusion.Core.TyLvlIx
   , module ADP.Fusion.SynVar.Array.Type
   , module ADP.Fusion.SynVar.Axiom
@@ -28,7 +29,6 @@ module ADP.Fusion.Core
   , module ADP.Fusion.Term.Epsilon.Type
   , module ADP.Fusion.Term.PeekIndex.Type
   , module ADP.Fusion.Term.Strng.Type
-  , module ADP.Fusion.TH
   ) where
 
 import           Data.Strict.Tuple
@@ -40,6 +40,7 @@ import           Data.PrimitiveArray
 import           ADP.Fusion.Core.Apply
 import           ADP.Fusion.Core.Classes hiding (iIx)
 import           ADP.Fusion.Core.Multi hiding (iIx)
+import           ADP.Fusion.Core.TH
 import           ADP.Fusion.Core.TyLvlIx
 import           ADP.Fusion.SynVar.Array.Type
 import           ADP.Fusion.SynVar.Axiom
@@ -55,7 +56,6 @@ import           ADP.Fusion.Term.Edge.Type
 import           ADP.Fusion.Term.Epsilon.Type
 import           ADP.Fusion.Term.PeekIndex.Type
 import           ADP.Fusion.Term.Strng.Type
-import           ADP.Fusion.TH
 
 
 

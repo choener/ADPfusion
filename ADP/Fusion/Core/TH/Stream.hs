@@ -4,7 +4,7 @@
 -- backtracking cases, this is less of a problem since the backtracking
 -- running time is much less than the forward case requires.
 
-module ADP.Fusion.TH.Stream where
+module ADP.Fusion.Core.TH.Stream where
 
 import           Data.List
 import           Data.Tuple.Select
@@ -12,7 +12,7 @@ import           Language.Haskell.TH
 import           Language.Haskell.TH.Syntax
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 
-import           ADP.Fusion.TH.Common
+import           ADP.Fusion.Core.TH.Common
 
 
 
