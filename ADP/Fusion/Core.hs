@@ -29,11 +29,15 @@ module ADP.Fusion.Core
   , module ADP.Fusion.Term.Epsilon.Type
   , module ADP.Fusion.Term.PeekIndex.Type
   , module ADP.Fusion.Term.Strng.Type
+  , module Data.Vector.Fusion.Stream.Monadic
+  , module Data.Vector.Fusion.Util
   ) where
 
+import           Data.Vector.Fusion.Stream.Monadic (Stream (..))
 import           Data.Strict.Tuple
 import           GHC.Exts (inline)
 import qualified Data.Vector.Fusion.Stream.Monadic as S
+import           Data.Vector.Fusion.Util (Id(..))
 
 import           Data.PrimitiveArray
 

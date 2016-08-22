@@ -13,8 +13,8 @@ extra-deps:
 - OneTuple-0.2.1
 - tuple-0.3.0.2
 
-flags:
-  ADPfusion:
+#flags:
+#  ADPfusion:
 #    examples: true
 #    spectest: false
 #    debug: true

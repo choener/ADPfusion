@@ -2,59 +2,17 @@
 -- | The Needleman-Wunsch global alignment algorithm. This algorithm is
 -- extremely simple but provides a good showcase for what ADPfusion offers.
 --
--- Follow the code from top to bottom for a tutorial on usage.
+-- The Needleman-Wunsch algorithm aligns to strings @x = x_1 x_2 x_3 ...@
+-- and @y = y_1 y_2 y_3 ...@ which may be of differing lengths. Assume that
+-- @x_1 ... x_{i-1}@ and @y_1 ... y_{j-1}@ have already been optimally
+-- aligned. We can match @x_i@ with @y_j@, or perform one of two possible
+-- insert-deletion pairs. Either @x_i@ is aligned with @-@ or @-@ is
+-- aligned with @y_j@. More general, in each DP step, either one or both
+-- inputs are extended by one character.
 --
--- We start by importing a bunch of modules, including
--- @Data.PrimitiveArray@ for low-level arrays and automated filling of the
--- arrays or tables in the correct order.
---
--- We also need to import @ADP.Fusion@ to access the high-level code for
--- dynamic programs.
---
--- Don't forget to inline basically everything!
---
--- One note on performance: Needleman-Wunsch is actually one of the worst
--- cases for ADPfusion. Low-level implementations can get away with a very
--- small number of code steps for each cell to be filled. We can't /quite/
--- do this. The relative overhead for each cell to be written into goes
--- down with more complex grammars and algebras.
-
-module Main where
-
-import           Control.Applicative
-import           Control.Monad
-import           Data.Vector.Fusion.Stream.Monadic (Stream (..))
-import           Data.Vector.Fusion.Util
-import           Debug.Trace
-import qualified Control.Arrow as A
-import qualified Data.Vector as V
-import qualified Data.Vector.Fusion.Stream.Monadic as SM
-import qualified Data.Vector.Unboxed as VU
-import           System.Environment (getArgs)
-import           System.IO.Unsafe (unsafePerformIO)
-import           Text.Printf
-
--- @Data.PrimitiveArray@ contains data structures, and index structures for
--- dynamic programming. Notably, the primitive arrays holding the cell data
--- with Boxed and Unboxed tables. In addition, linear, context-free, and
--- set data structures are made available.
-
-import           Data.PrimitiveArray as PA hiding (map)
-
--- @ADP.Fusion@ exposes everything necessary for higher-level DP
--- algorithms.
-
-import           ADP.Fusion.Point
-
-
-
--- | A signature connects the types of all non-terminals and terminals with
--- evaluation (or attribute) functions. In the grammar below, we not only
--- want to create all possible parses of how two strings can be aligned but
--- also evaluate each parse and choose the optimal one based on Bellman's
--- principle of optimality.
---
--- Assume we are in the matrix and want to calculate @x@:
+-- For the actual implementation, we assume however, that we work backward.
+-- The entries @d@, @u@, and @l@ have already been calculated. Now we want
+-- to compute the entry at @x@ in the lower right corner.
 --
 -- @
 --  -----
@@ -63,6 +21,10 @@ import           ADP.Fusion.Point
 --  |l|x|
 --  -----
 -- @
+--
+-- We introduce a generic naming scheme for each possible move. If we move
+-- in a direction, we call it a @step@. If we do not move, then we call it
+-- a @loop@, because the index loops for this computation.
 --
 -- We can arrive from @d@, making a diagonal step, called @step_step@ as we
 -- advance by one in both dimensions. This leads to an alignment of two
@@ -84,6 +46,75 @@ import           ADP.Fusion.Point
 --
 -- We also want to know which of the three cases is the best case (coming
 -- from @d,l,u@), this requires a "choice" function or @h@.
+--
+--
+-- We now implement this algorithm using the low-level ADPfusion library.
+-- Follow the code from top to bottom for a tutorial on usage. The
+-- Needleman-Wunsch tutorial for the @FormalGrammars@ library provides
+-- a higher-level style of implementation.
+--
+-- <http://hackage.haskell.org/package/FormalGrammars/docs/FormalLanguage-Tutorial-NeedlemanWunsch.html>
+--
+-- We also provide an implementation based on grammar products, which
+-- simplify the design of alignment-type algorithms. The corresponding
+-- tutorial is here.
+--
+-- <http://hackage.haskell.org/package/GrammarProducts/docs/FormalLanguage-Tutorial-NeedlemanWunsch.html>
+--
+--
+--
+-- We start by importing a bunch of modules, including
+-- @Data.PrimitiveArray@ for low-level arrays and automated filling of the
+-- arrays or tables in the correct order.
+--
+-- We also need to import @ADP.Fusion@ to access the high-level code for
+-- dynamic programs.
+--
+-- Don't forget to inline basically everything!
+--
+-- One note on performance: Needleman-Wunsch is actually one of the worst
+-- cases for ADPfusion. Low-level implementations can get away with a very
+-- small number of code steps for each cell to be filled. We can't /quite/
+-- do this. The relative overhead for each cell to be written into goes
+-- down with more complex grammars and algebras.
+
+module Main where
+
+import           Control.Monad (forM_)
+import           System.Environment (getArgs)
+import           Text.Printf
+
+-- Streams of parses are the streams defined in the @vector@ package.
+
+import qualified Data.Vector.Fusion.Stream.Monadic as SM
+
+-- We use unboxed vectors to hold the input sequences to be aligned. The
+-- terminal parses work with any vector in the @vector@ package.
+
+import qualified Data.Vector.Unboxed as VU
+
+-- @Data.PrimitiveArray@ contains data structures, and index structures for
+-- dynamic programming. Notably, the primitive arrays holding the cell data
+-- with Boxed and Unboxed tables. In addition, linear, context-free, and
+-- set data structures are made available.
+
+import           Data.PrimitiveArray as PA hiding (map)
+
+-- @ADP.Fusion.Point@ exposes everything necessary for higher-level DP
+-- algorithms. Depending on the type of DP algorithm, different top-level
+-- modules can be imported. @.Point@ for linear grammars, and @.Core@ are
+-- provided in this package. @.Core@ exports only the core modules required
+-- to extend ADPfusion.
+
+import           ADP.Fusion.Point
+
+
+
+-- | A signature connects the types of all non-terminals and terminals with
+-- evaluation (or attribute) functions. In the grammar below, we not only
+-- want to create all possible parses of how two strings can be aligned but
+-- also evaluate each parse and choose the optimal one based on Bellman's
+-- principle of optimality.
 --
 -- We take a close look at the type signatures. @step_step :: x ->
 -- (Z:.c:.c) -> x@ tells us that @step_step@ requires the score from the
@@ -252,7 +283,7 @@ nwInsideForward i1 i2 = {-# SCC "nwInsideForward" #-} mutateTablesDefault $
 nwInsideBacktrack :: VU.Vector Char -> VU.Vector Char -> TwITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int -> [[String]]
 nwInsideBacktrack i1 i2 t = {-# SCC "nwInsideBacktrack" #-} unId $ axiom b
   where !(Z:.b) = grammar (sScore <|| sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
---                    :: Z:.TwITblBt Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int Id Id [String]
+                    :: Z:.TwITblBt Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int Id Id [String]
 {-# NoInline nwInsideBacktrack #-}
 
 -- | The outside version of the Needleman-Wunsch alignment algorithm. The
@@ -261,16 +292,15 @@ nwInsideBacktrack i1 i2 t = {-# SCC "nwInsideBacktrack" #-} unId $ axiom b
 -- and the grammar from above.
 
 runOutsideNeedlemanWunsch :: Int -> String -> String -> (Int,[[String]])
-runOutsideNeedlemanWunsch k i1' i2' = {-# SCC "runOutside" #-} (d, take k . unId $ axiom b) where -- . S.toList . unId $ axiom b) where -- ,gogo) where
+runOutsideNeedlemanWunsch k i1' i2' = {-# SCC "runOutside" #-} (d, take k . unId $ axiom b) where
   i1 = VU.fromList i1'
   i2 = VU.fromList i2'
   n1 = VU.length i1
   n2 = VU.length i2
   !(Z:.t) = nwOutsideForward i1 i2
-  -- d = let (ITbl _ _ arr _) = t in arr PA.! (O (Z:.PointL 0:.PointL 0))
-  d = unId $ axiom t -- iTblArray t PA.! (Z:.PointL 0:.PointL 0)
+  d = unId $ axiom t
   !(Z:.b) = grammar (sScore <|| sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
---              :: Z:.TwITblBt Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL O:.PointL O) Int Id Id [String]
+              :: Z:.TwITblBt Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL O:.PointL O) Int Id Id [String]
 {-# Noinline runOutsideNeedlemanWunsch #-}
 
 -- | Again, to be able to observe performance, we have extracted the
