@@ -40,8 +40,6 @@ install:
    fi
  - travis_retry cabal update -v
  - sed -i 's/^jobs:/-- jobs:/' ${HOME}/.cabal/config
- - which happy
- - which alex
  - cabal new-build ${TEST} ${BENCH} --dep -v2
 
 # Here starts the actual work to be performed for the package under test;
