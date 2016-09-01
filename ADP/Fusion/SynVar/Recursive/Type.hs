@@ -1,6 +1,7 @@
 
 module ADP.Fusion.SynVar.Recursive.Type where
 
+import Control.Applicative (Applicative,(<$>),(<*>))
 import Control.Monad.Morph
 import Data.Proxy
 import Data.Strict.Tuple
@@ -93,7 +94,8 @@ instance Element ls i => Element (ls :!: TwIRecBt c u x mF mB r) i where
   {-# Inline getIdx #-}
 
 instance
-  ( Monad m
+  ( Functor m
+  , Monad m
   , Element ls (is:.i)
   , TableStaticVar (us:.u) (cs:.c) (is:.i)
   , AddIndexDense (Elm ls (is:.i)) (us:.u) (cs:.c) (is:.i)
@@ -106,7 +108,8 @@ instance
   {-# Inline mkStream #-}
 
 instance
-  ( Monad mB
+  ( Applicative mB
+  , Monad mB
   , Element ls (is:.i)
   , TableStaticVar (us:.u) (cs:.c) (is:.i)
   , AddIndexDense (Elm ls (is:.i)) (us:.u) (cs:.c) (is:.i)
