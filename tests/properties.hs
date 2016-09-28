@@ -3,12 +3,12 @@
 
 module Main where
 
-import Test.Framework
+import Test.Tasty
 
 import QuickCheck.Point   (testgroup_point)
 
 
 
 main :: IO ()
-main = defaultMain [testgroup_point]
+main = defaultMain testgroup_point
 
