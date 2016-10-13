@@ -1,5 +1,5 @@
 name:           ADPfusion
-version:        0.5.2.0
+version:        0.5.2.1
 author:         Christian Hoener zu Siederdissen, 2011-2016
 copyright:      Christian Hoener zu Siederdissen, 2011-2016
 homepage:       https://github.com/choener/ADPfusion
@@ -78,22 +78,22 @@ flag btstruc
 
 library
   build-depends: base               >= 4.7    && < 5.0
-               , bits               >= 0.4    && < 0.6
+               , bits               >= 0.4
                , containers
-               , mmorph             >= 1.0    && < 1.1
-               , mtl                >= 2.0    && < 2.3
-               , primitive          >= 0.5.4  && < 0.7
-               , QuickCheck         >= 2.7    && < 2.9
-               , strict             >= 0.3    && < 0.4
-               , template-haskell   >= 2.0    && < 3.0
-               , th-orphans         >= 0.12   && < 0.14
-               , transformers       >= 0.3    && < 0.6
-               , tuple              >= 0.3    && < 0.4
-               , vector             >= 0.11   && < 0.12
+               , mmorph             >= 1.0
+               , mtl                >= 2.0
+               , primitive          >= 0.5.4
+               , QuickCheck         >= 2.7
+               , strict             >= 0.3
+               , template-haskell   >= 2.0
+               , th-orphans         >= 0.12
+               , transformers       >= 0.3
+               , tuple              >= 0.3
+               , vector             >= 0.11
                --
                , DPutils            >= 0.0.0  && < 0.0.2
                , OrderedBits        == 0.0.1.*
-               , PrimitiveArray     == 0.7.1.*
+               , PrimitiveArray     == 0.7.2.*
 
   exposed-modules:
     -- multi imports
@@ -300,9 +300,9 @@ benchmark TestBacktrackingStructures
       True
     build-depends: base
                  , template-haskell
-                 , fmlist             >= 0.9  &&  < 0.10
+                 , fmlist             >= 0.9
                  , vector
-                 , criterion          >= 1.1  &&  < 1.2
+                 , criterion          >= 1.1
   else
     buildable:
       False
