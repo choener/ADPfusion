@@ -190,6 +190,9 @@ instance
         1 -> let lo = VU.head tlos
              in  flip SM.mapM_ (streamUp from to) $ \k ->
                   mutateCell h bo lo (inline mrph) tt to k
+        -- TODO each big-order group should be allowed to have its own sets
+        -- of bounds. within a group, it doesn't make a lot of sense to
+        -- have different bounds? Is there a use case for that even?
         _ -> flip SM.mapM_ (streamUp from to) $ \k ->
               VU.forM_ tlos $ \lo ->
                 mutateCell h bo lo (inline mrph) tt to k
