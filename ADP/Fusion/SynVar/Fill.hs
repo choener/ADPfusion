@@ -78,13 +78,13 @@ data MonotoneMCFG
 -- /not/ want to have this state influence forward results, unless that can
 -- be made deterministic, or we'll break Bellman)
 
-class MutateCell (h :: *) (s :: *) (im :: * -> *) (om :: * -> *) i where
-  mutateCell :: Proxy h -> Int -> Int -> (forall a . im a -> om a) -> s -> i -> i -> om ()
+class MutateCell (h :: *) (s :: *) (im :: * -> *) i where
+  mutateCell :: (Monad om, PrimMonad om) => Proxy h -> Int -> Int -> (forall a . im a -> om a) -> s -> i -> i -> om ()
 
 -- |
 
-class MutateTables (h :: *) (s :: *) (im :: * -> *) (om :: * -> *) where
-  mutateTables :: Proxy h -> (forall a . im a -> om a) -> s -> om s
+class MutateTables (h :: *) (s :: *) (im :: * -> *) where
+  mutateTables :: (Monad om, PrimMonad om) => Proxy h -> (forall a . im a -> om a) -> s -> om s
 
 class TableOrder (s :: *) where
   tableLittleOrder :: s -> [Int]
@@ -113,15 +113,14 @@ instance (TableOrder ts) => TableOrder (ts:.TwIRec im c i x) where
 -- ** individual instances for filling a *single cell*
 
 instance
-  ( Monad om
-  ) => MutateCell p Z im om i where
+  (
+  ) => MutateCell p Z im i where
   mutateCell _ _ _ _ Z _ _ = return ()
   {-# INLINE mutateCell #-}
 
 instance
-  ( MutateCell CFG ts im om i
-  , PrimMonad om
-  ) => MutateCell CFG (ts:.TwIRec im c i x) im om i where
+  ( MutateCell CFG ts im i
+  ) => MutateCell CFG (ts:.TwIRec im c i x) im i where
   mutateCell h bo lo mrph (ts:._) lu i = do
     mutateCell h bo lo mrph ts lu i
   {-# Inline mutateCell #-}
@@ -129,9 +128,8 @@ instance
 instance
   ( PrimArrayOps  arr i x
   , MPrimArrayOps arr i x
-  , MutateCell CFG ts im om i
-  , PrimMonad om
-  ) => MutateCell CFG (ts:.TwITbl im arr c i x) im om i where
+  , MutateCell CFG ts im i
+  ) => MutateCell CFG (ts:.TwITbl im arr c i x) im i where
   mutateCell h bo lo mrph (ts:.TW (ITbl tbo tlo c arr) f) lu i = do
     mutateCell h bo lo mrph ts lu i
     when (bo==tbo && lo==tlo) $ do
@@ -145,9 +143,8 @@ type ZS2 = Z:.Subword I:.Subword I
 instance
   ( PrimArrayOps  arr ZS2 x
   , MPrimArrayOps arr ZS2 x
-  , MutateCell MonotoneMCFG ts im om ZS2
-  , PrimMonad om
-  ) => MutateCell MonotoneMCFG (ts:.TwITbl im arr c ZS2 x) im om ZS2 where
+  , MutateCell MonotoneMCFG ts im ZS2
+  ) => MutateCell MonotoneMCFG (ts:.TwITbl im arr c ZS2 x) im ZS2 where
   mutateCell h bo lo mrph (ts:.TW (ITbl tbo tlo c arr) f) lu iklj@(Z:.Subword (i:.k):.Subword(l:.j)) = do
     mutateCell h bo lo mrph ts lu iklj
     when (bo==tbo && lo==tlo && k<=l) $ do
@@ -159,9 +156,8 @@ instance
 instance
   ( PrimArrayOps arr (Subword I) x
   , MPrimArrayOps arr (Subword I) x
-  , MutateCell h ts im om (Z:.Subword I:.Subword I)
-  , PrimMonad om
-  ) => MutateCell h (ts:.TwITbl im arr c (Subword I) x) im om (Z:.Subword I:.Subword I) where
+  , MutateCell h ts im (Z:.Subword I:.Subword I)
+  ) => MutateCell h (ts:.TwITbl im arr c (Subword I) x) im (Z:.Subword I:.Subword I) where
   mutateCell h bo lo mrph (ts:.TW (ITbl tbo tlo c arr) f) lu@(Z:.Subword (l:._):.Subword(_:.u)) ix@(Z:.Subword (i1:.j1):.Subword (i2:.j2)) = do
     mutateCell h bo lo mrph ts lu ix
     when (bo==tbo && lo==tlo && i1==i2 && j1==j2) $ do
@@ -178,13 +174,12 @@ instance
 -- bounds
 
 instance
-  ( Monad om
-  , MutateCell h (ts:.TwITbl im arr c i x) im om i
+  ( MutateCell h (ts:.TwITbl im arr c i x) im i
   , PrimArrayOps arr i x
   , Show i
   , IndexStream i
   , TableOrder (ts:.TwITbl im arr c i x)
-  ) => MutateTables h (ts:.TwITbl im arr c i x) im om where
+  ) => MutateTables h (ts:.TwITbl im arr c i x) im where
   mutateTables h mrph tt@(_:.TW (ITbl _ _ _ arr) _) = do
     let (from,to) = bounds arr
     -- TODO (1) find the set of orders for the synvars
@@ -205,13 +200,17 @@ instance
 --
 -- TODO generalize to @MonadIO@ or @MonadPrim@.
 
-mutateTablesDefault :: MutateTables CFG t Id IO => t -> t
+mutateTablesDefault :: MutateTables CFG t Id => t -> t
 mutateTablesDefault t = unsafePerformIO $ mutateTables (Proxy :: Proxy CFG) (return . unId) t
 {-# INLINE mutateTablesDefault #-}
+
+mutateTablesST :: MutateTables CFG t Id => t -> t
+mutateTablesST t = runST $ mutateTables (Proxy :: Proxy CFG) (return . unId) t
+{-# INLINE mutateTablesST #-}
 
 -- | Mutate tables, but observe certain hints. We use this for monotone
 -- mcfgs for now.
 
-mutateTablesWithHints :: MutateTables h t Id IO => Proxy h -> t -> t
+mutateTablesWithHints :: MutateTables h t Id => Proxy h -> t -> t
 mutateTablesWithHints h t = unsafePerformIO $ mutateTables h (return . unId) t
 

@@ -272,7 +272,7 @@ runNeedlemanWunsch k i1' i2' = (d, take k bs) where
 -- 'runOutsideNeedlemanWunsch'.
 
 nwInsideForward :: VU.Vector Char -> VU.Vector Char -> Z:.TwITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int
-nwInsideForward i1 i2 = {-# SCC "nwInsideForward" #-} mutateTablesDefault $
+nwInsideForward i1 i2 = {-# SCC "nwInsideForward" #-} mutateTablesST $
                           grammar sScore
                           (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n1:.PointL n2) (-999999) []))
                           i1 i2
@@ -307,7 +307,7 @@ runOutsideNeedlemanWunsch k i1' i2' = {-# SCC "runOutside" #-} (d, take k . unId
 -- outside-table-filling part.
 
 nwOutsideForward :: VU.Vector Char -> VU.Vector Char -> Z:.TwITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL O:.PointL O) Int
-nwOutsideForward i1 i2 = {-# SCC "nwOutsideForward" #-} mutateTablesDefault $
+nwOutsideForward i1 i2 = {-# SCC "nwOutsideForward" #-} mutateTablesST $
                            grammar sScore
                            (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (PA.fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n1:.PointL n2) (-999999) []))
                            i1 i2
