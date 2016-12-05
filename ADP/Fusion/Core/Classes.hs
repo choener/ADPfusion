@@ -20,8 +20,8 @@ data OutsideContext s
   deriving (Show)
 
 data InsideContext s
-  = IStatic   s
-  | IVariable s
+  = IStatic   {iGetContext :: s}
+  | IVariable {iGetContext :: s}
   deriving (Show)
 
 data ComplementContext

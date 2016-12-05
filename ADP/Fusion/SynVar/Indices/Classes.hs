@@ -25,10 +25,10 @@ import ADP.Fusion.Core.TyLvlIx
 class AddIndexDense s u c i where
   addIndexDenseGo
     :: (Monad m)
-    => c -> Context i -> i -> i -> Stream m (SvState s a Z Z) -> Stream m (SvState s a u i)
+    => c -> Context i -> u -> u -> i -> i -> Stream m (SvState s a Z Z) -> Stream m (SvState s a u i)
 
 instance AddIndexDense a Z Z Z where
-  addIndexDenseGo _ _ _ _ = id
+  addIndexDenseGo _ _ _ _ _ _ = id
   {-# Inline addIndexDenseGo #-}
 
 -- | @SvState@ holds the state that is currently being built up by
@@ -53,8 +53,8 @@ addIndexDense
      , s ~ Elm x0 i0
      , Element x0 i0
      )
-  => c -> Context i -> i -> i -> Stream m s -> Stream m (s,u,RunningIndex i)
-addIndexDense t c u i = map (\(SvS s z i') -> (s,z,i')) . addIndexDenseGo t c u i . map (\s -> (SvS s Z RiZ))
+  => c -> Context i -> u -> u -> i -> i -> Stream m s -> Stream m (s,u,RunningIndex i)
+addIndexDense t c lb ub u i = map (\(SvS s z i') -> (s,z,i')) . addIndexDenseGo t c lb ub u i . map (\s -> (SvS s Z RiZ))
 {-# Inline addIndexDense #-}
 
 -- | In case of 1-dim tables, we wrap the index creation in a multi-dim
@@ -68,10 +68,10 @@ addIndexDense1
      , s ~ Elm x0 a
      , Element x0 a
      )
-  => c -> Context i -> i -> i -> Stream m s -> Stream m (s,u,RunningIndex i)
-addIndexDense1 t c u i = map (\(SvS (ElmSynVar1 s) (Z:.z) (RiZ:.:i')) -> (s,z,i'))
-                       . addIndexDenseGo (Z:.t) (Z:.c) (Z:.u) (Z:.i)
-                       . map (\s -> (SvS (elmSynVar1 s i) Z RiZ))
+  => c -> Context i -> u -> u -> i -> i -> Stream m s -> Stream m (s,u,RunningIndex i)
+addIndexDense1 t c lb ub u i = map (\(SvS (ElmSynVar1 s) (Z:.z) (RiZ:.:i')) -> (s,z,i'))
+                             . addIndexDenseGo (Z:.t) (Z:.c) (Z:.lb) (Z:.ub) (Z:.u) (Z:.i)
+                             . map (\s -> (SvS (elmSynVar1 s i) Z RiZ))
 {-# Inline addIndexDense1 #-}
 
 newtype SynVar1 s = SynVar1 s

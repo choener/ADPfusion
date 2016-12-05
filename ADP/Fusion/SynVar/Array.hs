@@ -42,8 +42,9 @@ iTblStream
   -> Stream m (Elm (ls :!: TwITbl m arr c u x) i)
 iTblStream (ls :!: TW (ITbl _ _ c t) _) vs us is
   = map (\(s,tt,ii') -> ElmITbl (t!tt) ii' s)
-  . addIndexDense1 c vs us is
+  . addIndexDense1 c vs lb ub us is
   $ mkStream ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
+  where (lb,ub) = bounds t
 {-# Inline iTblStream #-}
 
 -- | General function for @Backtrack ITbl@s with skalar indices.
@@ -56,10 +57,10 @@ btITblStream
   -> i
   -> Stream mB (Elm (ls :!: TwITblBt arr c u x mF mB r) i)
 btITblStream (ls :!: TW (BtITbl c t) bt) vs us is
-    = mapM (\(s,tt,ii') -> bt us' tt >>= \ ~bb -> return $ ElmBtITbl (t!tt) bb ii' s)
-    . addIndexDense1 c vs us is
+    = mapM (\(s,tt,ii') -> bt ub tt >>= \ ~bb -> return $ ElmBtITbl (t!tt) bb ii' s)
+    . addIndexDense1 c vs lb ub us is
     $ mkStream ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
-    where !us' = snd $ bounds t
+    where (lb,ub) = bounds t
 {-# Inline btITblStream #-}
 
 
