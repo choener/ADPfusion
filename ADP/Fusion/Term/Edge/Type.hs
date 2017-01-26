@@ -10,8 +10,16 @@ import ADP.Fusion.Core.Multi
 
 
 
+newtype From = From { getFrom :: Int }
+
+newtype To = To { getTo :: Int }
+
+-- | An edge in a graph. The function @From -> To -> e@ is a new-typed
+-- lookup function to make explicit in which order arguments are to be
+-- given.
+
 data Edge e where
-  Edge :: (Int -> Int -> e) -> Edge e
+  Edge :: (From -> To -> e) -> Edge e
 
 instance Build (Edge e)
 

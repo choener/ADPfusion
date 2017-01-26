@@ -1,3 +1,9 @@
+0.5.2.2
+-------
+
+- Modified signature of Edge to make explicit the @From@ and @To@ nodes of the
+  edge. Minor version bump, because @Edge@ is not official yet.
+
 0.5.2.1
 -------
 
