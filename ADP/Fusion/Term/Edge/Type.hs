@@ -11,29 +11,29 @@ import ADP.Fusion.Core.Multi
 
 
 newtype From = From { getFrom :: Int }
+  deriving (Eq,Ord,Show)
 
 newtype To = To { getTo :: Int }
+  deriving (Eq,Ord,Show)
 
--- | An edge in a graph. The function @From -> To -> e@ is a new-typed
--- lookup function to make explicit in which order arguments are to be
--- given.
+-- | An edge in a graph. As a parsing symbol, it will provide (From:.To)
+-- pairs.
 
-data Edge e where
-  Edge :: (From -> To -> e) -> Edge e
+data Edge = Edge
 
-instance Build (Edge e)
+instance Build Edge
 
 instance
   ( Element ls i
-  ) => Element (ls :!: Edge e) i where
-    data Elm (ls :!: Edge e) i = ElmEdge !e !(RunningIndex i) (Elm ls i)
-    type Arg (ls :!: Edge e)   = Arg ls :. e
+  ) => Element (ls :!: Edge) i where
+    data Elm (ls :!: Edge) i = ElmEdge !(From:.To) !(RunningIndex i) (Elm ls i)
+    type Arg (ls :!: Edge)   = Arg ls :. (From:.To)
     getArg (ElmEdge e _ ls) = getArg ls :. e
     getIdx (ElmEdge _ i _ ) = i
     {-# Inline getArg #-}
     {-# Inline getIdx #-}
 
-deriving instance (Show i, Show (RunningIndex i), Show e, Show (Elm ls i)) => Show (Elm (ls :!: Edge e) i)
+deriving instance (Show i, Show (RunningIndex i), Show (Elm ls i)) => Show (Elm (ls :!: Edge) i)
 
-type instance TermArg (Edge e) = e
+type instance TermArg Edge = (From:.To)
 
