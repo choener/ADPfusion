@@ -207,8 +207,10 @@ mutateTablesDefault :: MutateTables CFG t Id => t -> t
 mutateTablesDefault t = unsafePerformIO $ mutateTables (Proxy :: Proxy CFG) (return . unId) t
 {-# INLINE mutateTablesDefault #-}
 
-mutateTablesST :: MutateTables CFG t Id => t -> t
-mutateTablesST t = runST $ mutateTables (Proxy :: Proxy CFG) (return . unId) t
+-- mutateTablesST :: MutateTables CFG t Id => t -> t
+-- mutateTablesST t = runST $ mutateTables (Proxy :: Proxy CFG) (return . unId) t
+mutateTablesST :: (TableOrder t) => t -> t
+mutateTablesST t = runST $ mutateTablesNew t
 {-# INLINE mutateTablesST #-}
 
 -- | Mutate tables, but observe certain hints. We use this for monotone
@@ -216,4 +218,24 @@ mutateTablesST t = runST $ mutateTables (Proxy :: Proxy CFG) (return . unId) t
 
 mutateTablesWithHints :: MutateTables h t Id => Proxy h -> t -> t
 mutateTablesWithHints h t = unsafePerformIO $ mutateTables h (return . unId) t
+
+-- | 
+--
+-- TODO new way how to do table filling. Because we now have heterogeneous
+-- tables (i) group tables by @big order@ into different bins; (ii) check
+-- that each bin has the same bounds (needed? -- could we have
+-- smaller-sized tables once in a while); (iii) run each bin one after the
+-- other
+--
+-- TODO measure performance penalty, if any
+
+mutateTablesNew
+  :: ( TableOrder t
+     , Monad m
+     )
+  => t
+  -> m t
+mutateTablesNew ts = do
+  let !tbos = VU.fromList . nub . sort $ tableBigOrder ts
+  return undefined
 
