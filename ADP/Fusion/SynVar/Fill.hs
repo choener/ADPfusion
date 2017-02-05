@@ -13,6 +13,7 @@ import           Control.Monad (when,forM_)
 import           Data.List (nub,sort)
 import qualified Data.Vector.Unboxed as VU
 import           Data.Proxy
+import           Data.Type.Equality
 
 import           Data.PrimitiveArray
 
@@ -209,7 +210,7 @@ mutateTablesDefault t = unsafePerformIO $ mutateTables (Proxy :: Proxy CFG) (ret
 
 -- mutateTablesST :: MutateTables CFG t Id => t -> t
 -- mutateTablesST t = runST $ mutateTables (Proxy :: Proxy CFG) (return . unId) t
-mutateTablesST :: (TableOrder t) => t -> t
+-- mutateTablesST :: (TableOrder t) => t -> t
 mutateTablesST t = runST $ mutateTablesNew t
 {-# INLINE mutateTablesST #-}
 
@@ -227,15 +228,53 @@ mutateTablesWithHints h t = unsafePerformIO $ mutateTables h (return . unId) t
 -- smaller-sized tables once in a while); (iii) run each bin one after the
 -- other
 --
--- TODO measure performance penalty, if any
+-- TODO measure performance penalty, if any. We might need liberal
+-- INLINEABLE, and specialization. On the other hand, we can do the
+-- freeze/unfreeze outside of table filling.
 
 mutateTablesNew
   :: ( TableOrder t
+     , TableSubsetByBigOrder t
      , Monad m
      )
   => t
   -> m t
 mutateTablesNew ts = do
+  -- sort the tables according to [bigorder,type,littleorder]. For each
+  -- @bigorder@, we should have only one @type@ and can therefor do the
+  -- following (i) get subset of the @ts@, (ii) use outermost of @ts@ to
+  -- get bounds, (iii) fill these tables
   let !tbos = VU.fromList . nub . sort $ tableBigOrder ts
-  return undefined
+--    let !tlos = VU.fromList . nub . sort $ tableLittleOrder tt
+  VU.forM_ tbos $ \bo -> do
+    fillByBigOrder bo ts
+    return ()
+  --
+  -- TODO group the tables according to [bigorder,type]
+  --
+  -- TODO for each group, fill the tables according to littleorder (this is
+  -- where sorting comes into play)
+  --
+  -- TODO the tables should now be filled correctly
+  return ts
+
+-- | Find the outermost table that has a certain big order and then fill
+-- from there.
+
+class TableSubsetByBigOrder t where
+  fillByBigOrder :: (Monad m) => Int -> t -> m ()
+
+instance TableSubsetByBigOrder Z where
+  fillByBigOrder k Z = error $ "lost table for big order: " ++ show k -- this shouldn't happen!
+
+instance
+ ( TableSubsetByBigOrder ts
+ ) => TableSubsetByBigOrder (ts:.TwITbl imm arr c i x) where
+  fillByBigOrder k (ts :.TW (ITbl bo _ _ arr) _) = do
+    if k == bo
+    then do
+      -- TODO fill only those tables that are type-level equal to this one
+      -- and have the same bo.
+      return ()
+    else fillByBigOrder k ts
 
