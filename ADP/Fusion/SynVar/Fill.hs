@@ -13,6 +13,10 @@ import           Control.Monad (when,forM_)
 import           Data.List (nub,sort)
 import qualified Data.Vector.Unboxed as VU
 import           Data.Proxy
+import qualified GHC.Generics as G
+import qualified Data.Typeable as T
+import qualified Data.Data as D
+import           Data.Dynamic
 
 import           Data.PrimitiveArray
 

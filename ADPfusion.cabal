@@ -144,6 +144,8 @@ library
                     , CPP
                     , DataKinds
                     , DefaultSignatures
+                    , DeriveDataTypeable
+                    , DeriveGeneric
                     , FlexibleContexts
                     , FlexibleInstances
                     , GADTs
