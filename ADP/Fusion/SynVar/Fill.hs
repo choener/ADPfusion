@@ -10,13 +10,15 @@ import           GHC.Exts (inline)
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import           System.IO.Unsafe
 import           Control.Monad (when,forM_)
-import           Data.List (nub,sort)
+import           Data.List (nub,sort,group)
 import qualified Data.Vector.Unboxed as VU
 import           Data.Proxy
 import qualified GHC.Generics as G
 import qualified Data.Typeable as T
 import qualified Data.Data as D
 import           Data.Dynamic
+import           Data.Type.Equality
+import qualified Data.List as L
 
 import           Data.PrimitiveArray
 
@@ -213,7 +215,7 @@ mutateTablesDefault t = unsafePerformIO $ mutateTables (Proxy :: Proxy CFG) (ret
 
 -- mutateTablesST :: MutateTables CFG t Id => t -> t
 -- mutateTablesST t = runST $ mutateTables (Proxy :: Proxy CFG) (return . unId) t
-mutateTablesST :: (TableOrder t) => t -> t
+-- mutateTablesST :: (TableOrder t) => t -> t
 mutateTablesST t = runST $ mutateTablesNew t
 {-# INLINE mutateTablesST #-}
 
@@ -231,15 +233,113 @@ mutateTablesWithHints h t = unsafePerformIO $ mutateTables h (return . unId) t
 -- smaller-sized tables once in a while); (iii) run each bin one after the
 -- other
 --
--- TODO measure performance penalty, if any
+-- TODO measure performance penalty, if any. We might need liberal
+-- INLINEABLE, and specialization. On the other hand, we can do the
+-- freeze/unfreeze outside of table filling.
 
 mutateTablesNew
   :: ( TableOrder t
+     , TSBO t
      , Monad m
+     , PrimMonad m
      )
   => t
   -> m t
 mutateTablesNew ts = do
+  -- sort the tables according to [bigorder,type,littleorder]. For each
+  -- @bigorder@, we should have only one @type@ and can therefor do the
+  -- following (i) get subset of the @ts@, (ii) use outermost of @ts@ to
+  -- get bounds, (iii) fill these tables
   let !tbos = VU.fromList . nub . sort $ tableBigOrder ts
-  return undefined
+  let ds = L.sort $ asDyn ts
+  let goM :: (Monad m, PrimMonad m) => [Q] -> m ()
+      goM [] = return ()
+      goM xs = do
+        ys <- fillWithDyn xs ts
+        if null ys
+          then return ()
+          else goM ys
+  goM ds
+--    let !tlos = VU.fromList . nub . sort $ tableLittleOrder tt
+--  VU.forM_ tbos $ \bo -> do
+  --
+  -- TODO group the tables according to [bigorder,type]
+  --
+  -- TODO for each group, fill the tables according to littleorder (this is
+  -- where sorting comes into play)
+  --
+  -- TODO the tables should now be filled correctly
+  --traceShow ds $
+  return ts
+
+data Q = Q
+  { qBigOrder     :: Int
+  , qLittleOrder  :: Int
+  , qTypeRep      :: T.TypeRep
+  , qObject       :: Dynamic
+  }
+  deriving (Show)
+
+instance Eq Q where
+  Q bo1 lo1 tr1 _ == Q bo2 lo2 tr2 _ = (bo1,tr1,lo1) == (bo2,tr2,lo2)
+
+instance Ord Q where
+  Q bo1 lo1 tr1 _ `compare` Q bo2 lo2 tr2 _ = (bo1,tr1,lo1) `compare` (bo2,tr2,lo2)
+
+-- | Find the outermost table that has a certain big order and then fill
+-- from there.
+
+class TSBO t where
+  asDyn :: t -> [Q]
+  fillWithDyn :: (Monad m, PrimMonad m) => [Q] -> t -> m [Q]
+
+instance TSBO Z where
+  asDyn Z = []
+  fillWithDyn qs Z = return qs
+
+instance
+ ( TSBO ts
+ , Typeable arr
+ , Typeable c
+ , Typeable i
+ , Typeable x
+ , PrimArrayOps arr i x
+ , MPrimArrayOps arr i x
+ , IndexStream i
+-- , FillTableList (TwITbl im arr c i x)
+ ) => TSBO (ts:.TwITbl Id arr c i x) where
+  asDyn (ts:.t@(TW (ITbl bo lo _ _) _)) = Q bo lo (T.typeOf t) (toDyn t) : asDyn ts
+  fillWithDyn qs (ts:.t@(TW (ITbl bo lo _ arr) f)) = do
+    let (from,to) = bounds arr
+    -- @hs@ are all tables that can be filled here
+    -- @ns@ are all tables we can't fill and need to process further down
+    -- the line
+    let (hs,ns) = L.span (\Q{..} -> qBigOrder == bo && qTypeRep == T.typeOf t) qs
+    if null hs
+      then fillWithDyn qs ts
+      else do
+        let ms = Prelude.map concrete hs
+            concrete  = (maybe (error "fromDynamic should not fail!")
+                         (\x -> x `asTypeOf` t)
+                        . fromDynamic . qObject)
+        -- We have a single table and should short-circuit here
+        case (length ms) of
+          1 -> do marr <- unsafeThaw arr
+                  flip SM.mapM_ (streamUp from to) $ \k -> do
+                    -- TODO @inline mrph@ ...
+                    z <- (return . unId) $ f to k
+                    writeM marr k z
+        -- We have more than one table in will work over the list of tables
+          _ -> do marrfs <- Prelude.mapM (\(TW (ITbl _ _ _ arr) f) -> unsafeThaw arr >>= \marr -> return (marr,f)) ms
+                  flip SM.mapM_ (streamUp from to) $ \k ->
+                    forM_ marrfs $ \(marr,f) -> do
+                      z <- (return . unId) $ f to k
+                      writeM marr k z
+        -- traceShow (hs,length ms) $
+        return ns
+
+--class FillTableList t where
+--  fillTableList :: t -> [t] -> m ()
+
+
 
