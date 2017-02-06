@@ -287,8 +287,8 @@ class TSBO t where
 instance TSBO Z where
   asDyn Z = []
   fillWithDyn qs Z = return qs
-  {-# Inlineable asDyn #-}
-  {-# Inlineable fillWithDyn #-}
+  {-# Inlinable asDyn #-}
+  {-# Inlinable fillWithDyn #-}
 
 instance
  ( TSBO ts
@@ -333,8 +333,8 @@ instance
                       writeM marr k z
         -- traceShow (hs,length ms) $
         return ns
-  {-# Inlineable asDyn #-}
-  {-# Inlineable fillWithDyn #-}
+  {-# Inlinable asDyn #-}
+  {-# Inlinable fillWithDyn #-}
 
 -- We don't need to capture @IRec@ tables as no table-filling takes place
 -- for those tables. @asDyn@ therefore just collects on the remaining @ts@,
@@ -345,6 +345,6 @@ instance
   ) => TSBO (ts:.TwIRec Id c i x) where
   asDyn (ts:.t@(TW (IRec _ _ _) _)) = asDyn ts
   fillWithDyn qs (ts:._) = fillWithDyn qs ts
-  {-# Inlineable asDyn #-}
-  {-# Inlineable fillWithDyn #-}
+  {-# Inlinable asDyn #-}
+  {-# Inlinable fillWithDyn #-}
 
