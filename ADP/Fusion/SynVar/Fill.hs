@@ -323,6 +323,9 @@ instance
                          (\x -> x `asTypeOf` t)
                         . fromDynamic . qObject)
         -- We have a single table and should short-circuit here
+        --
+        -- TODO we should specialize for tables of lengh @1..k@ for some
+        -- small k, if this yields much better performance.
         case (length ms) of
           1 -> do marr <- unsafeThaw arr
                   flip SM.mapM_ (streamUp from to) $ \k -> do
@@ -338,8 +341,13 @@ instance
         -- traceShow (hs,length ms) $
         return ns
 
---class FillTableList t where
---  fillTableList :: t -> [t] -> m ()
+-- We don't need to capture @IRec@ tables as no table-filling takes place
+-- for those tables. @asDyn@ therefore just collects on the remaining @ts@,
+-- while @fillWithDyn@ hands of to the next possible table.
 
-
+instance
+  ( TSBO ts
+  ) => TSBO (ts:.TwIRec Id c i x) where
+  asDyn (ts:.t@(TW (IRec _ _ _) _)) = asDyn ts
+  fillWithDyn qs (ts:._) = fillWithDyn qs ts
 
