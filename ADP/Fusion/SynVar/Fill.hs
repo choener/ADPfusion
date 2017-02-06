@@ -260,17 +260,8 @@ mutateTablesNew ts = do
           then return ()
           else goM ys
   goM ds
---    let !tlos = VU.fromList . nub . sort $ tableLittleOrder tt
---  VU.forM_ tbos $ \bo -> do
-  --
-  -- TODO group the tables according to [bigorder,type]
-  --
-  -- TODO for each group, fill the tables according to littleorder (this is
-  -- where sorting comes into play)
-  --
-  -- TODO the tables should now be filled correctly
-  --traceShow ds $
   return ts
+{-# Inline mutateTablesNew #-}
 
 data Q = Q
   { qBigOrder     :: Int
@@ -296,6 +287,8 @@ class TSBO t where
 instance TSBO Z where
   asDyn Z = []
   fillWithDyn qs Z = return qs
+  {-# Inlineable asDyn #-}
+  {-# Inlineable fillWithDyn #-}
 
 instance
  ( TSBO ts
@@ -340,6 +333,8 @@ instance
                       writeM marr k z
         -- traceShow (hs,length ms) $
         return ns
+  {-# Inlineable asDyn #-}
+  {-# Inlineable fillWithDyn #-}
 
 -- We don't need to capture @IRec@ tables as no table-filling takes place
 -- for those tables. @asDyn@ therefore just collects on the remaining @ts@,
@@ -350,4 +345,6 @@ instance
   ) => TSBO (ts:.TwIRec Id c i x) where
   asDyn (ts:.t@(TW (IRec _ _ _) _)) = asDyn ts
   fillWithDyn qs (ts:._) = fillWithDyn qs ts
+  {-# Inlineable asDyn #-}
+  {-# Inlineable fillWithDyn #-}
 
