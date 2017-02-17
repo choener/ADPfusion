@@ -28,6 +28,14 @@ data ComplementContext
   = Complemented
   deriving (Show)
 
+-- | Needed for structures that have long-range interactions and "expand",
+-- like sets around edge boundaries: @set <edge> set@. requires the sets to
+-- be connected.
+
+data ExtComplementContext s
+  = CStatic s
+  | CVariable s
+
 class RuleContext i where
   type Context i :: *
   initialContext :: i -> Context i
