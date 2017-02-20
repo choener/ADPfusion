@@ -91,7 +91,7 @@ library
                , tuple              >= 0.3
                , vector             >= 0.11
                --
-               , DPutils            >= 0.0.0  && < 0.0.2
+               , DPutils            == 0.0.1.*
                , OrderedBits        == 0.0.1.*
                , PrimitiveArray     == 0.8.0.*
 
