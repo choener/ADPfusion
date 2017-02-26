@@ -49,13 +49,23 @@ Extra-Source-Files:
 
 
 
-flag examples
-  description:  build the examples
+flag debug
+  description:  Enable bounds checking and various other debug operations at the cost of a significant performance penalty.
   default:      False
   manual:       True
 
-flag debug
-  description:  Enable bounds checking and various other debug operations at the cost of a significant performance penalty.
+flag debugoutput
+  description:  Enable debug output, which spams the screen full of index information
+  default:      False
+  manual:       True
+
+flag debugdump
+  description:  Enable dumping intermediate / core files
+  default:      False
+  manual:       True
+
+flag examples
+  description:  build the examples
   default:      False
   manual:       True
 
@@ -243,11 +253,11 @@ executable NeedlemanWunsch
     -funbox-strict-fields
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000
---  if flag(debug)
---    ghc-options:
---      -ddump-to-file
---      -ddump-simpl
---      -dsuppress-all
+  if flag(debugdump)
+    ghc-options:
+      -ddump-to-file
+      -ddump-simpl
+      -dsuppress-all
 
 
 
