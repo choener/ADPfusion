@@ -1,6 +1,7 @@
 
 module ADP.Fusion.SynVar.Fill where
 
+import           Control.Monad
 import           Control.Monad.Morph (hoist, MFunctor (..))
 import           Control.Monad.Primitive (PrimMonad (..))
 import           Control.Monad.ST
@@ -27,41 +28,6 @@ import           ADP.Fusion.SynVar.Recursive.Type
 import           ADP.Fusion.SynVar.TableWrap
 
 import           Debug.Trace
-
-
-
--- * Specialized table-filling wrapper for 'MTbl's
---
--- TODO table-filling does /not/ work for single-dimensional stuff
-
--- | Run and freeze 'MTbl's. Since actually running the table-filling part
--- is usually the last thing to do, we can freeze as well.
-
-runFreezeMTbls ts = do
-    unsafeRunFillTables $ expose ts
-    freezeTables        $ onlyTables ts
-{-# INLINE runFreezeMTbls #-}
-
-
-
--- * Expose inner mutable tables
-
--- | Expose the actual mutable table with an 'MTbl'. (Should be temporary
--- until 'MTbl's get a more thorough treatment for auto-filling.
-
-class ExposeTables t where
-    type TableFun t   :: *
-    type OnlyTables t :: *
-    expose     :: t -> TableFun t
-    onlyTables :: t -> OnlyTables t
-
-instance ExposeTables Z where
-    type TableFun Z   = Z
-    type OnlyTables Z = Z
-    expose     Z = Z
-    onlyTables Z = Z
-    {-# INLINE expose #-}
-    {-# INLINE onlyTables #-}
 
 
 
@@ -213,17 +179,19 @@ mutateTablesDefault :: MutateTables CFG t Id => t -> t
 mutateTablesDefault t = unsafePerformIO $ mutateTables (Proxy :: Proxy CFG) (return . unId) t
 {-# INLINE mutateTablesDefault #-}
 
--- mutateTablesST :: MutateTables CFG t Id => t -> t
--- mutateTablesST t = runST $ mutateTables (Proxy :: Proxy CFG) (return . unId) t
--- mutateTablesST :: (TableOrder t) => t -> t
-mutateTablesST t = runST $ mutateTablesNew t
-{-# INLINE mutateTablesST #-}
-
 -- | Mutate tables, but observe certain hints. We use this for monotone
 -- mcfgs for now.
 
 mutateTablesWithHints :: MutateTables h t Id => Proxy h -> t -> t
 mutateTablesWithHints h t = unsafePerformIO $ mutateTables h (return . unId) t
+
+
+
+
+
+
+mutateTablesST t = runST $ mutateTablesNew t
+{-# Inline mutateTablesST #-}
 
 -- | 
 --
@@ -238,7 +206,8 @@ mutateTablesWithHints h t = unsafePerformIO $ mutateTables h (return . unId) t
 -- freeze/unfreeze outside of table filling.
 
 mutateTablesNew
-  :: ( TableOrder t
+  :: forall t m .
+     ( TableOrder t
      , TSBO t
      , Monad m
      , PrimMonad m
@@ -259,6 +228,7 @@ mutateTablesNew ts = do
         if null ys
           then return ()
           else goM ys
+      {-# Inlinable goM #-}
   goM ds
   return ts
 {-# Inline mutateTablesNew #-}
@@ -288,7 +258,7 @@ instance TSBO Z where
   asDyn Z = []
   fillWithDyn qs Z = return qs
   {-# Inlinable asDyn #-}
-  {-# Inlinable fillWithDyn #-}
+  {-# Inline fillWithDyn #-}
 
 instance
  ( TSBO ts
@@ -299,7 +269,6 @@ instance
  , PrimArrayOps arr i x
  , MPrimArrayOps arr i x
  , IndexStream i
--- , FillTableList (TwITbl im arr c i x)
  ) => TSBO (ts:.TwITbl Id arr c i x) where
   asDyn (ts:.t@(TW (ITbl bo lo _ _) _)) = Q bo lo (T.typeOf t) (toDyn t) : asDyn ts
   fillWithDyn qs (ts:.t@(TW (ITbl bo lo _ arr) f)) = do
@@ -318,7 +287,8 @@ instance
         -- We have a single table and should short-circuit here
         --
         -- TODO we should specialize for tables of lengh @1..k@ for some
-        -- small k, if this yields much better performance.
+        -- small k. For @1@ and Needleman-Wunsch, we have a very nice @1.8@
+        -- seconds down to @1.25@ seconds. :-)
         case (length ms) of
           1 -> do marr <- unsafeThaw arr
                   flip SM.mapM_ (streamUp from to) $ \k -> do
@@ -333,8 +303,7 @@ instance
                       writeM marr k z
         -- traceShow (hs,length ms) $
         return ns
-  {-# Inlinable asDyn #-}
-  {-# Inlinable fillWithDyn #-}
+  {-# Inline fillWithDyn #-}
 
 -- We don't need to capture @IRec@ tables as no table-filling takes place
 -- for those tables. @asDyn@ therefore just collects on the remaining @ts@,
@@ -346,5 +315,5 @@ instance
   asDyn (ts:.t@(TW (IRec _ _ _) _)) = asDyn ts
   fillWithDyn qs (ts:._) = fillWithDyn qs ts
   {-# Inlinable asDyn #-}
-  {-# Inlinable fillWithDyn #-}
+  {-# Inline fillWithDyn #-}
 

@@ -83,6 +83,8 @@ module Main where
 import           Control.Monad (forM_)
 import           System.Environment (getArgs)
 import           Text.Printf
+import           Control.Monad.Primitive
+import           Control.Monad.ST
 
 -- Streams of parses are the streams defined in the @vector@ package.
 

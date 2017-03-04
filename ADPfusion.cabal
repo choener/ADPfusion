@@ -176,6 +176,11 @@ library
     Haskell2010
   ghc-options:
     -O2 -funbox-strict-fields
+  if flag(debugdump)
+    ghc-options:
+      -ddump-to-file
+      -ddump-simpl
+      -dsuppress-all
 
 
 
@@ -228,6 +233,7 @@ executable NeedlemanWunsch
       True
     build-depends:  base
                  ,  ADPfusion
+                 ,  primitive
                  ,  PrimitiveArray
                  ,  template-haskell
                  ,  vector
