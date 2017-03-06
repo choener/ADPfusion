@@ -3,6 +3,7 @@
 
 - Modified signature of Edge to make explicit the @From@ and @To@ nodes of the
   edge. Minor version bump, because @Edge@ is not official yet.
+- optimized table filling yields large improvements for linear languages
 
 0.5.2.1
 -------

@@ -1,4 +1,4 @@
 packages: .
-          ../Lib-DPutils
-          ../Lib-OrderedBits
-          ../Lib-PrimitiveArray
+--          ../Lib-DPutils
+--          ../Lib-OrderedBits
+--          ../Lib-PrimitiveArray

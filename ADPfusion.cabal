@@ -11,7 +11,7 @@ license-file:   LICENSE
 build-type:     Simple
 stability:      experimental
 cabal-version:  >= 1.10.0
-tested-with:    GHC == 7.8.4, GHC == 7.10.3, GHC == 8.0.1
+tested-with:    GHC == 7.10.3, GHC == 8.0.1
 synopsis:       Efficient, high-level dynamic programming.
 description:
                 <http://www.bioinf.uni-leipzig.de/Software/gADP/ generalized Algebraic Dynamic Programming>
