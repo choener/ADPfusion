@@ -80,7 +80,7 @@
 
 module Main where
 
-import           Control.Monad (forM_)
+import           Control.Monad (forM_,when)
 import           System.Environment (getArgs)
 import           Text.Printf
 import           Control.Monad.Primitive
@@ -334,11 +334,12 @@ align _ [c] = putStrLn "single last line"
 align k (a:b:xs) = {-# SCC "align" #-} do
   putStrLn a
   putStrLn b
-  putStrLn ""
   let (sI,rsI) = runNeedlemanWunsch k a b
   let (sO,rsO) = runOutsideNeedlemanWunsch k a b
   forM_ rsI $ \[u,l] -> printf "%s\n%s  %d\n\n" (reverse u) (reverse l) sI
   forM_ rsO $ \[u,l] -> printf "%s\n%s  %d\n\n" (id      u) (id      l) sO
+  when (k==0) $ print (sI,sO)
+  putStrLn ""
   align k xs
 
 -- | And finally have a minimal main that reads from stdio.
