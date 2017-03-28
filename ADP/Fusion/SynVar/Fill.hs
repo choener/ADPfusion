@@ -13,6 +13,7 @@ import           System.IO.Unsafe
 import           Control.Monad (when,forM_)
 import           Data.List (nub,sort,group)
 import qualified Data.Vector.Unboxed as VU
+import qualified Data.Vector as V
 import           Data.Proxy
 import qualified GHC.Generics as G
 import qualified Data.Typeable as T
@@ -289,6 +290,16 @@ instance
         -- TODO we should specialize for tables of lengh @1..k@ for some
         -- small k. For @1@ and Needleman-Wunsch, we have a very nice @1.8@
         -- seconds down to @1.25@ seconds. :-)
+        --
+        -- TODO how about
+        -- case ms of
+        --   [a] -> bla
+        --   [a,b] -> bla
+        --   [a,b,c] -> bla
+        --   [a:b:c:d:ms'] -> bla >> go ms'
+        --   measure if this yields meaningful performance improvements
+        --
+        -- TODO also consider if we maybe just put marrfs into a vector
         case (length ms) of
           1 -> do marr <- unsafeThaw arr
                   flip SM.mapM_ (streamUp from to) $ \k -> do
@@ -296,9 +307,9 @@ instance
                     z <- (return . unId) $ f to k
                     writeM marr k z
         -- We have more than one table in will work over the list of tables
-          _ -> do marrfs <- Prelude.mapM (\(TW (ITbl _ _ _ arr) f) -> unsafeThaw arr >>= \marr -> return (marr,f)) ms
+          _ -> do marrfs <- V.fromList <$> Prelude.mapM (\(TW (ITbl _ _ _ arr) f) -> unsafeThaw arr >>= \marr -> return (marr,f)) ms
                   flip SM.mapM_ (streamUp from to) $ \k ->
-                    forM_ marrfs $ \(marr,f) -> do
+                    V.forM_ marrfs $ \(marr,f) -> do
                       z <- (return . unId) $ f to k
                       writeM marr k z
         -- traceShow (hs,length ms) $

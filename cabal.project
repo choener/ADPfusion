@@ -3,7 +3,7 @@ packages: .
 --          ../Lib-OrderedBits
 --          ../Lib-PrimitiveArray
 
-profiling: true
+--profiling: true
 
 --package ADPfusion
 --  ghc-options: -fprof-auto -prof
