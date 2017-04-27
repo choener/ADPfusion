@@ -1,5 +1,5 @@
 name:           ADPfusion
-version:        0.5.2.2
+version:        0.5.3.0
 author:         Christian Hoener zu Siederdissen, 2011-2016
 copyright:      Christian Hoener zu Siederdissen, 2011-2016
 homepage:       https://github.com/choener/ADPfusion
@@ -264,6 +264,7 @@ executable NeedlemanWunsch
       -ddump-to-file
       -ddump-simpl
       -dsuppress-all
+      -dshow-passes
 
 
 

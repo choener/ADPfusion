@@ -18,10 +18,10 @@ import           ADP.Fusion.Term.Strng.Type
 instance
   ( TmkCtx1 m ls (Strng v x) (PointL i)
   ) => MkStream m (ls :!: Strng v x) (PointL i) where
-  mkStream (ls :!: strng@(Strng _ minL maxL xs)) sv us is
+  mkStream grd (ls :!: strng@(Strng _ minL maxL xs)) sv us is
     = S.map (\(ss,ee,ii) -> ElmStrng ee ii ss)
     . addTermStream1 strng sv us is
-    $ mkStream ls (termStaticVar strng sv is) us (termStreamIndex strng sv is)
+    $ mkStream grd ls (termStaticVar strng sv is) us (termStreamIndex strng sv is)
   {-# Inline mkStream #-}
 
 

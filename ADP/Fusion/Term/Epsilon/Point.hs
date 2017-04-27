@@ -16,10 +16,10 @@ import           ADP.Fusion.Term.Epsilon.Type
 instance
   ( TmkCtx1 m ls Epsilon (PointL i)
   ) => MkStream m (ls :!: Epsilon) (PointL i) where
-  mkStream (ls :!: Epsilon) sv us is
+  mkStream grd (ls :!: Epsilon) sv us is
     = S.map (\(ss,ee,ii) -> ElmEpsilon ii ss)
     . addTermStream1 Epsilon sv us is
-    $ mkStream ls (termStaticVar Epsilon sv is) us (termStreamIndex Epsilon sv is)
+    $ mkStream grd ls (termStaticVar Epsilon sv is) us (termStreamIndex Epsilon sv is)
   {-# Inline mkStream #-}
 
 

@@ -1,4 +1,6 @@
 
+{-# Language MagicHash #-}
+
 module ADP.Fusion.Core.Multi where
 
 import qualified Data.Vector.Fusion.Stream.Monadic as S
@@ -53,11 +55,11 @@ instance
   , TermStaticVar (TermSymbol a b) i
   , TermStream m (TermSymbol a b) (Elm ls i) i
   ) => MkStream m (ls :!: TermSymbol a b) i where
-  mkStream (ls :!: ts) sv lu i
+  mkStream grd (ls :!: ts) sv lu i
     = map (\(TState sS ii ee) -> ElmTS ee ii sS)
     . termStream ts sv lu i
     . map (\s -> TState s RiZ Z)
-    $ mkStream ls (termStaticVar ts sv i) lu (termStreamIndex ts sv i)
+    $ mkStream grd ls (termStaticVar ts sv i) lu (termStreamIndex ts sv i)
   {-# Inline mkStream #-}
 
 ---- | Handles each individual argument within a stack of terminal symbols.
@@ -73,7 +75,7 @@ instance
 --  {-# INLINE terminalStream #-}
 
 instance Monad m => MkStream m S Z where
-  mkStream _ _ _ _ = S.singleton (ElmS RiZ)
+  mkStream grd _ _ _ _ = staticCheck# grd $ S.singleton (ElmS RiZ)
   {-# INLINE mkStream #-}
 
 -- | For multi-dimensional terminals we need to be able to calculate how the

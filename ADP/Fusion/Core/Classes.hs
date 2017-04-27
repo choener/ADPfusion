@@ -90,7 +90,7 @@ class Element x i where
 -- @i@.
 
 class (Monad m) => MkStream m x i where
-  mkStream :: x -> Context i -> i -> i -> S.Stream m (Elm x i)
+  mkStream :: Int# -> x -> Context i -> i -> i -> S.Stream m (Elm x i)
 
 -- | Finally, we need to be able to correctly build together symbols on the
 -- right-hand side of the @(<<<)@ operator.

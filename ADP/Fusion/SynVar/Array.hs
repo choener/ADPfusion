@@ -1,4 +1,6 @@
 
+{-# Language MagicHash #-}
+
 module ADP.Fusion.SynVar.Array
   ( module ADP.Fusion.SynVar.Array.Type
   , module ADP.Fusion.SynVar.Array
@@ -8,6 +10,7 @@ module ADP.Fusion.SynVar.Array
 import Data.Proxy
 import Data.Strict.Tuple hiding (snd)
 import Data.Vector.Fusion.Stream.Monadic
+import GHC.Exts
 import Prelude hiding (map,mapM)
 
 import Data.PrimitiveArray hiding (map)
@@ -35,15 +38,16 @@ type ITblCx m ls arr x u c i =
 
 iTblStream
   :: forall m ls arr x u c i . ITblCx m ls arr x u c i
-  => Pair ls (TwITbl m arr c u x)
+  => Int#
+  -> Pair ls (TwITbl m arr c u x)
   -> Context i
   -> i
   -> i
   -> Stream m (Elm (ls :!: TwITbl m arr c u x) i)
-iTblStream (ls :!: TW (ITbl _ _ c t) _) vs us is
+iTblStream grd (ls :!: TW (ITbl _ _ c t) _) vs us is
   = map (\(s,tt,ii') -> ElmITbl (t!tt) ii' s)
   . addIndexDense1 c vs lb ub us is
-  $ mkStream ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
+  $ mkStream grd ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
   where (lb,ub) = bounds t
 {-# Inline iTblStream #-}
 
@@ -51,15 +55,16 @@ iTblStream (ls :!: TW (ITbl _ _ c t) _) vs us is
 
 btITblStream
   :: forall mB mF ls arr x r u c i . ITblCx mB ls arr x u c i
-  => Pair ls (TwITblBt arr c u x mF mB r)
+  => Int#
+  -> Pair ls (TwITblBt arr c u x mF mB r)
   -> Context i
   -> i
   -> i
   -> Stream mB (Elm (ls :!: TwITblBt arr c u x mF mB r) i)
-btITblStream (ls :!: TW (BtITbl c t) bt) vs us is
+btITblStream grd (ls :!: TW (BtITbl c t) bt) vs us is
     = mapM (\(s,tt,ii') -> bt ub tt >>= \ ~bb -> return $ ElmBtITbl (t!tt) bb ii' s)
     . addIndexDense1 c vs lb ub us is
-    $ mkStream ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
+    $ mkStream grd ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
     where (lb,ub) = bounds t
 {-# Inline btITblStream #-}
 

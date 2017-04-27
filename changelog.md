@@ -1,3 +1,9 @@
+0.5.3.0
+-------
+
+- using unboxed Ints (primbool style) for rule guards. This nets a nice speedup
+  of 30-50% for linear languages
+
 0.5.2.2
 -------
 

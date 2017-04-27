@@ -25,10 +25,10 @@ import           ADP.Fusion.Term.Chr.Type
 instance
   ( TmkCtx1 m ls (Chr r x) (PointL i)
   ) => MkStream m (ls :!: Chr r x) (PointL i) where
-  mkStream (ls :!: Chr f xs) sv us is
+  mkStream grd (ls :!: Chr f xs) sv us is
     = S.map (\(ss,ee,ii) -> ElmChr ee ii ss) -- recover ElmChr
     . addTermStream1 (Chr f xs) sv us is
-    $ mkStream ls (termStaticVar (Chr f xs) sv is) us (termStreamIndex (Chr f xs) sv is)
+    $ mkStream grd ls (termStaticVar (Chr f xs) sv is) us (termStreamIndex (Chr f xs) sv is)
   {-# Inline mkStream #-}
 
 

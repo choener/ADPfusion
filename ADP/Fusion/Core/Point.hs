@@ -40,15 +40,11 @@ data instance RunningIndex (PointL C) = RiPlC !Int
 
 
 instance (Monad m) => MkStream m S (PointL I) where
-  mkStream S (IStatic (I# d)) (PointL (I# u)) (PointL (I# i))
---    = staticCheck (isTrue# ( (i >=# 0#) `andI#` (i <=# d) `andI#` (i <=# d) ) ) -- (i>=0 && i<=d && i<=u)
-    = staticCheck# ( (i >=# 0#) `andI#` (i <=# d) `andI#` (i <=# d) )
---    = filter (const (isTrue# ( (i >=# 0#) `andI#` (i <=# d) `andI#` (i <=# d) ) ))
+  mkStream grd S (IStatic (I# d)) (PointL (I# u)) (PointL (I# i))
+    = staticCheck# ( grd `andI#` (i >=# 0#) `andI#` (i <=# d) `andI#` (i <=# d) )
     . singleton . ElmS $ RiPlI 0
-  mkStream S (IVariable _) (PointL (I# u)) (PointL (I# i))
---    = staticCheck (isTrue# ( (i >=# 0#) `andI#` (i <=# u) ) ) -- (i>=0 && i<=u)
-    = staticCheck# ( (i >=# 0#) `andI#` (i <=# u) )
---    = filter (const (isTrue# ( (i >=# 0#) `andI#` (i <=# u) ) ))
+  mkStream grd S (IVariable _) (PointL (I# u)) (PointL (I# i))
+    = staticCheck# (grd `andI#` (i >=# 0#) `andI#` (i <=# u) )
     . singleton . ElmS $ RiPlI 0
   {-# Inline mkStream #-}
 
@@ -56,44 +52,42 @@ instance
   ( Monad m
   , MkStream m S is
   ) => MkStream m S (is:.PointL I) where
-  mkStream S (vs:.IStatic d) (lus:.PointL u) (is:.PointL i)
+  mkStream grd S (vs:.IStatic (I# d)) (lus:.PointL (I# u)) (is:.PointL (I# i))
     = map (\(ElmS zi) -> ElmS $ zi :.: RiPlI 0)
-    . staticCheck (i>=0 && i<=d && i<=u)
-    $ mkStream S vs lus is
-  mkStream S (vs:.IVariable d) (lus:.PointL u) (is:.PointL i)
+    $ mkStream (grd `andI#` (i >=# 0#) `andI#` (i <=# d) `andI#` (i <=# u)) S vs lus is
+  mkStream grd S (vs:.IVariable d) (lus:.PointL (I# u)) (is:.PointL (I# i))
     = map (\(ElmS zi) -> ElmS $ zi :.: RiPlI 0)
-    . staticCheck (i>=0 && i<=u)
-    $ mkStream S vs lus is
+    $ mkStream (grd `andI#` (i >=# 0#) `andI#` (i <=# u)) S vs lus is
   {-# INLINE mkStream #-}
 
 
 
 instance (Monad m) => MkStream m S (PointL O) where
-  mkStream S (OStatic d) (PointL u) (PointL i)
-    = staticCheck (i>=0 && i+d<=u && u == i) . singleton . ElmS $ RiPlO i (i+d)
-  mkStream S (OFirstLeft d) (PointL u) (PointL i)
-    = staticCheck (i>=0 && i+d<=u) . singleton . ElmS $ RiPlO i (i+d)
+  mkStream grd S (OStatic (I# d)) (PointL (I# u)) (PointL (I# i))
+    = staticCheck# (grd `andI#` (i >=# 0#) `andI#` (i +# d <=# u) `andI#` (u ==# i))
+    . singleton . ElmS $ RiPlO (I# i) (I# (i +# d))
+  mkStream grd S (OFirstLeft (I# d)) (PointL (I# u)) (PointL (I# i))
+    = staticCheck# (grd `andI#` (i >=# 0#) `andI#` (i +# d <=# u))
+    . singleton . ElmS $ RiPlO (I# i) (I# (i +# d))
   {-# Inline mkStream #-}
 
 instance
   ( Monad m
   , MkStream m S is
   ) => MkStream m S (is:.PointL O) where
-  mkStream S (vs:.OStatic d) (lus:.PointL u) (is:.PointL i)
-    = staticCheck (i>=0 && i+d == u)
-    . map (\(ElmS zi) -> ElmS $ zi :.: RiPlO i (i+d))
-    $ mkStream S vs lus is
-  mkStream S (vs:.OFirstLeft d) (us:.PointL u) (is:.PointL i)
-    = staticCheck (i>=0 && i+d<=u)
-    . map (\(ElmS zi) -> ElmS $ zi :.: RiPlO i (i+d))
-    $ mkStream S vs us is
+  mkStream grd S (vs:.OStatic (I# d)) (lus:.PointL (I# u)) (is:.PointL (I# i))
+    = map (\(ElmS zi) -> ElmS $ zi :.: RiPlO (I# i) (I# (i +# d)))
+    $ mkStream (grd `andI#` (i >=# 0#) `andI#` (i +# d ==# u)) S vs lus is
+  mkStream grd S (vs:.OFirstLeft (I# d)) (us:.PointL (I# u)) (is:.PointL (I# i))
+    = map (\(ElmS zi) -> ElmS $ zi :.: RiPlO (I# i) (I# (i +# d)))
+    $ mkStream (grd `andI#` (i >=# 0#) `andI#` (i +# d <=# u)) S vs us is
   {-# Inline mkStream #-}
 
 
 
 instance (Monad m) => MkStream m S (PointL C) where
-  mkStream S Complemented (PointL u) (PointL i)
-    = staticCheck (i>=0 && i<=u) . singleton . ElmS $ RiPlC i
+  mkStream grd S Complemented (PointL (I# u)) (PointL (I# i))
+    = staticCheck# (grd `andI#` (i >=# 0#) `andI#` (i <=# u)) . singleton . ElmS $ RiPlC (I# i)
   {-# Inline mkStream #-}
 
 

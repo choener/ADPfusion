@@ -15,10 +15,10 @@ import           ADP.Fusion.Core.Unit
 instance
   ( TmkCtx1 m ls Deletion (Unit i)
   ) => MkStream m (ls :!: Deletion) (Unit i) where
-  mkStream (ls :!: Deletion) sv us is
+  mkStream grd (ls :!: Deletion) sv us is
     = S.map (\(ss,ee,ii) -> ElmDeletion ii ss)
     . addTermStream1 Deletion sv us is
-    $ mkStream ls (termStaticVar Deletion sv is) us (termStreamIndex Deletion sv is)
+    $ mkStream grd ls (termStaticVar Deletion sv is) us (termStreamIndex Deletion sv is)
   {-# Inline mkStream #-}
 
 

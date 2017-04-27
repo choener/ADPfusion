@@ -37,42 +37,42 @@ data instance RunningIndex (Unit t) = RiU
 
 
 instance (Monad m) => MkStream m S (Unit I) where
-  mkStream S _ Unit Unit = singleton $ ElmS RiU
+  mkStream grd S _ Unit Unit = singleton $ ElmS RiU
   {-# Inline mkStream #-}
 
 instance (Monad m) => MkStream m S (Unit O) where
-  mkStream S _ Unit Unit = singleton $ ElmS RiU
+  mkStream grd S _ Unit Unit = singleton $ ElmS RiU
   {-# Inline mkStream #-}
 
 instance (Monad m) => MkStream m S (Unit C) where
-  mkStream S _ Unit Unit = singleton $ ElmS RiU
+  mkStream grd S _ Unit Unit = singleton $ ElmS RiU
   {-# Inline mkStream #-}
 
 instance
   ( Monad m
   , MkStream m S is
   ) => MkStream m S (is:.Unit I) where
-  mkStream S (vs:._) (us:._) (is:._)
+  mkStream grd S (vs:._) (us:._) (is:._)
     = map (\(ElmS zi) -> ElmS $ zi :.: RiU)
-    $ mkStream S vs us is
+    $ mkStream grd S vs us is
   {-# Inline mkStream #-}
 
 instance
   ( Monad m
   , MkStream m S is
   ) => MkStream m S (is:.Unit O) where
-  mkStream S (vs:._) (us:._) (is:._)
+  mkStream grd S (vs:._) (us:._) (is:._)
     = map (\(ElmS zi) -> ElmS $ zi :.: RiU)
-    $ mkStream S vs us is
+    $ mkStream grd S vs us is
   {-# Inline mkStream #-}
 
 instance
   ( Monad m
   , MkStream m S is
   ) => MkStream m S (is:.Unit C) where
-  mkStream S (vs:._) (us:._) (is:._)
+  mkStream grd S (vs:._) (us:._) (is:._)
     = map (\(ElmS zi) -> ElmS $ zi :.: RiU)
-    $ mkStream S vs us is
+    $ mkStream grd S vs us is
   {-# Inline mkStream #-}
 
 

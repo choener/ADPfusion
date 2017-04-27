@@ -1,9 +1,4 @@
 packages: .
---          ../Lib-DPutils
---          ../Lib-OrderedBits
---          ../Lib-PrimitiveArray
 
---profiling: true
+optional-packages: ./*/*.cabal
 
---package ADPfusion
---  ghc-options: -fprof-auto -prof
