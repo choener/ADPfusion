@@ -159,7 +159,7 @@ staticCheck# !b (S.Stream step t) = S.Stream snew (SL t b) where
 {-# Inline staticCheck# #-}
 
 
-data SLR z = SL !z !Int# | SR !z
+data SLR z = SL z Int# | SR z
 
 -- | Constrains the behaviour of the memoizing tables. They may be 'EmptyOk' if
 -- @i==j@ is allowed (empty subwords or similar); or they may need 'NonEmpty'

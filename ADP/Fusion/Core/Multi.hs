@@ -8,6 +8,7 @@ import           Data.Vector.Fusion.Stream.Monadic
 import           Data.Strict.Tuple
 import           Data.Proxy
 import           Prelude hiding (map)
+import           GHC.Exts
 
 import           Data.PrimitiveArray hiding (map)
 
@@ -59,7 +60,7 @@ instance
     = map (\(TState sS ii ee) -> ElmTS ee ii sS)
     . termStream ts sv lu i
     . map (\s -> TState s RiZ Z)
-    $ mkStream grd ls (termStaticVar ts sv i) lu (termStreamIndex ts sv i)
+    $ mkStream (grd `andI#` termStaticCheck ts i) ls (termStaticVar ts sv i) lu (termStreamIndex ts sv i)
   {-# Inline mkStream #-}
 
 ---- | Handles each individual argument within a stack of terminal symbols.
@@ -85,12 +86,15 @@ instance Monad m => MkStream m S Z where
 class TermStaticVar t i where
   termStaticVar   :: t -> Context i -> i -> Context i
   termStreamIndex :: t -> Context i -> i -> i
+  termStaticCheck ∷ t → i → Int#
 
 instance TermStaticVar M Z where
   termStaticVar   _ _ _ = Z
   termStreamIndex _ _ _ = Z
+  termStaticCheck _ _ = 1#
   {-# INLINE [0] termStaticVar #-}
   {-# INLINE [0] termStreamIndex #-}
+  {-# INLINE [0] termStaticCheck #-}
 
 instance
   ( TermStaticVar a is
@@ -98,8 +102,10 @@ instance
   ) => TermStaticVar (TermSymbol a b) (is:.i) where
   termStaticVar   (a:|b) (vs:.v) (is:.i) = termStaticVar   a vs is :. termStaticVar   b v i
   termStreamIndex (a:|b) (vs:.v) (is:.i) = termStreamIndex a vs is :. termStreamIndex b v i
+  termStaticCheck (a:|b) (is:.i) = termStaticCheck a is `andI#` termStaticCheck b i
   {-# INLINE [0] termStaticVar #-}
   {-# INLINE [0] termStreamIndex #-}
+  {-# INLINE [0] termStaticCheck #-}
 
 --data S3 a b c           = S3 !a !b !c
 --

@@ -47,12 +47,16 @@ instance
 instance TermStaticVar Epsilon (PointL I) where
   termStaticVar _ sv _ = sv
   termStreamIndex _ _ (PointL j) = PointL j
+  termStaticCheck _ _ = 1#
   {-# Inline [0] termStaticVar #-}
   {-# Inline [0] termStreamIndex #-}
+  {-# Inline [0] termStaticCheck #-}
 
 instance TermStaticVar Epsilon (PointL O) where
   termStaticVar   _ (OStatic d) _ = OStatic d
   termStreamIndex _ _           j = j
+  termStaticCheck _ _ = 1#
   {-# Inline [0] termStaticVar #-}
   {-# Inline [0] termStreamIndex #-}
+  {-# Inline [0] termStaticCheck #-}
 

@@ -84,6 +84,11 @@ flag btstruc
   default:      False
   manual:       True
 
+flag llvm
+  description:  use llvm
+  default:      False
+  manual:       True
+
 
 
 library
@@ -160,6 +165,7 @@ library
                     , FlexibleInstances
                     , GADTs
                     , KindSignatures
+                    , MagicHash
                     , MultiParamTypeClasses
                     , RankNTypes
                     , RecordWildCards
@@ -171,6 +177,7 @@ library
                     , TypeOperators
                     , TypeSynonymInstances
                     , UndecidableInstances
+                    , UnicodeSyntax
 
   default-language:
     Haskell2010
@@ -265,6 +272,10 @@ executable NeedlemanWunsch
       -ddump-simpl
       -dsuppress-all
       -dshow-passes
+  if flag(llvm)
+    ghc-options:
+      -fllvm
+      -optlo-O3
 
 
 
