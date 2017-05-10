@@ -41,7 +41,7 @@ data instance RunningIndex (PointL C) = RiPlC !Int
 
 instance (Monad m) => MkStream m S (PointL I) where
   mkStream grd S (IStatic (I# d)) (PointL (I# u)) (PointL (I# i))
-    = staticCheck# ( grd `andI#` (i >=# 0#) `andI#` (i <=# d) `andI#` (i <=# d) )
+    = staticCheck# ( grd `andI#` (i >=# 0#) `andI#` (i <=# d) `andI#` (i <=# u) )
     . singleton . ElmS $ RiPlI 0
   mkStream grd S (IVariable _) (PointL (I# u)) (PointL (I# i))
     = staticCheck# (grd `andI#` (i >=# 0#) `andI#` (i <=# u) )

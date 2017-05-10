@@ -270,6 +270,7 @@ executable NeedlemanWunsch
     ghc-options:
       -ddump-to-file
       -ddump-simpl
+      -ddump-cmm
       -dsuppress-all
       -dshow-passes
   if flag(llvm)

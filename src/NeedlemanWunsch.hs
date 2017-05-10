@@ -78,9 +78,10 @@
 -- do this. The relative overhead for each cell to be written into goes
 -- down with more complex grammars and algebras.
 
-module Main where
+module Main (main) where
 
 import           Control.Monad (forM_,when)
+import           Debug.Trace
 import           System.Environment (getArgs)
 import           Text.Printf
 import           Control.Monad.Primitive
