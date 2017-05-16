@@ -266,6 +266,8 @@ executable NeedlemanWunsch
     -funbox-strict-fields
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000
+    -flate-dmd-anal
+    -fspec-constr-count=100
   if flag(debugdump)
     ghc-options:
       -ddump-to-file

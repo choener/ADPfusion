@@ -132,7 +132,7 @@ deriving instance (Show (RunningIndex ix)) => Show (Elm S ix)
 -- elements. If 'b' is false, we discard all stream elements.
 
 staticCheck :: Monad m => Bool -> S.Stream m a -> S.Stream m a
-staticCheck b (S.Stream step t) = b `seq` S.Stream snew (CheckLeft b t) where
+staticCheck !b (S.Stream step t) = S.Stream snew (CheckLeft b t) where
   {-# Inline [0] snew #-}
   snew (CheckLeft  False _) = return $ S.Done
   snew (CheckLeft  True  s) = return $ S.Skip (CheckRight s)
