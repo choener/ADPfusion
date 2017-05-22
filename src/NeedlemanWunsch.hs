@@ -332,16 +332,17 @@ nwOutsideForward i1 i2 = {-# SCC "nwOutsideForward" #-} mutateTablesST $
 
 align _ [] = return ()
 align _ [c] = putStrLn "single last line"
-align k (a:b:xs) = {-# SCC "align" #-} do
+align (kI,kO) (a:b:xs) = {-# SCC "align" #-} do
   putStrLn a
   putStrLn b
-  let (sI,rsI) = runNeedlemanWunsch k a b
-  let (sO,rsO) = runOutsideNeedlemanWunsch k a b
-  forM_ rsI $ \[u,l] -> printf "%s\n%s  %d\n\n" (reverse u) (reverse l) sI
-  forM_ rsO $ \[u,l] -> printf "%s\n%s  %d\n\n" (id      u) (id      l) sO
-  when (k==0) $ print (sI,sO)
+  let (sI,rsI) = runNeedlemanWunsch kI a b
+  let (sO,rsO) = runOutsideNeedlemanWunsch kO a b
+  when (kI>=0) $ forM_ rsI $ \[u,l] -> printf "%s\n%s  %d\n\n" (reverse u) (reverse l) sI
+  when (kO>=0) $ forM_ rsO $ \[u,l] -> printf "%s\n%s  %d\n\n" (id      u) (id      l) sO
+  when (kI>=0) $ print sI
+  when (kO>=0) $ print sO
   putStrLn ""
-  align k xs
+  align (kI,kO) xs
 
 -- | And finally have a minimal main that reads from stdio.
 --
@@ -352,7 +353,13 @@ align k (a:b:xs) = {-# SCC "align" #-} do
 
 main = do
   as <- getArgs
-  let k = if null as then 1 else read $ head as
+  let k = case as of
+            [] -> (1,1)
+            [x] -> let x' = read x
+                   in (x',x')
+            [x,y] -> let x' = read x; y' = read y
+                     in  (x',y')
+            args -> error $ "too many arguments"
   ls <- lines <$> getContents
   align k ls
 
