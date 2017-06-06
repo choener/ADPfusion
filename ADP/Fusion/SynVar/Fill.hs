@@ -14,6 +14,7 @@ import           Control.Monad (when,forM_)
 import           Data.List (nub,sort,group)
 import qualified Data.Vector.Unboxed as VU
 import qualified Data.Vector as V
+import qualified Data.Vector.Mutable as VM
 import           Data.Proxy
 import qualified GHC.Generics as G
 import qualified Data.Typeable as T
@@ -21,6 +22,7 @@ import qualified Data.Data as D
 import           Data.Dynamic
 import           Data.Type.Equality
 import qualified Data.List as L
+import           Data.Maybe (fromJust)
 
 import           Data.PrimitiveArray
 
@@ -239,14 +241,16 @@ data Q = Q
   , qLittleOrder  :: Int
   , qTypeRep      :: T.TypeRep
   , qObject       :: Dynamic
+  , qTable        :: Dynamic
+  , qFunction     :: Dynamic
   }
   deriving (Show)
 
 instance Eq Q where
-  Q bo1 lo1 tr1 _ == Q bo2 lo2 tr2 _ = (bo1,tr1,lo1) == (bo2,tr2,lo2)
+  Q bo1 lo1 tr1 _ _ _ == Q bo2 lo2 tr2 _ _ _ = (bo1,tr1,lo1) == (bo2,tr2,lo2)
 
 instance Ord Q where
-  Q bo1 lo1 tr1 _ `compare` Q bo2 lo2 tr2 _ = (bo1,tr1,lo1) `compare` (bo2,tr2,lo2)
+  Q bo1 lo1 tr1 _ _ _ `compare` Q bo2 lo2 tr2 _ _ _ = (bo1,tr1,lo1) `compare` (bo2,tr2,lo2)
 
 -- | Find the outermost table that has a certain big order and then fill
 -- from there.
@@ -271,9 +275,9 @@ instance
  , MPrimArrayOps arr i x
  , IndexStream i
  ) => TSBO (ts:.TwITbl Id arr c i x) where
-  asDyn (ts:.t@(TW (ITbl bo lo _ _) _)) = Q bo lo (T.typeOf t) (toDyn t) : asDyn ts
-  fillWithDyn qs (ts:.t@(TW (ITbl bo lo _ arr) f)) = do
-    let (from,to) = bounds arr
+  asDyn (ts:.t@(TW (ITbl bo lo _ arr) fun)) = Q bo lo (T.typeOf t) (toDyn t) (toDyn arr) (seq fun $ toDyn fun) : asDyn ts
+  fillWithDyn qs (ts:.t@(TW (ITbl bo lo _ arrDirect) fDirect)) = do
+    let (from,to) = bounds arrDirect
     -- @hs@ are all tables that can be filled here
     -- @ns@ are all tables we can't fill and need to process further down
     -- the line
@@ -281,10 +285,14 @@ instance
     if null hs
       then fillWithDyn qs ts
       else do
-        let ms = Prelude.map concrete hs
-            concrete  = (maybe (error "fromDynamic should not fail!")
-                         (\x -> x `asTypeOf` t)
-                        . fromDynamic . qObject)
+        let ms = Prelude.map concreteTW hs
+            af = Prelude.map concreteAF hs
+            concreteTW  = (maybe (error "fromDynamic should not fail!")
+                           (\x -> x `asTypeOf` t)
+                          . fromDynamic . qObject)
+            concreteAF q  = ( (`asTypeOf` arrDirect) . fromJust . fromDynamic $ qTable    q
+                            , (`asTypeOf` fDirect)   . fromJust . fromDynamic $ qFunction q
+                            )
         -- We have a single table and should short-circuit here
         --
         -- TODO we should specialize for tables of lengh @1..k@ for some
@@ -300,15 +308,34 @@ instance
         --   measure if this yields meaningful performance improvements
         --
         -- TODO also consider if we maybe just put marrfs into a vector
-        case (length ms) of
-          1 -> do marr <- unsafeThaw arr
+        --
+        -- TODO we should use TH here.
+        --
+        -- (1) Have @Proxy @0@, say to set up big and small orders -- this
+        -- gives us the order on the type level. @data One = One, data Two
+        -- = Two, ...@ might be easier... maybe this is not too annoying to
+        -- write using type equality
+        -- 
+        -- (2) Then deconstruct the @ts:.t@ things with TH into the correct
+        -- pieces.
+        --
+        -- (3) Finally generate fill code. This should yield to performance
+        -- similar to what we have here with the @case of 1@ construction,
+        -- because @fDirect@ is partially floated out.
+        --
+        marrfs <- V.fromList <$> Prelude.mapM (\(TW (ITbl _ _ _ arr) f) -> unsafeThaw arr >>= \marr -> return (marr,f)) ms
+        case (V.length marrfs) of
+          1 -> do -- let (!marr,!f) = marrfs V.! 0   -- this takes 1.3 seconds for NeedlemanWunsch
+                  -- marr <- unsafeThaw arrDirect  -- this takes 0.8 seconds for NeedlemanWunsch
+                  marr <- unsafeThaw (fst $ af!!0)  -- this takes 1.3 seconds for NeedlemanWunsch
+                  let !ffff = fDirect --snd $ af!!0
                   flip SM.mapM_ (streamUp from to) $ \k -> do
                     -- TODO @inline mrph@ ...
-                    z <- (return . unId) $ f to k
+                    z <- (return . unId) $ ffff to k
                     writeM marr k z
+          4723 -> return ()
         -- We have more than one table in will work over the list of tables
-          _ -> do marrfs <- V.fromList <$> Prelude.mapM (\(TW (ITbl _ _ _ arr) f) -> unsafeThaw arr >>= \marr -> return (marr,f)) ms
-                  flip SM.mapM_ (streamUp from to) $ \k ->
+          _ -> do flip SM.mapM_ (streamUp from to) $ \k ->
                     V.forM_ marrfs $ \(marr,f) -> do
                       z <- (return . unId) $ f to k
                       writeM marr k z
