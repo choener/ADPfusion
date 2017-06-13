@@ -327,11 +327,11 @@ instance
         case (V.length marrfs) of
           1 -> do -- let (!marr,!f) = marrfs V.! 0   -- this takes 1.3 seconds for NeedlemanWunsch
                   -- marr <- unsafeThaw arrDirect  -- this takes 0.8 seconds for NeedlemanWunsch
-                  marr <- unsafeThaw (fst $ af!!0)  -- this takes 1.3 seconds for NeedlemanWunsch
+                  marr <- unsafeThaw arrDirect -- (fst $ af!!0)  -- this takes 1.3 seconds for NeedlemanWunsch
                   let !ffff = fDirect --snd $ af!!0
                   flip SM.mapM_ (streamUp from to) $ \k -> do
                     -- TODO @inline mrph@ ...
-                    z <- (return . unId) $ ffff to k
+                    z <- (return . unId) $ fDirect to k
                     writeM marr k z
           4723 -> return ()
         -- We have more than one table in will work over the list of tables
