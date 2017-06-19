@@ -4,6 +4,7 @@ module ADP.Fusion.Term.Deletion.Point where
 import           Data.Proxy
 import           Data.Strict.Tuple
 import qualified Data.Vector.Fusion.Stream.Monadic as S
+import           GHC.Exts
 
 import           Data.PrimitiveArray
 
@@ -19,7 +20,7 @@ instance
   mkStream grd (ls :!: Deletion) sv us is
     = S.map (\(ss,ee,ii) -> ElmDeletion ii ss)
     . addTermStream1 Deletion sv us is
-    $ mkStream grd ls (termStaticVar Deletion sv is) us (termStreamIndex Deletion sv is)
+    $ mkStream (grd `andI#` termStaticCheck Deletion is) ls (termStaticVar Deletion sv is) us (termStreamIndex Deletion sv is)
   {-# Inline mkStream #-}
 
 
