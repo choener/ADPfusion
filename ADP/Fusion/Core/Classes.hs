@@ -53,12 +53,6 @@ class RuleContext i where
 -- @RunningIndex (is :. Subword I) = RiSwI !(RunningIndex is) !Int@.
 -- Hopefully, these are completely erased.
 
-{-
-class RunningIndexCl i where
-  type RecursiveRl i :: *
-  type ThisRI i :: *
--}
-
 data family RunningIndex i :: *
 
 data instance RunningIndex (is:.i) = !(RunningIndex is) :.: !(RunningIndex i)
@@ -146,10 +140,10 @@ staticCheck !b (S.Stream step t) = S.Stream snew (CheckLeft b t) where
 data StaticCheck a b = CheckLeft Bool a | CheckRight b
 
 staticCheck# :: Monad m => Int# -> S.Stream m a -> S.Stream m a
-staticCheck# !b (S.Stream step t) = S.Stream snew (SL t) where
+staticCheck# !b (S.Stream step t) = S.Stream snew (SL b t) where
   {-# Inline [0] snew #-}
-  snew (SL s)
-    | 1# <- b   = return $ S.Skip (SR s)
+  snew (SL q s)
+    | 1# <- q   = return $ S.Skip (SR s)
     | otherwise = return $ S.Done
   snew (SR s  ) = do r <- step s
                      case r of
@@ -159,18 +153,12 @@ staticCheck# !b (S.Stream step t) = S.Stream snew (SL t) where
 {-# Inline staticCheck# #-}
 
 
-data SLR z = SL z | SR z
+data SLR z = SL !Int# z | SR z
 
 -- | Constrains the behaviour of the memoizing tables. They may be 'EmptyOk' if
 -- @i==j@ is allowed (empty subwords or similar); or they may need 'NonEmpty'
 -- indices, or finally they can be 'OnlyZero' (only @i==j@ allowed) which is
 -- useful in multi-dimensional casese.
-
---data TableConstraint
---  = EmptyOk
---  | NonEmpty
---  | OnlyZero
---  deriving (Eq,Show)
 
 data EmptyOk = EmptyOk
 
@@ -187,13 +175,6 @@ instance MinSize NonEmpty where
   minSize NonEmpty = 1
   {-# Inline minSize #-}
 
-{-
-minSize :: TableConstraint -> Int
-minSize NonEmpty = 1
-minSize _        = 0
-{-# Inline [0] minSize #-}
--}
-
 -- |
 --
 -- TODO Rewrite to generalize easily over multi-dim cases.
@@ -203,22 +184,4 @@ class ModifyConstraint t where
   type TE  t :: *
   toNonEmpty :: t -> TNE t
   toEmpty    :: t -> TE  t
-
---
---instance ModifyConstraint EmptyOk
---  type TNE EmptyOk = NonEmpty
---  type TE  EmptyOk = 
-
--- |
-
---type family   TblConstraint x       :: *
---
---type instance TblConstraint (is:.i) =  TblConstraint is :. TblConstraint i
---type instance TblConstraint Z       = Z
---
----- TODO move into the sub-modules
---
---type instance TblConstraint (PointL  t) = TableConstraint
---type instance TblConstraint (PointR  t) = TableConstraint
---type instance TblConstraint (Subword t) = TableConstraint
 

@@ -68,17 +68,18 @@ stream_Strng_V k = seq v1 $ seq v2 $ unId $ (f <<< (M:|Strng v1:|Strng v2) ... h
 {-# NoInline stream_Strng_V #-}
 
 stream_Strng2_S :: Int -> Int
-stream_Strng2_S k = seq v1 $ seq v2 $ unId $ (f <<< Strng v1 % Strng v2 ... h) (pointLI 10) (pointLI k)
-  where f qs zs = VU.sum (VU.map ord qs VU.++ VU.map ord zs)
+stream_Strng2_S k = seq v1 $ seq v2 $
+                    unId $ (f <<< Strng v1 % Strng v2 ... h)
+                    (pointLI 10) (pointLI k)
+  where f qs zs = VU.length qs + VU.length zs -- VU.sum (VU.map ord qs VU.++ VU.map ord zs)
         h   = S.foldl' (+) 0
 {-# NoInline stream_Strng2_S #-}
  
 stream_Strng2_V :: Int -> Int
-stream_Strng2_V k = seq v1 $ seq v2 $ seq v3 $ seq v4 $
-                    unId $ (f <<< (M:|Strng v1:|Epsilon) % (M:|Strng v3:|Epsilon) ... h)
-                      (Z:.pointLI 10:.pointLI 10) (Z:.pointLI k:.pointLI k)
-  where f (Z:.qs:.rs) (Z:.zs:.ws) = let l = VU.length qs + VU.length zs -- VU.sum (VU.map ord $ qs VU.++ zs)
-                                    in  l
+stream_Strng2_V k = seq v1 $ seq v2 $
+                    unId $ (f <<< (M:|Strng v1:|Epsilon) % (M:|Strng v2:|Epsilon) ... h)
+                      (Z:.pointLI 10:.pointLI 10) (Z:.pointLI k:.pointLI 0)
+  where f (Z:.qs:.()) (Z:.zs:.()) = VU.length qs + VU.length zs -- VU.sum (VU.map ord $ qs VU.++ zs)
         h   = S.foldl' (+) 0
 {-# NoInline stream_Strng2_V #-}
 

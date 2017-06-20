@@ -63,20 +63,8 @@ instance
     $ mkStream (grd `andI#` termStaticCheck ts i) ls (termStaticVar ts sv i) lu (termStreamIndex ts sv i)
   {-# Inline mkStream #-}
 
----- | Handles each individual argument within a stack of terminal symbols.
---
---class TerminalStream m t i where
---  terminalStream :: t -> Context i -> i -> S.Stream m (S5 s j j i i) -> S.Stream m (S6 s j j i i (TermArg t))
---
---iPackTerminalStream a sv    (ii:._)  = terminalStream a sv ii     . S.map (\(S5 s zi zo    (is:.i)     (os:.o) ) -> S5 s (zi:.i) (zo:.o)    is     os )
---{-# Inline iPackTerminalStream #-}
---
---instance (Monad m) => TerminalStream m M Z where
---  terminalStream M _ Z = S.map (\(S5 s j1 j2 Z Z) -> S6 s j1 j2 Z Z Z)
---  {-# INLINE terminalStream #-}
-
 instance Monad m => MkStream m S Z where
-  mkStream grd _ _ _ _ = staticCheck# grd $ S.singleton (ElmS RiZ)
+  mkStream grd S Z Z Z = S.filter (\_ -> case grd of { 1# -> True ; _ -> False }) $ S.singleton (ElmS RiZ)
   {-# INLINE mkStream #-}
 
 -- | For multi-dimensional terminals we need to be able to calculate how the
@@ -107,24 +95,6 @@ instance
   {-# INLINE [0] termStreamIndex #-}
   {-# INLINE [0] termStaticCheck #-}
 
---data S3 a b c           = S3 !a !b !c
---
---data S4 a b c d         = S4 !a !b !c !d
---
---data S5 a b c d e       = S5 !a !b !c !d !e
---
---data S6 a b c d e f     = S6 !a !b !c !d !e !f
---
---data S7 a b c d e f g   = S7 !a !b !c !d !e !f !g
---
---data S8 a b c d e f g h = S8 !a !b !c !d !e !f !g !h
-
---fromTerminalStream (S6 s Z Z i o e) = ElmTS e i o s
---{-# INLINE fromTerminalStream #-}
-
---toTerminalStream s = S5 s Z Z (getIdx s) (getOmx s)
---{-# INLINE toTerminalStream #-}
-
 instance RuleContext Z where
   type Context Z = Z
   initialContext _ = Z
@@ -154,15 +124,13 @@ instance (TableStaticVar us cs is, TableStaticVar u c i) => TableStaticVar (us:.
 
 
 data TermState s i e = TState
-  { tS  :: !s -- ^ state coming in from the left
---  , tIx :: !(RunningIndex a) --  @I/C@ index from @sS@
-  , iIx :: !(RunningIndex i) -- ^ @I/C@ building up state to hand over to next symbol
-  , eTS :: !e -- ^ element data
+  { tS  :: !s
+    -- ^ state coming in from the left
+  , iIx :: !(RunningIndex i)
+    -- ^ @I/C@ building up state to hand over to next symbol
+  , eTS :: !e
+    -- ^ element data
   }
-
---getTIX :: (Element x0 a, s ~ Elm x0 a) => TermState s a i e -> RunningIndex a
---getTIX (TState s a i e) = getIdx s
---{-# Inline getTIX #-}
 
 class TermStream m t s i where
   termStream :: t -> Context i -> i -> i -> Stream m (TermState s Z Z) -> Stream m (TermState s i (TermArg t))
@@ -211,13 +179,6 @@ type TmkCtx1 m ls t i
     )
 
 -- | @Term TermStream@ context
-
---type TstCtx1 m ts s sixty is i
---  = ( Monad m
---    , TermStream m ts s is
---    , GetIndex (RunningIndex sixty) (RunningIndex (is:.i))
---    , GetIx (RunningIndex sixty) (RunningIndex (is:.i)) ~ (RunningIndex i)
---    )
 
 type TstCtx m ts s x0 sixty is i
   = ( Monad m
