@@ -323,6 +323,51 @@ executable spectest
 --      -ddump-simpl
 --      -dsuppress-all
 
+benchmark benchmark
+  type:
+    exitcode-stdio-1.0
+  build-depends: base
+               , template-haskell
+               , fmlist             >= 0.9
+               , vector
+               , criterion          >= 1.1
+               --
+               , ADPfusion
+               , PrimitiveArray
+  hs-source-dirs:
+    tests
+  main-is:
+    benchmark.hs
+  default-language:
+    Haskell2010
+  default-extensions: BangPatterns
+                    , FlexibleContexts
+                    , FlexibleInstances
+                    , MultiParamTypeClasses
+                    , RecordWildCards
+                    , TemplateHaskell
+                    , TypeFamilies
+                    , TypeOperators
+  ghc-options:
+    -Odph
+    -funbox-strict-fields
+    -funfolding-use-threshold1000
+    -funfolding-keeness-factor1000
+    -flate-dmd-anal
+    -fspec-constr-count=100000
+    -fspec-constr-threshold=100000
+    -ddump-to-file
+    -ddump-simpl
+    -ddump-cmm
+    -dsuppress-all
+    -dshow-passes
+  if flag(llvm)
+    ghc-options:
+      -fllvm
+      -optlo-O3
+
+
+
 
 
 benchmark TestBacktrackingStructures

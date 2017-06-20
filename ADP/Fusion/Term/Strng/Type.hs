@@ -17,6 +17,7 @@ import           ADP.Fusion.Core.Multi
 --
 -- NOTE gadt comments are not parsed by haddock?
 
+{-
 data Strng v x where
   Strng :: VG.Vector v x
         => (Int -> Int -> v x -> v x)  -- @slice@ function
@@ -36,6 +37,10 @@ someS = \xs -> Strng VG.unsafeSlice 1 (VG.length xs) xs
 strng :: VG.Vector v x => Int -> Int -> v x -> Strng v x
 strng = \minL maxL xs -> Strng VG.unsafeSlice minL maxL xs
 {-# Inline strng #-}
+-}
+
+data Strng v x where
+  Strng :: VG.Vector v x => v x -> Strng v x
 
 instance Build (Strng v x)
 

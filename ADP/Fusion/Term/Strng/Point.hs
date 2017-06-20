@@ -18,7 +18,7 @@ import           ADP.Fusion.Term.Strng.Type
 instance
   ( TmkCtx1 m ls (Strng v x) (PointL i)
   ) => MkStream m (ls :!: Strng v x) (PointL i) where
-  mkStream grd (ls :!: strng@(Strng _ minL maxL xs)) sv us is
+  mkStream grd (ls :!: strng) sv us is
     = S.map (\(ss,ee,ii) -> ElmStrng ee ii ss)
     . addTermStream1 strng sv us is
     $ mkStream grd ls (termStaticVar strng sv is) us (termStreamIndex strng sv is)
@@ -30,26 +30,25 @@ instance
   ( TstCtx m ts s x0 i0 is (PointL I)
   ) => TermStream m (TermSymbol ts (Strng v x)) s (is:.PointL I) where
   --
-  termStream (ts:|Strng f minL maxL v) (cs:.IStatic d) (us:.PointL u) (is:.PointL i)
+  termStream (ts:|Strng (!v)) (cs:.IStatic d) (us:.PointL u) (is:.PointL i)
     = S.map (\(TState s ii ee) ->
                 let RiPlI k = getIndex (getIdx s) (Proxy :: PRI is (PointL I))
-                in  TState s (ii:.:RiPlI i) (ee:.f k (i-k) v))
+                in  TState s (ii:.:RiPlI i) (ee:.VG.unsafeSlice k (i-k) v))
     . termStream ts cs us is
   --
-  termStream (ts:|Strng f minL maxL v) (cs:.IVariable d) (us:.PointL u) (is:.PointL i)
+  termStream (ts:|Strng (!v)) (cs:.IVariable d) (us:.PointL u) (is:.PointL i)
     = S.flatten mk step . termStream ts cs us is
-    where mk (tstate@(TState s ii ee)) =
+    where mk (TState s ii ee) =
               let RiPlI k = getIndex (getIdx s) (Proxy :: PRI is (PointL I))
-              in  return (tstate, i-k-d-minL)
-          step (tstate@(TState s ii ee), z)
-            | z >= 0 && (l-k <= maxL) = return $ S.Yield (TState s (ii:.:RiPlI l) (ee:.f k (l-k+1) v)) (tstate, z-1)
+              in  return (s, ii, ee, k)
+          step (s, ii, ee, k)
+            | k <= i = return $ S.Yield (TState s (ii:.:RiPlI k) (ee:.VG.unsafeSlice k (i-k) v)) (s, ii, ee, k+1)
             | otherwise = return $ S.Done
-            where RiPlI k = getIndex (getIdx s) (Proxy :: PRI is (PointL I))
-                  l        = i - z - d
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline termStream #-}
 
+{-
 instance
   ( TstCtx m ts s x0 i0 is (PointL O)
   ) => TermStream m (TermSymbol ts (Strng v x)) s (is:.PointL O) where
@@ -73,18 +72,22 @@ instance
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline termStream #-}
-
+-}
 
 
 instance TermStaticVar (Strng v x) (PointL I) where
-  termStaticVar (Strng _ minL maxL _) (IStatic   d) _ = IVariable $ d + maxL - minL
-  termStaticVar _                     (IVariable d) _ = IVariable d -- TODO is this right?
+  termStaticVar (Strng _) (IStatic   d) _ = IVariable d
+  termStaticVar _         (IVariable d) _ = IVariable d
   --
-  termStreamIndex (Strng _ minL _ _) (IStatic d) (PointL j) = PointL $ j - minL
+  termStreamIndex (Strng _) (IStatic   d) (PointL j) = PointL j
+  termStreamIndex (Strng _) (IVariable d) (PointL j) = PointL j
   --
+  termStaticCheck _ _ = 1#
   {-# Inline [0] termStaticVar   #-}
   {-# Inline [0] termStreamIndex #-}
+  {-# Inline [0] termStaticCheck #-}
 
+{-
 instance TermStaticVar (Strng v x) (PointL O) where
   termStaticVar (Strng _ minL maxL _) (OStatic  d) _ = ORightOf $ d + maxL - minL
   termStaticVar _                     (ORightOf d) _ = ORightOf 0 -- TODO is this right?
@@ -93,4 +96,5 @@ instance TermStaticVar (Strng v x) (PointL O) where
   --
   {-# Inline [0] termStaticVar   #-}
   {-# Inline [0] termStreamIndex #-}
+-}
 
