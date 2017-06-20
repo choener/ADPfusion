@@ -6,6 +6,7 @@ import           Data.Strict.Tuple
 import           Debug.Trace
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Generic as VG
+import           GHC.Exts
 
 import           Data.PrimitiveArray
 
@@ -21,7 +22,7 @@ instance
   mkStream grd (ls :!: strng) sv us is
     = S.map (\(ss,ee,ii) -> ElmStrng ee ii ss)
     . addTermStream1 strng sv us is
-    $ mkStream grd ls (termStaticVar strng sv is) us (termStreamIndex strng sv is)
+    $ mkStream (grd `andI#` termStaticCheck strng is) ls (termStaticVar strng sv is) us (termStreamIndex strng sv is)
   {-# Inline mkStream #-}
 
 

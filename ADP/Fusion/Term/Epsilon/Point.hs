@@ -4,6 +4,7 @@ module ADP.Fusion.Term.Epsilon.Point where
 import           Data.Proxy
 import           Data.Strict.Tuple
 import qualified Data.Vector.Fusion.Stream.Monadic as S
+import           GHC.Exts
 
 import           Data.PrimitiveArray
 
@@ -19,7 +20,7 @@ instance
   mkStream grd (ls :!: Epsilon) sv us is
     = S.map (\(ss,ee,ii) -> ElmEpsilon ii ss)
     . addTermStream1 Epsilon sv us is
-    $ mkStream grd ls (termStaticVar Epsilon sv is) us (termStreamIndex Epsilon sv is)
+    $ mkStream (grd `andI#` termStaticCheck Epsilon is) ls (termStaticVar Epsilon sv is) us (termStreamIndex Epsilon sv is)
   {-# Inline mkStream #-}
 
 
