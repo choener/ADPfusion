@@ -336,6 +336,8 @@ benchmark benchmark
                , PrimitiveArray
   hs-source-dirs:
     tests
+  other-modules:
+    BenchmarkFun
   main-is:
     benchmark.hs
   default-language:
@@ -349,18 +351,21 @@ benchmark benchmark
                     , TypeFamilies
                     , TypeOperators
   ghc-options:
-    -Odph
+    -O2
     -funbox-strict-fields
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000
     -flate-dmd-anal
     -fspec-constr-count=100000
     -fspec-constr-threshold=100000
+    -fspec-constr-keen
+    -fspec-constr-recursive=10000
     -ddump-to-file
     -ddump-simpl
     -ddump-cmm
     -dsuppress-all
     -dshow-passes
+    -dverbose-core2core
   if flag(llvm)
     ghc-options:
       -fllvm

@@ -33,6 +33,13 @@ instance
               let RiPlI k = getIndex (getIdx s) (Proxy :: PRI is (PointL I))
               in  TState s (ii:.:RiPlI k) (ee:.()))
     . termStream ts cs us is
+  {-
+  termStream (ts:|Epsilon) (cs:.IVariable d) (us:.PointL u) (is:.PointL i)
+    = S.map (\(TState s ii ee) ->
+              let RiPlI k = getIndex (getIdx s) (Proxy :: PRI is (PointL I))
+              in  TState s (ii:.:RiPlI k) (ee:.()))
+    . termStream ts cs us is
+  -}
   {-# Inline termStream #-}
 
 instance

@@ -25,49 +25,49 @@ class GetIndexGo ixTy myTy (cmp :: Ordering) where
 
 instance GetIndexGo (ix:.i) (my:.m) EQ where
   type ResolvedIx (ix:.i) (my:.m) EQ = i
-  getIndexGo (ix:.i) _ _ = i
-  {-# Inline getIndexGo #-}
+  getIndexGo (ix:.i) _ _ = seq ix $ i
+  {-# Inline [0] getIndexGo #-}
 
 instance (GetIndexGo ix (my:.m) (CmpNat (ToNat ix) (ToNat (my:.m)))) => GetIndexGo (ix:.i) (my:.m) GT where
   type ResolvedIx (ix:.i) (my:.m) GT = ResolvedIx ix (my:.m) (CmpNat (ToNat ix) (ToNat (my:.m)))
   getIndexGo (ix:._) p _ = getIndexGo ix p (Proxy :: Proxy (CmpNat (ToNat ix) (ToNat (my:.m))))
-  {-# Inline getIndexGo #-}
+  {-# Inline [0] getIndexGo #-}
 
 instance (GetIndexGo ix Z (CmpNat (ToNat ix) (ToNat Z))) => GetIndexGo (ix:.i) Z GT where
   type ResolvedIx (ix:.i) Z GT = ResolvedIx ix Z (CmpNat (ToNat ix) (ToNat Z))
   getIndexGo (ix:._) p _ = getIndexGo ix p (Proxy :: Proxy (CmpNat (ToNat ix) (ToNat Z)))
-  {-# Inline getIndexGo #-}
+  {-# Inline [0] getIndexGo #-}
 
 instance GetIndexGo Z Z EQ where
   type ResolvedIx Z Z EQ = Z
   getIndexGo _ _ _ = Z
-  {-# Inline getIndexGo #-}
+  {-# Inline [0] getIndexGo #-}
 
 
 
 instance GetIndexGo (RunningIndex (ix:.i)) (RunningIndex (my:.m)) EQ where
   type ResolvedIx (RunningIndex (ix:.i)) (RunningIndex (my:.m)) EQ = RunningIndex i
-  getIndexGo (ix:.:i) _ _ = i
-  {-# Inline getIndexGo #-}
+  getIndexGo (ix:.:i) _ _ = seq ix i
+  {-# Inline [0] getIndexGo #-}
 
 instance
   ( GetIndexGo (RunningIndex ix) (RunningIndex (my:.m)) (CmpNat (ToNat (RunningIndex ix)) (ToNat (RunningIndex (my:.m))))
   ) => GetIndexGo (RunningIndex (ix:.i)) (RunningIndex (my:.m)) GT where
   type ResolvedIx (RunningIndex (ix:.i)) (RunningIndex (my:.m)) GT = ResolvedIx (RunningIndex ix) (RunningIndex (my:.m)) (CmpNat (ToNat (RunningIndex ix)) (ToNat (RunningIndex (my:.m))))
   getIndexGo (ix:.:_) p _ = getIndexGo ix p (Proxy :: Proxy (CmpNat (ToNat (RunningIndex ix)) (ToNat (RunningIndex (my:.m)))))
-  {-# Inline getIndexGo #-}
+  {-# Inline [0] getIndexGo #-}
 
 instance
   ( GetIndexGo (RunningIndex ix) (RunningIndex Z) (CmpNat (ToNat (RunningIndex ix)) (ToNat (RunningIndex Z)))
   ) => GetIndexGo (RunningIndex (ix:.i)) (RunningIndex Z) GT where
   type ResolvedIx (RunningIndex (ix:.i)) (RunningIndex Z) GT = ResolvedIx (RunningIndex ix) (RunningIndex Z) (CmpNat (ToNat (RunningIndex ix)) (ToNat (RunningIndex Z)))
   getIndexGo (ix:.:_) p _ = getIndexGo ix p (Proxy :: Proxy (CmpNat (ToNat (RunningIndex ix)) (ToNat (RunningIndex Z))))
-  {-# Inline getIndexGo #-}
+  {-# Inline [0] getIndexGo #-}
 
 instance GetIndexGo (RunningIndex Z) (RunningIndex Z) EQ where
   type ResolvedIx (RunningIndex Z) (RunningIndex Z) EQ = RunningIndex Z
-  getIndexGo _ _ _ = RiZ
-  {-# Inline getIndexGo #-}
+  getIndexGo riz _ _ = riz
+  {-# Inline [0] getIndexGo #-}
 
 
 
@@ -86,7 +86,7 @@ getIndex
   -> Proxy myTy
   -> GetIx ixTy myTy
 getIndex ixTy myTy = getIndexGo ixTy (Proxy :: Proxy myTy) (Proxy :: Proxy (CmpNat (ToNat ixTy) (ToNat myTy)))
-{-# Inline getIndex #-}
+{-# Inline [0] getIndex #-}
 
 
 

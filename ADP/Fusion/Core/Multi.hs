@@ -41,7 +41,7 @@ type instance TermArg M                = Z
 type instance TermArg (TermSymbol a b) = TermArg a :. TermArg b
 
 instance (Element ls i) => Element (ls :!: TermSymbol a b) i where
-  data Elm (ls :!: TermSymbol a b) i = ElmTS !(TermArg (TermSymbol a b)) !(RunningIndex i) !(Elm ls i)
+  data Elm (ls :!: TermSymbol a b) i = ElmTS (TermArg (TermSymbol a b)) (RunningIndex i) (Elm ls i)
   type Arg (ls :!: TermSymbol a b)   = Arg ls :. TermArg (TermSymbol a b)
   getArg (ElmTS a _ ls) = getArg ls :. a
   getIdx (ElmTS _ i _ ) = i
