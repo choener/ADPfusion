@@ -113,7 +113,7 @@ data S = S
 instance
   (
   ) => Element S i where
-  data Elm S i = ElmS !(RunningIndex i)
+  newtype Elm S i = ElmS (RunningIndex i)
   type Arg S   = Z
   getArg (ElmS _) = Z
   getIdx (ElmS i) = i

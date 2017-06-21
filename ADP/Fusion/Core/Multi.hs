@@ -9,6 +9,7 @@ import           Data.Strict.Tuple
 import           Data.Proxy
 import           Prelude hiding (map)
 import           GHC.Exts
+import           Debug.Trace
 
 import           Data.PrimitiveArray hiding (map)
 
@@ -64,7 +65,7 @@ instance
   {-# Inline mkStream #-}
 
 instance Monad m => MkStream m S Z where
-  mkStream grd S Z Z Z = S.filter (\_ -> case grd of { 1# -> True ; _ -> False }) $ S.singleton (ElmS RiZ)
+  mkStream grd S Z Z Z = S.filter (const $ isTrue# grd) $ S.singleton $ ElmS RiZ
   {-# INLINE mkStream #-}
 
 -- | For multi-dimensional terminals we need to be able to calculate how the

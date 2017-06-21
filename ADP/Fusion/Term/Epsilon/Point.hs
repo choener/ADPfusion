@@ -29,7 +29,9 @@ instance
   ( TstCtx m ts s x0 i0 is (PointL I)
   ) => TermStream m (TermSymbol ts Epsilon) s (is:.PointL I) where
   termStream (ts:|Epsilon) (cs:.IStatic d) (us:.PointL u) (is:.PointL i)
-    = S.map (\(TState s ii ee) -> TState s (ii:.:RiPlI i) (ee:.()))
+    = S.map (\(TState s ii ee) ->
+              let RiPlI k = getIndex (getIdx s) (Proxy :: PRI is (PointL I))
+              in  TState s (ii:.:RiPlI k) (ee:.()))
     . termStream ts cs us is
   {-# Inline termStream #-}
 
@@ -48,7 +50,7 @@ instance
 instance TermStaticVar Epsilon (PointL I) where
   termStaticVar _ sv _ = sv
   termStreamIndex _ _ (PointL j) = PointL j
-  termStaticCheck _ _ = 1#
+  termStaticCheck _ (PointL (I# i)) = i ==# 0#
   {-# Inline [0] termStaticVar #-}
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}

@@ -75,12 +75,14 @@ stream_Strng2_S k = seq v1 $ seq v2 $
         h   = S.foldl' (+) 0
 {-# NoInline stream_Strng2_S #-}
  
-stream_Strng2_V :: Int -> Int
-stream_Strng2_V k = seq v1 $ seq v2 $
+stream_Strng2_V :: Int -> Int -> Int
+stream_Strng2_V k l = seq v1 $ seq v2 $
                     unId $ (f <<< (M:|Strng v1:|Epsilon) % (M:|Strng v2:|Epsilon) ... h)
-                      (Z:.pointLI 10:.pointLI 10) (Z:.pointLI k:.pointLI 0)
-  where f (Z:.qs:.()) (Z:.zs:.()) = VU.length qs + VU.length zs -- VU.sum (VU.map ord $ qs VU.++ zs)
+                      (Z:.pointLI 10:.pointLI 10) (Z:.pointLI k:.pointLI l)
+  where f (Z:.qs:.()) (Z:.zs:.()) = VU.length qs + VU.length zs
         h   = S.foldl' (+) 0
+        {-# Inline f #-}
+        {-# Inline h #-}
 {-# NoInline stream_Strng2_V #-}
 
 
@@ -100,7 +102,7 @@ main = do
       [ bench "S"            $ nf stream_Strng_S  10
       , bench "V"            $ nf stream_Strng_V  10
       , bench "2S"           $ nf stream_Strng2_S 10
-      , bench "2V"           $ nf stream_Strng2_V 10
+      , bench "2V"           $ nf (uncurry stream_Strng2_V) (10,0)
       ]
     ]
 

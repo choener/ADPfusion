@@ -1,7 +1,10 @@
 
 -- | Type-level indexing functionality
 
-module ADP.Fusion.Core.TyLvlIx where
+module ADP.Fusion.Core.TyLvlIx
+  ( module ADP.Fusion.Core.TyLvlIx
+  , module GHC.TypeLits
+  ) where
 
 import Data.Proxy
 import GHC.TypeLits

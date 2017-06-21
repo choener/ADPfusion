@@ -35,7 +35,7 @@ newtype instance RunningIndex (PointL I) = RiPlI Int
 
 data instance RunningIndex (PointL O) = RiPlO !Int !Int
 
-data instance RunningIndex (PointL C) = RiPlC !Int
+newtype instance RunningIndex (PointL C) = RiPlC Int
 
 
 
@@ -52,9 +52,16 @@ instance
   ( Monad m
   , MkStream m S is
   ) => MkStream m S (is:.PointL I) where
+  -- NOTE GHC-8.2-rc2: with @go@ being @NoInline@, we *do* have the @ElmS@
+  -- ctors in core, *but* the inner loop in @stream_Strng_2V@ is optimal.
+  -- If @go@ is inlined, the optimizer seems that @ElmS@ is not used its
+  -- turned into a CAF. This ends up being a lot worse than @go@ being
+  -- noinline. However, this is brittle and stops works working easily.
   mkStream grd S (vs:.IStatic (I# d)) (lus:.PointL (I# u)) (is:.PointL (I# i))
-    = map (\(ElmS zi) -> ElmS $ zi :.: RiPlI 0)
+    = map go
     $ mkStream (grd `andI#` (i >=# 0#) `andI#` (i <=# d) `andI#` (i <=# u)) S vs lus is
+    where go = (\(ElmS zi) -> ElmS $ zi :.: RiPlI 0)
+          {-# Inline [0] go #-}
   mkStream grd S (vs:.IVariable d) (lus:.PointL (I# u)) (is:.PointL (I# i))
     = map (\(ElmS zi) -> ElmS $ zi :.: RiPlI 0)
     $ mkStream (grd `andI#` (i >=# 0#) `andI#` (i <=# u)) S vs lus is
