@@ -83,8 +83,29 @@ infixl 8 <<#
 -- | Combine two RHSs to give a choice between parses.
 
 infixl 7 |||
-(|||) xs ys = \lu ij -> xs lu ij S.++ ys lu ij
+(|||) xs ys = \lu ij -> xs lu ij `streamappend` ys lu ij
 {-# INLINE (|||) #-}
+
+data StreamAppend a b = SAL a | SAR b
+
+streamappend :: Monad m => Stream m a -> Stream m a -> Stream m a
+{-# Inline [1] streamappend #-}
+Stream stepa ta `streamappend` Stream stepb tb = Stream step (SAL ta)
+  where
+    {-# Inline [0] step #-}
+    step (SAL   sa) = do
+                        r <- stepa sa
+                        case r of
+                          S.Yield x sa' -> return $ S.Yield x (SAL sa')
+                          S.Skip    sa' -> return $ S.Skip    (SAL sa')
+                          S.Done        -> return $ S.Skip    (SAR tb)
+    step (SAR   sb) = do
+                        r <- stepb sb
+                        case r of
+                          S.Yield x sb' -> return $ S.Yield x (SAR sb')
+                          S.Skip    sb' -> return $ S.Skip    (SAR sb')
+                          S.Done        -> return $ S.Done
+
 
 -- | Applies the objective function 'h' to a stream 's'. The objective function
 -- reduces the stream to a single optimal value (or some vector of co-optimal

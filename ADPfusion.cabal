@@ -1,7 +1,7 @@
 name:           ADPfusion
 version:        0.5.3.0
-author:         Christian Hoener zu Siederdissen, 2011-2016
-copyright:      Christian Hoener zu Siederdissen, 2011-2016
+author:         Christian Hoener zu Siederdissen, 2011-2017
+copyright:      Christian Hoener zu Siederdissen, 2011-2017
 homepage:       https://github.com/choener/ADPfusion
 bug-reports:    https://github.com/choener/ADPfusion/issues
 maintainer:     choener@bioinf.uni-leipzig.de
@@ -100,6 +100,7 @@ library
   build-depends: base               >= 4.7    && < 5.0
                , bits               >= 0.4
                , containers
+               , deepseq
                , ghc-prim
                , mmorph             >= 1.0
                , mtl                >= 2.0
@@ -165,6 +166,7 @@ library
                     , CPP
                     , DataKinds
                     , DefaultSignatures
+                    , DeriveAnyClass
                     , DeriveDataTypeable
                     , DeriveGeneric
                     , FlexibleContexts
@@ -272,18 +274,29 @@ executable NeedlemanWunsch
                     , TypeOperators
   ghc-options:
     -O2
+--    -fmax-simplifier-iterations=40
+--    -fsimplifier-phases=4
     -funbox-strict-fields
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000
     -flate-dmd-anal
-    -fspec-constr-count=100
+    -fspec-constr-count=999999
+    -fspec-constr-keen
+    -fspec-constr-recursive=999999
+    -fspec-constr-threshold=999999
+    --
+    -- IMPORTANT for GHC 8.2!!!
+    --
+    -fmax-worker-args=100
+    --
+    --
   if flag(debugdump)
     ghc-options:
       -ddump-to-file
       -ddump-simpl
-      -ddump-cmm
       -dsuppress-all
       -dshow-passes
+      -dverbose-core2core
   if flag(llvm)
     ghc-options:
       -fllvm
@@ -334,53 +347,53 @@ executable spectest
 --      -ddump-simpl
 --      -dsuppress-all
 
-benchmark benchmark
-  type:
-    exitcode-stdio-1.0
-  build-depends: base
-               , template-haskell
-               , fmlist             >= 0.9
-               , vector
-               , criterion          >= 1.1
-               --
-               , ADPfusion
-               , PrimitiveArray
-  hs-source-dirs:
-    tests
-  other-modules:
-    BenchmarkFun
-  main-is:
-    benchmark.hs
-  default-language:
-    Haskell2010
-  default-extensions: BangPatterns
-                    , FlexibleContexts
-                    , FlexibleInstances
-                    , MultiParamTypeClasses
-                    , RecordWildCards
-                    , TemplateHaskell
-                    , TypeFamilies
-                    , TypeOperators
-  ghc-options:
-    -O2
-    -funbox-strict-fields
-    -funfolding-use-threshold1000
-    -funfolding-keeness-factor1000
-    -flate-dmd-anal
-    -fspec-constr-count=100000
-    -fspec-constr-threshold=100000
-    -fspec-constr-keen
-    -fspec-constr-recursive=10000
-    -ddump-to-file
-    -ddump-simpl
-    -ddump-cmm
-    -dsuppress-all
-    -dshow-passes
-    -dverbose-core2core
-  if flag(llvm)
-    ghc-options:
-      -fllvm
-      -optlo-O3
+--benchmark benchmark
+--  type:
+--    exitcode-stdio-1.0
+--  build-depends: base
+--               , template-haskell
+--               , fmlist             >= 0.9
+--               , vector
+--               , criterion          >= 1.1
+--               --
+--               , ADPfusion
+--               , PrimitiveArray
+--  hs-source-dirs:
+--    tests
+--  other-modules:
+--    BenchmarkFun
+--  main-is:
+--    benchmark.hs
+--  default-language:
+--    Haskell2010
+--  default-extensions: BangPatterns
+--                    , FlexibleContexts
+--                    , FlexibleInstances
+--                    , MultiParamTypeClasses
+--                    , RecordWildCards
+--                    , TemplateHaskell
+--                    , TypeFamilies
+--                    , TypeOperators
+--  ghc-options:
+--    -O2
+--    -funbox-strict-fields
+--    -funfolding-use-threshold1000
+--    -funfolding-keeness-factor1000
+--    -flate-dmd-anal
+--    -fspec-constr-count=100000
+--    -fspec-constr-threshold=100000
+--    -fspec-constr-keen
+--    -fspec-constr-recursive=10000
+--    -ddump-to-file
+--    -ddump-simpl
+--    -ddump-cmm
+--    -dsuppress-all
+--    -dshow-passes
+--    -dverbose-core2core
+--  if flag(llvm)
+--    ghc-options:
+--      -fllvm
+--      -optlo-O3
 
 
 
@@ -391,7 +404,6 @@ benchmark allocation
                , template-haskell
                , fmlist             >= 0.9
                , vector
-               , criterion          >= 1.1
                --
                , ADPfusion
                , PrimitiveArray
@@ -417,20 +429,29 @@ benchmark allocation
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000
     -flate-dmd-anal
-    -fspec-constr-count=100000
-    -fspec-constr-threshold=100000
---    -fspec-constr-keen
-    -fspec-constr-recursive=10000
-    -ddump-to-file
-    -ddump-simpl
-    -ddump-cmm
-    -dsuppress-all
-    -dshow-passes
-    -dverbose-core2core
+    -fspec-constr-keen
+    -fspec-constr-recursive=999999
+    -fspec-constr-threshold=999999
+    --
+    -- IMPORTANT for GHC 8.2!!!
+    --
+    -fmax-worker-args=100
+    --
+    --
   if flag(llvm)
     ghc-options:
       -fllvm
       -optlo-O3
+  if flag(dump-core)
+    build-depends: dump-core
+    ghc-options: -fplugin=DumpCore -fplugin-opt DumpCore:core-html
+  if flag(debugdump)
+    ghc-options:
+      -ddump-to-file
+      -ddump-simpl
+      -ddump-cmm
+      -dsuppress-all
+      -dshow-passes
 
 
 
@@ -438,39 +459,39 @@ benchmark allocation
 
 
 
-benchmark TestBacktrackingStructures
-  type:
-    exitcode-stdio-1.0
-
-  if flag(btstruc)
-    buildable:
-      True
-    build-depends: base
-                 , template-haskell
-                 , fmlist             >= 0.9
-                 , vector
-                 , criterion          >= 1.1
-  else
-    buildable:
-      False
-  hs-source-dirs:
-    tests
-  main-is:
-    BacktrackingStructures.hs
-  default-language:
-    Haskell2010
-  default-extensions: BangPatterns
-                    , FlexibleContexts
-                    , FlexibleInstances
-                    , MultiParamTypeClasses
-                    , RecordWildCards
-                    , TemplateHaskell
-                    , TypeFamilies
-                    , TypeOperators
-  ghc-options:
-    -O2
-    -funfolding-use-threshold1000
-    -funfolding-keeness-factor1000
+--benchmark TestBacktrackingStructures
+--  type:
+--    exitcode-stdio-1.0
+--
+--  if flag(btstruc)
+--    buildable:
+--      True
+--    build-depends: base
+--                 , template-haskell
+--                 , fmlist             >= 0.9
+--                 , vector
+--                 , criterion          >= 1.1
+--  else
+--    buildable:
+--      False
+--  hs-source-dirs:
+--    tests
+--  main-is:
+--    BacktrackingStructures.hs
+--  default-language:
+--    Haskell2010
+--  default-extensions: BangPatterns
+--                    , FlexibleContexts
+--                    , FlexibleInstances
+--                    , MultiParamTypeClasses
+--                    , RecordWildCards
+--                    , TemplateHaskell
+--                    , TypeFamilies
+--                    , TypeOperators
+--  ghc-options:
+--    -O2
+--    -funfolding-use-threshold1000
+--    -funfolding-keeness-factor1000
 
 
 

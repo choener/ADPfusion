@@ -26,7 +26,7 @@ instance Build Edge
 instance
   ( Element ls i
   ) => Element (ls :!: Edge) i where
-    data Elm (ls :!: Edge) i = ElmEdge !(From:.To) !(RunningIndex i) (Elm ls i)
+    data Elm (ls :!: Edge) i = ElmEdge !(From:.To) !(RunningIndex i) !(Elm ls i)
     type Arg (ls :!: Edge)   = Arg ls :. (From:.To)
     getArg (ElmEdge e _ ls) = getArg ls :. e
     getIdx (ElmEdge _ i _ ) = i

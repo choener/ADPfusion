@@ -18,16 +18,19 @@ rep k f = go 0 k where
 
 main :: IO ()
 main = do
-  print $ rep 10000000 stream_Strng2_V
+  let rep_count = 10000000 :: Int64
+  print $ rep (fromIntegral rep_count) stream_Strng2_V
   performGC
   stats <- getGCStats
   let ba = bytesAllocated stats
-  let maxAlloc = 480077128 :: Int64
+  -- allow exactly one @I# 0@ allocation each round
+  -- including a tiny bit of additional overhead
+  let maxAlloc = 32 * rep_count + 100000 :: Int64
   if ba >= maxAlloc
   then do
-    printf "%d bytes allocated, expected <= %d\n!" ba maxAlloc
+    printf "FAIL %d bytes allocated (%d allowed) [[%d / %d]]\n" (ba `div` rep_count) (maxAlloc `div` rep_count) ba maxAlloc
     exitFailure
   else do
-    printf "total allocation is fine!\n"
+    printf "SUCCESS %d bytes allocated (%d allowed) [[%d / %d]]\n" (ba `div` rep_count) (maxAlloc `div` rep_count) ba maxAlloc
     exitSuccess
 

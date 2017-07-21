@@ -1,6 +1,7 @@
 
 module ADP.Fusion.Term.Strng.Point where
 
+import           Control.DeepSeq
 import           Data.Proxy
 import           Data.Strict.Tuple
 import           Debug.Trace
@@ -38,12 +39,14 @@ instance
     . termStream ts cs us is
   --
   termStream (ts:|Strng (!v)) (cs:.IVariable d) (us:.PointL u) (is:.PointL i)
+    -- FIXME simplified for 8.2 tests
     = S.flatten mk step . termStream ts cs us is
     where mk (TState s ii ee) =
-              let RiPlI k = getIndex (getIdx s) (Proxy :: PRI is (PointL I))
+              let RiPlI !k = getIndex (getIdx s) (Proxy :: PRI is (PointL I))
               in  return (s, ii, ee, k)
-          step (s, ii, ee, k)
-            | k <= i = return $ S.Yield (TState s (ii:.:RiPlI k) (ee:.VG.unsafeSlice k (i-k) v)) (s, ii, ee, k+1)
+          step (!s, !ii, !ee, !k)
+            | k <= i    = return $ S.Yield (TState s (ii:.:RiPlI k) (ee:.VG.unsafeSlice k (i-k) v))
+                                           (s, ii, ee, k+1)
             | otherwise = return $ S.Done
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}

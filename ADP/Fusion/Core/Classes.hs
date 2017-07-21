@@ -3,6 +3,8 @@
 
 module ADP.Fusion.Core.Classes where
 
+import           GHC.Generics (Generic, Generic1)
+import           Control.DeepSeq
 import           Data.Proxy
 import           Data.Strict.Tuple
 import           GHC.Exts hiding (build)
@@ -45,22 +47,16 @@ class RuleContext i where
 -- not need both element of @j:.k@ but only @k@.
 -- Also, inside grammars do need fewer moving indices than outside
 -- grammars.
---
--- TODO Sometimes, the actual RunningIndex ctors are not erased. This could
--- be due to <https://ghc.haskell.org/trac/ghc/ticket/2289>. To test, we
--- should transform RunningIndex into a type class to give us access to the
--- left and right member, also we should create instances a la
--- @RunningIndex (is :. Subword I) = RiSwI !(RunningIndex is) !Int@.
--- Hopefully, these are completely erased.
 
 data family RunningIndex i :: *
 
-data instance RunningIndex (is:.i) = !(RunningIndex is) :.: !(RunningIndex i)
-
 data instance RunningIndex Z = RiZ
+  deriving (Generic, NFData, Show)
 
-deriving instance Show (RunningIndex Z)
+data instance RunningIndex (is:.i) = !(RunningIndex is) :.: !(RunningIndex i)
+  deriving (Generic)
 
+deriving instance (NFData (RunningIndex is), NFData (RunningIndex i)) => NFData (RunningIndex (is:.i))
 
 -- | During construction of the stream, we need to extract individual elements
 -- from symbols in production rules. An element in a stream is fixed by both,
@@ -117,8 +113,8 @@ instance
   type Arg S   = Z
   getArg (ElmS _) = Z
   getIdx (ElmS i) = i
-  {-# Inline getArg #-}
-  {-# Inline getIdx #-}
+  {-# Inline [0] getArg #-}
+  {-# Inline [0] getIdx #-}
 
 deriving instance (Show (RunningIndex ix)) => Show (Elm S ix)
 

@@ -77,14 +77,12 @@ stream_Strng2_S k = seq v1 $ seq v2 $
 -}
 
 stream_Strng2_V :: Int -> Int -> Int
-stream_Strng2_V k l = seq v1 $ seq v2 $
-                    unId $ (f <<< (M:|Strng v1:|Epsilon) % (M:|Strng v2:|Epsilon) ... h)
+stream_Strng2_V k l = seq v1 $ seq v2 $ seq v3 $ seq v4 $
+                    unId $ (f <<< (M:|Strng v1:|Strng v3) % (M:|Strng v2:|Strng v4) ... h)
                       (Z:.pointLI 140:.pointLI 140) (Z:.pointLI k:.pointLI l)
-  where f (Z:.qs:.()) (Z:.zs:.()) = VU.length qs + VU.length zs
+  where f (Z:.as:.cs) (Z:.bs:.ds) = VU.length as + VU.length bs + VU.length cs + VU.length ds
         h   = S.foldl' (+) 0
-        {-# Inline f #-}
-        {-# Inline h #-}
+        {-# Inline [0] f #-}
+        {-# Inline [0] h #-}
 {-# NoInline stream_Strng2_V #-}
-
-
 

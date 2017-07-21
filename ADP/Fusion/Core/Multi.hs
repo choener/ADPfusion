@@ -38,10 +38,10 @@ instance Build (TermSymbol a b)
 
 type family   TermArg x :: *
 type instance TermArg M                = Z
-type instance TermArg (TermSymbol a b) = TermArg a :. TermArg b
+type instance TermArg (TermSymbol a b) = (TermArg a) :. (TermArg b)
 
 instance (Element ls i) => Element (ls :!: TermSymbol a b) i where
-  data Elm (ls :!: TermSymbol a b) i = ElmTS (TermArg (TermSymbol a b)) (RunningIndex i) (Elm ls i)
+  data Elm (ls :!: TermSymbol a b) i = ElmTS !(TermArg (TermSymbol a b)) !(RunningIndex i) !(Elm ls i)
   type Arg (ls :!: TermSymbol a b)   = Arg ls :. TermArg (TermSymbol a b)
   getArg (ElmTS a _ ls) = getArg ls :. a
   getIdx (ElmTS _ i _ ) = i
@@ -66,7 +66,7 @@ instance
 
 instance Monad m => MkStream m S Z where
   mkStream grd S Z Z Z = S.filter (const $ isTrue# grd) $ S.singleton $ ElmS RiZ
-  {-# INLINE mkStream #-}
+  {-# Inline mkStream #-}
 
 -- | For multi-dimensional terminals we need to be able to calculate how the
 -- static/variable signal changes and if the index for the inner part needs to
@@ -137,7 +137,7 @@ class TermStream m t s i where
   termStream :: t -> Context i -> i -> i -> Stream m (TermState s Z Z) -> Stream m (TermState s i (TermArg t))
 
 instance (Monad m) => TermStream m M s Z where
-  termStream _ _ _ _ = id -- map (\(!s) -> s)
+  termStream _ _ _ _ = id
   {-# Inline termStream #-}
 
 -- |

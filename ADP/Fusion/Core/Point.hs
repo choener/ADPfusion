@@ -3,6 +3,8 @@
 
 module ADP.Fusion.Core.Point where
 
+import GHC.Generics (Generic, Generic1)
+import Control.DeepSeq
 import Data.Proxy
 import Data.Vector.Fusion.Stream.Monadic (singleton,map,filter,Step(..))
 import Debug.Trace
@@ -32,6 +34,10 @@ instance RuleContext (PointL C) where
   {-# Inline initialContext #-}
 
 newtype instance RunningIndex (PointL I) = RiPlI Int
+  deriving (Generic)
+
+deriving instance NFData (RunningIndex (PointL I))
+
 
 data instance RunningIndex (PointL O) = RiPlO !Int !Int
 
@@ -52,20 +58,13 @@ instance
   ( Monad m
   , MkStream m S is
   ) => MkStream m S (is:.PointL I) where
-  -- NOTE GHC-8.2-rc2: with @go@ being @NoInline@, we *do* have the @ElmS@
-  -- ctors in core, *but* the inner loop in @stream_Strng_2V@ is optimal.
-  -- If @go@ is inlined, the optimizer seems that @ElmS@ is not used its
-  -- turned into a CAF. This ends up being a lot worse than @go@ being
-  -- noinline. However, this is brittle and stops works working easily.
   mkStream grd S (vs:.IStatic (I# d)) (lus:.PointL (I# u)) (is:.PointL (I# i))
-    = map go
+    = map (\(ElmS e) -> ElmS $ e :.: RiPlI 0)
     $ mkStream (grd `andI#` (i >=# 0#) `andI#` (i <=# d) `andI#` (i <=# u)) S vs lus is
-    where go = (\(ElmS zi) -> ElmS $ zi :.: RiPlI 0)
-          {-# Inline [0] go #-}
   mkStream grd S (vs:.IVariable d) (lus:.PointL (I# u)) (is:.PointL (I# i))
-    = map (\(ElmS zi) -> ElmS $ zi :.: RiPlI 0)
+    = map (oneShot (\(ElmS e) -> ElmS $ e :.: RiPlI 0))
     $ mkStream (grd `andI#` (i >=# 0#) `andI#` (i <=# u)) S vs lus is
-  {-# INLINE mkStream #-}
+  {-# Inline mkStream #-}
 
 
 
