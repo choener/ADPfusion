@@ -410,7 +410,9 @@ benchmark allocation
   hs-source-dirs:
     tests
   other-modules:
-    BenchmarkFun
+    BenchFun.Common
+    BenchFun.Strng2V_1
+    BenchFun.Strng2V_2
   main-is:
     allocation.hs
   default-language:
@@ -429,13 +431,13 @@ benchmark allocation
     -funfolding-use-threshold1000
     -funfolding-keeness-factor1000
     -flate-dmd-anal
-    -fspec-constr-keen
+--    -fspec-constr-keen
     -fspec-constr-recursive=999999
     -fspec-constr-threshold=999999
     --
     -- IMPORTANT for GHC 8.2!!!
     --
-    -fmax-worker-args=100
+--    -fmax-worker-args=100
     --
     --
   if flag(llvm)
@@ -450,7 +452,13 @@ benchmark allocation
       -ddump-to-file
       -ddump-simpl
       -ddump-cmm
-      -dsuppress-all
+      -dsuppress-module-prefixes
+      -dsuppress-coercions
+--      -dsuppress-uniques
+--      -dsuppress-type-applications
+--      -dsuppress-type-signatures
+--      -dsuppress-idinfo
+--      -dsuppress-all
       -dshow-passes
 
 

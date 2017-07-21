@@ -62,7 +62,7 @@ instance
     = map (\(ElmS e) -> ElmS $ e :.: RiPlI 0)
     $ mkStream (grd `andI#` (i >=# 0#) `andI#` (i <=# d) `andI#` (i <=# u)) S vs lus is
   mkStream grd S (vs:.IVariable d) (lus:.PointL (I# u)) (is:.PointL (I# i))
-    = map (oneShot (\(ElmS e) -> ElmS $ e :.: RiPlI 0))
+    = map (\(ElmS e) -> ElmS $ e :.: RiPlI 0)
     $ mkStream (grd `andI#` (i >=# 0#) `andI#` (i <=# u)) S vs lus is
   {-# Inline mkStream #-}
 
