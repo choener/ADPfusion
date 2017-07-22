@@ -34,7 +34,7 @@ instance
   --
   termStream (ts:|Strng (!v)) (cs:.IStatic d) (us:.PointL u) (is:.PointL i)
     = S.map (\(TState s ii ee) ->
-                let RiPlI k = getIndex (getIdx s) (Proxy :: PRI is (PointL I))
+                let RiPlI !k = getIndex (getIdx s) (Proxy :: PRI is (PointL I))
                 in  TState s (ii:.:RiPlI i) (ee:.VG.unsafeSlice k (i-k) v))
     . termStream ts cs us is
   --
@@ -43,10 +43,10 @@ instance
     = S.flatten mk step . termStream ts cs us is
     where mk (TState s ii ee) =
               let RiPlI !k = getIndex (getIdx s) (Proxy :: PRI is (PointL I))
-              in  return (s, ii, ee, k)
-          step (!s, !ii, !ee, !k)
+              in  return (s :!: ii :!: ee :!: k)
+          step (s :!: ii :!: ee :!: k)
             | k <= i    = return $ S.Yield (TState s (ii:.:RiPlI k) (ee:.VG.unsafeSlice k (i-k) v))
-                                           (s, ii, ee, k+1)
+                                           (s :!: ii :!: ee :!: (k+1))
             | otherwise = return $ S.Done
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
@@ -86,7 +86,7 @@ instance TermStaticVar (Strng v x) (PointL I) where
   termStreamIndex (Strng _) (IStatic   d) (PointL j) = PointL j
   termStreamIndex (Strng _) (IVariable d) (PointL j) = PointL j
   --
-  termStaticCheck _ _ = 1#
+  termStaticCheck (Strng v) (PointL i) = 1# -- if VG.length v > i then 1# else 0#
   {-# Inline [0] termStaticVar   #-}
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}

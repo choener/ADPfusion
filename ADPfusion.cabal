@@ -274,22 +274,15 @@ executable NeedlemanWunsch
                     , TypeOperators
   ghc-options:
     -O2
---    -fmax-simplifier-iterations=40
---    -fsimplifier-phases=4
     -funbox-strict-fields
-    -funfolding-use-threshold1000
-    -funfolding-keeness-factor1000
+    -- these parameters do well enough with GHC 8.2
+    -- for larger programs, we may have to increase the number of worker
+    -- arguments.
     -flate-dmd-anal
-    -fspec-constr-count=999999
+    -fspec-constr-count=20
     -fspec-constr-keen
-    -fspec-constr-recursive=999999
-    -fspec-constr-threshold=999999
-    --
-    -- IMPORTANT for GHC 8.2!!!
-    --
-    -fmax-worker-args=100
-    --
-    --
+    -fspec-constr-recursive=20
+    -fspec-constr-threshold=20
   if flag(debugdump)
     ghc-options:
       -ddump-to-file
@@ -428,12 +421,12 @@ benchmark allocation
   ghc-options:
     -O2
     -funbox-strict-fields
-    -funfolding-use-threshold1000
-    -funfolding-keeness-factor1000
+--    -funfolding-use-threshold1000
+--    -funfolding-keeness-factor1000
     -flate-dmd-anal
---    -fspec-constr-keen
-    -fspec-constr-recursive=999999
-    -fspec-constr-threshold=999999
+    -fspec-constr-keen
+    -fspec-constr-recursive=10
+--    -fspec-constr-threshold=999999
     --
     -- IMPORTANT for GHC 8.2!!!
     --
@@ -455,11 +448,12 @@ benchmark allocation
       -dsuppress-module-prefixes
       -dsuppress-coercions
 --      -dsuppress-uniques
---      -dsuppress-type-applications
+      -dsuppress-type-applications
 --      -dsuppress-type-signatures
 --      -dsuppress-idinfo
 --      -dsuppress-all
       -dshow-passes
+      -dverbose-core2core
 
 
 

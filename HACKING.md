@@ -31,3 +31,8 @@ where the number of worker-wrapper arguments is <= 10. For ADPfusion, one
 should set -fmax-worker-args=100 or something similar -- at least in the
 modules where the actual inlining happens and the real algorithm gets a {-#
 NoInline costlyAlgo #-}.
+
+## Demand analysis
+
+Check CORE for demand analysis weirdness:
+https://ghc.haskell.org/trac/ghc/wiki/Commentary/Compiler/Demand

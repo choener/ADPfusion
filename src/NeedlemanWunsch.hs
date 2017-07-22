@@ -1,4 +1,6 @@
 
+{-# Options_GHC -fforce-recomp #-}
+
 -- | The Needleman-Wunsch global alignment algorithm. This algorithm is
 -- extremely simple but provides a good showcase for what ADPfusion offers.
 --

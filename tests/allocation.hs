@@ -49,7 +49,7 @@ main :: IO ()
 main = do
   runs <- mapM prettify
     [ ("Strng2_V_1", 10^5, 129,  576, stream_Strng2_V_1)
-    , ("Strng2_V_2", 10^7,  48, 1800, stream_Strng2_V_2)
+--    , ("Strng2_V_2", 10^7,  48, 1800, stream_Strng2_V_2)
     ]
   if (and runs) then exitSuccess else exitFailure
 

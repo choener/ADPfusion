@@ -1,6 +1,6 @@
 
-{-# Options_GHC -fmax-worker-args=100 #-}
-{-# Options_GHC -fforce-recomp #-}
+{- Options_GHC -fmax-worker-args=100 #-}
+{- Options_GHC -fforce-recomp #-}
 
 module BenchFun.Strng2V_2 where
 

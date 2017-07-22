@@ -168,9 +168,9 @@ instance
         -- TODO each big-order group should be allowed to have its own sets
         -- of bounds. within a group, it doesn't make a lot of sense to
         -- have different bounds? Is there a use case for that even?
---        _ -> flip SM.mapM_ (streamUp from to) $ \k ->
---              VU.forM_ tlos $ \lo ->
---                mutateCell h bo lo (inline mrph) tt to k
+        _ -> flip SM.mapM_ (streamUp from to) $ \k ->
+              VU.forM_ tlos $ \lo ->
+                mutateCell h bo lo (inline mrph) tt to k
     return tt
   {-# INLINE mutateTables #-}
 

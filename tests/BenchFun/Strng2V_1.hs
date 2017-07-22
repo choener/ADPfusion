@@ -1,5 +1,6 @@
 
-{-# Options_GHC -fmax-worker-args=100 #-}
+{-# Options_GHC -fmax-worker-args=25 #-}
+{-# Options_GHC -fforce-recomp #-}
 
 module BenchFun.Strng2V_1 where
 
@@ -22,8 +23,7 @@ stream_Strng2_V_1 k l = seq v1 $ seq v2 $ seq v3 $ seq v4 $
                           (Z:.pointLI 140:.pointLI 140) (Z:.pointLI k:.pointLI l)
   where f (Z:.as:.cs) (Z:.bs:.ds) = VU.length as + VU.length bs + VU.length cs + VU.length ds
         h   = S.foldl' (+) 0
-        {-# Inline [0] f #-}
-        {-# Inline [0] h #-}
+        {-# Inline f #-}
+        {-# Inline h #-}
 {-# NoInline stream_Strng2_V_1 #-}
-
 
