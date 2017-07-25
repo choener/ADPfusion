@@ -7,8 +7,8 @@ import System.Exit
 import Data.Int
 import System.Mem
 
-import BenchFun.Strng2V_1
-import BenchFun.Strng2V_2
+import BenchFun.Test2V_1
+import BenchFun.Test2V_2
 
 rep :: Int -> (Int -> Int -> Int) -> Int
 rep k f = go 0 k where
@@ -48,8 +48,8 @@ prettify (funname, rep_count, allocmul, allocadd, f) = do
 main :: IO ()
 main = do
   runs <- mapM prettify
-    [ ("Strng2_V_1", 10^5, 129,  576, stream_Strng2_V_1)
---    , ("Strng2_V_2", 10^7,  48, 1800, stream_Strng2_V_2)
+    [ ("Test2_V_1", 10^5, 129,  576, stream_Test2_V_1)
+--    , ("Test2_V_2", 10^7,  48, 1800, stream_Test2_V_2)
     ]
   if (and runs) then exitSuccess else exitFailure
 

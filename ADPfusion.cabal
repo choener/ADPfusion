@@ -144,7 +144,7 @@ library
     ADP.Fusion.Term.Edge.Type
     ADP.Fusion.Term.Epsilon.Type
     ADP.Fusion.Term.PeekIndex.Type
-    ADP.Fusion.Term.Strng.Type
+    ADP.Fusion.Term.Test.Type
     -- Point
     ADP.Fusion.Core.Point
     ADP.Fusion.SynVar.Indices.Point
@@ -152,7 +152,7 @@ library
     ADP.Fusion.Term.Chr.Point
     ADP.Fusion.Term.Deletion.Point
     ADP.Fusion.Term.Epsilon.Point
-    ADP.Fusion.Term.Strng.Point
+    ADP.Fusion.Term.Test.Point
     -- Unit
     ADP.Fusion.Core.Unit
     ADP.Fusion.SynVar.Indices.Unit
@@ -404,8 +404,8 @@ benchmark allocation
     tests
   other-modules:
     BenchFun.Common
-    BenchFun.Strng2V_1
-    BenchFun.Strng2V_2
+    BenchFun.Test2V_1
+    BenchFun.Test2V_2
   main-is:
     allocation.hs
   default-language:

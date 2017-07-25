@@ -1,5 +1,5 @@
 
-module ADP.Fusion.Term.Strng.Point where
+module ADP.Fusion.Term.Test.Point where
 
 import           Control.DeepSeq
 import           Data.Proxy
@@ -13,15 +13,15 @@ import           Data.PrimitiveArray
 
 import           ADP.Fusion.Core
 import           ADP.Fusion.Core.Point
-import           ADP.Fusion.Term.Strng.Type
+import           ADP.Fusion.Term.Test.Type
 
 
 
 instance
-  ( TmkCtx1 m ls (Strng v x) (PointL i)
-  ) => MkStream m (ls :!: Strng v x) (PointL i) where
+  ( TmkCtx1 m ls (Test v x) (PointL i)
+  ) => MkStream m (ls :!: Test v x) (PointL i) where
   mkStream grd (ls :!: strng) sv us is
-    = S.map (\(ss,ee,ii) -> ElmStrng ee ii ss)
+    = S.map (\(ss,ee,ii) -> ElmTest ee ii ss)
     . addTermStream1 strng sv us is
     $ mkStream (grd `andI#` termStaticCheck strng is) ls (termStaticVar strng sv is) us (termStreamIndex strng sv is)
   {-# Inline mkStream #-}
@@ -30,15 +30,15 @@ instance
 
 instance
   ( TstCtx m ts s x0 i0 is (PointL I)
-  ) => TermStream m (TermSymbol ts (Strng v x)) s (is:.PointL I) where
+  ) => TermStream m (TermSymbol ts (Test v x)) s (is:.PointL I) where
   --
-  termStream (ts:|Strng (!v)) (cs:.IStatic d) (us:.PointL u) (is:.PointL i)
+  termStream (ts:|Test (!v)) (cs:.IStatic d) (us:.PointL u) (is:.PointL i)
     = S.map (\(TState s ii ee) ->
                 let RiPlI !k = getIndex (getIdx s) (Proxy :: PRI is (PointL I))
                 in  TState s (ii:.:RiPlI i) (ee:.VG.unsafeSlice k (i-k) v))
     . termStream ts cs us is
   --
-  termStream (ts:|Strng (!v)) (cs:.IVariable d) (us:.PointL u) (is:.PointL i)
+  termStream (ts:|Test (!v)) (cs:.IVariable d) (us:.PointL u) (is:.PointL i)
     -- FIXME simplified for 8.2 tests
     = S.flatten mk step . termStream ts cs us is
     where mk (TState s ii ee) =
@@ -55,15 +55,15 @@ instance
 {-
 instance
   ( TstCtx m ts s x0 i0 is (PointL O)
-  ) => TermStream m (TermSymbol ts (Strng v x)) s (is:.PointL O) where
+  ) => TermStream m (TermSymbol ts (Test v x)) s (is:.PointL O) where
   --
-  termStream (ts:|Strng f minL maxL v) (cs:.OStatic d) (us:.PointL u) (is:.PointL i)
+  termStream (ts:|Test f minL maxL v) (cs:.OStatic d) (us:.PointL u) (is:.PointL i)
     = S.map (\(TState s ii ee) ->
                 let RiPlO k o = getIndex (getIdx s) (Proxy :: PRI is (PointL O))
                 in  TState s (ii:.:RiPlO (i-d+1) o) (ee:.f k (i-k) v)) -- @i-d+1 or k-d+1@ ?
     . termStream ts cs us is
   --
-  termStream (ts:|Strng f minL maxL v) (cs:.ORightOf d) (us:.PointL u) (is:.PointL i)
+  termStream (ts:|Test f minL maxL v) (cs:.ORightOf d) (us:.PointL u) (is:.PointL i)
     = S.flatten mk step . termStream ts cs us is
     where mk (tstate@(TState s ii ee)) =
               let RiPlO k _ = getIndex (getIdx s) (Proxy :: PRI is (PointL O))
@@ -79,21 +79,21 @@ instance
 -}
 
 
-instance TermStaticVar (Strng v x) (PointL I) where
-  termStaticVar (Strng _) (IStatic   d) _ = IVariable d
+instance TermStaticVar (Test v x) (PointL I) where
+  termStaticVar (Test _) (IStatic   d) _ = IVariable d
   termStaticVar _         (IVariable d) _ = IVariable d
   --
-  termStreamIndex (Strng _) (IStatic   d) (PointL j) = PointL j
-  termStreamIndex (Strng _) (IVariable d) (PointL j) = PointL j
+  termStreamIndex (Test _) (IStatic   d) (PointL j) = PointL j
+  termStreamIndex (Test _) (IVariable d) (PointL j) = PointL j
   --
-  termStaticCheck (Strng v) (PointL i) = 1# -- if VG.length v > i then 1# else 0#
+  termStaticCheck (Test v) (PointL i) = 1# -- if VG.length v > i then 1# else 0#
   {-# Inline [0] termStaticVar   #-}
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}
 
 {-
-instance TermStaticVar (Strng v x) (PointL O) where
-  termStaticVar (Strng _ minL maxL _) (OStatic  d) _ = ORightOf $ d + maxL - minL
+instance TermStaticVar (Test v x) (PointL O) where
+  termStaticVar (Test _ minL maxL _) (OStatic  d) _ = ORightOf $ d + maxL - minL
   termStaticVar _                     (ORightOf d) _ = ORightOf 0 -- TODO is this right?
   --
   termStreamIndex _ _ j = j

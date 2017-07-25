@@ -30,7 +30,6 @@ module ADP.Fusion.Core
   , module ADP.Fusion.Term.Edge.Type
   , module ADP.Fusion.Term.Epsilon.Type
   , module ADP.Fusion.Term.PeekIndex.Type
-  , module ADP.Fusion.Term.Strng.Type
   , module Data.Vector.Fusion.Stream.Monadic
   , module Data.Vector.Fusion.Util
   ) where
@@ -61,7 +60,6 @@ import           ADP.Fusion.Term.Deletion.Type
 import           ADP.Fusion.Term.Edge.Type
 import           ADP.Fusion.Term.Epsilon.Type
 import           ADP.Fusion.Term.PeekIndex.Type
-import           ADP.Fusion.Term.Strng.Type
 
 
 
