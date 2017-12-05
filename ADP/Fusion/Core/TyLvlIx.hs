@@ -9,7 +9,7 @@ module ADP.Fusion.Core.TyLvlIx
 import Data.Proxy
 import GHC.TypeLits
 
-import Data.PrimitiveArray hiding (map)
+import Data.PrimitiveArray.Index.Class hiding (map)
 
 import ADP.Fusion.Core.Classes (RunningIndex (..))
 

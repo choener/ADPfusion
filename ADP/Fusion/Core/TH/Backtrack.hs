@@ -24,7 +24,7 @@ import qualified Data.Vector.Generic.Mutable as VGM
 import qualified Data.Vector.Mutable as VM
 import qualified Data.Set as S
 
-import           Data.PrimitiveArray ( (:.)(..) , Z(..) )
+import           Data.PrimitiveArray.Index.Class ( (:.)(..) , Z(..) )
 
 import           ADP.Fusion.Core.TH.Common
 

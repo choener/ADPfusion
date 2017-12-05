@@ -1,5 +1,5 @@
 
-module ADP.Fusion.Term.Deletion.Point where
+module ADP.Fusion.Point.Term.Deletion where
 
 import           Data.Proxy
 import           Data.Strict.Tuple
@@ -9,7 +9,7 @@ import           GHC.Exts
 import           Data.PrimitiveArray
 
 import           ADP.Fusion.Core
-import           ADP.Fusion.Core.Point
+import           ADP.Fusion.Point.Core
 import           ADP.Fusion.Term.Deletion.Type
 
 
@@ -28,7 +28,7 @@ instance
 instance
   ( TstCtx m ts s x0 i0 is (PointL I)
   ) => TermStream m (TermSymbol ts Deletion) s (is:.PointL I) where
-  termStream (ts:|Deletion) (cs:.IStatic d) (us:.PointL u) (is:.PointL i)
+  termStream (ts:|Deletion) (cs:.IStatic d) (us:..LtPointL u) (is:.PointL i)
     = S.map (\(TState s ii ee) -> TState s (ii:.:RiPlI i) (ee:.()))
     . termStream ts cs us is
   {-# Inline termStream #-}
@@ -36,7 +36,7 @@ instance
 instance
   ( TstCtx m ts s x0 i0 is (PointL O)
   ) => TermStream m (TermSymbol ts Deletion) s (is:.PointL O) where
-  termStream (ts:|Deletion) (cs:.OStatic d) (us:.PointL u) (is:.PointL i)
+  termStream (ts:|Deletion) (cs:.OStatic d) (us:..LtPointL u) (is:.PointL i)
     = S.map (\(TState s ii ee) ->
                 let io = getIndex (getIdx s) (Proxy :: PRI is (PointL O))
                 in  TState s (ii:.: io) (ee:.()))

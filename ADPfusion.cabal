@@ -1,5 +1,5 @@
 name:           ADPfusion
-version:        0.5.3.0
+version:        0.6.0.0
 author:         Christian Hoener zu Siederdissen, 2011-2017
 copyright:      Christian Hoener zu Siederdissen, 2011-2017
 homepage:       https://github.com/choener/ADPfusion
@@ -113,16 +113,13 @@ library
                , tuple              >= 0.3
                , vector             >= 0.11
                --
-               , DPutils            == 0.0.1.*
+               , DPutils            == 0.0.2.*
                , OrderedBits        == 0.0.1.*
-               , PrimitiveArray     == 0.8.0.*
+               , PrimitiveArray     == 0.9.0.*
 
   exposed-modules:
-    -- multi imports
-    ADP.Fusion.Core
-    ADP.Fusion.Point
-    ADP.Fusion.Unit
     -- core system
+    ADP.Fusion.Core
     ADP.Fusion.Core.Apply
     ADP.Fusion.Core.Classes
     ADP.Fusion.Core.Multi
@@ -146,18 +143,20 @@ library
     ADP.Fusion.Term.PeekIndex.Type
     ADP.Fusion.Term.Test.Type
     -- Point
-    ADP.Fusion.Core.Point
-    ADP.Fusion.SynVar.Indices.Point
-    ADP.Fusion.SynVar.Recursive.Point
-    ADP.Fusion.Term.Chr.Point
-    ADP.Fusion.Term.Deletion.Point
-    ADP.Fusion.Term.Epsilon.Point
-    ADP.Fusion.Term.Test.Point
+    ADP.Fusion.Point
+    ADP.Fusion.Point.Core
+    ADP.Fusion.Point.SynVar.Indices
+    ADP.Fusion.Point.SynVar.Recursive
+    ADP.Fusion.Point.Term.Chr
+    ADP.Fusion.Point.Term.Deletion
+    ADP.Fusion.Point.Term.Epsilon
+    ADP.Fusion.Point.Term.Test
     -- Unit
-    ADP.Fusion.Core.Unit
-    ADP.Fusion.SynVar.Indices.Unit
-    ADP.Fusion.Term.Deletion.Unit
-    ADP.Fusion.Term.Epsilon.Unit
+    ADP.Fusion.Unit
+    ADP.Fusion.Unit.Core
+    ADP.Fusion.Unit.SynVar.Indices
+    ADP.Fusion.Unit.Term.Deletion
+    ADP.Fusion.Unit.Term.Epsilon
     -- tutorials
     ADP.Fusion.Tutorial.NeedlemanWunsch
 
@@ -272,6 +271,7 @@ executable NeedlemanWunsch
                     , TemplateHaskell
                     , TypeFamilies
                     , TypeOperators
+                    , UnicodeSyntax
   ghc-options:
     -O2
     -funbox-strict-fields

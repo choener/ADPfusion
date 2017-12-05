@@ -71,11 +71,11 @@ import           ADP.Fusion.Term.PeekIndex.Type
 -- function 'f'.
 
 infixl 8 <<<
-(<<<) f xs = \lu ij -> S.map (apply (inline f) . getArg) . mkStream 1# (build xs) (initialContext ij) lu $ ij
+(<<<) f xs = \lu ij -> S.map (apply (inline f) . getArg) $ mkStream 1# (build xs) (initialContext ij) lu ij
 {-# INLINE (<<<) #-}
 
 infixl 8 <<#
-(<<#) f xs = \lu ij -> S.mapM (apply (inline f) . getArg) . mkStream 1# (build xs) (initialContext ij) lu $ ij
+(<<#) f xs = \lu ij -> S.mapM (apply (inline f) . getArg) $ mkStream 1# (build xs) (initialContext ij) lu ij
 {-# INLINE (<<#) #-}
 
 -- | Combine two RHSs to give a choice between parses.

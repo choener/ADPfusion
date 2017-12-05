@@ -37,35 +37,35 @@ type ITblCx m ls arr x u c i =
 -- | General function for @ITbl@s with skalar indices.
 
 iTblStream
-  :: forall m ls arr x u c i . ITblCx m ls arr x u c i
-  => Int#
-  -> Pair ls (TwITbl m arr c u x)
-  -> Context i
-  -> i
-  -> i
-  -> Stream m (Elm (ls :!: TwITbl m arr c u x) i)
+  ∷ forall m ls arr x u c i . ITblCx m ls arr x u c i
+  ⇒ Int#
+  → Pair ls (TwITbl m arr c u x)
+  → Context i
+  → LimitType i
+  → i
+  → Stream m (Elm (ls :!: TwITbl m arr c u x) i)
 iTblStream grd (ls :!: TW (ITbl _ _ c t) _) vs us is
   = map (\(s,tt,ii') -> ElmITbl (t!tt) ii' s)
-  . addIndexDense1 c vs lb ub us is
+  . addIndexDense1 c vs ub us is
   $ mkStream grd ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
-  where (lb,ub) = bounds t
+  where ub = upperBound t
 {-# Inline iTblStream #-}
 
 -- | General function for @Backtrack ITbl@s with skalar indices.
 
 btITblStream
-  :: forall mB mF ls arr x r u c i . ITblCx mB ls arr x u c i
-  => Int#
-  -> Pair ls (TwITblBt arr c u x mF mB r)
-  -> Context i
-  -> i
-  -> i
-  -> Stream mB (Elm (ls :!: TwITblBt arr c u x mF mB r) i)
+  ∷ forall mB mF ls arr x r u c i . ITblCx mB ls arr x u c i
+  ⇒ Int#
+  → Pair ls (TwITblBt arr c u x mF mB r)
+  → Context i
+  → LimitType i
+  → i
+  → Stream mB (Elm (ls :!: TwITblBt arr c u x mF mB r) i)
 btITblStream grd (ls :!: TW (BtITbl c t) bt) vs us is
     = mapM (\(s,tt,ii') -> bt ub tt >>= \ ~bb -> return $ ElmBtITbl (t!tt) bb ii' s)
-    . addIndexDense1 c vs lb ub us is
+    . addIndexDense1 c vs ub us is
     $ mkStream grd ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
-    where (lb,ub) = bounds t
+    where ub = upperBound t
 {-# Inline btITblStream #-}
 
 

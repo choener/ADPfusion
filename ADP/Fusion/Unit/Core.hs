@@ -4,7 +4,7 @@
 -- TODO the 'mkStream' instances here are probably wonky for everything
 -- that is non-static.
 
-module ADP.Fusion.Core.Unit where
+module ADP.Fusion.Unit.Core where
 
 import Data.Vector.Fusion.Stream.Monadic (singleton,map,filter,Step(..))
 import Debug.Trace
@@ -37,22 +37,22 @@ data instance RunningIndex (Unit t) = RiU
 
 
 instance (Monad m) => MkStream m S (Unit I) where
-  mkStream grd S _ Unit Unit = singleton $ ElmS RiU
+  mkStream grd S _ LtUnit Unit = singleton $ ElmS RiU
   {-# Inline mkStream #-}
 
 instance (Monad m) => MkStream m S (Unit O) where
-  mkStream grd S _ Unit Unit = singleton $ ElmS RiU
+  mkStream grd S _ LtUnit Unit = singleton $ ElmS RiU
   {-# Inline mkStream #-}
 
 instance (Monad m) => MkStream m S (Unit C) where
-  mkStream grd S _ Unit Unit = singleton $ ElmS RiU
+  mkStream grd S _ LtUnit Unit = singleton $ ElmS RiU
   {-# Inline mkStream #-}
 
 instance
   ( Monad m
   , MkStream m S is
   ) => MkStream m S (is:.Unit I) where
-  mkStream grd S (vs:._) (us:._) (is:._)
+  mkStream grd S (vs:._) (us:.._) (is:._)
     = map (\(ElmS zi) -> ElmS $ zi :.: RiU)
     $ mkStream grd S vs us is
   {-# Inline mkStream #-}
@@ -61,7 +61,7 @@ instance
   ( Monad m
   , MkStream m S is
   ) => MkStream m S (is:.Unit O) where
-  mkStream grd S (vs:._) (us:._) (is:._)
+  mkStream grd S (vs:._) (us:.._) (is:._)
     = map (\(ElmS zi) -> ElmS $ zi :.: RiU)
     $ mkStream grd S vs us is
   {-# Inline mkStream #-}
@@ -70,7 +70,7 @@ instance
   ( Monad m
   , MkStream m S is
   ) => MkStream m S (is:.Unit C) where
-  mkStream grd S (vs:._) (us:._) (is:._)
+  mkStream grd S (vs:._) (us:.._) (is:._)
     = map (\(ElmS zi) -> ElmS $ zi :.: RiU)
     $ mkStream grd S vs us is
   {-# Inline mkStream #-}

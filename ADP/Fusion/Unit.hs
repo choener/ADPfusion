@@ -5,14 +5,14 @@
 
 module ADP.Fusion.Unit
   ( module ADP.Fusion.Core
-  , module ADP.Fusion.Term.Deletion.Unit
-  , module ADP.Fusion.SynVar.Indices.Unit
-  , module ADP.Fusion.Term.Epsilon.Unit
+  , module ADP.Fusion.Unit.SynVar.Indices
+  , module ADP.Fusion.Unit.Term.Deletion
+  , module ADP.Fusion.Unit.Term.Epsilon
   ) where
 
 import ADP.Fusion.Core
 
-import ADP.Fusion.Term.Deletion.Unit
-import ADP.Fusion.Term.Epsilon.Unit
-import ADP.Fusion.SynVar.Indices.Unit
+import ADP.Fusion.Unit.SynVar.Indices
+import ADP.Fusion.Unit.Term.Deletion
+import ADP.Fusion.Unit.Term.Epsilon
 

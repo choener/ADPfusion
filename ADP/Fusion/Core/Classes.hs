@@ -10,7 +10,7 @@ import           Data.Strict.Tuple
 import           GHC.Exts hiding (build)
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
-import           Data.PrimitiveArray
+import           Data.PrimitiveArray.Index.Class
 
 
 
@@ -79,8 +79,8 @@ class Element x i where
 -- monads and are specialized for each combination of arguments @x@ and indices
 -- @i@.
 
-class (Monad m) => MkStream m x i where
-  mkStream :: Int# -> x -> Context i -> i -> i -> S.Stream m (Elm x i)
+class (Monad m) ⇒ MkStream m x i where
+  mkStream ∷ Int# → x → Context i → LimitType i → i → S.Stream m (Elm x i)
 
 -- | Finally, we need to be able to correctly build together symbols on the
 -- right-hand side of the @(<<<)@ operator.

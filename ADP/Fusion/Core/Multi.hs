@@ -11,7 +11,7 @@ import           Prelude hiding (map)
 import           GHC.Exts
 import           Debug.Trace
 
-import           Data.PrimitiveArray hiding (map)
+import           Data.PrimitiveArray.Index.Class hiding (map)
 
 import           ADP.Fusion.Core.Classes
 import           ADP.Fusion.Core.TyLvlIx
@@ -65,7 +65,7 @@ instance
   {-# Inline mkStream #-}
 
 instance Monad m => MkStream m S Z where
-  mkStream grd S Z Z Z = S.filter (const $ isTrue# grd) $ S.singleton $ ElmS RiZ
+  mkStream grd S Z ZZ Z = S.filter (const $ isTrue# grd) $ S.singleton $ ElmS RiZ
   {-# Inline mkStream #-}
 
 -- | For multi-dimensional terminals we need to be able to calculate how the
@@ -134,7 +134,7 @@ data TermState s i e = TState
   }
 
 class TermStream m t s i where
-  termStream :: t -> Context i -> i -> i -> Stream m (TermState s Z Z) -> Stream m (TermState s i (TermArg t))
+  termStream :: t -> Context i -> LimitType i -> i -> Stream m (TermState s Z Z) -> Stream m (TermState s i (TermArg t))
 
 instance (Monad m) => TermStream m M s Z where
   termStream _ _ _ _ = id
@@ -151,10 +151,10 @@ addTermStream1
   :: ( Monad m
      , TermStream m (TermSymbol M t) (Elm (Term1 s) (Z:.i)) (Z:.i)
      )
-  => t -> Context i -> i -> i -> Stream m s -> Stream m (s,TermArg t,RunningIndex i)
+  => t -> Context i -> LimitType i -> i -> Stream m s -> Stream m (s,TermArg t,RunningIndex i)
 addTermStream1 t c u i
   = map (\(TState (ElmTerm1 sS) (RiZ:.:ii) (Z:.ee)) -> (sS,ee,ii))
-  . termStream (M:|t) (Z:.c) (Z:.u) (Z:.i)
+  . termStream (M:|t) (Z:.c) (ZZ:..u) (Z:.i)
   . map (\s -> TState (elmTerm1 s i) RiZ Z)
 {-# Inline addTermStream1 #-}
 

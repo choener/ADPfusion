@@ -53,8 +53,17 @@ data MonotoneMCFG
 -- /not/ want to have this state influence forward results, unless that can
 -- be made deterministic, or we'll break Bellman)
 
-class MutateCell (h :: *) (s :: *) (im :: * -> *) i where
-  mutateCell :: (Monad om, PrimMonad om) => Proxy h -> Int -> Int -> (forall a . im a -> om a) -> s -> i -> i -> om ()
+class MutateCell (h ∷ *) (s ∷ *) (im ∷ * → *) i where
+  mutateCell
+    ∷ (Monad om, PrimMonad om)
+    ⇒ Proxy h
+    → Int
+    → Int
+    → (forall a . im a → om a)
+    → s
+    → LimitType i
+    → i
+    → om ()
 
 -- |
 
@@ -113,6 +122,9 @@ instance
       writeM marr i z
   {-# INLINE mutateCell #-}
 
+{-
+ - TODOThe following code goes into ADPfusionSubword!
+ -
 type ZS2 = Z:.Subword I:.Subword I
 
 instance
@@ -142,7 +154,7 @@ instance
       z <- (inline mrph) $ f (subword l u) (subword i j)
       writeM marr (subword i j) z
   {-# Inline mutateCell #-}
-
+-}
 
 
 -- ** individual instances for filling a complete table and extracting the
@@ -156,19 +168,19 @@ instance
   , TableOrder (ts:.TwITbl im arr c i x)
   ) => MutateTables h (ts:.TwITbl im arr c i x) im where
   mutateTables h mrph tt@(_:.TW (ITbl _ _ _ arr) _) = do
-    let (from,to) = bounds arr
+    let to = upperBound arr
     -- TODO (1) find the set of orders for the synvars
     let !tbos = VU.fromList . nub . sort $ tableBigOrder tt
     let !tlos = VU.fromList . nub . sort $ tableLittleOrder tt
     VU.forM_ tbos $ \bo ->
       case (VU.length tlos) of
         1 -> let lo = VU.head tlos
-             in  flip SM.mapM_ (streamUp from to) $ \k ->
+             in  flip SM.mapM_ (streamUp zeroBound' to) $ \k ->
                   mutateCell h bo lo (inline mrph) tt to k
         -- TODO each big-order group should be allowed to have its own sets
         -- of bounds. within a group, it doesn't make a lot of sense to
         -- have different bounds? Is there a use case for that even?
-        _ -> flip SM.mapM_ (streamUp from to) $ \k ->
+        _ -> flip SM.mapM_ (streamUp zeroBound' to) $ \k ->
               VU.forM_ tlos $ \lo ->
                 mutateCell h bo lo (inline mrph) tt to k
     return tt
@@ -277,7 +289,7 @@ instance
  ) => TSBO (ts:.TwITbl Id arr c i x) where
   asDyn (ts:.t@(TW (ITbl bo lo _ arr) fun)) = Q bo lo (T.typeOf t) (toDyn t) (toDyn arr) (seq fun $ toDyn fun) : asDyn ts
   fillWithDyn qs (ts:.t@(TW (ITbl bo lo _ arrDirect) fDirect)) = do
-    let (from,to) = bounds arrDirect
+    let to = upperBound arrDirect
     -- @hs@ are all tables that can be filled here
     -- @ns@ are all tables we can't fill and need to process further down
     -- the line
@@ -329,13 +341,13 @@ instance
                   -- marr <- unsafeThaw arrDirect  -- this takes 0.8 seconds for NeedlemanWunsch
                   marr <- unsafeThaw arrDirect -- (fst $ af!!0)  -- this takes 1.3 seconds for NeedlemanWunsch
                   let !ffff = fDirect --snd $ af!!0
-                  flip SM.mapM_ (streamUp from to) $ \k -> do
+                  flip SM.mapM_ (streamUp zeroBound' to) $ \k -> do
                     -- TODO @inline mrph@ ...
                     z <- (return . unId) $ fDirect to k
                     writeM marr k z
-          4723 -> return ()
+          4723 -> return () -- TODO fix this!
         -- We have more than one table in will work over the list of tables
-          _ -> do flip SM.mapM_ (streamUp from to) $ \k ->
+          _ -> do flip SM.mapM_ (streamUp zeroBound' to) $ \k ->
                     V.forM_ marrfs $ \(marr,f) -> do
                       z <- (return . unId) $ f to k
                       writeM marr k z
@@ -350,7 +362,7 @@ instance
 instance
   ( TSBO ts
   ) => TSBO (ts:.TwIRec Id c i x) where
-  asDyn (ts:.t@(TW (IRec _ _ _) _)) = asDyn ts
+  asDyn (ts:.t@(TW (IRec _ _) _)) = asDyn ts
   fillWithDyn qs (ts:._) = fillWithDyn qs ts
   {-# Inlinable asDyn #-}
   {-# Inline fillWithDyn #-}

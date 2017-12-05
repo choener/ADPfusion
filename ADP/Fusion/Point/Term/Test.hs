@@ -1,5 +1,5 @@
 
-module ADP.Fusion.Term.Test.Point where
+module ADP.Fusion.Point.Term.Test where
 
 import           Control.DeepSeq
 import           Data.Proxy
@@ -12,7 +12,7 @@ import           GHC.Exts
 import           Data.PrimitiveArray
 
 import           ADP.Fusion.Core
-import           ADP.Fusion.Core.Point
+import           ADP.Fusion.Point.Core
 import           ADP.Fusion.Term.Test.Type
 
 
@@ -32,13 +32,13 @@ instance
   ( TstCtx m ts s x0 i0 is (PointL I)
   ) => TermStream m (TermSymbol ts (Test v x)) s (is:.PointL I) where
   --
-  termStream (ts:|Test (!v)) (cs:.IStatic d) (us:.PointL u) (is:.PointL i)
+  termStream (ts:|Test (!v)) (cs:.IStatic d) (us:..LtPointL u) (is:.PointL i)
     = S.map (\(TState s ii ee) ->
                 let RiPlI !k = getIndex (getIdx s) (Proxy :: PRI is (PointL I))
                 in  TState s (ii:.:RiPlI i) (ee:.VG.unsafeSlice k (i-k) v))
     . termStream ts cs us is
   --
-  termStream (ts:|Test (!v)) (cs:.IVariable d) (us:.PointL u) (is:.PointL i)
+  termStream (ts:|Test (!v)) (cs:.IVariable d) (us:..LtPointL u) (is:.PointL i)
     -- FIXME simplified for 8.2 tests
     = S.flatten mk step . termStream ts cs us is
     where mk (TState s ii ee) =

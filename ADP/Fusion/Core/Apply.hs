@@ -2,7 +2,7 @@
 module ADP.Fusion.Core.Apply where
 
 --import Data.Array.Repa.Index
-import Data.PrimitiveArray (Z(..), (:.)(..))
+import Data.PrimitiveArray.Index.Class (Z(..), (:.)(..))
 
 
 

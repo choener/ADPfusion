@@ -1,7 +1,7 @@
 
 {-# Language MagicHash #-}
 
-module ADP.Fusion.Core.Point where
+module ADP.Fusion.Point.Core where
 
 import GHC.Generics (Generic, Generic1)
 import Control.DeepSeq
@@ -46,10 +46,10 @@ newtype instance RunningIndex (PointL C) = RiPlC Int
 
 
 instance (Monad m) => MkStream m S (PointL I) where
-  mkStream grd S (IStatic (I# d)) (PointL (I# u)) (PointL (I# i))
+  mkStream grd S (IStatic (I# d)) (LtPointL (I# u)) (PointL (I# i))
     = staticCheck# ( grd `andI#` (i >=# 0#) `andI#` (i <=# d) `andI#` (i <=# u) )
     . singleton . ElmS $ RiPlI 0
-  mkStream grd S (IVariable _) (PointL (I# u)) (PointL (I# i))
+  mkStream grd S (IVariable _) (LtPointL (I# u)) (PointL (I# i))
     = staticCheck# (grd `andI#` (i >=# 0#) `andI#` (i <=# u) )
     . singleton . ElmS $ RiPlI 0
   {-# Inline mkStream #-}
@@ -58,10 +58,10 @@ instance
   ( Monad m
   , MkStream m S is
   ) => MkStream m S (is:.PointL I) where
-  mkStream grd S (vs:.IStatic (I# d)) (lus:.PointL (I# u)) (is:.PointL (I# i))
+  mkStream grd S (vs:.IStatic (I# d)) (lus:..LtPointL (I# u)) (is:.PointL (I# i))
     = map (\(ElmS e) -> ElmS $ e :.: RiPlI 0)
     $ mkStream (grd `andI#` (i >=# 0#) `andI#` (i <=# d) `andI#` (i <=# u)) S vs lus is
-  mkStream grd S (vs:.IVariable d) (lus:.PointL (I# u)) (is:.PointL (I# i))
+  mkStream grd S (vs:.IVariable d) (lus:..LtPointL (I# u)) (is:.PointL (I# i))
     = map (\(ElmS e) -> ElmS $ e :.: RiPlI 0)
     $ mkStream (grd `andI#` (i >=# 0#) `andI#` (i <=# u)) S vs lus is
   {-# Inline mkStream #-}
@@ -69,10 +69,10 @@ instance
 
 
 instance (Monad m) => MkStream m S (PointL O) where
-  mkStream grd S (OStatic (I# d)) (PointL (I# u)) (PointL (I# i))
+  mkStream grd S (OStatic (I# d)) (LtPointL (I# u)) (PointL (I# i))
     = staticCheck# (grd `andI#` (i >=# 0#) `andI#` (i +# d <=# u) `andI#` (u ==# i))
     . singleton . ElmS $ RiPlO (I# i) (I# (i +# d))
-  mkStream grd S (OFirstLeft (I# d)) (PointL (I# u)) (PointL (I# i))
+  mkStream grd S (OFirstLeft (I# d)) (LtPointL (I# u)) (PointL (I# i))
     = staticCheck# (grd `andI#` (i >=# 0#) `andI#` (i +# d <=# u))
     . singleton . ElmS $ RiPlO (I# i) (I# (i +# d))
   {-# Inline mkStream #-}
@@ -81,10 +81,10 @@ instance
   ( Monad m
   , MkStream m S is
   ) => MkStream m S (is:.PointL O) where
-  mkStream grd S (vs:.OStatic (I# d)) (lus:.PointL (I# u)) (is:.PointL (I# i))
+  mkStream grd S (vs:.OStatic (I# d)) (lus:..LtPointL (I# u)) (is:.PointL (I# i))
     = map (\(ElmS zi) -> ElmS $ zi :.: RiPlO (I# i) (I# (i +# d)))
     $ mkStream (grd `andI#` (i >=# 0#) `andI#` (i +# d ==# u)) S vs lus is
-  mkStream grd S (vs:.OFirstLeft (I# d)) (us:.PointL (I# u)) (is:.PointL (I# i))
+  mkStream grd S (vs:.OFirstLeft (I# d)) (us:..LtPointL (I# u)) (is:.PointL (I# i))
     = map (\(ElmS zi) -> ElmS $ zi :.: RiPlO (I# i) (I# (i +# d)))
     $ mkStream (grd `andI#` (i >=# 0#) `andI#` (i +# d <=# u)) S vs us is
   {-# Inline mkStream #-}
@@ -92,7 +92,7 @@ instance
 
 
 instance (Monad m) => MkStream m S (PointL C) where
-  mkStream grd S Complemented (PointL (I# u)) (PointL (I# i))
+  mkStream grd S Complemented (LtPointL (I# u)) (PointL (I# i))
     = staticCheck# (grd `andI#` (i >=# 0#) `andI#` (i <=# u)) . singleton . ElmS $ RiPlC (I# i)
   {-# Inline mkStream #-}
 

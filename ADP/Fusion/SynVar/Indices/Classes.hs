@@ -24,11 +24,24 @@ import ADP.Fusion.Core.TyLvlIx
 
 class AddIndexDense s u c i where
   addIndexDenseGo
-    :: (Monad m)
-    => c -> Context i -> u -> u -> i -> i -> Stream m (SvState s a Z Z) -> Stream m (SvState s a u i)
+    ∷ (Monad m)
+    ⇒ c
+    -- ^ ???
+    → Context i
+    -- ^ Context of the index structure. Static/Variable, etc
+    → LimitType u
+    -- ^ The upper limit imposed by the structure to traverse over.
+    → LimitType i
+    -- ^ The upper limit imposed by the rule that traverses.
+    → i
+    -- ^ The current index for the full rule.
+    → Stream m (SvState s a Z Z)
+    -- ^ Initial stream state with @Z@ero indices.
+    → Stream m (SvState s a u i)
+    -- ^ The type of the full stream.
 
 instance AddIndexDense a Z Z Z where
-  addIndexDenseGo _ _ _ _ _ _ = id
+  addIndexDenseGo _ _ _ _ _ = id
   {-# Inline addIndexDenseGo #-}
 
 -- | @SvState@ holds the state that is currently being built up by
@@ -53,8 +66,8 @@ addIndexDense
      , s ~ Elm x0 i0
      , Element x0 i0
      )
-  => c -> Context i -> u -> u -> i -> i -> Stream m s -> Stream m (s,u,RunningIndex i)
-addIndexDense t c lb ub u i = map (\(SvS s z i') -> (s,z,i')) . addIndexDenseGo t c lb ub u i . map (\s -> (SvS s Z RiZ))
+  => c -> Context i -> LimitType u -> LimitType i -> i -> Stream m s -> Stream m (s,u,RunningIndex i)
+addIndexDense t c ub u i = map (\(SvS s z i') -> (s,z,i')) . addIndexDenseGo t c ub u i . map (\s -> (SvS s Z RiZ))
 {-# Inline addIndexDense #-}
 
 -- | In case of 1-dim tables, we wrap the index creation in a multi-dim
@@ -62,16 +75,16 @@ addIndexDense t c lb ub u i = map (\(SvS s z i') -> (s,z,i')) . addIndexDenseGo 
 -- a single instance.
 
 addIndexDense1
-  :: ( Monad m
-     , AddIndexDense (Elm (SynVar1 (Elm x0 a)) (Z:.i)) (Z:.u) (Z:.c) (Z:.i)
-     , GetIndex (Z:.a) (Z:.i)
-     , s ~ Elm x0 a
-     , Element x0 a
-     )
-  => c -> Context i -> u -> u -> i -> i -> Stream m s -> Stream m (s,u,RunningIndex i)
-addIndexDense1 t c lb ub u i = map (\(SvS (ElmSynVar1 s) (Z:.z) (RiZ:.:i')) -> (s,z,i'))
-                             . addIndexDenseGo (Z:.t) (Z:.c) (Z:.lb) (Z:.ub) (Z:.u) (Z:.i)
-                             . map (\s -> (SvS (elmSynVar1 s i) Z RiZ))
+  ∷ ( Monad m
+    , AddIndexDense (Elm (SynVar1 (Elm x0 a)) (Z:.i)) (Z:.u) (Z:.c) (Z:.i)
+    , GetIndex (Z:.a) (Z:.i)
+    , s ~ Elm x0 a
+    , Element x0 a
+    )
+  ⇒ c → Context i → LimitType u → LimitType i → i → Stream m s → Stream m (s,u,RunningIndex i)
+addIndexDense1 t c ub u i = map (\(SvS (ElmSynVar1 s) (Z:.z) (RiZ:.:i')) -> (s,z,i'))
+                          . addIndexDenseGo (Z:.t) (Z:.c) (ZZ:..ub) (ZZ:..u) (Z:.i)
+                          . map (\s -> (SvS (elmSynVar1 s i) Z RiZ))
 {-# Inline addIndexDense1 #-}
 
 newtype SynVar1 s = SynVar1 s
