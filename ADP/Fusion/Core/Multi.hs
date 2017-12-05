@@ -52,76 +52,100 @@ deriving instance (Show i, Show (RunningIndex i), Show (TermArg (TermSymbol a b)
 
 instance
   ( Monad m
-  , MkStream m ls i
+  , MkStream m posLeft ls i
   , Element ls i
-  , TermStaticVar (TermSymbol a b) i
-  , TermStream m (TermSymbol a b) (Elm ls i) i
-  ) => MkStream m (ls :!: TermSymbol a b) i where
-  mkStream grd (ls :!: ts) sv lu i
+  , TermStaticVar pos (TermSymbol a b) i
+  , TermStream m pos (TermSymbol a b) (Elm ls i) i
+  , posLeft ~ LeftPosTy pos (ls :!: TermSymbol a b) i
+  ) => MkStream m pos (ls :!: TermSymbol a b) i where
+  mkStream p (ls :!: ts) grd lu i
     = map (\(TState sS ii ee) -> ElmTS ee ii sS)
-    . termStream ts sv lu i
+    . termStream p ts lu i
     . map (\s -> TState s RiZ Z)
-    $ mkStream (grd `andI#` termStaticCheck ts i) ls (termStaticVar ts sv i) lu (termStreamIndex ts sv i)
+    $ mkStream (Proxy ∷ Proxy posLeft) ls (grd `andI#` termStaticCheck p ts i) lu (termStreamIndex p ts i)
   {-# Inline mkStream #-}
 
-instance Monad m => MkStream m S Z where
-  mkStream grd S Z ZZ Z = S.filter (const $ isTrue# grd) $ S.singleton $ ElmS RiZ
+instance Monad m => MkStream m pos S Z where
+  mkStream Proxy S grd ZZ Z = S.filter (const $ isTrue# grd) $ S.singleton $ ElmS RiZ
   {-# Inline mkStream #-}
 
 -- | For multi-dimensional terminals we need to be able to calculate how the
 -- static/variable signal changes and if the index for the inner part needs to
 -- be modified.
 
-class TermStaticVar t i where
-  termStaticVar   :: t -> Context i -> i -> Context i
-  termStreamIndex :: t -> Context i -> i -> i
-  termStaticCheck ∷ t → i → Int#
+class TermStaticVar pos sym ix where
+--  termStaticVar   ∷ sym → Context i → i → Context i
+  termStreamIndex ∷ Proxy pos → sym → ix → ix
+  termStaticCheck ∷ Proxy pos → sym → ix → Int#
 
-instance TermStaticVar M Z where
-  termStaticVar   _ _ _ = Z
-  termStreamIndex _ _ _ = Z
-  termStaticCheck _ _ = 1#
-  {-# INLINE [0] termStaticVar #-}
+instance TermStaticVar pos M Z where
+--  termStaticVar   _ _ _ = Z
+  termStreamIndex Proxy M Z = Z
+  termStaticCheck Proxy M Z = 1#
+--  {-# INLINE [0] termStaticVar #-}
   {-# INLINE [0] termStreamIndex #-}
   {-# INLINE [0] termStaticCheck #-}
 
 instance
-  ( TermStaticVar a is
-  , TermStaticVar b i
-  ) => TermStaticVar (TermSymbol a b) (is:.i) where
-  termStaticVar   (a:|b) (vs:.v) (is:.i) = termStaticVar   a vs is :. termStaticVar   b v i
-  termStreamIndex (a:|b) (vs:.v) (is:.i) = termStreamIndex a vs is :. termStreamIndex b v i
-  termStaticCheck (a:|b) (is:.i) = termStaticCheck a is `andI#` termStaticCheck b i
-  {-# INLINE [0] termStaticVar #-}
+  ( TermStaticVar ps ts is
+  , TermStaticVar p  t  i
+  ) => TermStaticVar (ps:.p) (TermSymbol ts t) (is:.i) where
+--  termStaticVar   (a:|b) (vs:.v) (is:.i) = termStaticVar   a vs is :. termStaticVar   b v i
+  termStreamIndex Proxy (ts:|t) (is:.i) = termStreamIndex (Proxy ∷ Proxy ps) ts is :. termStreamIndex (Proxy ∷ Proxy p) t i
+  termStaticCheck Proxy (ts:|t) (is:.i) = termStaticCheck (Proxy ∷ Proxy ps) ts is `andI#` termStaticCheck (Proxy ∷ Proxy p) t i
+--  {-# INLINE [0] termStaticVar #-}
   {-# INLINE [0] termStreamIndex #-}
   {-# INLINE [0] termStaticCheck #-}
 
 instance RuleContext Z where
-  type Context Z = Z
+  type InitialContext Z = Z
   initialContext _ = Z
   {-# INLINE initialContext #-}
 
 instance (RuleContext is, RuleContext i) => RuleContext (is:.i) where
-  type Context (is:.i) = Context is:.Context i
-  initialContext (is:.i) = initialContext is:.initialContext i
+  type InitialContext (is:.i) = InitialContext is:.InitialContext i
+  initialContext Proxy = initialContext (Proxy ∷ Proxy is):.initialContext (Proxy ∷ Proxy i)
   {-# INLINE initialContext #-}
 
-class TableStaticVar u c i where
-  tableStaticVar   :: Proxy u -> c -> Context i -> i -> Context i
-  tableStreamIndex :: Proxy u -> c -> Context i -> i -> i
+class TableStaticVar pos tableIx c ix where
+  {- To be replaced by type function to calculate if we become variable ...
+  tableStaticVar
+    ∷ Proxy u
+    → c
+    → Context i
+    → i
+    → Context i
+    -}
+  tableStreamIndex
+    ∷ Proxy pos
+    -- ^ provide type-level information on if we are currently static/variable/
+    -- etc
+    → Proxy tableIx
+    -- ^ provide type-level information on the index structure of the table we
+    -- are looking at. This index structure might well be different than the
+    -- @ix@ index we use in the grammar.
+    → c
+    -- ^ Information on the minimal size of the corresponding table.
+    → ix
+    -- ^ current upper bound on index
+    → ix
+    -- ^ next upper bound on index
 
-instance TableStaticVar c u Z where
-  tableStaticVar   _ _ _ _ = Z
+instance TableStaticVar pos u c Z where
+--  tableStaticVar   _ _ _ _ = Z
   tableStreamIndex _ _ _ _ = Z
-  {-# INLINE [0] tableStaticVar   #-}
+--  {-# INLINE [0] tableStaticVar   #-}
   {-# INLINE [0] tableStreamIndex #-}
 
-instance (TableStaticVar us cs is, TableStaticVar u c i) => TableStaticVar (us:.u) (cs:.c) (is:.i) where
-  tableStaticVar   _ (cs:.c) (vs:.v) (is:.i) = tableStaticVar   (Proxy :: Proxy us) cs vs is :. tableStaticVar   (Proxy :: Proxy u) c v i
-  tableStreamIndex _ (cs:.c) (vs:.v) (is:.i) = tableStreamIndex (Proxy :: Proxy us) cs vs is :. tableStreamIndex (Proxy :: Proxy u) c v i
-  {-# INLINE [0] tableStaticVar   #-}
+instance
+  ( TableStaticVar ps us cs is
+  , TableStaticVar p  u  c  i
+  )
+  ⇒ TableStaticVar ('(:.) ps p) (us:.u) (cs:.c) (is:.i) where
+--  tableStaticVar   _ (cs:.c) (vs:.v) (is:.i) = tableStaticVar   (Proxy :: Proxy us) cs vs is :. tableStaticVar   (Proxy :: Proxy u) c v i
+  tableStreamIndex Proxy Proxy (cs:.c) (is:.i) = tableStreamIndex (Proxy ∷ Proxy ps) (Proxy ∷ Proxy us) cs is :. tableStreamIndex (Proxy ∷ Proxy p) (Proxy ∷ Proxy u) c i
+--  {-# INLINE [0] tableStaticVar   #-}
   {-# INLINE [0] tableStreamIndex #-}
-
 
 
 data TermState s i e = TState
@@ -133,11 +157,17 @@ data TermState s i e = TState
     -- ^ element data
   }
 
-class TermStream m t s i where
-  termStream :: t -> Context i -> LimitType i -> i -> Stream m (TermState s Z Z) -> Stream m (TermState s i (TermArg t))
+class TermStream m pos t s i where
+  termStream
+    ∷ Proxy pos
+    → t
+    → LimitType i
+    → i
+    → Stream m (TermState s Z Z)
+    → Stream m (TermState s i (TermArg t))
 
-instance (Monad m) => TermStream m M s Z where
-  termStream _ _ _ _ = id
+instance (Monad m) => TermStream m pos M s Z where
+  termStream Proxy M ZZ Z = id
   {-# Inline termStream #-}
 
 -- |
@@ -148,13 +178,19 @@ instance (Monad m) => TermStream m M s Z where
 -- returning @u@ !!!
 
 addTermStream1
-  :: ( Monad m
-     , TermStream m (TermSymbol M t) (Elm (Term1 s) (Z:.i)) (Z:.i)
-     )
-  => t -> Context i -> LimitType i -> i -> Stream m s -> Stream m (s,TermArg t,RunningIndex i)
-addTermStream1 t c u i
+  ∷ forall m pos t s i
+  . ( Monad m
+    , TermStream m ('(:.) Z pos) (TermSymbol M t) (Elm (Term1 s) (Z:.i)) (Z:.i)
+    )
+  ⇒ Proxy pos
+  → t
+  → LimitType i
+  → i
+  → Stream m s
+  → Stream m (s,TermArg t,RunningIndex i)
+addTermStream1 Proxy t u i
   = map (\(TState (ElmTerm1 sS) (RiZ:.:ii) (Z:.ee)) -> (sS,ee,ii))
-  . termStream (M:|t) (Z:.c) (ZZ:..u) (Z:.i)
+  . termStream (Proxy ∷ Proxy ('(:.) Z pos)) (M:|t) (ZZ:..u) (Z:.i)
   . map (\s -> TState (elmTerm1 s i) RiZ Z)
 {-# Inline addTermStream1 #-}
 
@@ -171,19 +207,19 @@ instance (s ~ Elm x0 i, Element x0 i) => Element (Term1 s) (Z:.i) where
 
 -- | @Term MkStream@ context
 
-type TmkCtx1 m ls t i
+type TmkCtx1 m (pos ∷ k) ls t i
   = ( Monad m
-    , MkStream m ls i
-    , TermStream m (TermSymbol M t) (Elm (Term1 (Elm ls i)) (Z:.i)) (Z:.i)
+    , MkStream m pos ls i
+    , TermStream m pos (TermSymbol M t) (Elm (Term1 (Elm ls i)) (Z:.i)) (Z:.i)
     , Element ls i
-    , TermStaticVar t i
+    , TermStaticVar pos t i
     )
 
 -- | @Term TermStream@ context
 
-type TstCtx m ts s x0 sixty is i
+type TstCtx m (pos ∷ k) ts s x0 sixty is i
   = ( Monad m
-    , TermStream m ts s is
+    , TermStream m pos ts s is
     , GetIndex (RunningIndex sixty) (RunningIndex (is:.i))
     , GetIx (RunningIndex sixty) (RunningIndex (is:.i)) ~ (RunningIndex i)
     , Element x0 sixty

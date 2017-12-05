@@ -38,9 +38,12 @@ data ExtComplementContext s
   = CStatic s
   | CVariable s
 
-class RuleContext i where
-  type Context i :: *
-  initialContext :: i -> Context i
+-- | For each index type @ix@, @initialContext (Proxy ∷ ix)@ yields the initial
+-- context from which to start up rules.
+
+class RuleContext ix where
+  type InitialContext ix :: *
+  initialContext ∷ Proxy ix → InitialContext ix
 
 -- | While we ostensibly use an index of type @i@ we typically do not need
 -- every element of an @i@. For example, when looking at 'Subword's, we do
@@ -79,8 +82,27 @@ class Element x i where
 -- monads and are specialized for each combination of arguments @x@ and indices
 -- @i@.
 
-class (Monad m) ⇒ MkStream m x i where
-  mkStream ∷ Int# → x → Context i → LimitType i → i → S.Stream m (Elm x i)
+class (Monad m) ⇒ MkStream m pos sym ix where
+  mkStream
+    ∷ Proxy pos
+    -- ^ Fix static/variable/... depending on position in r.h.s. of rule.
+    → sym
+    -- ^ the symbol type (syntactic variable with or with memoization, terminal types like char, string, etc)
+    → Int#
+    -- ^ guard system for stopping execution of rule
+    → LimitType ix
+    -- ^ upper limit of index @i@, using the specialized 'LimitType' for type @i@.
+    → ix
+    -- ^ the current index @i@
+    → S.Stream m (Elm sym ix)
+    -- ^ resulting stream of elements
+
+-- | This type family yields for a given positional type @posty ∷ k@, the
+-- current symbol type @symty@ and index type @ix@ the next-left positional
+-- type within the same kind @k@ Keeping within the same kind should prevent
+-- accidental switching from Inside to Outside or similar bugs.
+
+type family LeftPosTy (pos ∷ k) sym ix ∷ k
 
 -- | Finally, we need to be able to correctly build together symbols on the
 -- right-hand side of the @(<<<)@ operator.
