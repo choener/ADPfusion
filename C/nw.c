@@ -30,7 +30,7 @@ int needlemanWunsch (int m, int n, char *p, char *q) {
   int new;
   int *mat = calloc (l, sizeof(int));
   for (i = 0 ; i<m; i++) for (j=0; j<n; j++) {
-    cur = 0;
+    cur = -999999;
     if (i==0 && j==0) { // nil_nil
       cur = p[i] == q[j];
     }
@@ -44,7 +44,7 @@ int needlemanWunsch (int m, int n, char *p, char *q) {
     }
     if (i>0 && j>0) { // loop_loop
       new = mat[(i-1) * m + (j-1)];
-      new += ((p[i] == q[j]) ? 1 : (-1));
+      new += ((p[i] == q[j]) ? 1 : (-2));
       if (cur < new) cur = new;
     }
     mat[i*m+j] = cur;
@@ -52,3 +52,4 @@ int needlemanWunsch (int m, int n, char *p, char *q) {
   free (mat);
   return cur;
 }
+
