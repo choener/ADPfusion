@@ -99,52 +99,44 @@ instance
 
 instance RuleContext Z where
   type InitialContext Z = Z
-  initialContext _ = Z
+  initialContext _ = Proxy
   {-# INLINE initialContext #-}
 
 instance (RuleContext is, RuleContext i) => RuleContext (is:.i) where
   type InitialContext (is:.i) = InitialContext is:.InitialContext i
-  initialContext Proxy = initialContext (Proxy ∷ Proxy is):.initialContext (Proxy ∷ Proxy i)
+  initialContext Proxy = Proxy
   {-# INLINE initialContext #-}
 
-class TableStaticVar pos tableIx c ix where
-  {- To be replaced by type function to calculate if we become variable ...
-  tableStaticVar
-    ∷ Proxy u
-    → c
-    → Context i
-    → i
-    → Context i
-    -}
+class TableStaticVar pos minSize tableIx ix where
   tableStreamIndex
     ∷ Proxy pos
     -- ^ provide type-level information on if we are currently static/variable/
     -- etc
-    → Proxy tableIx
+    → minSize
+    -- ^ Information on the minimal size of the corresponding table.
+    → LimitType tableIx
     -- ^ provide type-level information on the index structure of the table we
     -- are looking at. This index structure might well be different than the
     -- @ix@ index we use in the grammar.
-    → c
-    -- ^ Information on the minimal size of the corresponding table.
     → ix
-    -- ^ current upper bound on index
+    -- ^ current right-most index
     → ix
-    -- ^ next upper bound on index
+    -- ^ right-most index for symbol to the left of us
 
-instance TableStaticVar pos u c Z where
---  tableStaticVar   _ _ _ _ = Z
-  tableStreamIndex _ _ _ _ = Z
---  {-# INLINE [0] tableStaticVar   #-}
+-- | Index "0" for multi-dimensional syntactic variables.
+
+instance TableStaticVar pos Z tableIx Z where
+  tableStreamIndex Proxy Z _ Z = Z
   {-# INLINE [0] tableStreamIndex #-}
 
 instance
-  ( TableStaticVar ps us cs is
-  , TableStaticVar p  u  c  i
+  ( TableStaticVar ps cs us is
+  , TableStaticVar p  c  u  i
   )
-  ⇒ TableStaticVar ('(:.) ps p) (us:.u) (cs:.c) (is:.i) where
---  tableStaticVar   _ (cs:.c) (vs:.v) (is:.i) = tableStaticVar   (Proxy :: Proxy us) cs vs is :. tableStaticVar   (Proxy :: Proxy u) c v i
-  tableStreamIndex Proxy Proxy (cs:.c) (is:.i) = tableStreamIndex (Proxy ∷ Proxy ps) (Proxy ∷ Proxy us) cs is :. tableStreamIndex (Proxy ∷ Proxy p) (Proxy ∷ Proxy u) c i
---  {-# INLINE [0] tableStaticVar   #-}
+  ⇒ TableStaticVar ('(:.) ps p) (cs:.c) (us:.u) (is:.i) where
+  tableStreamIndex Proxy (cs:.c) (us:..u) (is:.i)
+    =  tableStreamIndex (Proxy ∷ Proxy ps) cs us is
+    :. tableStreamIndex (Proxy ∷ Proxy p ) c  u  i
   {-# INLINE [0] tableStreamIndex #-}
 
 

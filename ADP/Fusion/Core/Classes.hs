@@ -3,11 +3,11 @@
 
 module ADP.Fusion.Core.Classes where
 
-import           GHC.Generics (Generic, Generic1)
 import           Control.DeepSeq
 import           Data.Proxy
 import           Data.Strict.Tuple
 import           GHC.Exts hiding (build)
+import           GHC.Generics (Generic, Generic1)
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
 import           Data.PrimitiveArray.Index.Class
@@ -43,7 +43,7 @@ data ExtComplementContext s
 
 class RuleContext ix where
   type InitialContext ix :: *
-  initialContext ∷ Proxy ix → InitialContext ix
+  initialContext ∷ Proxy ix → Proxy (InitialContext ix)
 
 -- | While we ostensibly use an index of type @i@ we typically do not need
 -- every element of an @i@. For example, when looking at 'Subword's, we do
@@ -69,13 +69,13 @@ deriving instance (NFData (RunningIndex is), NFData (RunningIndex i)) => NFData 
 -- @Elm@ data constructors are all eradicated during fusion and should never
 -- show up in CORE.
 
-class Element x i where
-  data Elm    x i :: *
-  type RecElm x i :: *
-  type Arg    x   :: *
-  getArg :: Elm x i -> Arg x
-  getIdx :: Elm x i -> RunningIndex i
-  getElm :: Elm x i -> RecElm x i
+class Element (x ∷ *) i where
+  data Elm    x i ∷ *
+  type RecElm x i ∷ *
+  type Arg    x   ∷ *
+  getArg ∷ Elm x i → Arg x
+  getIdx ∷ Elm x i → RunningIndex i
+  getElm ∷ Elm x i → RecElm x i
 
 -- | @mkStream@ creates the actual stream of elements (@Elm@) that will be fed
 -- to functions on the left of the @(<<<)@ operator. Streams work over all

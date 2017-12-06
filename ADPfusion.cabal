@@ -144,7 +144,7 @@ library
     ADP.Fusion.Term.Test.Type
 --    -- Point
 --    ADP.Fusion.Point
---    ADP.Fusion.Point.Core
+    ADP.Fusion.Point.Core
 --    ADP.Fusion.Point.SynVar.Indices
 --    ADP.Fusion.Point.SynVar.Recursive
 --    ADP.Fusion.Point.Term.Chr

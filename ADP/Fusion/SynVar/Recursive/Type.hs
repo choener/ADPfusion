@@ -34,7 +34,7 @@ data IRec c i x where
          , iRecTo         ∷ !(LimitType i)
          } → IRec c i x
 
-type TwIRec m c i x = TW (IRec c i x) (LimitType i → i → m x)
+type TwIRec (m ∷ * → *) c i x = TW (IRec c i x) (LimitType i → i → m x)
 
 type TwIRecBt c i x mF mB r = TW (Backtrack (TwIRec mF c i x) mF mB) (LimitType i → i → mB [r])
 
@@ -95,28 +95,35 @@ instance Element ls i ⇒ Element (ls :!: TwIRecBt c u x mF mB r) i where
 instance
   ( Functor m
   , Monad m
+  , pos ~ ('(:.) ps p)
+  , posLeft ~ LeftPosTy pos (TwIRec m (cs:.c) (us:.u) x) (is:.i)
   , Element ls (is:.i)
-  , TableStaticVar (us:.u) (cs:.c) (is:.i)
-  , AddIndexDense (Elm ls (is:.i)) (us:.u) (cs:.c) (is:.i)
-  , MkStream m ls (is:.i)
-  ) ⇒ MkStream m (ls :!: TwIRec m (cs:.c) (us:.u) x) (is:.i) where
-  mkStream grd (ls :!: TW (IRec c h) fun) vs us is
+  , TableStaticVar ps cs us is
+  , TableStaticVar p  c  u  i
+  , AddIndexDense pos (Elm ls (is:.i)) (cs:.c) (us:.u) (is:.i)
+  , MkStream m posLeft ls (is:.i)
+  ) ⇒ MkStream m ('(:.) ps p) (ls :!: TwIRec m (cs:.c) (us:.u) x) (is:.i) where
+  mkStream Proxy (ls :!: TW (IRec csc h) fun) grd usu isi
     = mapM (\(s,tt,ii) -> (\res -> ElmIRec res ii s) <$> fun h tt)
-    . addIndexDense c vs h us is
-    $ mkStream grd ls (tableStaticVar (Proxy ∷ Proxy (us:.u)) c vs is) us (tableStreamIndex (Proxy ∷ Proxy (us:.u)) c vs is)
+    . addIndexDense (Proxy ∷ Proxy pos) csc h usu isi
+    $ mkStream (Proxy ∷ Proxy posLeft) ls grd usu (tableStreamIndex (Proxy ∷ Proxy pos) csc h isi)
   {-# Inline mkStream #-}
 
 instance
   ( Applicative mB
   , Monad mB
+  , pos ~ ('(:.) ps p)
+  , posLeft ~ LeftPosTy pos (TwIRecBt (cs:.c) (us:.u) x mF mB r) (is:.i)
   , Element ls (is:.i)
-  , TableStaticVar (us:.u) (cs:.c) (is:.i)
-  , AddIndexDense (Elm ls (is:.i)) (us:.u) (cs:.c) (is:.i)
-  , MkStream mB ls (is:.i)
-  ) => MkStream mB (ls :!: TwIRecBt (cs:.c) (us:.u) x mF mB r) (is:.i) where
-  mkStream grd (ls :!: TW (BtIRec c h fun) bt) vs us is
+--  , TableStaticVar (us:.u) (cs:.c) (is:.i)
+  , TableStaticVar ps cs us is
+  , TableStaticVar p  c  u  i
+  , AddIndexDense pos (Elm ls (is:.i)) (cs:.c) (us:.u) (is:.i)
+  , MkStream mB posLeft ls (is:.i)
+  ) => MkStream mB  ('(:.) ps p) (ls :!: TwIRecBt (cs:.c) (us:.u) x mF mB r) (is:.i) where
+  mkStream Proxy (ls :!: TW (BtIRec csc h fun) bt) grd usu isi
     = mapM (\(s,tt,ii) -> (\res bb -> ElmBtIRec res bb ii s) <$> fun h tt <*> bt h tt)
-    . addIndexDense c vs h us is
-    $ mkStream grd ls (tableStaticVar (Proxy :: Proxy (us:.u)) c vs is) us (tableStreamIndex (Proxy :: Proxy (us:.u)) c vs is)
+    . addIndexDense (Proxy ∷ Proxy pos) csc h usu isi
+    $ mkStream (Proxy ∷ Proxy posLeft) ls grd usu (tableStreamIndex (Proxy :: Proxy pos) csc h isi)
   {-# Inline mkStream #-}
 

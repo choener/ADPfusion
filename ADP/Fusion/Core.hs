@@ -71,12 +71,27 @@ import           ADP.Fusion.Term.PeekIndex.Type
 -- function 'f'.
 
 infixl 8 <<<
-(<<<) f xs = \lu ij -> S.map (apply (inline f) . getArg) $ mkStream 1# (build xs) (initialContext ij) lu ij
+(<<<)
+  ∷ forall m symbols i b
+  . ( Monad m
+    , Build symbols
+    , Element (Stack symbols) i
+    , Apply (Arg (Stack symbols) → b)
+    , MkStream m (InitialContext i) (Stack symbols) i
+    , RuleContext i
+    )
+  ⇒ (Fun (Arg (Stack symbols) → b))
+  → symbols
+  → (LimitType i → i → Stream m b)
+(<<<) f xs
+  = \lu ij
+  → S.map (apply (inline f) . getArg)
+  $ mkStream (initialContext (Proxy ∷ Proxy i)) (build xs) 1# lu ij
 {-# INLINE (<<<) #-}
 
-infixl 8 <<#
-(<<#) f xs = \lu ij -> S.mapM (apply (inline f) . getArg) $ mkStream 1# (build xs) (initialContext ij) lu ij
-{-# INLINE (<<#) #-}
+--infixl 8 <<#
+--(<<#) f xs = \lu ij -> S.mapM (apply (inline f) . getArg) $ mkStream Proxy (build xs) 1# lu ij
+--{-# INLINE (<<#) #-}
 
 -- | Combine two RHSs to give a choice between parses.
 

@@ -96,9 +96,9 @@ addIndexDense pos minSize tableBound upperBound ix
 -- a single instance.
 
 addIndexDense1
-  ∷ forall m
+  ∷ forall m pos x0 a ix minSize tableIx elm
   . ( Monad m
-    , AddIndexDense pos (Elm (SynVar1 (Elm x0 a)) (Z:.ix)) (Z:.minSize) (Z:.tableIx) (Z:.ix)
+    , AddIndexDense ('(:.) Z pos) (Elm (SynVar1 (Elm x0 a)) (Z:.ix)) (Z:.minSize) (Z:.tableIx) (Z:.ix)
     , GetIndex (Z:.a) (Z:.ix)
     , elm ~ Elm x0 a
     , Element x0 a
@@ -130,13 +130,11 @@ instance (s ~ Elm x0 i, Element x0 i) => Element (SynVar1 s) (Z:.i) where
 
 -- | Instance headers, we typically need.
 
-{-
-type IndexHdr s x0 i0 us u cs c is i =
-  ( AddIndexDense s us cs is
-  , GetIndex (RunningIndex i0) (RunningIndex (is:.i))
-  , GetIx (RunningIndex i0) (RunningIndex (is:.i)) ~ (RunningIndex i)
+type IndexHdr pos elm x0 i0 minSizes minSize tableIxs tableIx ixs ix =
+  ( AddIndexDense pos elm minSizes tableIxs ixs
+  , GetIndex (RunningIndex i0) (RunningIndex (ixs:.ix))
+  , GetIx (RunningIndex i0) (RunningIndex (ixs:.ix)) ~ (RunningIndex ix)
   , Element x0 i0
-  , s ~ Elm x0 i0
+  , elm ~ Elm x0 i0
   )
--}
 

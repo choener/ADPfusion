@@ -24,13 +24,13 @@ import ADP.Fusion.SynVar.TableWrap
 -- | Immutable table.
 
 data ITbl arr c i x where
-  ITbl :: { iTblBigOrder    :: {-# Unpack #-} !Int
-          , iTblLittleOrder :: {-# Unpack #-} !Int
-          , iTblConstraint  :: !c
-          , iTblArray       :: !(arr i x)
-          } -> ITbl arr c i x
+  ITbl ∷ { iTblBigOrder    ∷ {-# Unpack #-} !Int
+         , iTblLittleOrder ∷ {-# Unpack #-} !Int
+         , iTblConstraint  ∷ !c
+         , iTblArray       ∷ !(arr i x)
+         } → ITbl arr c i x
 
-type TwITbl m arr c i x = TW (ITbl arr c i x) (LimitType i → i → m x)
+type TwITbl (m ∷ * → *) arr c i x = TW (ITbl arr c i x) (LimitType i → i → m x)
 
 type TwITblBt arr c i x mF mB r = TW (Backtrack (TwITbl mF arr c i x) mF mB) (LimitType i → i → mB [r])
 
@@ -83,7 +83,7 @@ instance
 
 -- * 'Element'
 
-instance Element ls i => Element (ls :!: TwITbl m arr c j x) i where
+instance Element ls i ⇒ Element (ls :!: TwITbl m arr c j x) i where
   data Elm    (ls :!: TwITbl m arr c j x) i = ElmITbl !x !(RunningIndex i) !(Elm ls i)
   type Arg    (ls :!: TwITbl m arr c j x)   = Arg ls :. x
   type RecElm (ls :!: TwITbl m arr c j x) i = Elm ls i
@@ -115,32 +115,41 @@ instance (Show x, Show i, Show (RunningIndex i), Show (Elm ls i)) => Show (Elm (
 -- * Multi-dim extensions
 
 instance
-  ( Monad m
+  forall m pos ps p posLeft arr cs c us u x is i ls
+  . ( Monad m
+  , pos ~ ('(:.) ps p)
+  , posLeft ~ LeftPosTy pos (TwITbl m arr (cs:.c) (us:.u) x) (is:.i)
   , Element ls (is:.i)
-  , TableStaticVar (us:.u) (cs:.c) (is:.i)
-  , AddIndexDense (Elm ls (is:.i)) (us:.u) (cs:.c) (is:.i)
-  , MkStream m ls (is:.i)
+--  , TableStaticVar ('(:.) ps p) (cs:.c) (us:.u) (is:.i)
+  , TableStaticVar ps cs us is
+  , TableStaticVar p  c  u  i
+  , AddIndexDense pos (Elm ls (is:.i)) (cs:.c) (us:.u) (is:.i)
+  , MkStream m posLeft ls (is:.i)
   , PrimArrayOps arr (us:.u) x
-  ) ⇒ MkStream m (ls :!: TwITbl m arr (cs:.c) (us:.u) x) (is:.i) where
-  mkStream grd (ls :!: TW (ITbl _ _ c t) _) vs us is
+  ) ⇒ MkStream m ('(:.) ps p) (ls :!: TwITbl m arr (cs:.c) (us:.u) x) (is:.i) where
+  mkStream Proxy (ls :!: TW (ITbl _ _ csc t) _) grd usu isi
     = map (\(s,tt,ii') -> ElmITbl (t!tt) ii' s)
-    . addIndexDense c vs ub us is
-    $ mkStream grd ls (tableStaticVar (Proxy :: Proxy (us:.u)) c vs is) us (tableStreamIndex (Proxy :: Proxy (us:.u)) c vs is)
+    . addIndexDense (Proxy ∷ Proxy pos) csc ub usu isi
+    $ mkStream (Proxy ∷ Proxy posLeft) ls grd usu (tableStreamIndex (Proxy ∷ Proxy pos) csc ub isi)
     where ub = upperBound t
   {-# Inline mkStream #-}
 
 instance
   ( Monad mB
+  , pos ~ ('(:.) ps p)
+  , posLeft ~ LeftPosTy pos (TwITblBt arr (cs:.c) (us:.u) x mF mB r) (is:.i)
   , Element ls (is:.i)
-  , TableStaticVar (us:.u) (cs:.c) (is:.i)
-  , AddIndexDense (Elm ls (is:.i)) (us:.u) (cs:.c) (is:.i)
-  , MkStream mB ls (is:.i)
+--  , TableStaticVar (us:.u) (cs:.c) (is:.i)
+  , TableStaticVar ps cs us is
+  , TableStaticVar p  c  u  i
+  , AddIndexDense pos (Elm ls (is:.i)) (cs:.c) (us:.u) (is:.i)
+  , MkStream mB posLeft ls (is:.i)
   , PrimArrayOps arr (us:.u) x
-  ) ⇒ MkStream mB (ls :!: TwITblBt arr (cs:.c) (us:.u) x mF mB r) (is:.i) where
-  mkStream grd (ls :!: TW (BtITbl c t) bt) vs us is
+  ) ⇒ MkStream mB ('(:.) ps p) (ls :!: TwITblBt arr (cs:.c) (us:.u) x mF mB r) (is:.i) where
+  mkStream Proxy (ls :!: TW (BtITbl csc t) bt) grd usu isi
     = mapM (\(s,tt,ii') -> bt ub tt >>= \ ~bb -> return $ ElmBtITbl (t!tt) bb ii' s)
-    . addIndexDense c vs ub us is
-    $ mkStream grd ls (tableStaticVar (Proxy :: Proxy (us:.u)) c vs is) us (tableStreamIndex (Proxy :: Proxy (us:.u)) c vs is)
+    . addIndexDense (Proxy ∷ Proxy pos) csc ub usu isi
+    $ mkStream (Proxy ∷ Proxy posLeft) ls grd usu (tableStreamIndex (Proxy :: Proxy pos) csc ub isi)
     where ub = upperBound t
   {-# Inline mkStream #-}
 

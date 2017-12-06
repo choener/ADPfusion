@@ -26,50 +26,58 @@ import ADP.Fusion.SynVar.TableWrap
 
 -- | Constraints needed to use @iTblStream@.
 
-type ITblCx m ls arr x u c i =
-  ( TableStaticVar u c i
-  , MkStream m ls i
+type ITblCx m pos ls arr x u c i =
+  ( TableStaticVar pos c u i
   , Element ls i
-  , AddIndexDense (Elm (SynVar1 (Elm ls i)) (Z:.i)) (Z:.u) (Z:.c) (Z:.i)
+  , AddIndexDense ('(:.) Z pos) (Elm (SynVar1 (Elm ls i)) (Z:.i)) (Z:.c) (Z:.u) (Z:.i)
   , PrimArrayOps arr u x
   )
 
 -- | General function for @ITbl@s with skalar indices.
 
 iTblStream
-  ∷ forall m ls arr x u c i . ITblCx m ls arr x u c i
-  ⇒ Int#
+  ∷ forall m pos posLeft ls arr x u c i
+  . ( ITblCx m pos ls arr x u c i
+    , posLeft ~ LeftPosTy pos (TwITbl m arr c u x) i
+    , MkStream m posLeft ls i
+    )
+  ⇒ Proxy pos
   → Pair ls (TwITbl m arr c u x)
-  → Context i
+  → Int#
   → LimitType i
   → i
   → Stream m (Elm (ls :!: TwITbl m arr c u x) i)
-iTblStream grd (ls :!: TW (ITbl _ _ c t) _) vs us is
+iTblStream pos (ls :!: TW (ITbl _ _ c t) _) grd us is
   = map (\(s,tt,ii') -> ElmITbl (t!tt) ii' s)
-  . addIndexDense1 c vs ub us is
-  $ mkStream grd ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
+  . addIndexDense1 pos c ub us is
+  $ mkStream (Proxy ∷ Proxy posLeft) ls grd us (tableStreamIndex (Proxy :: Proxy pos) c ub is)
   where ub = upperBound t
 {-# Inline iTblStream #-}
 
 -- | General function for @Backtrack ITbl@s with skalar indices.
 
 btITblStream
-  ∷ forall mB mF ls arr x r u c i . ITblCx mB ls arr x u c i
-  ⇒ Int#
+  ∷ forall mB mF pos posLeft ls arr x r u c i
+  . ( ITblCx mB pos ls arr x u c i
+    , posLeft ~ LeftPosTy pos (TwITblBt arr c u x mF mB r) i
+    , MkStream mB posLeft ls i
+    )
+  ⇒ Proxy pos
   → Pair ls (TwITblBt arr c u x mF mB r)
-  → Context i
+  → Int#
   → LimitType i
   → i
   → Stream mB (Elm (ls :!: TwITblBt arr c u x mF mB r) i)
-btITblStream grd (ls :!: TW (BtITbl c t) bt) vs us is
+btITblStream pos (ls :!: TW (BtITbl c t) bt) grd us is
     = mapM (\(s,tt,ii') -> bt ub tt >>= \ ~bb -> return $ ElmBtITbl (t!tt) bb ii' s)
-    . addIndexDense1 c vs ub us is
-    $ mkStream grd ls (tableStaticVar (Proxy :: Proxy u) c vs is) us (tableStreamIndex (Proxy :: Proxy u) c vs is)
+    . addIndexDense1 pos c ub us is
+    $ mkStream (Proxy ∷ Proxy posLeft) ls grd us (tableStreamIndex (Proxy :: Proxy pos) c ub is)
     where ub = upperBound t
 {-# Inline btITblStream #-}
 
 
 
+{-
 -- ** Instances
 
 instance
@@ -125,4 +133,5 @@ instance ModifyConstraint (TwITblBt arr EmptyOk i x mF mB r) where
   type TE  (TwITblBt arr EmptyOk i x mF mB r) = TwITblBt arr EmptyOk  i x mF mB r
   toNonEmpty (TW (BtITbl _ arr) bt) = TW (BtITbl NonEmpty arr) bt
   {-# Inline toNonEmpty #-}
+-}
 

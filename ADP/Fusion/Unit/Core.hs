@@ -6,6 +6,7 @@
 
 module ADP.Fusion.Unit.Core where
 
+import Data.Proxy
 import Data.Vector.Fusion.Stream.Monadic (singleton,map,filter,Step(..))
 import Debug.Trace
 import Prelude hiding (map,filter)
@@ -18,81 +19,80 @@ import ADP.Fusion.Core.Multi
 
 
 instance RuleContext (Unit I) where
-  type Context (Unit I) = InsideContext ()
-  initialContext _ = IStatic ()
+  type InitialContext (Unit I) = InsideContext ()
+  initialContext Proxy = Proxy
   {-# Inline initialContext #-}
 
 instance RuleContext (Unit O) where
-  type Context (Unit O) = OutsideContext ()
-  initialContext _ = OStatic ()
+  type InitialContext (Unit O) = OutsideContext ()
+  initialContext Proxy = Proxy
   {-# Inline initialContext #-}
 
 instance RuleContext (Unit C) where
-  type Context (Unit C) = ComplementContext
-  initialContext _ = Complemented
+  type InitialContext (Unit C) = ComplementContext
+  initialContext Proxy = Proxy
   {-# Inline initialContext #-}
 
 data instance RunningIndex (Unit t) = RiU
 
 
 
-instance (Monad m) => MkStream m S (Unit I) where
-  mkStream grd S _ LtUnit Unit = singleton $ ElmS RiU
+instance (Monad m) => MkStream m pos S (Unit I) where
+  mkStream pos S grd LtUnit Unit = singleton $ ElmS RiU
   {-# Inline mkStream #-}
 
-instance (Monad m) => MkStream m S (Unit O) where
-  mkStream grd S _ LtUnit Unit = singleton $ ElmS RiU
+instance (Monad m) => MkStream m pos S (Unit O) where
+  mkStream pos S grd LtUnit Unit = singleton $ ElmS RiU
   {-# Inline mkStream #-}
 
-instance (Monad m) => MkStream m S (Unit C) where
-  mkStream grd S _ LtUnit Unit = singleton $ ElmS RiU
-  {-# Inline mkStream #-}
-
-instance
-  ( Monad m
-  , MkStream m S is
-  ) => MkStream m S (is:.Unit I) where
-  mkStream grd S (vs:._) (us:.._) (is:._)
-    = map (\(ElmS zi) -> ElmS $ zi :.: RiU)
-    $ mkStream grd S vs us is
+instance (Monad m) => MkStream m pos S (Unit C) where
+  mkStream pos S grd LtUnit Unit = singleton $ ElmS RiU
   {-# Inline mkStream #-}
 
 instance
-  ( Monad m
-  , MkStream m S is
-  ) => MkStream m S (is:.Unit O) where
-  mkStream grd S (vs:._) (us:.._) (is:._)
+  forall m ps p is
+  . ( Monad m
+    , MkStream m ps S is
+    )
+  ⇒ MkStream m ('(:.) ps p) S (is:.Unit I) where
+  mkStream Proxy S grd (us:.._) (is:._)
     = map (\(ElmS zi) -> ElmS $ zi :.: RiU)
-    $ mkStream grd S vs us is
+    $ mkStream (Proxy ∷ Proxy ps) S grd us is
   {-# Inline mkStream #-}
 
 instance
-  ( Monad m
-  , MkStream m S is
-  ) => MkStream m S (is:.Unit C) where
-  mkStream grd S (vs:._) (us:.._) (is:._)
+  forall m ps p is
+  . ( Monad m
+    , MkStream m ps S is
+    )
+  ⇒ MkStream m ('(:.) ps p) S (is:.Unit O) where
+  mkStream Proxy S grd (us:.._) (is:._)
     = map (\(ElmS zi) -> ElmS $ zi :.: RiU)
-    $ mkStream grd S vs us is
+    $ mkStream (Proxy ∷ Proxy ps) S grd us is
+  {-# Inline mkStream #-}
+
+instance
+  forall m ps p is
+  . ( Monad m
+    , MkStream m ps S is
+    )
+  ⇒ MkStream m ('(:.) ps p) S (is:.Unit C) where
+  mkStream Proxy S grd (us:.._) (is:._)
+    = map (\(ElmS zi) -> ElmS $ zi :.: RiU)
+    $ mkStream (Proxy ∷ Proxy ps) S grd us is
   {-# Inline mkStream #-}
 
 
 
-instance TableStaticVar c u (Unit I) where
-  tableStaticVar _ _ _ _ = IStatic ()
+instance TableStaticVar pos c u (Unit I) where
   tableStreamIndex _ _ _ _ = Unit
-  {-# Inline [0] tableStaticVar #-}
   {-# Inline [0] tableStreamIndex #-}
 
-instance TableStaticVar c u (Unit O) where
-  tableStaticVar _ _ _ _ = OStatic ()
+instance TableStaticVar pos c u (Unit O) where
   tableStreamIndex _ _ _ _ = Unit
-  {-# Inline [0] tableStaticVar #-}
   {-# Inline [0] tableStreamIndex #-}
 
-instance TableStaticVar c u (Unit C) where
-  tableStaticVar _ _ _ _ = Complemented
+instance TableStaticVar pos c u (Unit C) where
   tableStreamIndex _ _ _ _ = Unit
-  {-# Inline [0] tableStaticVar #-}
   {-# Inline [0] tableStreamIndex #-}
-
 
