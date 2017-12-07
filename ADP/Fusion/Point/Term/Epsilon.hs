@@ -15,24 +15,31 @@ import           ADP.Fusion.Term.Epsilon.Type
 
 
 instance
-  ( TmkCtx1 m ls Epsilon (PointL i)
-  ) => MkStream m (ls :!: Epsilon) (PointL i) where
-  mkStream grd (ls :!: Epsilon) sv us is
+  forall pos posLeft m ls i
+  . ( TermStream m ('(:.) Z pos) (TermSymbol M Epsilon) (Elm (Term1 (Elm ls (PointL i))) (Z :. PointL i)) (Z:.PointL i)
+    , posLeft ~ LeftPosTy pos Epsilon (PointL i)
+    , TermStaticVar pos Epsilon (PointL i)
+    , MkStream m posLeft ls (PointL i)
+    )
+  ⇒ MkStream m pos (ls :!: Epsilon) (PointL i) where
+  mkStream pos (ls :!: Epsilon) grd us is
     = S.map (\(ss,ee,ii) -> ElmEpsilon ii ss)
-    . addTermStream1 Epsilon sv us is
-    $ mkStream (grd `andI#` termStaticCheck Epsilon is) ls (termStaticVar Epsilon sv is) us (termStreamIndex Epsilon sv is)
+    . addTermStream1 pos Epsilon us is
+    $ mkStream (Proxy ∷ Proxy posLeft) ls (grd `andI#` termStaticCheck pos Epsilon is) us (termStreamIndex pos Epsilon is)
   {-# Inline mkStream #-}
 
 
-
 instance
-  ( TstCtx m ts s x0 i0 is (PointL I)
-  ) => TermStream m (TermSymbol ts Epsilon) s (is:.PointL I) where
-  termStream (ts:|Epsilon) (cs:.IStatic d) (us:..LtPointL u) (is:.PointL i)
+  ( TstCtx m ps ts s x0 i0 is (PointL I)
+  )
+  ⇒ TermStream m ('(:.) ps (IStatic d)) (TermSymbol ts Epsilon) s (is:.PointL I) where
+  termStream Proxy (ts:|Epsilon) (us:..LtPointL u) (is:.PointL i)
     = S.map (\(TState s ii ee) ->
               let RiPlI k = getIndex (getIdx s) (Proxy :: PRI is (PointL I))
               in  TState s (ii:.:RiPlI k) (ee:.()))
-    . termStream ts cs us is
+    . termStream (Proxy ∷ Proxy ps) ts us is
+  {-# Inline termStream #-}
+{-
   {-
   termStream (ts:|Epsilon) (cs:.IVariable d) (us:.PointL u) (is:.PointL i)
     = S.map (\(TState s ii ee) ->
@@ -69,4 +76,5 @@ instance TermStaticVar Epsilon (PointL O) where
   {-# Inline [0] termStaticVar #-}
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}
+-}
 

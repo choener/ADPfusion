@@ -143,14 +143,14 @@ library
     ADP.Fusion.Term.PeekIndex.Type
     ADP.Fusion.Term.Test.Type
 --    -- Point
---    ADP.Fusion.Point
+    ADP.Fusion.Point
     ADP.Fusion.Point.Core
---    ADP.Fusion.Point.SynVar.Indices
+    ADP.Fusion.Point.SynVar.Indices
 --    ADP.Fusion.Point.SynVar.Recursive
---    ADP.Fusion.Point.Term.Chr
---    ADP.Fusion.Point.Term.Deletion
---    ADP.Fusion.Point.Term.Epsilon
---    ADP.Fusion.Point.Term.Test
+    ADP.Fusion.Point.Term.Chr
+    ADP.Fusion.Point.Term.Deletion
+    ADP.Fusion.Point.Term.Epsilon
+    ADP.Fusion.Point.Term.Test
 --    -- Unit
 --    ADP.Fusion.Unit
 --    ADP.Fusion.Unit.Core

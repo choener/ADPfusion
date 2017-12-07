@@ -72,13 +72,13 @@ import           ADP.Fusion.Term.PeekIndex.Type
 
 infixl 8 <<<
 (<<<)
-  ∷ forall m symbols i b
+  ∷ forall k m initCtx symbols i b
   . ( Monad m
     , Build symbols
     , Element (Stack symbols) i
     , Apply (Arg (Stack symbols) → b)
-    , MkStream m (InitialContext i) (Stack symbols) i
-    , RuleContext i
+    , initCtx ~ InitialContext i
+    , MkStream m initCtx (Stack symbols) i
     )
   ⇒ (Fun (Arg (Stack symbols) → b))
   → symbols
@@ -86,7 +86,7 @@ infixl 8 <<<
 (<<<) f xs
   = \lu ij
   → S.map (apply (inline f) . getArg)
-  $ mkStream (initialContext (Proxy ∷ Proxy i)) (build xs) 1# lu ij
+  $ mkStream (Proxy ∷ Proxy initCtx) (build xs) 1# lu ij
 {-# INLINE (<<<) #-}
 
 --infixl 8 <<#

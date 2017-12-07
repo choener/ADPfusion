@@ -97,15 +97,15 @@ instance
   {-# INLINE [0] termStreamIndex #-}
   {-# INLINE [0] termStaticCheck #-}
 
-instance RuleContext Z where
-  type InitialContext Z = Z
-  initialContext _ = Proxy
-  {-# INLINE initialContext #-}
+--instance RuleContext Z where
+type instance InitialContext Z = Z
+--  initialContext _ = Proxy
+--  {-# INLINE initialContext #-}
 
-instance (RuleContext is, RuleContext i) => RuleContext (is:.i) where
-  type InitialContext (is:.i) = InitialContext is:.InitialContext i
-  initialContext Proxy = Proxy
-  {-# INLINE initialContext #-}
+--instance (RuleContext is, RuleContext i) => RuleContext (is:.i) where
+type instance InitialContext (is:.i) = InitialContext is:.InitialContext i
+--  initialContext Proxy = Proxy
+--  {-# INLINE initialContext #-}
 
 class TableStaticVar pos minSize tableIx ix where
   tableStreamIndex
