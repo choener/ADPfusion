@@ -114,19 +114,38 @@ instance (Show x, Show i, Show (RunningIndex i), Show (Elm ls i)) => Show (Elm (
 
 -- * Multi-dim extensions
 
+type instance LeftPosTy Z (TwITbl m arr EmptyOk Z x) Z = Z
+type instance LeftPosTy Z (TwITblBt arr EmptyOk Z x mF mB r) Z = Z
+
+type instance LeftPosTy (ps:.p) (TwITbl m arr (eos:.EmptyOk) (us:.u) x) (is:.i)
+  = (LeftPosTy ps (TwITbl m arr eos us x) is) :. (LeftPosTy p (TwITbl m arr EmptyOk u x) i)
+
+type instance LeftPosTy (ps:.p) (TwITblBt arr (eos:.EmptyOk) (us:.u) x mF mB r) (is:.i)
+  = (LeftPosTy ps (TwITblBt arr eos us x mF mB r) is) :. (LeftPosTy p (TwITblBt arr EmptyOk u x mF mB r) i)
+
+--type instance LeftPosTy
+--  (Z :. IStatic 0)
+--  (TwITbl m Unboxed (Z :. EmptyOk) (Z :. PointL I) Int)
+--  (Z :. PointL I)
+--  = (Z:.IVariable 0)
+
+type instance LeftPosTy Z (TwITbl m Unboxed Z Z x) Z = Z
+type instance LeftPosTy Z (TwITblBt Unboxed Z Z x mF mB r) Z = Z
+
+
 instance
   forall m pos ps p posLeft arr cs c us u x is i ls
   . ( Monad m
-  , pos ~ ('(:.) ps p)
+  , pos ~ (ps:.p)
   , posLeft ~ LeftPosTy pos (TwITbl m arr (cs:.c) (us:.u) x) (is:.i)
   , Element ls (is:.i)
---  , TableStaticVar ('(:.) ps p) (cs:.c) (us:.u) (is:.i)
-  , TableStaticVar ps cs us is
-  , TableStaticVar p  c  u  i
+  , TableStaticVar (ps:.p) (cs:.c) (us:.u) (is:.i)
+--  , TableStaticVar ps cs us is
+--  , TableStaticVar p  c  u  i
   , AddIndexDense pos (Elm ls (is:.i)) (cs:.c) (us:.u) (is:.i)
   , MkStream m posLeft ls (is:.i)
   , PrimArrayOps arr (us:.u) x
-  ) ⇒ MkStream m ('(:.) ps p) (ls :!: TwITbl m arr (cs:.c) (us:.u) x) (is:.i) where
+  ) ⇒ MkStream m (ps:.p) (ls :!: TwITbl m arr (cs:.c) (us:.u) x) (is:.i) where
   mkStream Proxy (ls :!: TW (ITbl _ _ csc t) _) grd usu isi
     = map (\(s,tt,ii') -> ElmITbl (t!tt) ii' s)
     . addIndexDense (Proxy ∷ Proxy pos) csc ub usu isi
@@ -136,16 +155,16 @@ instance
 
 instance
   ( Monad mB
-  , pos ~ ('(:.) ps p)
+  , pos ~ (ps:.p)
   , posLeft ~ LeftPosTy pos (TwITblBt arr (cs:.c) (us:.u) x mF mB r) (is:.i)
   , Element ls (is:.i)
---  , TableStaticVar (us:.u) (cs:.c) (is:.i)
-  , TableStaticVar ps cs us is
-  , TableStaticVar p  c  u  i
+  , TableStaticVar (ps:.p) (cs:.c) (us:.u) (is:.i)
+--  , TableStaticVar ps cs us is
+--  , TableStaticVar p  c  u  i
   , AddIndexDense pos (Elm ls (is:.i)) (cs:.c) (us:.u) (is:.i)
   , MkStream mB posLeft ls (is:.i)
   , PrimArrayOps arr (us:.u) x
-  ) ⇒ MkStream mB ('(:.) ps p) (ls :!: TwITblBt arr (cs:.c) (us:.u) x mF mB r) (is:.i) where
+  ) ⇒ MkStream mB (ps:.p) (ls :!: TwITblBt arr (cs:.c) (us:.u) x mF mB r) (is:.i) where
   mkStream Proxy (ls :!: TW (BtITbl csc t) bt) grd usu isi
     = mapM (\(s,tt,ii') -> bt ub tt >>= \ ~bb -> return $ ElmBtITbl (t!tt) bb ii' s)
     . addIndexDense (Proxy ∷ Proxy pos) csc ub usu isi

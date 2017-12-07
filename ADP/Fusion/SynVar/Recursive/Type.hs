@@ -95,11 +95,12 @@ instance Element ls i ⇒ Element (ls :!: TwIRecBt c u x mF mB r) i where
 instance
   ( Functor m
   , Monad m
-  , pos ~ ('(:.) ps p)
+  , pos ~ (ps:.p)
   , posLeft ~ LeftPosTy pos (TwIRec m (cs:.c) (us:.u) x) (is:.i)
   , Element ls (is:.i)
-  , TableStaticVar ps cs us is
-  , TableStaticVar p  c  u  i
+--  , TableStaticVar ps cs us is
+--  , TableStaticVar p  c  u  i
+  , TableStaticVar (ps:.p) (cs:.c) (us:.u) (is:.i)
   , AddIndexDense pos (Elm ls (is:.i)) (cs:.c) (us:.u) (is:.i)
   , MkStream m posLeft ls (is:.i)
   ) ⇒ MkStream m ('(:.) ps p) (ls :!: TwIRec m (cs:.c) (us:.u) x) (is:.i) where
@@ -112,12 +113,13 @@ instance
 instance
   ( Applicative mB
   , Monad mB
-  , pos ~ ('(:.) ps p)
+  , pos ~ (ps :. p)
   , posLeft ~ LeftPosTy pos (TwIRecBt (cs:.c) (us:.u) x mF mB r) (is:.i)
   , Element ls (is:.i)
 --  , TableStaticVar (us:.u) (cs:.c) (is:.i)
-  , TableStaticVar ps cs us is
-  , TableStaticVar p  c  u  i
+--  , TableStaticVar ps cs us is
+--  , TableStaticVar p  c  u  i
+  , TableStaticVar (ps:.p) (cs:.c) (us:.u) (is:.i)
   , AddIndexDense pos (Elm ls (is:.i)) (cs:.c) (us:.u) (is:.i)
   , MkStream mB posLeft ls (is:.i)
   ) => MkStream mB  ('(:.) ps p) (ls :!: TwIRecBt (cs:.c) (us:.u) x mF mB r) (is:.i) where

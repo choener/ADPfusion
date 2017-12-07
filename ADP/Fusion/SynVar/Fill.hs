@@ -345,7 +345,6 @@ instance
                     -- TODO @inline mrph@ ...
                     z <- (return . unId) $ fDirect to k
                     writeM marr k z
-          4723 -> return () -- TODO fix this!
         -- We have more than one table in will work over the list of tables
           _ -> do flip SM.mapM_ (streamUp zeroBound' to) $ \k ->
                     V.forM_ marrfs $ \(marr,f) -> do

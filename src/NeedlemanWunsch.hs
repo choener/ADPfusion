@@ -292,6 +292,7 @@ nwInsideBacktrack i1 i2 t = {-# SCC "nwInsideBacktrack" #-} unId $ axiom b
                     :: Z:.TwITblBt Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int Id Id [String]
 {-# NoInline nwInsideBacktrack #-}
 
+{-
 -- | The outside version of the Needleman-Wunsch alignment algorithm. The
 -- outside grammar is identical to the inside grammar! This is not
 -- generally the case, but here it is. Hence we may just use outside tables
@@ -321,6 +322,7 @@ nwOutsideForward i1 i2 = {-# SCC "nwOutsideForward" #-} runST $ do
   where n1 = VU.length i1
         n2 = VU.length i2
 {-# Noinline nwOutsideForward #-}
+-}
 
 -- | This wrapper takes a list of input sequences and aligns each odd
 -- sequence with the next even sequence. We want one alignment for each
@@ -340,11 +342,11 @@ align (kI,kO) (a:b:xs) = {-# SCC "align" #-} do
   putStrLn a
   putStrLn b
   let (sI,rsI) = runNeedlemanWunsch kI a b
-  let (sO,rsO) = runOutsideNeedlemanWunsch kO a b
+--  let (sO,rsO) = runOutsideNeedlemanWunsch kO a b
   when (kI>=0) $ forM_ rsI $ \[u,l] -> printf "%s\n%s  %d\n\n" (reverse u) (reverse l) sI
-  when (kO>=0) $ forM_ rsO $ \[u,l] -> printf "%s\n%s  %d\n\n" (id      u) (id      l) sO
+--  when (kO>=0) $ forM_ rsO $ \[u,l] -> printf "%s\n%s  %d\n\n" (id      u) (id      l) sO
   when (kI>=0) $ print sI
-  when (kO>=0) $ print sO
+--  when (kO>=0) $ print sO
   putStrLn ""
   align (kI,kO) xs
 

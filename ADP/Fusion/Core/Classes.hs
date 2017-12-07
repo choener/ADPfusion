@@ -128,7 +128,7 @@ class (Monad m) ⇒ MkStream m pos sym ix where
 -- type within the same kind @k@ Keeping within the same kind should prevent
 -- accidental switching from Inside to Outside or similar bugs.
 
-type family LeftPosTy (pos ∷ k) sym ix ∷ k
+type family LeftPosTy (pos ∷ *) sym ix ∷ *
 
 -- | Finally, we need to be able to correctly build together symbols on the
 -- right-hand side of the @(<<<)@ operator.

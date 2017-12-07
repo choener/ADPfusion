@@ -31,25 +31,25 @@ prop_I_Epsilon ix@(PointL j) = zs == ls where
   zs = (id <<< Epsilon ... stoList) maxPLi ix
   ls = [ () | j == 0 ]
 
-prop_O_Epsilon ix@(PointL j) = zs == ls where
-  zs = (id <<< Epsilon ... stoList) maxPLo ix
-  ls = [ () | j == maxI ]
+--prop_O_Epsilon ix@(PointL j) = zs == ls where
+--  zs = (id <<< Epsilon ... stoList) maxPLo ix
+--  ls = [ () | j == maxI ]
 
 prop_I_ZEpsilon ix@(Z:.PointL j) = zs == ls where
   zs = (id <<< (M:|Epsilon) ... stoList) (ZZ:..maxPLi) ix
   ls = [ Z:.() | j == 0 ]
 
-prop_O_ZEpsilon ix@(Z:.PointL j) = zs == ls where
-  zs = (id <<< (M:|Epsilon) ... stoList) (ZZ:..maxPLo) ix
-  ls = [ Z:.() | j == maxI ]
-
-prop_O_ZEpsilonEpsilon ix@(Z:.PointL j:.PointL l) = zs == ls where
-  zs = (id <<< (M:|Epsilon:|Epsilon) ... stoList) (ZZ:..maxPLo:..maxPLo) ix
-  ls = [ Z:.():.() | j == maxI, l == maxI ]
-
-
-
--- * Deletion cases
+--prop_O_ZEpsilon ix@(Z:.PointL j) = zs == ls where
+--  zs = (id <<< (M:|Epsilon) ... stoList) (ZZ:..maxPLo) ix
+--  ls = [ Z:.() | j == maxI ]
+--
+--prop_O_ZEpsilonEpsilon ix@(Z:.PointL j:.PointL l) = zs == ls where
+--  zs = (id <<< (M:|Epsilon:|Epsilon) ... stoList) (ZZ:..maxPLo:..maxPLo) ix
+--  ls = [ Z:.():.() | j == maxI, l == maxI ]
+--
+--
+--
+---- * Deletion cases
 
 prop_I_ItNC ix@(PointL j) = zs == ls where
   zs = ((,,) <<< tSI % Deletion % chr xs ... stoList) maxPLi ix
@@ -58,27 +58,27 @@ prop_I_ItNC ix@(PointL j) = zs == ls where
          , xs VU.! (j-1)
          ) | j >= 1, j <= (maxI) ]
 
-prop_O_ItNC ix@(PointL j) = zs == ls where
-  zs = ((,,) <<< tSO % Deletion % chr xs ... stoList) maxPLo ix
-  ls = [ ( unsafeIndex xsPo (PointL $ j+1)
-         , ()
-         , xs VU.! (j+0)
-         ) | j >= 0, j <= (maxI-1) ]
-{-# Noinline prop_O_ItNC #-}
-
-prop_O_ZItNC ix@(Z:.PointL j) = zs == ls where
-  zs = ((,,) <<< tZ1O % (M:|Deletion) % (M:|chr xs) ... stoList) (ZZ:..maxPLo) ix
-  ls = [ ( unsafeIndex xsZPo (Z:.PointL (j+1))
-         , Z:.()
-         , Z:.xs VU.! (j+0)
-         ) | j >= 0, j <= (maxI-1) ]
-
-prop_O_2dimIt_NC_CN ix@(Z:.PointL j:.PointL l) = zs == ls where
-  zs = ((,,) <<< tZ2O % (M:|Deletion:|chr xs) % (M:|chr xs:|Deletion) ... stoList) (ZZ:..maxPLo:..maxPLo) ix
-  ls = [ ( unsafeIndex xsPPo (Z:.PointL (j+1):.PointL (l+1))
-         , Z:.()           :.xs VU.! (l+0)
-         , Z:.xs VU.! (j+0):.()
-         ) | j>=0, l>=0, j<=(maxI-1), l<=(maxI-1) ]
+--prop_O_ItNC ix@(PointL j) = zs == ls where
+--  zs = ((,,) <<< tSO % Deletion % chr xs ... stoList) maxPLo ix
+--  ls = [ ( unsafeIndex xsPo (PointL $ j+1)
+--         , ()
+--         , xs VU.! (j+0)
+--         ) | j >= 0, j <= (maxI-1) ]
+--{-# Noinline prop_O_ItNC #-}
+--
+--prop_O_ZItNC ix@(Z:.PointL j) = zs == ls where
+--  zs = ((,,) <<< tZ1O % (M:|Deletion) % (M:|chr xs) ... stoList) (ZZ:..maxPLo) ix
+--  ls = [ ( unsafeIndex xsZPo (Z:.PointL (j+1))
+--         , Z:.()
+--         , Z:.xs VU.! (j+0)
+--         ) | j >= 0, j <= (maxI-1) ]
+--
+--prop_O_2dimIt_NC_CN ix@(Z:.PointL j:.PointL l) = zs == ls where
+--  zs = ((,,) <<< tZ2O % (M:|Deletion:|chr xs) % (M:|chr xs:|Deletion) ... stoList) (ZZ:..maxPLo:..maxPLo) ix
+--  ls = [ ( unsafeIndex xsPPo (Z:.PointL (j+1):.PointL (l+1))
+--         , Z:.()           :.xs VU.! (l+0)
+--         , Z:.xs VU.! (j+0):.()
+--         ) | j>=0, l>=0, j<=(maxI-1), l<=(maxI-1) ]
 
 prop_I_2dimIt_NC_CN ix@(Z:.PointL j:.PointL l) = zs == ls where
   zs = ((,,) <<< tZ2I % (M:|Deletion:|chr xs) % (M:|chr xs:|Deletion) ... stoList) (ZZ:..maxPLi:..maxPLi) ix
@@ -97,9 +97,9 @@ prop_I_Tt ix@(Z:.PointL j) = zs == ls where
   zs = (id <<< (M:|chr xs) ... stoList) (ZZ:..maxPLi) ix
   ls = [ (Z:.xs VU.! (j-1)) | 1==j ]
 
---prop_O_Tt ix@(Z:.O (PointL j)) = traceShow (j,zs,ls) $ zs == ls where
---  zs = (id <<< (M:|chr xs) ... stoList) (Z:.O maxPLo) ix
---  ls = [ (Z:.xs VU.! (j-1)) | 1==j ]
+----prop_O_Tt ix@(Z:.O (PointL j)) = traceShow (j,zs,ls) $ zs == ls where
+----  zs = (id <<< (M:|chr xs) ... stoList) (Z:.O maxPLo) ix
+----  ls = [ (Z:.xs VU.! (j-1)) | 1==j ]
 
 -- | Two single-character terminals
 
@@ -113,17 +113,21 @@ prop_I_It ix@(PointL j) = zs == ls where
   zs = (id <<< tSI ... stoList) maxPLi ix
   ls = [ unsafeIndex xsP ix | j>=0, j<=maxI ]
 
-prop_O_It ix@(PointL j) = zs == ls where
-  zs = (id <<< tSO ... stoList) maxPLo ix
-  ls = [ unsafeIndex xsPo ix | j>=0, j<=maxI ]
+--prop_O_It ix@(PointL j) = zs == ls where
+--  zs = (id <<< tSO ... stoList) maxPLo ix
+--  ls = [ unsafeIndex xsPo ix | j>=0, j<=maxI ]
 
 prop_I_ZIt ix@(Z:.PointL j) = zs == ls where
   zs = (id <<< tZ1I ... stoList) (ZZ:..maxPLi) ix
   ls = [ unsafeIndex xsZP ix | j>=0, j<=maxI ]
 
-prop_O_ZIt ix@(Z:.PointL j) = zs == ls where
-  zs = (id <<< tZ1O ... stoList) (ZZ:..maxPLo) ix
-  ls = [ unsafeIndex xsZPo ix | j>=0, j<=maxI ]
+prop_I_2dimIt ix@(Z:.PointL i:.PointL j) = zs == ls where
+  zs = (id <<< tZ2I ... stoList) (ZZ:..maxPLi:..maxPLi) ix
+  ls = [ unsafeIndex xsPP ix | j>=0, j<=maxI ]
+
+--prop_O_ZIt ix@(Z:.PointL j) = zs == ls where
+--  zs = (id <<< tZ1O ... stoList) (ZZ:..maxPLo) ix
+--  ls = [ unsafeIndex xsZPo ix | j>=0, j<=maxI ]
 
 -- | Table, then single terminal
 
@@ -133,35 +137,35 @@ prop_I_ItC ix@(PointL j) = zs == ls where
          , xs VU.! (j-1)
          ) | j>=1, j<=maxI ]
 
--- | @A^*_j -> A^*_{j+1} c_{j+1)@ !
-
-prop_O_ItC ix@(PointL j) = zs == ls where
-  zs = ((,) <<< tSO % chr xs ... stoList) maxPLo ix
-  ls = [ ( unsafeIndex xsPo (PointL $ j+1)
-         , xs VU.! (j+0)
-         ) | j >= 0, j <= (maxI-1) ]
-
-prop_O_ItCC ix@(PointL j) = zs == ls where
-  zs = ((,,) <<< tSO % chr xs % chr xs ... stoList) maxPLo ix
-  ls = [ ( unsafeIndex xsPo (PointL $ j+2)
-         , xs VU.! (j+0)
-         , xs VU.! (j+1)
-         ) | j >= 0, j <= (maxI-2) ]
-
-prop_O_ItCCC ix@(PointL j) = zs == ls where
-  zs = ((,,,) <<< tSO % chr xs % chr xs % chr xs ... stoList) maxPLo ix
-  ls = [ ( unsafeIndex xsPo (PointL $ j+3)
-         , xs VU.! (j+0)
-         , xs VU.! (j+1)
-         , xs VU.! (j+2)
-         ) | j >= 0, j <= (maxI-3) ]
-
-prop_O_ZItCC ix@(Z:.PointL j) = zs == ls where
-  zs = ((,,) <<< tZ1O % (M:|chr xs) % (M:|chr xs) ... stoList) (ZZ:..maxPLo) ix
-  ls = [ ( unsafeIndex xsZPo (Z:.PointL (j+2))
-         , Z:.xs VU.! (j+0)
-         , Z:.xs VU.! (j+1)
-         ) | j >= 0, j <= (maxI-2) ]
+---- | @A^*_j -> A^*_{j+1} c_{j+1)@ !
+--
+--prop_O_ItC ix@(PointL j) = zs == ls where
+--  zs = ((,) <<< tSO % chr xs ... stoList) maxPLo ix
+--  ls = [ ( unsafeIndex xsPo (PointL $ j+1)
+--         , xs VU.! (j+0)
+--         ) | j >= 0, j <= (maxI-1) ]
+--
+--prop_O_ItCC ix@(PointL j) = zs == ls where
+--  zs = ((,,) <<< tSO % chr xs % chr xs ... stoList) maxPLo ix
+--  ls = [ ( unsafeIndex xsPo (PointL $ j+2)
+--         , xs VU.! (j+0)
+--         , xs VU.! (j+1)
+--         ) | j >= 0, j <= (maxI-2) ]
+--
+--prop_O_ItCCC ix@(PointL j) = zs == ls where
+--  zs = ((,,,) <<< tSO % chr xs % chr xs % chr xs ... stoList) maxPLo ix
+--  ls = [ ( unsafeIndex xsPo (PointL $ j+3)
+--         , xs VU.! (j+0)
+--         , xs VU.! (j+1)
+--         , xs VU.! (j+2)
+--         ) | j >= 0, j <= (maxI-3) ]
+--
+--prop_O_ZItCC ix@(Z:.PointL j) = zs == ls where
+--  zs = ((,,) <<< tZ1O % (M:|chr xs) % (M:|chr xs) ... stoList) (ZZ:..maxPLo) ix
+--  ls = [ ( unsafeIndex xsZPo (Z:.PointL (j+2))
+--         , Z:.xs VU.! (j+0)
+--         , Z:.xs VU.! (j+1)
+--         ) | j >= 0, j <= (maxI-2) ]
 
 -- | synvar followed by a 2-tape character terminal
 
@@ -172,12 +176,12 @@ prop_I_2dimItCC ix@(Z:.PointL j:.PointL l) = zs == ls where
          , Z:.xs VU.! (j-1):.xs VU.! (l-1)
          ) | j>=2, l>=2, j<=maxI, l<=maxI ]
 
-prop_O_2dimItCC ix@(Z:.PointL j:.PointL l) = zs == ls where
-  zs = ((,,) <<< tZ2O % (M:|chr xs:|chr xs) % (M:|chr xs:|chr xs) ... stoList) (ZZ:..maxPLo:..maxPLo) ix
-  ls = [ ( unsafeIndex xsPPo (Z:.PointL (j+2):.PointL (l+2))
-         , Z:.xs VU.! (j+0):.xs VU.! (l+0)
-         , Z:.xs VU.! (j+1):.xs VU.! (l+1)
-         ) | j>=0, l>=0, j<=(maxI-2), l<=(maxI-2) ]
+--prop_O_2dimItCC ix@(Z:.PointL j:.PointL l) = zs == ls where
+--  zs = ((,,) <<< tZ2O % (M:|chr xs:|chr xs) % (M:|chr xs:|chr xs) ... stoList) (ZZ:..maxPLo:..maxPLo) ix
+--  ls = [ ( unsafeIndex xsPPo (Z:.PointL (j+2):.PointL (l+2))
+--         , Z:.xs VU.! (j+0):.xs VU.! (l+0)
+--         , Z:.xs VU.! (j+1):.xs VU.! (l+1)
+--         ) | j>=0, l>=0, j<=(maxI-2), l<=(maxI-2) ]
 
 -- * 'Strng' tests
 

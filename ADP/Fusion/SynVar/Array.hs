@@ -29,7 +29,7 @@ import ADP.Fusion.SynVar.TableWrap
 type ITblCx m pos ls arr x u c i =
   ( TableStaticVar pos c u i
   , Element ls i
-  , AddIndexDense ('(:.) Z pos) (Elm (SynVar1 (Elm ls i)) (Z:.i)) (Z:.c) (Z:.u) (Z:.i)
+  , AddIndexDense (Z:.pos) (Elm (SynVar1 (Elm ls i)) (Z:.i)) (Z:.c) (Z:.u) (Z:.i)
   , PrimArrayOps arr u x
   )
 
@@ -77,16 +77,20 @@ btITblStream pos (ls :!: TW (BtITbl c t) bt) grd us is
 
 
 
-{-
 -- ** Instances
+
+type instance LeftPosTy (IStatic d) (TwITbl m arr EmptyOk (PointL I) x) (PointL I) = IVariable d
+type instance LeftPosTy (IStatic d) (TwITblBt arr EmptyOk (PointL I) x mB mF r) (PointL I) = IVariable d
 
 instance
   ( Monad m
-  , ITblCx m ls arr x u c (i I)
-  ) => MkStream m (ls :!: TwITbl m arr c u x) (i I) where
+  , ITblCx m pos ls arr x u c (i I)
+  , MkStream m (LeftPosTy pos (TwITbl m arr c u x) (i I)) ls (i I)
+  ) => MkStream m pos (ls :!: TwITbl m arr c u x) (i I) where
   mkStream = iTblStream
   {-# Inline mkStream #-}
 
+{-
 instance
   ( Monad m
   , ITblCx m ls arr x u c (i O)

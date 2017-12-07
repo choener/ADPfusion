@@ -65,17 +65,18 @@ instance
   ( Monad m
   , MkStream m ps S is
   , KnownNat d
-  ) ⇒ MkStream m ('(:.) ps (IStatic d)) S (is:.PointL I) where
+  ) ⇒ MkStream m (ps:.IStatic d) S (is:.PointL I) where
   mkStream Proxy S grd (lus:..LtPointL (I# u)) (is:.PointL (I# i))
     = map (\(ElmS e) -> ElmS $ e :.: RiPlI 0)
     $ mkStream (Proxy ∷ Proxy ps) S (grd `andI#` (i >=# 0#) `andI#` (i <=# d) `andI#` (i <=# u)) lus is
     where (I# d) = fromIntegral $ natVal (Proxy ∷ Proxy d)
+  {-# Inline mkStream #-}
 
 instance
   ( Monad m
   , MkStream m ps S is
   , KnownNat d
-  ) ⇒ MkStream m ('(:.) ps (IVariable d)) S (is:.PointL I) where
+  ) ⇒ MkStream m (ps:.IVariable d) S (is:.PointL I) where
   mkStream Proxy S grd (lus:..LtPointL (I# u)) (is:.PointL (I# i))
     = map (\(ElmS e) -> ElmS $ e :.: RiPlI 0)
     $ mkStream (Proxy ∷ Proxy ps) S (grd `andI#` (i >=# 0#) `andI#` (i <=# u)) lus is

@@ -16,6 +16,8 @@ import           ADP.Fusion.Term.Chr.Type
 
 
 
+type instance LeftPosTy (IStatic d) (Chr r x) (PointL I) = IStatic d
+
 -- | First try in getting this right with a @termStream@.
 --
 -- TODO use @PointL i@ since this is probably the same for all single-tape
@@ -24,30 +26,31 @@ import           ADP.Fusion.Term.Chr.Type
 -- TODO it might even be possible to auto-generate this code via TH.
 
 instance
-  ( TmkCtx1 m ls (Chr r x) (PointL i)
-  ) => MkStream m (ls :!: Chr r x) (PointL i) where
-  mkStream grd (ls :!: Chr f xs) sv us is
+  forall pos posLeft m ls r x i
+  . ( TermStream m (Z:.pos) (TermSymbol M (Chr r x)) (Elm (Term1 (Elm ls (PointL i))) (Z :. PointL i)) (Z:.PointL i)
+    , posLeft ~ LeftPosTy pos (Chr r x) (PointL i)
+    , TermStaticVar pos (Chr r x) (PointL i)
+    , MkStream m posLeft ls (PointL i)
+    )
+  ⇒ MkStream m pos (ls :!: Chr r x) (PointL i) where
+  mkStream pos (ls :!: Chr f xs) grd us is
     = S.map (\(ss,ee,ii) -> ElmChr ee ii ss) -- recover ElmChr
-    . addTermStream1 (Chr f xs) sv us is
-    $ mkStream (grd `andI#` termStaticCheck (Chr f xs) is) ls (termStaticVar (Chr f xs) sv is) us (termStreamIndex (Chr f xs) sv is)
+    . addTermStream1 pos (Chr f xs) us is
+    $ mkStream (Proxy ∷ Proxy posLeft) ls (grd `andI#` termStaticCheck pos (Chr f xs) is) us (termStreamIndex pos (Chr f xs) is)
   {-# Inline mkStream #-}
 
 
-
--- | Current first try for using @TermStream@
---
--- TODO what happens to fusion if @staticCheck@ happens before @S.map@?
---
--- NOTE / TODO a bit faster with @seq xs@ ?
+-- | 
 
 instance
-  ( TstCtx m ts s x0 i0 is (PointL I)
-  ) => TermStream m (TermSymbol ts (Chr r x)) s (is:.PointL I) where
-  termStream (ts:|Chr f xs) (cs:.IStatic d) (us:..LtPointL u) (is:.PointL i)
+  ( TstCtx m ps ts s x0 i0 is (PointL I)
+  ) => TermStream m (ps:.IStatic d) (TermSymbol ts (Chr r x)) s (is:.PointL I) where
+  termStream Proxy (ts:|Chr f xs) (us:..LtPointL u) (is:.PointL i)
     = S.map (\(TState s ii ee) -> TState s (ii:.:RiPlI i) (ee:. f xs (i-1)))
-    . termStream ts cs us is
+    . termStream (Proxy ∷ Proxy ps) ts us is
   {-# Inline termStream #-}
 
+{-
 instance
   ( TstCtx m ts s x0 i0 is (PointL O)
   ) => TermStream m (TermSymbol ts (Chr r x)) s (is:.PointL O) where
@@ -57,17 +60,16 @@ instance
                 in  TState s (ii:.: RiPlO (k+1) o) (ee:.f xs k))
     . termStream ts cs us is
   {-# Inline termStream #-}
+-}
 
 
-
-instance TermStaticVar (Chr r x) (PointL I) where
-  termStaticVar   _ sv _                = sv
-  termStreamIndex _ _  (PointL j) = PointL $ j-1
-  termStaticCheck _ _ = 1#
-  {-# Inline [0] termStaticVar #-}
+instance TermStaticVar (IStatic d) (Chr r x) (PointL I) where
+  termStreamIndex Proxy (Chr f x) (PointL j) = PointL $ j-1
+  termStaticCheck Proxy (Chr f x) (PointL j) = 1#
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}
 
+{-
 instance TermStaticVar (Chr r x) (PointL O) where
   termStaticVar   _ (OStatic d) _ = OStatic (d+1)
   termStreamIndex _ _           j = j
@@ -75,4 +77,5 @@ instance TermStaticVar (Chr r x) (PointL O) where
   {-# Inline [0] termStaticVar #-}
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}
+-}
 

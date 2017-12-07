@@ -98,7 +98,7 @@ addIndexDense pos minSize tableBound upperBound ix
 addIndexDense1
   ∷ forall m pos x0 a ix minSize tableIx elm
   . ( Monad m
-    , AddIndexDense ('(:.) Z pos) (Elm (SynVar1 (Elm x0 a)) (Z:.ix)) (Z:.minSize) (Z:.tableIx) (Z:.ix)
+    , AddIndexDense (Z:.pos) (Elm (SynVar1 (Elm x0 a)) (Z:.ix)) (Z:.minSize) (Z:.tableIx) (Z:.ix)
     , GetIndex (Z:.a) (Z:.ix)
     , elm ~ Elm x0 a
     , Element x0 a
@@ -112,7 +112,7 @@ addIndexDense1
   → Stream m (elm,tableIx,RunningIndex ix)
 addIndexDense1 Proxy minSize tableBound upperBound ix
   = map (\(SvS (ElmSynVar1 s) (Z:.z) (RiZ:.:i')) -> (s,z,i'))
-  . addIndexDenseGo (Proxy ∷ Proxy ('(:.) Z pos)) (Z:.minSize) (ZZ:..tableBound) (ZZ:..upperBound) (Z:.ix)
+  . addIndexDenseGo (Proxy ∷ Proxy (Z:.pos)) (Z:.minSize) (ZZ:..tableBound) (ZZ:..upperBound) (Z:.ix)
   . map (\s -> (SvS (elmSynVar1 s ix) Z RiZ))
 {-# Inline addIndexDense1 #-}
 

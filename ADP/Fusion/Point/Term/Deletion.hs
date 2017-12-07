@@ -14,25 +14,34 @@ import           ADP.Fusion.Term.Deletion.Type
 
 
 
+type instance LeftPosTy (IStatic d) Deletion (PointL I) = IStatic d
+
 instance
-  ( TmkCtx1 m ls Deletion (PointL i)
-  ) => MkStream m (ls :!: Deletion) (PointL i) where
-  mkStream grd (ls :!: Deletion) sv us is
+  forall pos posLeft m ls i
+  . ( TermStream m (Z:.pos) (TermSymbol M Deletion) (Elm (Term1 (Elm ls (PointL i))) (Z :. PointL i)) (Z:.PointL i)
+    , posLeft ~ LeftPosTy pos Deletion (PointL i)
+    , TermStaticVar pos Deletion (PointL i)
+    , MkStream m posLeft ls (PointL i)
+    )
+  ⇒ MkStream m pos (ls :!: Deletion) (PointL i) where
+  mkStream pos (ls :!: Deletion) grd us is
     = S.map (\(ss,ee,ii) -> ElmDeletion ii ss)
-    . addTermStream1 Deletion sv us is
-    $ mkStream (grd `andI#` termStaticCheck Deletion is) ls (termStaticVar Deletion sv is) us (termStreamIndex Deletion sv is)
+    . addTermStream1 pos Deletion us is
+    $ mkStream (Proxy ∷ Proxy posLeft) ls (grd `andI#` termStaticCheck pos Deletion is) us (termStreamIndex pos Deletion is)
   {-# Inline mkStream #-}
 
 
 
 instance
-  ( TstCtx m ts s x0 i0 is (PointL I)
-  ) => TermStream m (TermSymbol ts Deletion) s (is:.PointL I) where
-  termStream (ts:|Deletion) (cs:.IStatic d) (us:..LtPointL u) (is:.PointL i)
+  ( TstCtx m ps ts s x0 i0 is (PointL I)
+  )
+  ⇒ TermStream m (ps:.IStatic d) (TermSymbol ts Deletion) s (is:.PointL I) where
+  termStream Proxy (ts:|Deletion) (us:..LtPointL u) (is:.PointL i)
     = S.map (\(TState s ii ee) -> TState s (ii:.:RiPlI i) (ee:.()))
-    . termStream ts cs us is
+    . termStream (Proxy ∷ Proxy ps) ts us is
   {-# Inline termStream #-}
 
+{-
 instance
   ( TstCtx m ts s x0 i0 is (PointL O)
   ) => TermStream m (TermSymbol ts Deletion) s (is:.PointL O) where
@@ -42,17 +51,17 @@ instance
                 in  TState s (ii:.: io) (ee:.()))
     . termStream ts cs us is
   {-# Inline termStream #-}
+-}
 
 
 
-instance TermStaticVar Deletion (PointL I) where
-  termStaticVar _ sv _ = sv
-  termStreamIndex _ _ (PointL j) = PointL j
-  termStaticCheck _ _ = 1#
-  {-# Inline [0] termStaticVar #-}
+instance TermStaticVar (IStatic d) Deletion (PointL I) where
+  termStreamIndex Proxy Deletion (PointL j) = PointL j
+  termStaticCheck Proxy Deletion (PointL j) = 1#
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}
 
+{-
 instance TermStaticVar Deletion (PointL O) where
   termStaticVar   _ (OStatic d) _ = OStatic d
   termStreamIndex _ _           j = j
@@ -60,4 +69,5 @@ instance TermStaticVar Deletion (PointL O) where
   {-# Inline [0] termStaticVar #-}
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}
+-}
 
