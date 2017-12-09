@@ -184,7 +184,7 @@ staticCheck !b (S.Stream step t) = S.Stream snew (CheckLeft b t) where
 data StaticCheck a b = CheckLeft Bool a | CheckRight b
 
 staticCheck# :: Monad m => Int# -> S.Stream m a -> S.Stream m a
-staticCheck# !b (S.Stream step t) = S.Stream snew (SL b t) where
+staticCheck# b (S.Stream step t) = S.Stream snew (SL b t) where
   {-# Inline [0] snew #-}
   snew (SL q s)
     | 1# <- q   = return $ S.Skip (SR s)
@@ -197,7 +197,7 @@ staticCheck# !b (S.Stream step t) = S.Stream snew (SL b t) where
 {-# Inline staticCheck# #-}
 
 
-data SLR z = SL !Int# z | SR z
+data SLR z = SL Int# z | SR z
 
 -- | Constrains the behaviour of the memoizing tables. They may be 'EmptyOk' if
 -- @i==j@ is allowed (empty subwords or similar); or they may need 'NonEmpty'

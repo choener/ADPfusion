@@ -102,7 +102,7 @@ infixl 7 |||
 data StreamAppend a b = SAL a | SAR b
 
 streamappend :: Monad m => Stream m a -> Stream m a -> Stream m a
-{-# Inline [1] streamappend #-}
+{-# Inline streamappend #-}
 Stream stepa ta `streamappend` Stream stepb tb = Stream step (SAL ta)
   where
     {-# Inline [0] step #-}
