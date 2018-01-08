@@ -1,5 +1,5 @@
 
-module ADP.Fusion.Term.Deletion.Type where
+module ADP.Fusion.Core.Term.Deletion where
 
 import Data.Strict.Tuple
 

@@ -1,5 +1,5 @@
 
-module ADP.Fusion.SynVar.Fill where
+module ADP.Fusion.Core.SynVar.Fill where
 
 import           Control.Monad
 import           Control.Monad.Morph (hoist, MFunctor (..))
@@ -26,9 +26,9 @@ import           Data.Maybe (fromJust)
 
 import           Data.PrimitiveArray
 
-import           ADP.Fusion.SynVar.Array -- TODO we want to keep only classes in here, move instances to the corresponding modules
-import           ADP.Fusion.SynVar.Recursive.Type
-import           ADP.Fusion.SynVar.TableWrap
+import           ADP.Fusion.Core.SynVar.Array -- TODO we want to keep only classes in here, move instances to the corresponding modules
+import           ADP.Fusion.Core.SynVar.Recursive.Type
+import           ADP.Fusion.Core.SynVar.TableWrap
 
 import           Debug.Trace
 

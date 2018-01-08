@@ -15,21 +15,21 @@ module ADP.Fusion.Core
   , module ADP.Fusion.Core.Apply
   , module ADP.Fusion.Core.Classes
   , module ADP.Fusion.Core.Multi
+  , module ADP.Fusion.Core.SynVar.Array.Type
+  , module ADP.Fusion.Core.SynVar.Axiom
+  , module ADP.Fusion.Core.SynVar.Backtrack
+  , module ADP.Fusion.Core.SynVar.Fill
+  , module ADP.Fusion.Core.SynVar.Indices
+  , module ADP.Fusion.Core.SynVar.Recursive.Type
+  , module ADP.Fusion.Core.SynVar.Split.Type
+  , module ADP.Fusion.Core.SynVar.TableWrap
+  , module ADP.Fusion.Core.Term.Chr
+  , module ADP.Fusion.Core.Term.Deletion
+  , module ADP.Fusion.Core.Term.Edge
+  , module ADP.Fusion.Core.Term.Epsilon
+  , module ADP.Fusion.Core.Term.PeekIndex
   , module ADP.Fusion.Core.TH
   , module ADP.Fusion.Core.TyLvlIx
-  , module ADP.Fusion.SynVar.Array.Type
-  , module ADP.Fusion.SynVar.Axiom
-  , module ADP.Fusion.SynVar.Backtrack
-  , module ADP.Fusion.SynVar.Fill
-  , module ADP.Fusion.SynVar.Indices.Classes
-  , module ADP.Fusion.SynVar.Recursive.Type
-  , module ADP.Fusion.SynVar.Split.Type
-  , module ADP.Fusion.SynVar.TableWrap
-  , module ADP.Fusion.Term.Chr.Type
-  , module ADP.Fusion.Term.Deletion.Type
-  , module ADP.Fusion.Term.Edge.Type
-  , module ADP.Fusion.Term.Epsilon.Type
-  , module ADP.Fusion.Term.PeekIndex.Type
   , module Data.Vector.Fusion.Stream.Monadic
   , module Data.Vector.Fusion.Util
   ) where
@@ -45,21 +45,21 @@ import           Data.PrimitiveArray
 import           ADP.Fusion.Core.Apply
 import           ADP.Fusion.Core.Classes hiding (iIx)
 import           ADP.Fusion.Core.Multi hiding (iIx)
+import           ADP.Fusion.Core.SynVar.Array.Type
+import           ADP.Fusion.Core.SynVar.Axiom
+import           ADP.Fusion.Core.SynVar.Backtrack
+import           ADP.Fusion.Core.SynVar.Fill
+import           ADP.Fusion.Core.SynVar.Indices
+import           ADP.Fusion.Core.SynVar.Recursive.Type
+import           ADP.Fusion.Core.SynVar.Split.Type
+import           ADP.Fusion.Core.SynVar.TableWrap
+import           ADP.Fusion.Core.Term.Chr
+import           ADP.Fusion.Core.Term.Deletion
+import           ADP.Fusion.Core.Term.Edge
+import           ADP.Fusion.Core.Term.Epsilon
+import           ADP.Fusion.Core.Term.PeekIndex
 import           ADP.Fusion.Core.TH
 import           ADP.Fusion.Core.TyLvlIx
-import           ADP.Fusion.SynVar.Array.Type
-import           ADP.Fusion.SynVar.Axiom
-import           ADP.Fusion.SynVar.Backtrack
-import           ADP.Fusion.SynVar.Fill
-import           ADP.Fusion.SynVar.Indices.Classes
-import           ADP.Fusion.SynVar.Recursive.Type
-import           ADP.Fusion.SynVar.Split.Type
-import           ADP.Fusion.SynVar.TableWrap
-import           ADP.Fusion.Term.Chr.Type
-import           ADP.Fusion.Term.Deletion.Type
-import           ADP.Fusion.Term.Edge.Type
-import           ADP.Fusion.Term.Epsilon.Type
-import           ADP.Fusion.Term.PeekIndex.Type
 
 
 

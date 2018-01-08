@@ -2,7 +2,7 @@
 -- | The 'axiom' runs a backtracking algebra. The name comes from Robert
 -- Giegerichs @ADP@ where @axiom@ runs the fully formed algorithm.
 
-module ADP.Fusion.SynVar.Axiom where
+module ADP.Fusion.Core.SynVar.Axiom where
 
 -- | The Axiom type class
 

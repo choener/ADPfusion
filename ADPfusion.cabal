@@ -126,22 +126,22 @@ library
     ADP.Fusion.Core.TH
     ADP.Fusion.Core.TH.Backtrack
     ADP.Fusion.Core.TH.Common
+    ADP.Fusion.Core.SynVar.Array
+    ADP.Fusion.Core.SynVar.Array.Type
+    ADP.Fusion.Core.SynVar.Axiom
+    ADP.Fusion.Core.SynVar.Backtrack
+    ADP.Fusion.Core.SynVar.Fill
+    ADP.Fusion.Core.SynVar.Indices
+    ADP.Fusion.Core.SynVar.Recursive.Type
+    ADP.Fusion.Core.SynVar.Split.Type
+    ADP.Fusion.Core.SynVar.TableWrap
+    ADP.Fusion.Core.Term.Chr
+    ADP.Fusion.Core.Term.Deletion
+    ADP.Fusion.Core.Term.Edge
+    ADP.Fusion.Core.Term.Epsilon
+    ADP.Fusion.Core.Term.PeekIndex
+    ADP.Fusion.Core.Term.Test
     ADP.Fusion.Core.TyLvlIx
-    ADP.Fusion.SynVar.Array
-    ADP.Fusion.SynVar.Array.Type
-    ADP.Fusion.SynVar.Axiom
-    ADP.Fusion.SynVar.Backtrack
-    ADP.Fusion.SynVar.Fill
-    ADP.Fusion.SynVar.Indices.Classes
-    ADP.Fusion.SynVar.Recursive.Type
-    ADP.Fusion.SynVar.Split.Type
-    ADP.Fusion.SynVar.TableWrap
-    ADP.Fusion.Term.Chr.Type
-    ADP.Fusion.Term.Deletion.Type
-    ADP.Fusion.Term.Edge.Type
-    ADP.Fusion.Term.Epsilon.Type
-    ADP.Fusion.Term.PeekIndex.Type
-    ADP.Fusion.Term.Test.Type
 --    -- Point
     ADP.Fusion.Point
     ADP.Fusion.Point.Core

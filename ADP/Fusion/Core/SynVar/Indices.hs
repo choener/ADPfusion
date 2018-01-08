@@ -4,7 +4,7 @@
 --
 -- TODO Currently, we only provide dense index generation.
 
-module ADP.Fusion.SynVar.Indices.Classes where
+module ADP.Fusion.Core.SynVar.Indices where
 
 import Data.Proxy (Proxy(..))
 import Data.Vector.Fusion.Stream.Monadic (map,Stream,head,mapM,flatten,Step(..))

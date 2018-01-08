@@ -9,8 +9,8 @@ import           GHC.Exts
 import           Data.PrimitiveArray
 
 import           ADP.Fusion.Core
+import           ADP.Fusion.Core.Term.Deletion
 import           ADP.Fusion.Point.Core
-import           ADP.Fusion.Term.Deletion.Type
 
 
 

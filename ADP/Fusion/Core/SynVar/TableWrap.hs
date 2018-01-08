@@ -1,7 +1,7 @@
 
 -- | Wrap the underlying table and the rules. Isomorphic to @(,)@.
 
-module ADP.Fusion.SynVar.TableWrap where
+module ADP.Fusion.Core.SynVar.TableWrap where
 
 
 

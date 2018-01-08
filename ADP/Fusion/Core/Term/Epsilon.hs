@@ -1,5 +1,5 @@
 
-module ADP.Fusion.Term.Epsilon.Type where
+module ADP.Fusion.Core.Term.Epsilon where
 
 import Data.Strict.Tuple
 

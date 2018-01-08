@@ -2,11 +2,11 @@
 -- | Wrap forward tables in such a way as to allow backtracking via
 -- algebras.
 
-module ADP.Fusion.SynVar.Backtrack where
+module ADP.Fusion.Core.SynVar.Backtrack where
 
 import Data.Vector.Fusion.Stream.Monadic (Stream)
 
-import ADP.Fusion.SynVar.TableWrap
+import ADP.Fusion.Core.SynVar.TableWrap
 
 
 

@@ -1,5 +1,5 @@
 
-module ADP.Fusion.SynVar.Recursive.Type where
+module ADP.Fusion.Core.SynVar.Recursive.Type where
 
 import Control.Applicative (Applicative,(<$>),(<*>))
 import Control.Monad.Morph
@@ -12,10 +12,10 @@ import Data.PrimitiveArray hiding (map)
 
 import ADP.Fusion.Core.Classes
 import ADP.Fusion.Core.Multi
-import ADP.Fusion.SynVar.Axiom
-import ADP.Fusion.SynVar.Backtrack
-import ADP.Fusion.SynVar.Indices.Classes
-import ADP.Fusion.SynVar.TableWrap
+import ADP.Fusion.Core.SynVar.Axiom
+import ADP.Fusion.Core.SynVar.Backtrack
+import ADP.Fusion.Core.SynVar.Indices
+import ADP.Fusion.Core.SynVar.TableWrap
 
 
 

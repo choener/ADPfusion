@@ -10,8 +10,8 @@ import Prelude hiding (map,head,mapM)
 import Data.PrimitiveArray hiding (map)
 
 import ADP.Fusion.Core
+import ADP.Fusion.Core.SynVar.Indices
 import ADP.Fusion.Point.Core
-import ADP.Fusion.SynVar.Indices.Classes
 
 
 

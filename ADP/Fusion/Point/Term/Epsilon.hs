@@ -9,8 +9,8 @@ import           GHC.Exts
 import           Data.PrimitiveArray
 
 import           ADP.Fusion.Core
+import           ADP.Fusion.Core.Term.Epsilon
 import           ADP.Fusion.Point.Core
-import           ADP.Fusion.Term.Epsilon.Type
 
 
 

@@ -5,7 +5,7 @@
 -- a char parser. But this is only semantics, so not super important to do
 -- now.
 
-module ADP.Fusion.Term.Chr.Type where
+module ADP.Fusion.Core.Term.Chr where
 
 import           Data.Strict.Tuple
 import qualified Data.Vector.Generic as VG

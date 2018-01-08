@@ -1,5 +1,5 @@
 
-module ADP.Fusion.Term.Test.Type where
+module ADP.Fusion.Core.Term.Test where
 
 import           Data.Strict.Tuple
 import qualified Data.Vector.Generic as VG

@@ -3,8 +3,8 @@
 --
 -- NOTE /highly experimental/
 
-module ADP.Fusion.SynVar.Split.Type
-  ( module ADP.Fusion.SynVar.Split.Type
+module ADP.Fusion.Core.SynVar.Split.Type
+  ( module ADP.Fusion.Core.SynVar.Split.Type
   , Proxy (..)
   ) where
 
@@ -21,9 +21,9 @@ import Data.PrimitiveArray hiding (map)
 
 import ADP.Fusion.Core.Classes
 import ADP.Fusion.Core.Multi
-import ADP.Fusion.SynVar.Array.Type
-import ADP.Fusion.SynVar.Backtrack
-import ADP.Fusion.SynVar.TableWrap
+import ADP.Fusion.Core.SynVar.Array.Type
+import ADP.Fusion.Core.SynVar.Backtrack
+import ADP.Fusion.Core.SynVar.TableWrap
 
 
 

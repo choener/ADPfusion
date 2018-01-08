@@ -2,7 +2,7 @@
 {-# Language DataKinds #-}
 {-# Language TypeOperators #-}
 
-module ADP.Fusion.SynVar.Array.Type where
+module ADP.Fusion.Core.SynVar.Array.Type where
 
 import Data.Proxy
 import Data.Strict.Tuple hiding (uncurry,snd)
@@ -14,10 +14,10 @@ import Data.PrimitiveArray hiding (map)
 
 import ADP.Fusion.Core.Classes
 import ADP.Fusion.Core.Multi
-import ADP.Fusion.SynVar.Axiom
-import ADP.Fusion.SynVar.Backtrack
-import ADP.Fusion.SynVar.Indices.Classes
-import ADP.Fusion.SynVar.TableWrap
+import ADP.Fusion.Core.SynVar.Axiom
+import ADP.Fusion.Core.SynVar.Backtrack
+import ADP.Fusion.Core.SynVar.Indices
+import ADP.Fusion.Core.SynVar.TableWrap
 
 
 
