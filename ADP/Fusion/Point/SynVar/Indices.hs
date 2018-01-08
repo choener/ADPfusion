@@ -1,4 +1,11 @@
 
+-- | Index movement for syntactic variables in linear @PointL@ grammars.
+--
+-- Syntactic variables for @PointL@ indices can be both, static and variable.
+-- Static is the default, whenever we have @X -> X a@ where @a@ is a character
+-- or similar. However, we can expect to see @a@ as a string as well. Then, @X@
+-- on the r.h.s. is variable.
+
 module ADP.Fusion.Point.SynVar.Indices where
 
 import Data.Proxy
@@ -15,6 +22,12 @@ import ADP.Fusion.Point.Core
 
 
 
+type instance LeftPosTy (IStatic d) (TwITbl m arr EmptyOk (PointL I) x) (PointL I) = IVariable d
+type instance LeftPosTy (IStatic d) (TwITblBt arr EmptyOk (PointL I) x mB mF r) (PointL I) = IVariable d
+
+type instance LeftPosTy (IVariable d) (TwITbl m arr EmptyOk (PointL I) x) (PointL I) = IVariable d
+type instance LeftPosTy (IVariable d) (TwITblBt arr EmptyOk (PointL I) x mB mF r) (PointL I) = IVariable d
+
 instance
   ( IndexHdr ps elm x0 i0 cs c us (PointL I) is (PointL I)
   , MinSize c
@@ -24,9 +37,14 @@ instance
     = map (\(SvS s t y') -> SvS s (t:.i) (y' :.: RiPlI (fromPointL i)))
     . addIndexDenseGo (Proxy ∷ Proxy ps) cs ubs us is
   {-# Inline addIndexDenseGo #-}
-{-
-  addIndexDenseGo (cs:.c) (vs:.IVariable d) (ubs:..ub) (us:..u) (is:.PointL i)
-    = flatten mk step . addIndexDenseGo cs vs ubs us is
+
+instance
+  ( IndexHdr ps elm x0 i0 cs c us (PointL I) is (PointL I)
+  , MinSize c
+  )
+  ⇒ AddIndexDense (ps:.IVariable d) elm (cs:.c) (us:.PointL I) (is:.PointL I) where
+  addIndexDenseGo Proxy (cs:.c) (ubs:..ub) (us:..u) (is:.PointL i)
+    = flatten mk step . addIndexDenseGo (Proxy ∷ Proxy ps) cs ubs us is
     where mk svS = let RiPlI k = getIndex (getIdx $ sS svS {- sIx svS -} ) (Proxy :: PRI is (PointL I))
                    in  return $ svS :. k
           step (svS@(SvS s t y') :. k)
@@ -36,7 +54,6 @@ instance
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
   {-# Inline addIndexDenseGo #-}
--}
 
 {-
 instance

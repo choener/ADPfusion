@@ -79,9 +79,6 @@ btITblStream pos (ls :!: TW (BtITbl c t) bt) grd us is
 
 -- ** Instances
 
-type instance LeftPosTy (IStatic d) (TwITbl m arr EmptyOk (PointL I) x) (PointL I) = IVariable d
-type instance LeftPosTy (IStatic d) (TwITblBt arr EmptyOk (PointL I) x mB mF r) (PointL I) = IVariable d
-
 instance
   ( Monad m
   , ITblCx m pos ls arr x u c (i I)
