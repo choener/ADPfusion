@@ -22,11 +22,44 @@ import ADP.Fusion.Point.Core
 
 
 
+-- * type function for the type of the left position
+
+-- ** Inside
+
 type instance LeftPosTy (IStatic d) (TwITbl m arr EmptyOk (PointL I) x) (PointL I) = IVariable d
 type instance LeftPosTy (IStatic d) (TwITblBt arr EmptyOk (PointL I) x mB mF r) (PointL I) = IVariable d
 
 type instance LeftPosTy (IVariable d) (TwITbl m arr EmptyOk (PointL I) x) (PointL I) = IVariable d
 type instance LeftPosTy (IVariable d) (TwITblBt arr EmptyOk (PointL I) x mB mF r) (PointL I) = IVariable d
+
+-- ** Outside
+
+type instance LeftPosTy (OStatic d) (TwITbl m arr EmptyOk (PointL O) x) (PointL O) = OFirstLeft d
+type instance LeftPosTy (OStatic d) (TwITblBt arr EmptyOk (PointL O) x mB mF r) (PointL O) = OFirstLeft d
+
+-- TODO @OLeftOf@
+
+type instance LeftPosTy (OFirstLeft d) (TwITbl m arr EmptyOk (PointL O) x) (PointL O) = TypeError
+  (Text "OFirstLeft is illegal for outside tables. Check your grammars for multiple Outside syntactic variable on the r.h.s!")
+type instance LeftPosTy (OFirstLeft d) (TwITblBt arr EmptyOk (PointL O) x mB mF r) (PointL O) = TypeError
+  (Text "OFirstLeft is illegal for outside tables. Check your grammars for multiple Outside syntactic variable on the r.h.s!")
+
+type instance LeftPosTy (OLeftOf d) (TwITbl m arr EmptyOk (PointL O) x) (PointL O) = TypeError
+  (Text "OLeftOf is illegal for outside tables. Check your grammars for multiple Outside syntactic variable on the r.h.s!")
+type instance LeftPosTy (OLeftOf d) (TwITblBt arr EmptyOk (PointL O) x mB mF r) (PointL O) = TypeError
+  (Text "OLeftOf is illegal for outside tables. Check your grammars for multiple Outside syntactic variable on the r.h.s!")
+
+-- ** Complement. Note that @Complement@ join inside and outside syntactic variables.
+
+type instance LeftPosTy Complement (TwITbl m arr EmptyOk (PointL I) x) (PointL C) = Complement
+type instance LeftPosTy Complement (TwITblBt arr EmptyOk (PointL I) x mB mF r) (PointL C) = Complement
+
+type instance LeftPosTy Complement (TwITbl m arr EmptyOk (PointL O) x) (PointL C) = Complement
+type instance LeftPosTy Complement (TwITblBt arr EmptyOk (PointL O) x mB mF r) (PointL C) = Complement
+
+
+
+-- * Inside
 
 instance
   ( IndexHdr ps elm x0 i0 cs c us (PointL I) is (PointL I)
@@ -34,7 +67,7 @@ instance
   )
   ⇒ AddIndexDense (ps:.IStatic d) elm (cs:.c) (us:.PointL I) (is:.PointL I) where
   addIndexDenseGo Proxy (cs:._) (ubs:..ub) (us:..u) (is:.i)
-    = map (\(SvS s t y') -> SvS s (t:.i) (y' :.: RiPlI (fromPointL i)))
+    = map (\(SvS s t y') → SvS s (t:.i) (y' :.: RiPlI (fromPointL i)))
     . addIndexDenseGo (Proxy ∷ Proxy ps) cs ubs us is
   {-# Inline addIndexDenseGo #-}
 
@@ -55,32 +88,31 @@ instance
           {-# Inline [0] step #-}
   {-# Inline addIndexDenseGo #-}
 
-{-
 instance
-  ( IndexHdr s x0 i0 us (PointL O) cs c is (PointL O)
-  ) => AddIndexDense s (us:.PointL O) (cs:.c) (is:.PointL O) where
-  addIndexDenseGo (cs:._) (vs:.OStatic d) (ubs:..ub) (us:..u) (is:.i)
-    = map (\(SvS s t y') -> let RiPlO oi oo = getIndex (getIdx s) (Proxy :: PRI is (PointL O))
-                            in  SvS s (t:.PointL oo) (y' :.: RiPlO oi oo) )
-    . addIndexDenseGo cs vs ubs us is
+  ( IndexHdr ps elm x0 i0 cs c us (PointL O) is (PointL O)
+  , MinSize c
+  ) ⇒ AddIndexDense (ps:.OStatic d) elm (cs:.c) (us:.PointL O) (is:.PointL O) where
+  addIndexDenseGo Proxy (cs:._) (ubs:..ub) (us:..u) (is:.i)
+    = map (\(SvS s t y') → let RiPlO oi oo = getIndex (getIdx s) (Proxy :: PRI is (PointL O))
+                           in  SvS s (t:.PointL oo) (y' :.: RiPlO oi oo) )
+    . addIndexDenseGo (Proxy ∷ Proxy ps) cs ubs us is
   {-# Inline addIndexDenseGo #-}
 
 instance
-  ( IndexHdr s x0 i0 us (PointL I) cs c is (PointL C)
-  ) => AddIndexDense s (us:.PointL I) (cs:.c) (is:.PointL C) where
-  addIndexDenseGo (cs:._) (vs:.Complemented) (ubs:..ub) (us:..u) (is:.i)
-    = map (\(SvS s t y) -> let RiPlC k = getIndex (getIdx s) (Proxy :: PRI is (PointL C))
-                           in  SvS s (t:.PointL k) (y :.: RiPlC k) )
-    . addIndexDenseGo cs vs ubs us is
+  ( IndexHdr ps elm x0 i0 cs c us (PointL I) is (PointL C)
+  ) ⇒ AddIndexDense (ps:.Complement) elm (cs:.c) (us:.PointL I) (is:.PointL C) where
+  addIndexDenseGo Proxy (cs:._) (ubs:..ub) (us:..u) (is:.i)
+    = map (\(SvS s t y) → let RiPlC k = getIndex (getIdx s) (Proxy :: PRI is (PointL C))
+                          in  SvS s (t:.PointL k) (y :.: RiPlC k) )
+    . addIndexDenseGo (Proxy ∷ Proxy ps) cs ubs us is
   {-# Inline addIndexDenseGo #-}
 
 instance
-  ( IndexHdr s x0 i0 us (PointL O) cs c is (PointL C)
-  ) => AddIndexDense s (us:.PointL O) (cs:.c) (is:.PointL C) where
-  addIndexDenseGo (cs:._) (vs:.Complemented) (ubs:..ub) (us:..u) (is:.i)
-    = map (\(SvS s t y) -> let RiPlC k = getIndex (getIdx s) (Proxy :: PRI is (PointL C))
-                           in  SvS s (t:.PointL k) (y:.:RiPlC k) )
-    . addIndexDenseGo cs vs ubs us is
+  ( IndexHdr ps elm x0 i0 cs c us (PointL O) is (PointL C)
+  ) ⇒ AddIndexDense (ps:.Complement) elm (cs:.c) (us:.PointL O) (is:.PointL C) where
+  addIndexDenseGo Proxy (cs:._) (ubs:..ub) (us:..u) (is:.i)
+    = map (\(SvS s t y) → let RiPlC k = getIndex (getIdx s) (Proxy :: PRI is (PointL C))
+                          in  SvS s (t:.PointL k) (y:.:RiPlC k) )
+    . addIndexDenseGo (Proxy ∷ Proxy ps) cs ubs us is
   {-# Inline addIndexDenseGo #-}
--}
 
