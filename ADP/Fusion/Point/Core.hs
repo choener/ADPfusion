@@ -19,13 +19,12 @@ import ADP.Fusion.Core.Multi
 
 
 
---instance RuleContext (PointL I) where
+-- * Contexts, and running indices.
+
 type instance InitialContext (PointL I) = IStatic 0
 
---instance RuleContext (PointL O) where
 type instance InitialContext (PointL O) = OStatic 0
 
---instance RuleContext (PointL C) where
 type instance InitialContext (PointL C) = Complement
 
 newtype instance RunningIndex (PointL I) = RiPlI Int
@@ -33,12 +32,17 @@ newtype instance RunningIndex (PointL I) = RiPlI Int
 
 deriving instance NFData (RunningIndex (PointL I))
 
-
 data instance RunningIndex (PointL O) = RiPlO !Int !Int
+  deriving (Generic)
 
 newtype instance RunningIndex (PointL C) = RiPlC Int
+  deriving (Generic)
 
 
+
+-- * Inside
+
+-- ** Single-tape
 
 instance
   ( Monad m
@@ -60,6 +64,8 @@ instance
     = staticCheck# (grd `andI#` (i >=# 0#) `andI#` (i <=# u) )
     . singleton . ElmS $ RiPlI 0
   {-# Inline mkStream #-}
+
+-- ** Multi-tape
 
 instance
   ( Monad m
@@ -84,54 +90,91 @@ instance
 
 
 
-{-
-instance (Monad m) => MkStream m S (PointL O) where
-  mkStream grd S (OStatic (I# d)) (LtPointL (I# u)) (PointL (I# i))
+-- * Outside
+
+-- ** Single-tape
+
+instance
+  ( Monad m
+  , KnownNat d
+  ) ⇒ MkStream m (OStatic d) S (PointL O) where
+  mkStream Proxy S grd (LtPointL (I# u)) (PointL (I# i))
     = staticCheck# (grd `andI#` (i >=# 0#) `andI#` (i +# d <=# u) `andI#` (u ==# i))
     . singleton . ElmS $ RiPlO (I# i) (I# (i +# d))
-  mkStream grd S (OFirstLeft (I# d)) (LtPointL (I# u)) (PointL (I# i))
-    = staticCheck# (grd `andI#` (i >=# 0#) `andI#` (i +# d <=# u))
-    . singleton . ElmS $ RiPlO (I# i) (I# (i +# d))
+    where (I# d) = fromIntegral $ natVal (Proxy ∷ Proxy d)
   {-# Inline mkStream #-}
 
 instance
   ( Monad m
-  , MkStream m S is
-  ) => MkStream m S (is:.PointL O) where
-  mkStream grd S (vs:.OStatic (I# d)) (lus:..LtPointL (I# u)) (is:.PointL (I# i))
+  , KnownNat d
+  ) ⇒ MkStream m (OFirstLeft d) S (PointL O) where
+  mkStream Proxy s grd (LtPointL (I# u)) (PointL (I# i))
+    = staticCheck# (grd `andI#` (i >=# 0#) `andI#` (i +# d <=# u))
+    . singleton . ElmS $ RiPlO (I# i) (I# (i +# d))
+    where (I# d) = fromIntegral $ natVal (Proxy ∷ Proxy d)
+  {-# Inline mkStream #-}
+
+-- ** Multi-tape
+
+instance
+  ( Monad m
+  , MkStream m ps S is
+  , KnownNat d
+  ) ⇒ MkStream m (ps:.OStatic d) S (is:.PointL O) where
+  mkStream Proxy S grd (lus:..LtPointL (I# u)) (is:.PointL (I# i))
     = map (\(ElmS zi) -> ElmS $ zi :.: RiPlO (I# i) (I# (i +# d)))
-    $ mkStream (grd `andI#` (i >=# 0#) `andI#` (i +# d ==# u)) S vs lus is
-  mkStream grd S (vs:.OFirstLeft (I# d)) (us:..LtPointL (I# u)) (is:.PointL (I# i))
+    $ mkStream (Proxy ∷ Proxy ps) S (grd `andI#` (i >=# 0#) `andI#` (i +# d ==# u)) lus is
+    where (I# d) = fromIntegral $ natVal (Proxy ∷ Proxy d)
+  {-# Inline mkStream #-}
+
+instance
+  ( Monad m
+  , MkStream m ps S is
+  , KnownNat d
+  ) ⇒ MkStream m (ps:.OFirstLeft d) S (is:.PointL O) where
+  mkStream Proxy S grd (lus:..LtPointL (I# u)) (is:.PointL (I# i))
     = map (\(ElmS zi) -> ElmS $ zi :.: RiPlO (I# i) (I# (i +# d)))
-    $ mkStream (grd `andI#` (i >=# 0#) `andI#` (i +# d <=# u)) S vs us is
+    $ mkStream (Proxy ∷ Proxy ps) S (grd `andI#` (i >=# 0#) `andI#` (i +# d <=# u)) lus is
+    where (I# d) = fromIntegral $ natVal (Proxy ∷ Proxy d)
   {-# Inline mkStream #-}
 
 
 
-instance (Monad m) => MkStream m S (PointL C) where
-  mkStream grd S Complemented (LtPointL (I# u)) (PointL (I# i))
+-- * Complemented
+
+-- ** Single-tape
+
+instance
+  ( Monad m
+  ) ⇒ MkStream m Complement S (PointL C) where
+  mkStream Proxy S grd (LtPointL (I# u)) (PointL (I# i))
     = staticCheck# (grd `andI#` (i >=# 0#) `andI#` (i <=# u)) . singleton . ElmS $ RiPlC (I# i)
   {-# Inline mkStream #-}
--}
+
+instance
+  ( Monad m
+  , MkStream m ps S is
+  ) ⇒ MkStream m (ps:.Complement) S (is:.PointL C) where
+  mkStream Proxy S grd (lus:..LtPointL (I# u)) (is:.PointL (I# i))
+    = map (\(ElmS zi) → ElmS $ zi :.: RiPlC (I# i))
+    $ mkStream (Proxy ∷ Proxy ps) S (grd `andI#` (i >=# 0#) `andI#` (i <=# u)) lus is
+  {-# Inline mkStream #-}
 
 
-instance (MinSize minSize) => TableStaticVar pos minSize u (PointL I) where
+
+-- * Table index modification
+
+instance (MinSize minSize) ⇒ TableStaticVar pos minSize u (PointL I) where
   -- NOTE this code used to destroy fusion. If we inline tableStreamIndex
   -- very late (after 'mkStream', probably) then everything works out.
-  tableStreamIndex Proxy minSz _ (PointL j) = PointL $ j - minSize minSz
+  tableStreamIndex Proxy minSz _upperBound (PointL j) = PointL $ j - minSize minSz
   {-# INLINE [0] tableStreamIndex #-}
 
-{-
-instance (MinSize c) => TableStaticVar u c (PointL O) where
-  tableStaticVar   _ _ (OStatic d) _          = OFirstLeft d
-  tableStreamIndex _ c _           (PointL j) = PointL $ j - minSize c
-  {-# INLINE [0] tableStaticVar   #-}
+instance (MinSize minSize) ⇒ TableStaticVar pos minSize u (PointL O) where
+  tableStreamIndex Proxy minSz _upperBound (PointL j) = PointL $ j - minSize minSz
   {-# INLINE [0] tableStreamIndex #-}
 
-instance (MinSize c) => TableStaticVar u c (PointL C) where
-  tableStaticVar   _ _ Complemented _          = Complemented
-  tableStreamIndex _ c _            (PointL k) = PointL $ k - minSize c
-  {-# INLINE [0] tableStaticVar   #-}
+instance (MinSize minSize) ⇒ TableStaticVar pos minSize u (PointL C) where
+  tableStreamIndex Proxy minSz _upperBound (PointL k) = PointL $ k - minSize minSz
   {-# INLINE [0] tableStreamIndex #-}
--}
 
