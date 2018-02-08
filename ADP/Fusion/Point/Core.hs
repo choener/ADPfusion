@@ -151,6 +151,8 @@ instance
     = staticCheck# (grd `andI#` (i >=# 0#) `andI#` (i <=# u)) . singleton . ElmS $ RiPlC (I# i)
   {-# Inline mkStream #-}
 
+-- ** Multi-tape
+
 instance
   ( Monad m
   , MkStream m ps S is

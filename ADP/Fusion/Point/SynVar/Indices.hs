@@ -49,7 +49,8 @@ type instance LeftPosTy (OLeftOf d) (TwITbl m arr EmptyOk (PointL O) x) (PointL 
 type instance LeftPosTy (OLeftOf d) (TwITblBt arr EmptyOk (PointL O) x mB mF r) (PointL O) = TypeError
   (Text "OLeftOf is illegal for outside tables. Check your grammars for multiple Outside syntactic variable on the r.h.s!")
 
--- ** Complement. Note that @Complement@ join inside and outside syntactic variables.
+-- ** Complement. Note that @Complement@ joins inside and outside syntactic
+-- variables.
 
 type instance LeftPosTy Complement (TwITbl m arr EmptyOk (PointL I) x) (PointL C) = Complement
 type instance LeftPosTy Complement (TwITblBt arr EmptyOk (PointL I) x mB mF r) (PointL C) = Complement
@@ -59,7 +60,9 @@ type instance LeftPosTy Complement (TwITblBt arr EmptyOk (PointL O) x mB mF r) (
 
 
 
--- * Inside
+-- * 'AddIndexDense' instances
+
+-- ** Inside
 
 instance
   ( IndexHdr ps elm x0 i0 cs c us (PointL I) is (PointL I)
@@ -88,15 +91,34 @@ instance
           {-# Inline [0] step #-}
   {-# Inline addIndexDenseGo #-}
 
+
+
+-- ** Outside
+
 instance
   ( IndexHdr ps elm x0 i0 cs c us (PointL O) is (PointL O)
   , MinSize c
   ) ⇒ AddIndexDense (ps:.OStatic d) elm (cs:.c) (us:.PointL O) (is:.PointL O) where
   addIndexDenseGo Proxy (cs:._) (ubs:..ub) (us:..u) (is:.i)
+    = error "write me!"
+--    = map (\(SvS s t y') → let RiPlO oi oo = getIndex (getIdx s) (Proxy :: PRI is (PointL O))
+--                           in  SvS s (t:.PointL oo) (y' :.: RiPlO oi oo) )
+--    . addIndexDenseGo (Proxy ∷ Proxy ps) cs ubs us is
+  {-# Inline addIndexDenseGo #-}
+
+instance
+  ( IndexHdr ps elm x0 i0 cs c us (PointL O) is (PointL O)
+  , MinSize c
+  ) ⇒ AddIndexDense (ps:.ORightOf d) elm (cs:.c) (us:.PointL O) (is:.PointL O) where
+  addIndexDenseGo Proxy (cs:._) (ubs:..ub) (us:..u) (is:.i)
     = map (\(SvS s t y') → let RiPlO oi oo = getIndex (getIdx s) (Proxy :: PRI is (PointL O))
                            in  SvS s (t:.PointL oo) (y' :.: RiPlO oi oo) )
     . addIndexDenseGo (Proxy ∷ Proxy ps) cs ubs us is
   {-# Inline addIndexDenseGo #-}
+
+
+
+-- ** Complement
 
 instance
   ( IndexHdr ps elm x0 i0 cs c us (PointL I) is (PointL C)

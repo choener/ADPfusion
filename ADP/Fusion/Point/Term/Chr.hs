@@ -17,6 +17,7 @@ import           ADP.Fusion.Point.Core
 
 
 type instance LeftPosTy (IStatic d) (Chr r x) (PointL I) = IStatic d
+type instance LeftPosTy (IVariable d) (Chr r x) (PointL I) = IVariable d
 
 -- | First try in getting this right with a @termStream@.
 --
