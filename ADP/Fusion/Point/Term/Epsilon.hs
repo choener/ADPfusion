@@ -1,4 +1,6 @@
 
+-- | Rules of the type @X → ε@ denote termination of parsing if @X@ is empty.
+
 module ADP.Fusion.Point.Term.Epsilon where
 
 import           Data.Proxy
@@ -15,6 +17,9 @@ import           ADP.Fusion.Point.Core
 
 
 type instance LeftPosTy (IStatic d) Epsilon (PointL I) = IStatic d
+--type instance LeftPosTy (IVariable d) Epsilon (PointL I) = IVariable d
+
+type instance LeftPosTy (OStatic d) Epsilon (PointL O) = OStatic d
 
 instance
   forall pos posLeft m ls i
@@ -45,26 +50,29 @@ instance
               in  TState s (ii:.:RiPlI k) (ee:.()))
     . termStream (Proxy ∷ Proxy ps) ts us is
   {-# Inline termStream #-}
+
 {-
-  {-
-  termStream (ts:|Epsilon) (cs:.IVariable d) (us:.PointL u) (is:.PointL i)
+instance
+  ( TstCtx m ps ts s x0 i0 is (PointL I)
+  )
+  ⇒ TermStream m (ps:.IVariable d) (TermSymbol ts Epsilon) s (is:.PointL I) where
+  termStream Proxy (ts:|Epsilon) (us:..LtPointL u) (is:.PointL i)
     = S.map (\(TState s ii ee) ->
               let RiPlI k = getIndex (getIdx s) (Proxy :: PRI is (PointL I))
               in  TState s (ii:.:RiPlI k) (ee:.()))
-    . termStream ts cs us is
-  -}
+    . termStream (Proxy ∷ Proxy ps) ts us is
   {-# Inline termStream #-}
+-}
 
 instance
-  ( TstCtx m ts s x0 i0 is (PointL O)
-  ) => TermStream m (TermSymbol ts Epsilon) s (is:.PointL O) where
-  termStream (ts:|Epsilon) (cs:.OStatic d) (us:..LtPointL u) (is:.PointL i)
+  ( TstCtx m ps ts s x0 i0 is (PointL O)
+  ) => TermStream m (ps:.OStatic d) (TermSymbol ts Epsilon) s (is:.PointL O) where
+  termStream Proxy (ts:|Epsilon) (us:..LtPointL u) (is:.PointL i)
     = S.map (\(TState s ii ee) ->
                 let io = getIndex (getIdx s) (Proxy :: PRI is (PointL O))
                 in  TState s (ii:.:io) (ee:.()))
-    . termStream ts cs us is
+    . termStream (Proxy ∷ Proxy ps) ts us is
   {-# Inline termStream #-}
--}
 
 -- | We assume that @ε / Epsilon@ is ever only the single symbol (maybe apart
 -- from @- / Deletion@) on a tape. Hence The instance is only active in
@@ -76,13 +84,9 @@ instance TermStaticVar (IStatic 0) Epsilon (PointL I) where
   {-# Inline termStreamIndex #-}
   {-# Inline termStaticCheck #-}
 
-{-
-instance TermStaticVar Epsilon (PointL O) where
-  termStaticVar   _ (OStatic d) _ = OStatic d
-  termStreamIndex _ _           j = j
-  termStaticCheck _ _ = 1#
-  {-# Inline [0] termStaticVar #-}
+instance TermStaticVar (OStatic 0) Epsilon (PointL O) where
+  termStreamIndex Proxy Epsilon (PointL i     ) = PointL i
+  termStaticCheck Proxy Epsilon (PointL (I# i)) = 1#
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}
--}
 

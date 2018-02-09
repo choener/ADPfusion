@@ -96,14 +96,24 @@ instance
   mkStream = btITblStream
   {-# Inline mkStream #-}
 
-{-
 instance
   ( Monad m
-  , ITblCx m ls arr x u c (i O)
-  ) => MkStream m (ls :!: TwITbl m arr c u x) (i O) where
+  , ITblCx m pos ls arr x u c (i O)
+  , MkStream m (LeftPosTy pos (TwITbl m arr c u x) (i O)) ls (i O)
+  ) => MkStream m pos (ls :!: TwITbl m arr c u x) (i O) where
   mkStream = iTblStream
   {-# Inline mkStream #-}
 
+instance
+  ( Monad mB
+  , ITblCx mB pos ls arr x u c (i O)
+  , MkStream mB (LeftPosTy pos (TwITblBt arr c u x mF mB r) (i O)) ls (i O)
+  )
+  ⇒ MkStream mB pos (ls :!: TwITblBt arr c u x mF mB r) (i O) where
+  mkStream = btITblStream
+  {-# Inline mkStream #-}
+
+{-
 instance
   ( Monad m
   , ITblCx m ls arr x u c (i C)

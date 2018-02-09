@@ -31,25 +31,25 @@ prop_I_Epsilon ix@(PointL j) = zs == ls where
   zs = (id <<< Epsilon ... stoList) maxPLi ix
   ls = [ () | j == 0 ]
 
---prop_O_Epsilon ix@(PointL j) = zs == ls where
---  zs = (id <<< Epsilon ... stoList) maxPLo ix
---  ls = [ () | j == maxI ]
+prop_O_Epsilon ix@(PointL j) = zs == ls where
+  zs = (id <<< Epsilon ... stoList) maxPLo ix
+  ls = [ () | j == maxI ]
 
 prop_I_ZEpsilon ix@(Z:.PointL j) = zs == ls where
   zs = (id <<< (M:|Epsilon) ... stoList) (ZZ:..maxPLi) ix
   ls = [ Z:.() | j == 0 ]
 
---prop_O_ZEpsilon ix@(Z:.PointL j) = zs == ls where
---  zs = (id <<< (M:|Epsilon) ... stoList) (ZZ:..maxPLo) ix
---  ls = [ Z:.() | j == maxI ]
---
---prop_O_ZEpsilonEpsilon ix@(Z:.PointL j:.PointL l) = zs == ls where
---  zs = (id <<< (M:|Epsilon:|Epsilon) ... stoList) (ZZ:..maxPLo:..maxPLo) ix
---  ls = [ Z:.():.() | j == maxI, l == maxI ]
---
---
---
----- * Deletion cases
+prop_O_ZEpsilon ix@(Z:.PointL j) = zs == ls where
+  zs = (id <<< (M:|Epsilon) ... stoList) (ZZ:..maxPLo) ix
+  ls = [ Z:.() | j == maxI ]
+
+prop_O_ZEpsilonEpsilon ix@(Z:.PointL j:.PointL l) = zs == ls where
+  zs = (id <<< (M:|Epsilon:|Epsilon) ... stoList) (ZZ:..maxPLo:..maxPLo) ix
+  ls = [ Z:.():.() | j == maxI, l == maxI ]
+
+
+
+-- * Deletion cases
 
 prop_I_ItNC ix@(PointL j) = zs == ls where
   zs = ((,,) <<< tSI % Deletion % chr xs ... stoList) maxPLi ix
@@ -65,7 +65,7 @@ prop_I_ItNC ix@(PointL j) = zs == ls where
 --         , xs VU.! (j+0)
 --         ) | j >= 0, j <= (maxI-1) ]
 --{-# Noinline prop_O_ItNC #-}
---
+
 --prop_O_ZItNC ix@(Z:.PointL j) = zs == ls where
 --  zs = ((,,) <<< tZ1O % (M:|Deletion) % (M:|chr xs) ... stoList) (ZZ:..maxPLo) ix
 --  ls = [ ( unsafeIndex xsZPo (Z:.PointL (j+1))
@@ -97,9 +97,12 @@ prop_I_Tt ix@(Z:.PointL j) = zs == ls where
   zs = (id <<< (M:|chr xs) ... stoList) (ZZ:..maxPLi) ix
   ls = [ (Z:.xs VU.! (j-1)) | 1==j ]
 
-----prop_O_Tt ix@(Z:.O (PointL j)) = traceShow (j,zs,ls) $ zs == ls where
-----  zs = (id <<< (M:|chr xs) ... stoList) (Z:.O maxPLo) ix
-----  ls = [ (Z:.xs VU.! (j-1)) | 1==j ]
+prop_O_Tt ix@(Z:.(PointL j))
+  | zs == ls  = True
+  | otherwise = traceShow (j,zs,ls) False
+  where
+    zs = (id <<< (M:|chr xs) ... stoList) (ZZ:..maxPLo) ix
+    ls = [ (Z:.xs VU.! (j-1)) | 1==j ]
 
 -- | Two single-character terminals
 
@@ -113,9 +116,9 @@ prop_I_It ix@(PointL j) = zs == ls where
   zs = (id <<< tSI ... stoList) maxPLi ix
   ls = [ unsafeIndex xsP ix | j>=0, j<=maxI ]
 
---prop_O_It ix@(PointL j) = zs == ls where
---  zs = (id <<< tSO ... stoList) maxPLo ix
---  ls = [ unsafeIndex xsPo ix | j>=0, j<=maxI ]
+prop_O_It ix@(PointL j) = zs == ls where
+  zs = (id <<< tSO ... stoList) maxPLo ix
+  ls = [ unsafeIndex xsPo ix | j>=0, j<=maxI ]
 
 prop_I_ZIt ix@(Z:.PointL j) = zs == ls where
   zs = (id <<< tZ1I ... stoList) (ZZ:..maxPLi) ix

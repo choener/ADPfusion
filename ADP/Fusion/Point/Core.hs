@@ -99,9 +99,10 @@ instance
   , KnownNat d
   ) ⇒ MkStream m (OStatic d) S (PointL O) where
   mkStream Proxy S grd (LtPointL (I# u)) (PointL (I# i))
-    = staticCheck# (grd `andI#` (i >=# 0#) `andI#` (i +# d <=# u) `andI#` (u ==# i))
-    . singleton . ElmS $ RiPlO (I# i) (I# (i +# d))
-    where (I# d) = fromIntegral $ natVal (Proxy ∷ Proxy d)
+    = error "write me"
+    -- = staticCheck# (grd `andI#` (i >=# 0#) `andI#` (i +# d <=# u) `andI#` (u ==# i))
+    -- . singleton . ElmS $ RiPlO (I# i) (I# (i +# d))
+    -- where (I# d) = fromIntegral $ natVal (Proxy ∷ Proxy d)
   {-# Inline mkStream #-}
 
 instance
@@ -109,9 +110,10 @@ instance
   , KnownNat d
   ) ⇒ MkStream m (OFirstLeft d) S (PointL O) where
   mkStream Proxy s grd (LtPointL (I# u)) (PointL (I# i))
-    = staticCheck# (grd `andI#` (i >=# 0#) `andI#` (i +# d <=# u))
-    . singleton . ElmS $ RiPlO (I# i) (I# (i +# d))
-    where (I# d) = fromIntegral $ natVal (Proxy ∷ Proxy d)
+    = error "write me"
+    -- = staticCheck# (grd `andI#` (i >=# 0#) `andI#` (i +# d <=# u))
+    -- . singleton . ElmS $ RiPlO (I# i) (I# (i +# d))
+    -- where (I# d) = fromIntegral $ natVal (Proxy ∷ Proxy d)
   {-# Inline mkStream #-}
 
 -- ** Multi-tape
@@ -122,9 +124,10 @@ instance
   , KnownNat d
   ) ⇒ MkStream m (ps:.OStatic d) S (is:.PointL O) where
   mkStream Proxy S grd (lus:..LtPointL (I# u)) (is:.PointL (I# i))
-    = map (\(ElmS zi) -> ElmS $ zi :.: RiPlO (I# i) (I# (i +# d)))
-    $ mkStream (Proxy ∷ Proxy ps) S (grd `andI#` (i >=# 0#) `andI#` (i +# d ==# u)) lus is
-    where (I# d) = fromIntegral $ natVal (Proxy ∷ Proxy d)
+    = error "write me"
+    -- = map (\(ElmS zi) -> ElmS $ zi :.: RiPlO (I# i) (I# (i +# d)))
+    -- $ mkStream (Proxy ∷ Proxy ps) S (grd `andI#` (i >=# 0#) `andI#` (i +# d ==# u)) lus is
+    -- where (I# d) = fromIntegral $ natVal (Proxy ∷ Proxy d)
   {-# Inline mkStream #-}
 
 instance
@@ -133,9 +136,10 @@ instance
   , KnownNat d
   ) ⇒ MkStream m (ps:.OFirstLeft d) S (is:.PointL O) where
   mkStream Proxy S grd (lus:..LtPointL (I# u)) (is:.PointL (I# i))
-    = map (\(ElmS zi) -> ElmS $ zi :.: RiPlO (I# i) (I# (i +# d)))
-    $ mkStream (Proxy ∷ Proxy ps) S (grd `andI#` (i >=# 0#) `andI#` (i +# d <=# u)) lus is
-    where (I# d) = fromIntegral $ natVal (Proxy ∷ Proxy d)
+    = error "write me"
+    -- = map (\(ElmS zi) -> ElmS $ zi :.: RiPlO (I# i) (I# (i +# d)))
+    -- $ mkStream (Proxy ∷ Proxy ps) S (grd `andI#` (i >=# 0#) `andI#` (i +# d <=# u)) lus is
+    -- where (I# d) = fromIntegral $ natVal (Proxy ∷ Proxy d)
   {-# Inline mkStream #-}
 
 
@@ -148,7 +152,7 @@ instance
   ( Monad m
   ) ⇒ MkStream m Complement S (PointL C) where
   mkStream Proxy S grd (LtPointL (I# u)) (PointL (I# i))
-    = staticCheck# (grd `andI#` (i >=# 0#) `andI#` (i <=# u)) . singleton . ElmS $ RiPlC (I# i)
+    = error "write me" -- staticCheck# (grd `andI#` (i >=# 0#) `andI#` (i <=# u)) . singleton . ElmS $ RiPlC (I# i)
   {-# Inline mkStream #-}
 
 -- ** Multi-tape
@@ -158,8 +162,9 @@ instance
   , MkStream m ps S is
   ) ⇒ MkStream m (ps:.Complement) S (is:.PointL C) where
   mkStream Proxy S grd (lus:..LtPointL (I# u)) (is:.PointL (I# i))
-    = map (\(ElmS zi) → ElmS $ zi :.: RiPlC (I# i))
-    $ mkStream (Proxy ∷ Proxy ps) S (grd `andI#` (i >=# 0#) `andI#` (i <=# u)) lus is
+    = error "write me"
+    -- = map (\(ElmS zi) → ElmS $ zi :.: RiPlC (I# i))
+    -- $ mkStream (Proxy ∷ Proxy ps) S (grd `andI#` (i >=# 0#) `andI#` (i <=# u)) lus is
   {-# Inline mkStream #-}
 
 

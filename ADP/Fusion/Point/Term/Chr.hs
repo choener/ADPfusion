@@ -17,7 +17,9 @@ import           ADP.Fusion.Point.Core
 
 
 type instance LeftPosTy (IStatic d) (Chr r x) (PointL I) = IStatic d
-type instance LeftPosTy (IVariable d) (Chr r x) (PointL I) = IVariable d
+--type instance LeftPosTy (IVariable d) (Chr r x) (PointL I) = IVariable d
+
+type instance LeftPosTy (OStatic d) (Chr r x) (PointL O) = OStatic d
 
 -- | First try in getting this right with a @termStream@.
 --
@@ -51,17 +53,15 @@ instance
     . termStream (Proxy ∷ Proxy ps) ts us is
   {-# Inline termStream #-}
 
-{-
 instance
-  ( TstCtx m ts s x0 i0 is (PointL O)
-  ) => TermStream m (TermSymbol ts (Chr r x)) s (is:.PointL O) where
-  termStream (ts:|Chr f xs) (cs:.OStatic d) (us:..LtPointL u) (is:.PointL i)
+  ( TstCtx m ps ts s x0 i0 is (PointL O)
+  ) => TermStream m (ps:.OStatic d) (TermSymbol ts (Chr r x)) s (is:.PointL O) where
+  termStream Proxy (ts:|Chr f xs) (us:..LtPointL u) (is:.PointL i)
     = S.map (\(TState s ii ee) ->
                 let RiPlO k o = getIndex (getIdx s) (Proxy :: PRI is (PointL O))
                 in  TState s (ii:.: RiPlO (k+1) o) (ee:.f xs k))
-    . termStream ts cs us is
+    . termStream (Proxy ∷ Proxy ps) ts us is
   {-# Inline termStream #-}
--}
 
 
 instance TermStaticVar (IStatic d) (Chr r x) (PointL I) where
@@ -70,13 +70,9 @@ instance TermStaticVar (IStatic d) (Chr r x) (PointL I) where
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}
 
-{-
-instance TermStaticVar (Chr r x) (PointL O) where
-  termStaticVar   _ (OStatic d) _ = OStatic (d+1)
-  termStreamIndex _ _           j = j
-  termStaticCheck _ _ = 1#
-  {-# Inline [0] termStaticVar #-}
+instance TermStaticVar (OStatic d) (Chr r x) (PointL O) where
+  termStreamIndex Proxy (Chr f x) (PointL j) = PointL $ j-1
+  termStaticCheck Proxy (Chr f x) (PointL j) = 1#
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}
--}
 
