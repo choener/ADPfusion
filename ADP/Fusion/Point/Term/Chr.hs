@@ -71,7 +71,7 @@ instance TermStaticVar (IStatic d) (Chr r x) (PointL I) where
   {-# Inline [0] termStaticCheck #-}
 
 instance TermStaticVar (OStatic d) (Chr r x) (PointL O) where
-  termStreamIndex Proxy (Chr f x) (PointL j) = PointL $ j-1
+  termStreamIndex Proxy (Chr f x) (PointL j) = PointL $ j
   termStaticCheck Proxy (Chr f x) (PointL j) = 1#
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}

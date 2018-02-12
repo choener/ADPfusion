@@ -92,10 +92,17 @@ prop_I_2dimIt_NC_CN ix@(Z:.PointL j:.PointL l) = zs == ls where
 -- * terminal cases
 
 -- | A single character terminal
+--
+-- X_j -> c_j || j==1
 
 prop_I_Tt ix@(Z:.PointL j) = zs == ls where
   zs = (id <<< (M:|chr xs) ... stoList) (ZZ:..maxPLi) ix
   ls = [ (Z:.xs VU.! (j-1)) | 1==j ]
+
+-- |
+--
+-- X_j     -> X_{j-1} c_j
+-- Y_{j-1} -> X_j     c_j
 
 prop_O_Tt ix@(Z:.(PointL j))
   | zs == ls  = True
@@ -140,14 +147,17 @@ prop_I_ItC ix@(PointL j) = zs == ls where
          , xs VU.! (j-1)
          ) | j>=1, j<=maxI ]
 
----- | @A^*_j -> A^*_{j+1} c_{j+1)@ !
---
---prop_O_ItC ix@(PointL j) = zs == ls where
---  zs = ((,) <<< tSO % chr xs ... stoList) maxPLo ix
---  ls = [ ( unsafeIndex xsPo (PointL $ j+1)
---         , xs VU.! (j+0)
---         ) | j >= 0, j <= (maxI-1) ]
---
+-- | @A^*_j -> A^*_{j+1} c_{j+1)@ !
+
+prop_O_ItC ix@(PointL j)
+  | zs == ls  = True
+  | otherwise = traceShow (j,zs,ls) False
+  where
+    zs = ((,) <<< tSO % chr xs ... stoList) maxPLo ix
+    ls = [ ( unsafeIndex xsPo (PointL $ j+1)
+           , xs VU.! (j+0)  -- j-1 in inside, here moved one right!
+           ) | j >= 0, j <= (maxI-1) ]
+
 --prop_O_ItCC ix@(PointL j) = zs == ls where
 --  zs = ((,,) <<< tSO % chr xs % chr xs ... stoList) maxPLo ix
 --  ls = [ ( unsafeIndex xsPo (PointL $ j+2)
