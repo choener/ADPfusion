@@ -159,27 +159,27 @@ prop_O_ItC ix@(PointL j)
            , xs VU.! (j+0)  -- j-1 in inside, here moved one right!
            ) | j >= 0, j <= (maxI-1) ]
 
---prop_O_ItCC ix@(PointL j) = zs == ls where
---  zs = ((,,) <<< tSO % chr xs % chr xs ... stoList) maxPLo ix
---  ls = [ ( unsafeIndex xsPo (PointL $ j+2)
---         , xs VU.! (j+0)
---         , xs VU.! (j+1)
---         ) | j >= 0, j <= (maxI-2) ]
---
---prop_O_ItCCC ix@(PointL j) = zs == ls where
---  zs = ((,,,) <<< tSO % chr xs % chr xs % chr xs ... stoList) maxPLo ix
---  ls = [ ( unsafeIndex xsPo (PointL $ j+3)
---         , xs VU.! (j+0)
---         , xs VU.! (j+1)
---         , xs VU.! (j+2)
---         ) | j >= 0, j <= (maxI-3) ]
---
---prop_O_ZItCC ix@(Z:.PointL j) = zs == ls where
---  zs = ((,,) <<< tZ1O % (M:|chr xs) % (M:|chr xs) ... stoList) (ZZ:..maxPLo) ix
---  ls = [ ( unsafeIndex xsZPo (Z:.PointL (j+2))
---         , Z:.xs VU.! (j+0)
---         , Z:.xs VU.! (j+1)
---         ) | j >= 0, j <= (maxI-2) ]
+prop_O_ItCC ix@(PointL j) = zs == ls where
+  zs = ((,,) <<< tSO % chr xs % chr xs ... stoList) maxPLo ix
+  ls = [ ( unsafeIndex xsPo (PointL $ j+2)
+         , xs VU.! (j+0)
+         , xs VU.! (j+1)
+         ) | j >= 0, j <= (maxI-2) ]
+
+prop_O_ItCCC ix@(PointL j) = zs == ls where
+  zs = ((,,,) <<< tSO % chr xs % chr xs % chr xs ... stoList) maxPLo ix
+  ls = [ ( unsafeIndex xsPo (PointL $ j+3)
+         , xs VU.! (j+0)
+         , xs VU.! (j+1)
+         , xs VU.! (j+2)
+         ) | j >= 0, j <= (maxI-3) ]
+
+prop_O_ZItCC ix@(Z:.PointL j) = zs == ls where
+  zs = ((,,) <<< tZ1O % (M:|chr xs) % (M:|chr xs) ... stoList) (ZZ:..maxPLo) ix
+  ls = [ ( unsafeIndex xsZPo (Z:.PointL (j+2))
+         , Z:.xs VU.! (j+0)
+         , Z:.xs VU.! (j+1)
+         ) | j >= 0, j <= (maxI-2) ]
 
 -- | synvar followed by a 2-tape character terminal
 
