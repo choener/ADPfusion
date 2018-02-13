@@ -1,6 +1,12 @@
 
 -- | This exports everything needed for sequence-based alignment style
 -- algorithms.
+--
+-- Here are some notes on implementation of the Inside and Outside 
+--
+-- X_j     -> S_{j-1} X_{j-1} c_j
+-- Y_{j-1} -> S_?     X_j     c_j
+-- Y_j     -> S_{j+1} X_{j+1} c_{j+1}
 
 module ADP.Fusion.Point
   ( module ADP.Fusion.Core

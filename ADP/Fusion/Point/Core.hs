@@ -99,7 +99,8 @@ instance
   , KnownNat d
   ) ⇒ MkStream m (OStatic d) S (PointL O) where
   mkStream Proxy S grd (LtPointL (I# u)) (PointL (I# i))
-    = staticCheck# (grd `andI#` (i >=# 0#) `andI#` (i +# d <=# u) `andI#` (u ==# i))
+    = staticCheck# (grd `andI#` (i >=# 0#) `andI#` (i +# d ==# u))
+    -- ???  `andI#` (u ==# i)
     . singleton . ElmS $ RiPlO (I# i) (I# (i +# d))
     where (I# d) = fromIntegral $ natVal (Proxy ∷ Proxy d)
   {-# Inline mkStream #-}
@@ -123,6 +124,7 @@ instance
   ) ⇒ MkStream m (ps:.OStatic d) S (is:.PointL O) where
   mkStream Proxy S grd (lus:..LtPointL (I# u)) (is:.PointL (I# i))
     = map (\(ElmS zi) -> ElmS $ zi :.: RiPlO (I# i) (I# (i +# d)))
+    -- ???  `andI#` (u ==# i)
     $ mkStream (Proxy ∷ Proxy ps) S (grd `andI#` (i >=# 0#) `andI#` (i +# d ==# u)) lus is
     where (I# d) = fromIntegral $ natVal (Proxy ∷ Proxy d)
   {-# Inline mkStream #-}

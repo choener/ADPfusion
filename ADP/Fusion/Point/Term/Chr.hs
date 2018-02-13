@@ -19,7 +19,7 @@ import           ADP.Fusion.Point.Core
 type instance LeftPosTy (IStatic d) (Chr r x) (PointL I) = IStatic d
 --type instance LeftPosTy (IVariable d) (Chr r x) (PointL I) = IVariable d
 
-type instance LeftPosTy (OStatic d) (Chr r x) (PointL O) = OStatic d
+type instance LeftPosTy (OStatic d) (Chr r x) (PointL O) = OStatic (d+1)
 
 -- | First try in getting this right with a @termStream@.
 --
@@ -62,6 +62,7 @@ instance
                 in  TState s (ii:.: RiPlO (k+1) o) (ee:.f xs k))
     . termStream (Proxy ∷ Proxy ps) ts us is
   {-# Inline termStream #-}
+
 
 
 instance TermStaticVar (IStatic d) (Chr r x) (PointL I) where

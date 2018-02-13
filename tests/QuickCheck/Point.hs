@@ -101,15 +101,16 @@ prop_I_Tt ix@(Z:.PointL j) = zs == ls where
 
 -- |
 --
--- X_j     -> X_{j-1} c_j
--- Y_{j-1} -> X_j     c_j
+-- X_j     -> ε_{j-1} c_j   ||| j==1
+-- E_{j-1} -> X_{j}   c_j
+-- E_j     -> X_{j+1} c_{j+1}    ||| j-1==max ?!
 
 prop_O_Tt ix@(Z:.(PointL j))
   | zs == ls  = True
   | otherwise = traceShow (j,zs,ls) False
   where
     zs = (id <<< (M:|chr xs) ... stoList) (ZZ:..maxPLo) ix
-    ls = [ (Z:.xs VU.! (j-1)) | 1==j ]
+    ls = [ (Z:.xs VU.! j) | j==maxI-1 ]
 
 -- | Two single-character terminals
 
