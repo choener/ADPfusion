@@ -340,11 +340,11 @@ align (kI,kO) (a:b:xs) = {-# SCC "align" #-} do
   putStrLn a
   putStrLn b
   let (sI,rsI) = runNeedlemanWunsch kI a b
---  let (sO,rsO) = runOutsideNeedlemanWunsch kO a b
+  let (sO,rsO) = runOutsideNeedlemanWunsch kO a b
   when (kI>=0) $ forM_ rsI $ \[u,l] -> printf "%s\n%s  %d\n\n" (reverse u) (reverse l) sI
---  when (kO>=0) $ forM_ rsO $ \[u,l] -> printf "%s\n%s  %d\n\n" (id      u) (id      l) sO
+  when (kO>=0) $ forM_ rsO $ \[u,l] -> printf "%s\n%s  %d\n\n" (id      u) (id      l) sO
   when (kI>=0) $ print sI
---  when (kO>=0) $ print sO
+  when (kO>=0) $ print sO
   putStrLn ""
   align (kI,kO) xs
 

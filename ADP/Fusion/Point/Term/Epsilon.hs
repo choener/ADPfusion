@@ -41,7 +41,7 @@ instance
 
 
 instance
-  ( TstCtx m ps ts s x0 i0 is (PointL I)
+  ( TermStreamContext m ps ts s x0 i0 is (PointL I)
   )
   ⇒ TermStream m (ps:.IStatic d) (TermSymbol ts Epsilon) s (is:.PointL I) where
   termStream Proxy (ts:|Epsilon) (us:..LtPointL u) (is:.PointL i)
@@ -53,7 +53,7 @@ instance
 
 {-
 instance
-  ( TstCtx m ps ts s x0 i0 is (PointL I)
+  ( TermStreamContext m ps ts s x0 i0 is (PointL I)
   )
   ⇒ TermStream m (ps:.IVariable d) (TermSymbol ts Epsilon) s (is:.PointL I) where
   termStream Proxy (ts:|Epsilon) (us:..LtPointL u) (is:.PointL i)
@@ -65,7 +65,7 @@ instance
 -}
 
 instance
-  ( TstCtx m ps ts s x0 i0 is (PointL O)
+  ( TermStreamContext m ps ts s x0 i0 is (PointL O)
   ) => TermStream m (ps:.OStatic d) (TermSymbol ts Epsilon) s (is:.PointL O) where
   termStream Proxy (ts:|Epsilon) (us:..LtPointL u) (is:.PointL i)
     = S.map (\(TState s ii ee) ->

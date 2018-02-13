@@ -65,7 +65,7 @@ type instance LeftPosTy Complement (TwITblBt arr EmptyOk (PointL O) x mB mF r) (
 -- ** Inside
 
 instance
-  ( IndexHdr ps elm x0 i0 cs c us (PointL I) is (PointL I)
+  ( AddIndexDenseContext ps elm x0 i0 cs c us (PointL I) is (PointL I)
   , MinSize c
   )
   ⇒ AddIndexDense (ps:.IStatic d) elm (cs:.c) (us:.PointL I) (is:.PointL I) where
@@ -75,7 +75,7 @@ instance
   {-# Inline addIndexDenseGo #-}
 
 instance
-  ( IndexHdr ps elm x0 i0 cs c us (PointL I) is (PointL I)
+  ( AddIndexDenseContext ps elm x0 i0 cs c us (PointL I) is (PointL I)
   , MinSize c
   )
   ⇒ AddIndexDense (ps:.IVariable d) elm (cs:.c) (us:.PointL I) (is:.PointL I) where
@@ -96,7 +96,7 @@ instance
 -- ** Outside
 
 instance
-  ( IndexHdr ps elm x0 i0 cs c us (PointL O) is (PointL O)
+  ( AddIndexDenseContext ps elm x0 i0 cs c us (PointL O) is (PointL O)
   , MinSize c
   ) ⇒ AddIndexDense (ps:.OStatic d) elm (cs:.c) (us:.PointL O) (is:.PointL O) where
   addIndexDenseGo Proxy (cs:._) (ubs:..ub) (us:..u) (is:.i)
@@ -106,7 +106,7 @@ instance
   {-# Inline addIndexDenseGo #-}
 
 instance
-  ( IndexHdr ps elm x0 i0 cs c us (PointL O) is (PointL O)
+  ( AddIndexDenseContext ps elm x0 i0 cs c us (PointL O) is (PointL O)
   , MinSize c
   ) ⇒ AddIndexDense (ps:.ORightOf d) elm (cs:.c) (us:.PointL O) (is:.PointL O) where
   addIndexDenseGo Proxy (cs:._) (ubs:..ub) (us:..u) (is:.i)
@@ -120,7 +120,7 @@ instance
 -- ** Complement
 
 instance
-  ( IndexHdr ps elm x0 i0 cs c us (PointL I) is (PointL C)
+  ( AddIndexDenseContext ps elm x0 i0 cs c us (PointL I) is (PointL C)
   ) ⇒ AddIndexDense (ps:.Complement) elm (cs:.c) (us:.PointL I) (is:.PointL C) where
   addIndexDenseGo Proxy (cs:._) (ubs:..ub) (us:..u) (is:.i)
     = map (\(SvS s t y) → let RiPlC k = getIndex (getIdx s) (Proxy :: PRI is (PointL C))
@@ -129,7 +129,7 @@ instance
   {-# Inline addIndexDenseGo #-}
 
 instance
-  ( IndexHdr ps elm x0 i0 cs c us (PointL O) is (PointL C)
+  ( AddIndexDenseContext ps elm x0 i0 cs c us (PointL O) is (PointL C)
   ) ⇒ AddIndexDense (ps:.Complement) elm (cs:.c) (us:.PointL O) (is:.PointL C) where
   addIndexDenseGo Proxy (cs:._) (ubs:..ub) (us:..u) (is:.i)
     = map (\(SvS s t y) → let RiPlC k = getIndex (getIdx s) (Proxy :: PRI is (PointL C))

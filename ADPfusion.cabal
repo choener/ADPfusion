@@ -1,7 +1,7 @@
 name:           ADPfusion
 version:        0.6.0.0
-author:         Christian Hoener zu Siederdissen, 2011-2017
-copyright:      Christian Hoener zu Siederdissen, 2011-2017
+author:         Christian Hoener zu Siederdissen, 2011-2018
+copyright:      Christian Hoener zu Siederdissen, 2011-2018
 homepage:       https://github.com/choener/ADPfusion
 bug-reports:    https://github.com/choener/ADPfusion/issues
 maintainer:     choener@bioinf.uni-leipzig.de
@@ -11,7 +11,7 @@ license-file:   LICENSE
 build-type:     Simple
 stability:      experimental
 cabal-version:  >= 1.10.0
-tested-with:    GHC == 8.0.2, GHC == 8.2.1
+tested-with:    GHC == 8.0.2, GHC == 8.2.2
 synopsis:       Efficient, high-level dynamic programming.
 description:
                 <http://www.bioinf.uni-leipzig.de/Software/gADP/ generalized Algebraic Dynamic Programming>

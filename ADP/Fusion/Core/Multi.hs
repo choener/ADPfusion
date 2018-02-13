@@ -199,18 +199,20 @@ instance (s ~ Elm x0 i, Element x0 i) => Element (Term1 s) (Z:.i) where
   {-# Inline getIdx #-}
 
 -- | @Term MkStream@ context
+--
+-- TODO prepare for deletion
 
-type TmkCtx1 m (pos ∷ k) ls t i
-  = ( Monad m
-    , MkStream m pos ls i
-    , TermStream m pos (TermSymbol M t) (Elm (Term1 (Elm ls i)) (Z:.i)) (Z:.i)
-    , Element ls i
-    , TermStaticVar pos t i
-    )
+--type TermMkStreamContext m (pos ∷ k) ls t i
+--  = ( Monad m
+--    , MkStream m pos ls i
+--    , TermStream m pos (TermSymbol M t) (Elm (Term1 (Elm ls i)) (Z:.i)) (Z:.i)
+--    , Element ls i
+--    , TermStaticVar pos t i
+--    )
 
 -- | @Term TermStream@ context
 
-type TstCtx m (pos ∷ k) ts s x0 sixty is i
+type TermStreamContext m (pos ∷ k) ts s x0 sixty is i
   = ( Monad m
     , TermStream m pos ts s is
     , GetIndex (RunningIndex sixty) (RunningIndex (is:.i))

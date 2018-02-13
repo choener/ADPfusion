@@ -130,7 +130,7 @@ instance (s ~ Elm x0 i, Element x0 i) => Element (SynVar1 s) (Z:.i) where
 
 -- | Instance headers, we typically need.
 
-type IndexHdr pos elm x0 i0 minSizes minSize tableIxs tableIx ixs ix =
+type AddIndexDenseContext pos elm x0 i0 minSizes minSize tableIxs tableIx ixs ix =
   ( AddIndexDense pos elm minSizes tableIxs ixs
   , GetIndex (RunningIndex i0) (RunningIndex (ixs:.ix))
   , GetIx (RunningIndex i0) (RunningIndex (ixs:.ix)) ~ (RunningIndex ix)
