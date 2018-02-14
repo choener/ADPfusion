@@ -140,6 +140,7 @@ library
     ADP.Fusion.Core.Term.Edge
     ADP.Fusion.Core.Term.Epsilon
     ADP.Fusion.Core.Term.PeekIndex
+    ADP.Fusion.Core.Term.Str
     ADP.Fusion.Core.Term.Test
     ADP.Fusion.Core.TyLvlIx
 --    -- Point
