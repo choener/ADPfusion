@@ -30,7 +30,8 @@ type instance LeftPosTy (OStatic d) (Chr r x) (PointL O) = OStatic (d+1)
 
 instance
   forall pos posLeft m ls linked minSz maxSz v x i
-  . ( TermStream m (Z:.pos) (TermSymbol M (Str linked minSz maxSz v x)) (Elm (Term1 (Elm ls (PointL i))) (Z :. PointL i)) (Z:.PointL i)
+  . ( TermStream m (Z:.pos) (TermSymbol M (Str linked minSz maxSz v x))
+                 (Elm (Term1 (Elm ls (PointL i))) (Z :. PointL i)) (Z:.PointL i)
     , posLeft ~ LeftPosTy pos (Str linked minSz maxSz v x) (PointL i)
     , TermStaticVar pos (Str linked minSz maxSz v x) (PointL i)
     , MkStream m posLeft ls (PointL i)
@@ -49,7 +50,7 @@ instance
 
 instance
   ( TermStreamContext m ps ts s x0 i0 is (PointL I)
-  ) => TermStream m (ps:.IStatic d) (TermSymbol ts (Str linked minSz maxSz v x)) s (is:.PointL I) where
+  ) ⇒ TermStream m (ps:.IStatic d) (TermSymbol ts (Str linked minSz maxSz v x)) s (is:.PointL I) where
   termStream Proxy (ts:|Str xs) (us:..LtPointL u) (is:.PointL i)
     = S.map (\(TState s ii ee) →
                 let RiPlI k = getIndex (getIdx s) (Proxy ∷ PRI is (PointL I))
@@ -69,9 +70,9 @@ instance
   {-# Inline termStream #-}
 -}
 
-instance (KnownNat d)
+instance (KnownNat minSz)
   ⇒ TermStaticVar (IStatic d) (Str linked minSz maxSz v x) (PointL I) where
-  termStreamIndex Proxy (Str xs) (PointL j) = PointL $ j - fromIntegral (natVal (Proxy ∷ Proxy d))
+  termStreamIndex Proxy (Str xs) (PointL j) = PointL $ j - fromIntegral (natVal (Proxy ∷ Proxy minSz))
   termStaticCheck Proxy (Str xs) (PointL j) = 1#
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}

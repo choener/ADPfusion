@@ -39,6 +39,11 @@ someV ∷ VG.Vector v x ⇒ v x → Str Nothing 1 Nothing v x
 someV = Str
 {-# Inline someV #-}
 
+-- TODO really need to be able to remove this system. Forgetting @Build@ gives
+-- very strange type errors.
+
+instance Build (Str linked minSz maxSz v x)
+
 instance
   ( Element ls i
   , VG.Vector v x
