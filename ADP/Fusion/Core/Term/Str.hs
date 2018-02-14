@@ -22,10 +22,35 @@ import           ADP.Fusion.Core.Multi
 --
 -- @minSz@ and @maxSz@ provide minimal and maximal parser width, if set.
 --
--- TODO consider if @minSz@ (and possibly @maxSz@) could do with just @Nat@
+-- TODO consider if @maxSz@ could do with just @Nat@
 
-data Str (linked ∷ Maybe Symbol) (minSz ∷ Maybe Nat) (maxSz ∷ Maybe Nat) x where
+data Str (linked ∷ Maybe Symbol) (minSz ∷ Nat) (maxSz ∷ Maybe Nat) v x where
   Str ∷ VG.Vector v x
       ⇒ !(v x)
-      → Str linked minSz maxSz x
+      → Str linked minSz maxSz v x
+
+-- | Construct string parsers with no special constraints.
+
+manyV ∷ VG.Vector v x ⇒ v x → Str Nothing 0 Nothing v x
+manyV = Str
+{-# Inline manyV #-}
+
+someV ∷ VG.Vector v x ⇒ v x → Str Nothing 1 Nothing v x
+someV = Str
+{-# Inline someV #-}
+
+instance
+  ( Element ls i
+  , VG.Vector v x
+  ) => Element (ls :!: Str linked minSz maxSz v x) i where
+    data Elm (ls :!: Str linked minSz maxSz v x) i = ElmStr !(v x) !(RunningIndex i) !(Elm ls i)
+    type Arg (ls :!: Str linked minSz maxSz v x)   = Arg ls :. v x
+    getArg (ElmStr x _ ls) = getArg ls :. x
+    getIdx (ElmStr _ i _ ) = i
+    {-# Inline getArg #-}
+    {-# Inline getIdx #-}
+
+deriving instance (Show i, Show (RunningIndex i), Show (v x), Show (Elm ls i)) => Show (Elm (ls :!: Str linked minSz maxSz v x) i)
+
+type instance TermArg (Str linked minSz maxSz v x) = v x
 

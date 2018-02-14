@@ -28,6 +28,7 @@ module ADP.Fusion.Core
   , module ADP.Fusion.Core.Term.Edge
   , module ADP.Fusion.Core.Term.Epsilon
   , module ADP.Fusion.Core.Term.PeekIndex
+  , module ADP.Fusion.Core.Term.Str
   , module ADP.Fusion.Core.TH
   , module ADP.Fusion.Core.TyLvlIx
   , module Data.Vector.Fusion.Stream.Monadic
@@ -58,6 +59,7 @@ import           ADP.Fusion.Core.Term.Deletion
 import           ADP.Fusion.Core.Term.Edge
 import           ADP.Fusion.Core.Term.Epsilon
 import           ADP.Fusion.Core.Term.PeekIndex
+import           ADP.Fusion.Core.Term.Str
 import           ADP.Fusion.Core.TH
 import           ADP.Fusion.Core.TyLvlIx
 

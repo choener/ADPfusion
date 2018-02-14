@@ -201,10 +201,10 @@ prop_O_2dimItCC ix@(Z:.PointL j:.PointL l) = zs == ls where
 
 -- ** Just the 'Strng' terminal
 
---prop_I_ManyS ix@(PointL j) = zs == ls where
---  zs = (id <<< manyS xs ... stoList) maxPLi ix
---  ls = [ (VU.slice 0 j xs) ]
---
+prop_I_ManyV ix@(PointL j) = zs == ls where
+  zs = [] -- (id <<< manyV xs ... stoList) maxPLi ix
+  ls = [ (VU.slice 0 j xs) ]
+
 --prop_I_SomeS ix@(PointL j) = zs == ls where
 --  zs = (id <<< someS xs ... stoList) maxPLi ix
 --  ls = [ (VU.slice 0 j xs) | j>0 ]

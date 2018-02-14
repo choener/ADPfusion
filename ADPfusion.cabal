@@ -151,6 +151,7 @@ library
     ADP.Fusion.Point.Term.Chr
     ADP.Fusion.Point.Term.Deletion
     ADP.Fusion.Point.Term.Epsilon
+    ADP.Fusion.Point.Term.Str
 --    ADP.Fusion.Point.Term.Test
 --    -- Unit
 --    ADP.Fusion.Unit
@@ -184,6 +185,7 @@ library
                     , StandaloneDeriving
                     , TemplateHaskell
                     , TupleSections
+                    , TypeApplications
                     , TypeFamilies
                     , TypeOperators
                     , TypeSynonymInstances
