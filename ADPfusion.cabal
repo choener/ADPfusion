@@ -223,14 +223,17 @@ test-suite properties
     Haskell2010
   default-extensions: BangPatterns
                     , CPP
+                    , DataKinds
                     , FlexibleContexts
                     , FlexibleInstances
                     , MultiParamTypeClasses
                     , ScopedTypeVariables
                     , TemplateHaskell
+                    , TypeApplications
                     , TypeFamilies
                     , TypeOperators
                     , TypeSynonymInstances
+                    , UnicodeSyntax
   cpp-options:
     -DADPFUSION_TEST_SUITE_PROPERTIES
   build-depends: base

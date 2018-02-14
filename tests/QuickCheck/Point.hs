@@ -8,6 +8,7 @@ import           Control.Monad
 import           Data.Strict.Tuple
 import           Data.Vector.Fusion.Util
 import           Debug.Trace
+--import           GHC.TypeNats
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
 import           System.IO.Unsafe
@@ -229,6 +230,24 @@ prop_I_Itbl_ManyV ix@(PointL i) = zs == ls where
 prop_I_Itbl_SomeV ix@(PointL i) = zs == ls where
   zs = ((,) <<< tSI % someV xs ... stoList) maxPLi ix
   ls = [ (unsafeIndex xsP (PointL k), VU.slice k (i-k) xs) | k <- [0..i-1] ]
+
+-- | NOTE Be aware of the needed match between the type-level and value-level
+-- @13@s.
+
+prop_I_Itbl_Str ix@(PointL i) = zs == ls where
+  zs = ((,) <<< tSI % Str @Nothing @13 @Nothing xs ... stoList) maxPLi ix
+  ls = [ (unsafeIndex xsP (PointL k), VU.slice k (i-k) xs) | k <- [0..i-13] ]
+
+-- | And now for some funny type-level shenanigans.
+
+prop_I_Itbl_StrTyLvl (Positive bound', ix@(PointL i)) = let bound = bound' `mod` 23 in
+  case (someNatVal bound) of
+    Nothing → error "zzz"
+    Just (SomeNat (Proxy ∷ Proxy b)) →
+      let zs = ((,) <<< tSI % Str @Nothing @b @Nothing xs ... stoList) maxPLi ix
+          ls = [ (unsafeIndex xsP (PointL k), VU.slice k (i-k) xs) | k <- [0..i-bv] ]
+          bv = fromIntegral $ natVal (Proxy ∷ Proxy b)
+      in  zs == ls
 
 prop_I_1dim_Itbl_ManyV ix@(Z:.PointL i) = zs == ls where
   zs = ((,) <<< tZ1I % (M:|manyV xs) ... stoList) (ZZ:..maxPLi) ix
