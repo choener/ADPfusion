@@ -6,23 +6,24 @@ import           Control.Monad.Morph (hoist, MFunctor (..))
 import           Control.Monad.Primitive (PrimMonad (..))
 import           Control.Monad.ST
 import           Control.Monad.Trans.Class (lift, MonadTrans (..))
+import           Control.Monad (when,forM_)
+import           Data.Dynamic
+import           Data.List (nub,sort,group)
+import           Data.Maybe (fromJust)
+import           Data.Proxy
+import           Data.Type.Equality
 import           Data.Vector.Fusion.Util (Id(..))
 import           GHC.Exts (inline)
-import qualified Data.Vector.Fusion.Stream.Monadic as SM
-import           System.IO.Unsafe
-import           Control.Monad (when,forM_)
-import           Data.List (nub,sort,group)
-import qualified Data.Vector.Unboxed as VU
-import qualified Data.Vector as V
-import qualified Data.Vector.Mutable as VM
-import           Data.Proxy
-import qualified GHC.Generics as G
-import qualified Data.Typeable as T
+import           GHC.TypeNats
 import qualified Data.Data as D
-import           Data.Dynamic
-import           Data.Type.Equality
 import qualified Data.List as L
-import           Data.Maybe (fromJust)
+import qualified Data.Typeable as T
+import qualified Data.Vector as V
+import qualified Data.Vector.Fusion.Stream.Monadic as SM
+import qualified Data.Vector.Mutable as VM
+import qualified Data.Vector.Unboxed as VU
+import qualified GHC.Generics as G
+import           System.IO.Unsafe
 
 import           Data.PrimitiveArray
 
@@ -80,9 +81,17 @@ instance TableOrder Z where
   {-# Inline tableLittleOrder #-}
   {-# Inline tableBigOrder #-}
 
-instance (TableOrder ts) => TableOrder (ts:.TwITbl im arr c i x) where
-  tableLittleOrder (ts:.TW (ITbl _ tlo _ _) _) = tlo : tableLittleOrder ts
-  tableBigOrder    (ts:.TW (ITbl tbo _ _ _) _) = tbo : tableBigOrder ts
+instance
+  ( TableOrder ts
+  , KnownNat bo
+  , KnownNat lo
+  ) ⇒ TableOrder (ts:.TwITbl bo lo im arr c i x) where
+  tableLittleOrder (ts:.TW (ITbl _ _) _) =
+    let tlo = fromIntegral $ natVal (Proxy ∷ Proxy lo)
+    in  tlo : tableLittleOrder ts
+  tableBigOrder    (ts:.TW (ITbl _ _) _) =
+    let tbo = fromIntegral $ natVal (Proxy ∷ Proxy bo)
+    in  tbo : tableBigOrder ts
   {-# Inline tableLittleOrder #-}
   {-# Inline tableBigOrder #-}
 
@@ -113,8 +122,12 @@ instance
   ( PrimArrayOps  arr i x
   , MPrimArrayOps arr i x
   , MutateCell CFG ts im i
-  ) => MutateCell CFG (ts:.TwITbl im arr c i x) im i where
-  mutateCell h bo lo mrph (ts:.TW (ITbl tbo tlo c arr) f) lu i = do
+  , KnownNat bo
+  , KnownNat lo
+  ) => MutateCell CFG (ts:.TwITbl bo lo im arr c i x) im i where
+  mutateCell h bo lo mrph (ts:.TW (ITbl c arr) f) lu i = do
+    let tbo = fromIntegral $ natVal (Proxy ∷ Proxy bo)
+        tlo = fromIntegral $ natVal (Proxy ∷ Proxy lo)
     mutateCell h bo lo mrph ts lu i
     when (bo==tbo && lo==tlo) $ do
       marr <- unsafeThaw arr
@@ -161,13 +174,13 @@ instance
 -- bounds
 
 instance
-  ( MutateCell h (ts:.TwITbl im arr c i x) im i
+  ( MutateCell h (ts:.TwITbl bo lo im arr c i x) im i
   , PrimArrayOps arr i x
   , Show i
   , IndexStream i
-  , TableOrder (ts:.TwITbl im arr c i x)
-  ) => MutateTables h (ts:.TwITbl im arr c i x) im where
-  mutateTables h mrph tt@(_:.TW (ITbl _ _ _ arr) _) = do
+  , TableOrder (ts:.TwITbl bo lo im arr c i x)
+  ) => MutateTables h (ts:.TwITbl bo lo im arr c i x) im where
+  mutateTables h mrph tt@(_:.TW (ITbl _ arr) _) = do
     let to = upperBound arr
     -- TODO (1) find the set of orders for the synvars
     let !tbos = VU.fromList . nub . sort $ tableBigOrder tt
@@ -286,10 +299,17 @@ instance
  , PrimArrayOps arr i x
  , MPrimArrayOps arr i x
  , IndexStream i
- ) => TSBO (ts:.TwITbl Id arr c i x) where
-  asDyn (ts:.t@(TW (ITbl bo lo _ arr) fun)) = Q bo lo (T.typeOf t) (toDyn t) (toDyn arr) (seq fun $ toDyn fun) : asDyn ts
-  fillWithDyn qs (ts:.t@(TW (ITbl bo lo _ arrDirect) fDirect)) = do
+ , KnownNat bo
+ , KnownNat lo
+ ) => TSBO (ts:.TwITbl bo lo Id arr c i x) where
+  asDyn (ts:.t@(TW (ITbl _ arr) fun)) =
+    let bo = fromIntegral $ natVal (Proxy ∷ Proxy bo)
+        lo = fromIntegral $ natVal (Proxy ∷ Proxy lo)
+    in  Q bo lo (T.typeOf t) (toDyn t) (toDyn arr) (seq fun $ toDyn fun) : asDyn ts
+  fillWithDyn qs (ts:.t@(TW (ITbl _ arrDirect) fDirect)) = do
     let to = upperBound arrDirect
+        bo = fromIntegral $ natVal (Proxy ∷ Proxy bo)
+        lo = fromIntegral $ natVal (Proxy ∷ Proxy lo)
     -- @hs@ are all tables that can be filled here
     -- @ns@ are all tables we can't fill and need to process further down
     -- the line
@@ -335,7 +355,7 @@ instance
         -- similar to what we have here with the @case of 1@ construction,
         -- because @fDirect@ is partially floated out.
         --
-        marrfs <- V.fromList <$> Prelude.mapM (\(TW (ITbl _ _ _ arr) f) -> unsafeThaw arr >>= \marr -> return (marr,f)) ms
+        marrfs <- V.fromList <$> Prelude.mapM (\(TW (ITbl _ arr) f) -> unsafeThaw arr >>= \marr -> return (marr,f)) ms
         case (V.length marrfs) of
           1 -> do -- let (!marr,!f) = marrfs V.! 0   -- this takes 1.3 seconds for NeedlemanWunsch
                   -- marr <- unsafeThaw arrDirect  -- this takes 0.8 seconds for NeedlemanWunsch

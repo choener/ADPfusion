@@ -273,11 +273,15 @@ executable NeedlemanWunsch
   default-language:
     Haskell2010
   default-extensions: BangPatterns
+                    , DataKinds
                     , FlexibleContexts
                     , FlexibleInstances
                     , MultiParamTypeClasses
+                    , PartialTypeSignatures
+                    , PolyKinds
                     , RecordWildCards
                     , TemplateHaskell
+                    , TypeApplications
                     , TypeFamilies
                     , TypeOperators
                     , UnicodeSyntax

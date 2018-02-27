@@ -26,37 +26,37 @@ import ADP.Fusion.Point.Core
 
 -- ** Inside
 
-type instance LeftPosTy (IStatic d) (TwITbl m arr EmptyOk (PointL I) x) (PointL I) = IVariable d
-type instance LeftPosTy (IStatic d) (TwITblBt arr EmptyOk (PointL I) x mB mF r) (PointL I) = IVariable d
+type instance LeftPosTy (IStatic d) (TwITbl b l m arr EmptyOk (PointL I) x) (PointL I) = IVariable d
+type instance LeftPosTy (IStatic d) (TwITblBt b l arr EmptyOk (PointL I) x mB mF r) (PointL I) = IVariable d
 
-type instance LeftPosTy (IVariable d) (TwITbl m arr EmptyOk (PointL I) x) (PointL I) = IVariable d
-type instance LeftPosTy (IVariable d) (TwITblBt arr EmptyOk (PointL I) x mB mF r) (PointL I) = IVariable d
+type instance LeftPosTy (IVariable d) (TwITbl b l m arr EmptyOk (PointL I) x) (PointL I) = IVariable d
+type instance LeftPosTy (IVariable d) (TwITblBt b l arr EmptyOk (PointL I) x mB mF r) (PointL I) = IVariable d
 
 -- ** Outside
 
-type instance LeftPosTy (OStatic d) (TwITbl m arr EmptyOk (PointL O) x) (PointL O) = OFirstLeft d
-type instance LeftPosTy (OStatic d) (TwITblBt arr EmptyOk (PointL O) x mB mF r) (PointL O) = OFirstLeft d
+type instance LeftPosTy (OStatic d) (TwITbl b l m arr EmptyOk (PointL O) x) (PointL O) = OFirstLeft d
+type instance LeftPosTy (OStatic d) (TwITblBt b l arr EmptyOk (PointL O) x mB mF r) (PointL O) = OFirstLeft d
 
 -- TODO @OLeftOf@
 
-type instance LeftPosTy (OFirstLeft d) (TwITbl m arr EmptyOk (PointL O) x) (PointL O) = TypeError
+type instance LeftPosTy (OFirstLeft d) (TwITbl b l m arr EmptyOk (PointL O) x) (PointL O) = TypeError
   (Text "OFirstLeft is illegal for outside tables. Check your grammars for multiple Outside syntactic variable on the r.h.s!")
-type instance LeftPosTy (OFirstLeft d) (TwITblBt arr EmptyOk (PointL O) x mB mF r) (PointL O) = TypeError
+type instance LeftPosTy (OFirstLeft d) (TwITblBt b l arr EmptyOk (PointL O) x mB mF r) (PointL O) = TypeError
   (Text "OFirstLeft is illegal for outside tables. Check your grammars for multiple Outside syntactic variable on the r.h.s!")
 
-type instance LeftPosTy (OLeftOf d) (TwITbl m arr EmptyOk (PointL O) x) (PointL O) = TypeError
+type instance LeftPosTy (OLeftOf d) (TwITbl b l m arr EmptyOk (PointL O) x) (PointL O) = TypeError
   (Text "OLeftOf is illegal for outside tables. Check your grammars for multiple Outside syntactic variable on the r.h.s!")
-type instance LeftPosTy (OLeftOf d) (TwITblBt arr EmptyOk (PointL O) x mB mF r) (PointL O) = TypeError
+type instance LeftPosTy (OLeftOf d) (TwITblBt b l arr EmptyOk (PointL O) x mB mF r) (PointL O) = TypeError
   (Text "OLeftOf is illegal for outside tables. Check your grammars for multiple Outside syntactic variable on the r.h.s!")
 
 -- ** Complement. Note that @Complement@ joins inside and outside syntactic
 -- variables.
 
-type instance LeftPosTy Complement (TwITbl m arr EmptyOk (PointL I) x) (PointL C) = Complement
-type instance LeftPosTy Complement (TwITblBt arr EmptyOk (PointL I) x mB mF r) (PointL C) = Complement
+type instance LeftPosTy Complement (TwITbl b l m arr EmptyOk (PointL I) x) (PointL C) = Complement
+type instance LeftPosTy Complement (TwITblBt b l arr EmptyOk (PointL I) x mB mF r) (PointL C) = Complement
 
-type instance LeftPosTy Complement (TwITbl m arr EmptyOk (PointL O) x) (PointL C) = Complement
-type instance LeftPosTy Complement (TwITblBt arr EmptyOk (PointL O) x mB mF r) (PointL C) = Complement
+type instance LeftPosTy Complement (TwITbl b l m arr EmptyOk (PointL O) x) (PointL C) = Complement
+type instance LeftPosTy Complement (TwITblBt b l arr EmptyOk (PointL O) x mB mF r) (PointL C) = Complement
 
 
 

@@ -137,11 +137,11 @@ import           ADP.Fusion.Point
 -- capable, which is a really cool feature for advanced algorithms.
 
 data Signature m x r c = Signature
-  { step_step :: x -> (Z:.c :.c ) -> x
-  , step_loop :: x -> (Z:.c :.()) -> x
-  , loop_step :: x -> (Z:.():.c ) -> x
-  , nil_nil   ::      (Z:.():.()) -> x
-  , h         :: Stream m x -> m r
+  { step_step ∷ x → (Z:.c :.c ) → x
+  , step_loop ∷ x → (Z:.c :.()) → x
+  , loop_step ∷ x → (Z:.():.c ) → x
+  , nil_nil   ∷     (Z:.():.()) → x
+  , h         ∷ Stream m x -> m r
   }
 
 -- | We also want to be able to backtrace the optimal result. Given our
@@ -220,11 +220,11 @@ grammar Signature{..} !a' !i1 !i2 =
 -- @-999999@ and find the maximum of that score and the choices we are
 -- given.
 
-sScore :: Monad m => Signature m Int Int Char
+sScore ∷ Monad m ⇒ Signature m Int Int Char
 sScore = Signature
-  { step_step = \x (Z:.a:.b) -> if a==b then x+1 else x-2
-  , step_loop = \x _         -> x-1
-  , loop_step = \x _         -> x-1
+  { step_step = \x (Z:.a:.b) → if a==b then x+1 else x-2
+  , step_loop = \x _         → x-1
+  , loop_step = \x _         → x-1
   , nil_nil   = const 0
   , h = SM.foldl' max (-999999)
   }
@@ -240,11 +240,11 @@ sScore = Signature
 -- rather returns all alignments. You already heard about @<**@, we'll use
 -- it below.
 
-sPretty :: Monad m => Signature m [String] [[String]] Char
+sPretty ∷ Monad m ⇒ Signature m [String] [[String]] Char
 sPretty = Signature
-  { step_step = \[x,y] (Z:.a :.b ) -> [a  :x, b  :y]
-  , step_loop = \[x,y] (Z:.a :.()) -> [a  :x, '-':y]
-  , loop_step = \[x,y] (Z:.():.b ) -> ['-':x, b  :y]
+  { step_step = \[x,y] (Z:.a :.b ) → [a  :x, b  :y]
+  , step_loop = \[x,y] (Z:.a :.()) → [a  :x, '-':y]
+  , loop_step = \[x,y] (Z:.():.b ) → ['-':x, b  :y]
   , nil_nil   = const ["",""]
   , h = SM.toList
   }
@@ -255,7 +255,11 @@ sPretty = Signature
 -- backtrackings, given the inputs @i1@ and @i2@. The @fst@ element
 -- returned is the score, the @snd@ are the co-optimal parses.
 
-runNeedlemanWunsch :: Int -> String -> String -> (Int,[[String]])
+runNeedlemanWunsch
+  ∷ Int
+  → String
+  → String
+  → (Int,[[String]])
 runNeedlemanWunsch k i1' i2' = (d, take k bs) where
   i1 = VU.fromList i1'
   i2 = VU.fromList i2'
@@ -276,20 +280,27 @@ runNeedlemanWunsch k i1' i2' = (d, take k bs) where
 -- For your own code, you can write as done here, or in the way of
 -- 'runOutsideNeedlemanWunsch'.
 
-nwInsideForward :: VU.Vector Char -> VU.Vector Char -> Z:.TwITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int
+nwInsideForward
+  ∷ VU.Vector Char
+  → VU.Vector Char
+  → Z:.TwITbl _ _ Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int
 nwInsideForward i1 i2 = {-# SCC "nwInsideForward" #-} runST $ do
   arr ← newWithPA (ZZ:..LtPointL n1:..LtPointL n2) (-999999)
   mutateTablesNew $ grammar sScore
-                      (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) arr)
+                      (ITbl @0 @0 (Z:.EmptyOk:.EmptyOk) arr)
                       i1 i2
   where n1 = VU.length i1
         n2 = VU.length i2
 {-# NoInline nwInsideForward #-}
 
-nwInsideBacktrack :: VU.Vector Char -> VU.Vector Char -> TwITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int -> [[String]]
+nwInsideBacktrack
+  ∷ VU.Vector Char
+  → VU.Vector Char
+  → TwITbl _ _ Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int
+  → [[String]]
 nwInsideBacktrack i1 i2 t = {-# SCC "nwInsideBacktrack" #-} unId $ axiom b
   where !(Z:.b) = grammar (sScore <|| sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
-                    :: Z:.TwITblBt Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int Id Id [String]
+                    :: Z:.TwITblBt _ _ Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int Id Id [String]
 {-# NoInline nwInsideBacktrack #-}
 
 -- | The outside version of the Needleman-Wunsch alignment algorithm. The
@@ -297,7 +308,11 @@ nwInsideBacktrack i1 i2 t = {-# SCC "nwInsideBacktrack" #-} unId $ axiom b
 -- generally the case, but here it is. Hence we may just use outside tables
 -- and the grammar from above.
 
-runOutsideNeedlemanWunsch :: Int -> String -> String -> (Int,[[String]])
+runOutsideNeedlemanWunsch
+  ∷ Int
+  → String
+  → String
+  → (Int,[[String]])
 runOutsideNeedlemanWunsch k i1' i2' = {-# SCC "runOutside" #-} (d, take k . unId $ axiom b) where
   i1 = VU.fromList i1'
   i2 = VU.fromList i2'
@@ -306,17 +321,22 @@ runOutsideNeedlemanWunsch k i1' i2' = {-# SCC "runOutside" #-} (d, take k . unId
   !(Z:.t) = nwOutsideForward i1 i2
   d = unId $ axiom t
   !(Z:.b) = grammar (sScore <|| sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
-              :: Z:.TwITblBt Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL O:.PointL O) Int Id Id [String]
+              :: Z:.TwITblBt _ _ Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL O:.PointL O) Int Id Id [String]
 {-# Noinline runOutsideNeedlemanWunsch #-}
 
 -- | Again, to be able to observe performance, we have extracted the
 -- outside-table-filling part.
+--
+-- The partial type signature is filled by GHC.
 
-nwOutsideForward :: VU.Vector Char -> VU.Vector Char -> Z:.TwITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL O:.PointL O) Int
+nwOutsideForward
+  ∷ VU.Vector Char
+  → VU.Vector Char
+  → Z:.TwITbl _ _ Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL O:.PointL O) Int
 nwOutsideForward i1 i2 = {-# SCC "nwOutsideForward" #-} runST $ do
   arr ← newWithPA (ZZ:..LtPointL n1:..LtPointL n2) (-999999)
   mutateTablesNew $ grammar sScore
-                      (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) arr)
+                      (ITbl @0 @0 (Z:.EmptyOk:.EmptyOk) arr)
                       i1 i2
   where n1 = VU.length i1
         n2 = VU.length i2
