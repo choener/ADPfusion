@@ -272,12 +272,12 @@ stoList = unId . SM.toList
 --infixl 8 >>>
 --(>>>) f xs = \lu ij -> SM.map f . mkStream (build xs) (initialContext ij) lu $ ij
 
-tSI  = TW (ITbl 0 0 EmptyOk xsP)  (\ (_ :: LimitType (PointL I)) (_ :: PointL I) -> Id (1::Int))
-tSO  = TW (ITbl 0 0 EmptyOk xsPo) (\ (_ :: LimitType (PointL O)) (_ :: PointL O) -> Id (1::Int))
-tZ1I = TW (ITbl 0 0 (Z:.EmptyOk) xsZP) (\ (_::LimitType (Z:.PointL I)) (_::Z:.PointL I) -> Id (1::Int))
-tZ1O = TW (ITbl 0 0 (Z:.EmptyOk) xsZPo) (\ (_::LimitType (Z:.PointL O)) (_::Z:.PointL O) -> Id (1::Int))
-tZ2I = TW (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsPP) (\ (_::LimitType (Z:.PointL I:.PointL I)) (_::Z:.PointL I:.PointL I) -> Id (1::Int))
-tZ2O = TW (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) xsPPo) (\ (_::LimitType (Z:.PointL O:.PointL O)) (_::Z:.PointL O:.PointL O) -> Id (1::Int))
+tSI  = TW (ITbl @0 @0 EmptyOk xsP)  (\ (_ :: LimitType (PointL I)) (_ :: PointL I) -> Id (1::Int))
+tSO  = TW (ITbl @0 @0 EmptyOk xsPo) (\ (_ :: LimitType (PointL O)) (_ :: PointL O) -> Id (1::Int))
+tZ1I = TW (ITbl @0 @0 (Z:.EmptyOk) xsZP) (\ (_::LimitType (Z:.PointL I)) (_::Z:.PointL I) -> Id (1::Int))
+tZ1O = TW (ITbl @0 @0 (Z:.EmptyOk) xsZPo) (\ (_::LimitType (Z:.PointL O)) (_::Z:.PointL O) -> Id (1::Int))
+tZ2I = TW (ITbl @0 @0 (Z:.EmptyOk:.EmptyOk) xsPP) (\ (_::LimitType (Z:.PointL I:.PointL I)) (_::Z:.PointL I:.PointL I) -> Id (1::Int))
+tZ2O = TW (ITbl @0 @0 (Z:.EmptyOk:.EmptyOk) xsPPo) (\ (_::LimitType (Z:.PointL O:.PointL O)) (_::Z:.PointL O:.PointL O) -> Id (1::Int))
 
 xsP :: Unboxed (PointL I) Int
 xsP = fromList maxPLi [0 ..]
