@@ -29,7 +29,7 @@ instance
   mkStream pos (ls :!: Deletion) grd us is
     = S.map (\(ss,ee,ii) -> ElmDeletion ii ss)
     . addTermStream1 pos Deletion us is
-    $ mkStream (Proxy ∷ Proxy posLeft) ls (grd `andI#` termStaticCheck pos Deletion is) us (termStreamIndex pos Deletion is)
+    $ mkStream (Proxy ∷ Proxy posLeft) ls (termStaticCheck pos Deletion is grd) us (termStreamIndex pos Deletion is)
   {-# Inline mkStream #-}
 
 
@@ -57,13 +57,13 @@ instance
 
 instance TermStaticVar (IStatic d) Deletion (PointL I) where
   termStreamIndex Proxy Deletion (PointL j) = PointL j
-  termStaticCheck Proxy Deletion (PointL j) = 1#
+  termStaticCheck Proxy Deletion (PointL j) grd = grd
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}
 
 instance TermStaticVar oAny Deletion (PointL O) where
   termStreamIndex Proxy Deletion (PointL j) = PointL j
-  termStaticCheck Proxy Deletion (PointL j) = 1#
+  termStaticCheck Proxy Deletion (PointL j) grd = grd
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}
 

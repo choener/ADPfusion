@@ -66,7 +66,7 @@ instance
     . map (\s -> TState s RiZ Z)
     $ mkStream (Proxy ∷ Proxy posLeft)
                ls
-               (grd `andI#` termStaticCheck (Proxy ∷ Proxy pos) ts i)
+               (termStaticCheck (Proxy ∷ Proxy pos) ts i grd)
                lu (termStreamIndex (Proxy ∷ Proxy pos) ts i)
   {-# Inline mkStream #-}
 
@@ -85,11 +85,11 @@ instance Monad m => MkStream m Z S Z where
 class TermStaticVar pos sym ix where
 --  termStaticVar   ∷ sym → Context i → i → Context i
   termStreamIndex ∷ Proxy pos → sym → ix → ix
-  termStaticCheck ∷ Proxy pos → sym → ix → Int#
+  termStaticCheck ∷ Proxy pos → sym → ix → Int# → Int#
 
 instance TermStaticVar pos M Z where
   termStreamIndex Proxy M Z = Z
-  termStaticCheck Proxy M Z = 1#
+  termStaticCheck Proxy M Z grd = grd
   {-# INLINE [0] termStreamIndex #-}
   {-# INLINE [0] termStaticCheck #-}
 
@@ -98,7 +98,7 @@ instance
   , TermStaticVar p  t  i
   ) => TermStaticVar (ps:.p) (TermSymbol ts t) (is:.i) where
   termStreamIndex Proxy (ts:|t) (is:.i) = termStreamIndex (Proxy ∷ Proxy ps) ts is :. termStreamIndex (Proxy ∷ Proxy p) t i
-  termStaticCheck Proxy (ts:|t) (is:.i) = termStaticCheck (Proxy ∷ Proxy ps) ts is `andI#` termStaticCheck (Proxy ∷ Proxy p) t i
+  termStaticCheck Proxy (ts:|t) (is:.i) grd = termStaticCheck (Proxy ∷ Proxy ps) ts is (termStaticCheck (Proxy ∷ Proxy p) t i grd)
   {-# INLINE [0] termStreamIndex #-}
   {-# INLINE [0] termStaticCheck #-}
 

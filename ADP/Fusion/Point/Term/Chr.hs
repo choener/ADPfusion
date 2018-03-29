@@ -39,7 +39,7 @@ instance
   mkStream pos (ls :!: Chr f xs) grd us is
     = S.map (\(ss,ee,ii) -> ElmChr ee ii ss) -- recover ElmChr
     . addTermStream1 pos (Chr f xs) us is
-    $ mkStream (Proxy ∷ Proxy posLeft) ls (grd `andI#` termStaticCheck pos (Chr f xs) is) us (termStreamIndex pos (Chr f xs) is)
+    $ mkStream (Proxy ∷ Proxy posLeft) ls (termStaticCheck pos (Chr f xs) is grd) us (termStreamIndex pos (Chr f xs) is)
   {-# Inline mkStream #-}
 
 
@@ -67,13 +67,13 @@ instance
 
 instance TermStaticVar (IStatic d) (Chr r x) (PointL I) where
   termStreamIndex Proxy (Chr f x) (PointL j) = PointL $ j-1
-  termStaticCheck Proxy (Chr f x) (PointL j) = 1#
+  termStaticCheck Proxy (Chr f x) (PointL j) grd = grd
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}
 
 instance TermStaticVar (OStatic d) (Chr r x) (PointL O) where
   termStreamIndex Proxy (Chr f x) (PointL j) = PointL $ j
-  termStaticCheck Proxy (Chr f x) (PointL j) = 1#
+  termStaticCheck Proxy (Chr f x) (PointL j) grd = grd
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}
 
