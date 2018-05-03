@@ -1,5 +1,5 @@
 
-module ADP.Fusion.Point.Term.Chr where
+module ADP.Fusion.Point.Term.Switch where
 
 import           Data.Proxy
 import           Data.Strict.Tuple
