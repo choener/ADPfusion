@@ -3,6 +3,7 @@
 -- level.
 --
 -- TODO Consider moving the switch status to the type level.
+-- TODO Consider using patterns for the switch status and encode using @Int@s.
 
 module ADP.Fusion.Core.Term.Switch where
 
@@ -18,7 +19,7 @@ import           ADP.Fusion.Core.Multi
 
 -- | Explicit naming of the status of the switch.
 
-data SwitchStatus = Enabled | Disabled
+data SwitchStatus = Disabled | Enabled
   deriving (Eq,Ord,Show)
 
 -- | Terminal for the switch. The switch status is not given to any function,
