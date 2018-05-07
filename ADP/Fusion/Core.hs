@@ -27,6 +27,7 @@ module ADP.Fusion.Core
   , module ADP.Fusion.Core.Term.Deletion
   , module ADP.Fusion.Core.Term.Edge
   , module ADP.Fusion.Core.Term.Epsilon
+  , module ADP.Fusion.Core.Term.MultiChr
   , module ADP.Fusion.Core.Term.PeekIndex
   , module ADP.Fusion.Core.Term.Str
   , module ADP.Fusion.Core.TH
@@ -58,6 +59,7 @@ import           ADP.Fusion.Core.Term.Chr
 import           ADP.Fusion.Core.Term.Deletion
 import           ADP.Fusion.Core.Term.Edge
 import           ADP.Fusion.Core.Term.Epsilon
+import           ADP.Fusion.Core.Term.MultiChr
 import           ADP.Fusion.Core.Term.PeekIndex
 import           ADP.Fusion.Core.Term.Str
 import           ADP.Fusion.Core.TH

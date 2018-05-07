@@ -139,6 +139,7 @@ library
     ADP.Fusion.Core.Term.Deletion
     ADP.Fusion.Core.Term.Edge
     ADP.Fusion.Core.Term.Epsilon
+    ADP.Fusion.Core.Term.MultiChr
     ADP.Fusion.Core.Term.PeekIndex
     ADP.Fusion.Core.Term.Str
     ADP.Fusion.Core.Term.Switch
@@ -152,6 +153,7 @@ library
     ADP.Fusion.Point.Term.Chr
     ADP.Fusion.Point.Term.Deletion
     ADP.Fusion.Point.Term.Epsilon
+    ADP.Fusion.Point.Term.MultiChr
     ADP.Fusion.Point.Term.Str
     ADP.Fusion.Point.Term.Switch
 --    ADP.Fusion.Point.Term.Test
