@@ -18,11 +18,7 @@ import           ADP.Fusion.Core.Multi
 
 
 
--- | A generic Character parser that reads a single character but allows
--- passing additional information.
---
---  'Chr' expects a function to retrieve @r@ at index position, followed by
---  the actual generic vector with data.
+-- | A multi-character parser.
 
 data MultiChr (c ∷ Nat) v x where
   MultiChr ∷ VG.Vector v x

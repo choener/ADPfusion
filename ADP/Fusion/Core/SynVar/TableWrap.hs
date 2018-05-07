@@ -9,3 +9,7 @@ module ADP.Fusion.Core.SynVar.TableWrap where
 -- not be strict, because we need to build grammars recursively.
 
 data TW t f = TW !t f
+
+instance Show t ⇒ Show (TW t f) where
+  show (TW t _) = "TW(" ++ show t ++ ")"
+
