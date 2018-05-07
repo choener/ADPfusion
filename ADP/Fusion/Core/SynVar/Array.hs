@@ -36,18 +36,18 @@ type ITblCx m pos ls arr x u c i =
 -- | General function for @ITbl@s with skalar indices.
 
 iTblStream
-  ∷ forall b l m pos posLeft ls arr x u c i
+  ∷ forall b m pos posLeft ls arr x u c i
   . ( ITblCx m pos ls arr x u c i
-    , posLeft ~ LeftPosTy pos (TwITbl b l m arr c u x) i
+    , posLeft ~ LeftPosTy pos (TwITbl b m arr c u x) i
     , MkStream m posLeft ls i
     )
   ⇒ Proxy pos
-  → Pair ls (TwITbl b l m arr c u x)
+  → Pair ls (TwITbl b m arr c u x)
   → Int#
   → LimitType i
   → i
-  → Stream m (Elm (ls :!: TwITbl b l m arr c u x) i)
-iTblStream pos (ls :!: TW (ITbl c t) _) grd us is
+  → Stream m (Elm (ls :!: TwITbl b m arr c u x) i)
+iTblStream pos (ls :!: TW (ITbl _ c t) _) grd us is
   = map (\(s,tt,ii') -> ElmITbl (t!tt) ii' s)
   . addIndexDense1 pos c ub us is
   $ mkStream (Proxy ∷ Proxy posLeft) ls grd us (tableStreamIndex (Proxy :: Proxy pos) c ub is)
@@ -57,17 +57,17 @@ iTblStream pos (ls :!: TW (ITbl c t) _) grd us is
 -- | General function for @Backtrack ITbl@s with skalar indices.
 
 btITblStream
-  ∷ forall b l mB mF pos posLeft ls arr x r u c i
+  ∷ forall b mB mF pos posLeft ls arr x r u c i
   . ( ITblCx mB pos ls arr x u c i
-    , posLeft ~ LeftPosTy pos (TwITblBt b l arr c u x mF mB r) i
+    , posLeft ~ LeftPosTy pos (TwITblBt b arr c u x mF mB r) i
     , MkStream mB posLeft ls i
     )
   ⇒ Proxy pos
-  → Pair ls (TwITblBt b l arr c u x mF mB r)
+  → Pair ls (TwITblBt b arr c u x mF mB r)
   → Int#
   → LimitType i
   → i
-  → Stream mB (Elm (ls :!: TwITblBt b l arr c u x mF mB r) i)
+  → Stream mB (Elm (ls :!: TwITblBt b arr c u x mF mB r) i)
 btITblStream pos (ls :!: TW (BtITbl c t) bt) grd us is
     = mapM (\(s,tt,ii') -> bt ub tt >>= \ ~bb -> return $ ElmBtITbl (t!tt) bb ii' s)
     . addIndexDense1 pos c ub us is
@@ -82,34 +82,34 @@ btITblStream pos (ls :!: TW (BtITbl c t) bt) grd us is
 instance
   ( Monad m
   , ITblCx m pos ls arr x u c (i I)
-  , MkStream m (LeftPosTy pos (TwITbl b l m arr c u x) (i I)) ls (i I)
-  ) => MkStream m pos (ls :!: TwITbl b l m arr c u x) (i I) where
+  , MkStream m (LeftPosTy pos (TwITbl b m arr c u x) (i I)) ls (i I)
+  ) => MkStream m pos (ls :!: TwITbl b m arr c u x) (i I) where
   mkStream = iTblStream
   {-# Inline mkStream #-}
 
 instance
   ( Monad mB
   , ITblCx mB pos ls arr x u c (i I)
-  , MkStream mB (LeftPosTy pos (TwITblBt b l arr c u x mF mB r) (i I)) ls (i I)
+  , MkStream mB (LeftPosTy pos (TwITblBt b arr c u x mF mB r) (i I)) ls (i I)
   )
-  ⇒ MkStream mB pos (ls :!: TwITblBt b l arr c u x mF mB r) (i I) where
+  ⇒ MkStream mB pos (ls :!: TwITblBt b arr c u x mF mB r) (i I) where
   mkStream = btITblStream
   {-# Inline mkStream #-}
 
 instance
   ( Monad m
   , ITblCx m pos ls arr x u c (i O)
-  , MkStream m (LeftPosTy pos (TwITbl b l m arr c u x) (i O)) ls (i O)
-  ) => MkStream m pos (ls :!: TwITbl b l m arr c u x) (i O) where
+  , MkStream m (LeftPosTy pos (TwITbl b m arr c u x) (i O)) ls (i O)
+  ) => MkStream m pos (ls :!: TwITbl b m arr c u x) (i O) where
   mkStream = iTblStream
   {-# Inline mkStream #-}
 
 instance
   ( Monad mB
   , ITblCx mB pos ls arr x u c (i O)
-  , MkStream mB (LeftPosTy pos (TwITblBt b l arr c u x mF mB r) (i O)) ls (i O)
+  , MkStream mB (LeftPosTy pos (TwITblBt b arr c u x mF mB r) (i O)) ls (i O)
   )
-  ⇒ MkStream mB pos (ls :!: TwITblBt b l arr c u x mF mB r) (i O) where
+  ⇒ MkStream mB pos (ls :!: TwITblBt b arr c u x mF mB r) (i O) where
   mkStream = btITblStream
   {-# Inline mkStream #-}
 

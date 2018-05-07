@@ -205,8 +205,10 @@ data SLR z = SL Int# z | SR z
 -- useful in multi-dimensional casese.
 
 data EmptyOk = EmptyOk
+  deriving (Show)
 
 data NonEmpty = NonEmpty
+  deriving (Show)
 
 class MinSize c where
   minSize :: c -> Int

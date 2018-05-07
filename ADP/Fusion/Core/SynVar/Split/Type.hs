@@ -70,12 +70,12 @@ instance Build (Split uId splitType synVar)
 
 instance
   ( Element ls i
-  ) => Element (ls :!: Split uId splitType (TwITbl b l m arr c j x)) i where
+  ) => Element (ls :!: Split uId splitType (TwITbl b m arr c j x)) i where
   -- | @ElmSplitITbl@ carry one additional element of type @i@. We need
   -- those to be able to extract the full index via @collectIx@.
-  data Elm     (ls :!: Split uId splitType (TwITbl b l m arr c j x)) i = ElmSplitITbl !(Proxy uId) !(CalcSplitType splitType x) !(RunningIndex i) !(Elm ls i) !i
-  type Arg     (ls :!: Split uId splitType (TwITbl b l m arr c j x))   = Arg ls :. (CalcSplitType splitType x)
-  type RecElm  (ls :!: Split uId splitType (TwITbl b l m arr c j x)) i = Elm ls i
+  data Elm     (ls :!: Split uId splitType (TwITbl b m arr c j x)) i = ElmSplitITbl !(Proxy uId) !(CalcSplitType splitType x) !(RunningIndex i) !(Elm ls i) !i
+  type Arg     (ls :!: Split uId splitType (TwITbl b m arr c j x))   = Arg ls :. (CalcSplitType splitType x)
+  type RecElm  (ls :!: Split uId splitType (TwITbl b m arr c j x)) i = Elm ls i
   getArg (ElmSplitITbl _ x _ ls _) = getArg ls :. x
   getIdx (ElmSplitITbl _ _ i _  _) = i
   getElm (ElmSplitITbl _ _ _ ls _) = ls
@@ -85,10 +85,10 @@ instance
 
 instance
   ( Element ls i
-  ) => Element (ls :!: Split uId splitType (TwITblBt b l arr c j x mF mB r)) i where
-  data Elm     (ls :!: Split uId splitType (TwITblBt b l arr c j x mF mB r)) i = ElmSplitBtITbl !(Proxy uId) !(CalcSplitType splitType (x, [r])) !(RunningIndex i) !(Elm ls i) !i
-  type Arg     (ls :!: Split uId splitType (TwITblBt b l arr c j x mF mB r))   = Arg ls :. (CalcSplitType splitType (x,[r]))
-  type RecElm  (ls :!: Split uId splitType (TwITblBt b l arr c j x mF mB r)) i = Elm ls i
+  ) => Element (ls :!: Split uId splitType (TwITblBt b arr c j x mF mB r)) i where
+  data Elm     (ls :!: Split uId splitType (TwITblBt b arr c j x mF mB r)) i = ElmSplitBtITbl !(Proxy uId) !(CalcSplitType splitType (x, [r])) !(RunningIndex i) !(Elm ls i) !i
+  type Arg     (ls :!: Split uId splitType (TwITblBt b arr c j x mF mB r))   = Arg ls :. (CalcSplitType splitType (x,[r]))
+  type RecElm  (ls :!: Split uId splitType (TwITblBt b arr c j x mF mB r)) i = Elm ls i
   getArg (ElmSplitBtITbl _ xs _ ls _) = getArg ls :. xs
   getIdx (ElmSplitBtITbl _ _  i _  _) = i
   getElm (ElmSplitBtITbl _ _  _ ls _) = ls
@@ -178,15 +178,15 @@ instance
 
 instance
   ( SplitIxCol uId (SameSid uId (Elm ls i)) (Elm ls i)
-  ) => SplitIxCol   uId True (Elm (ls :!: Split sId splitType (TwITbl b l m arr c j x)) i) where
-  type SplitIxTy uId True (Elm (ls :!: Split sId splitType (TwITbl b l m arr c j x)) i) = SplitIxTy uId (SameSid uId (Elm ls i)) (Elm ls i) :. i
+  ) => SplitIxCol   uId True (Elm (ls :!: Split sId splitType (TwITbl b m arr c j x)) i) where
+  type SplitIxTy uId True (Elm (ls :!: Split sId splitType (TwITbl b m arr c j x)) i) = SplitIxTy uId (SameSid uId (Elm ls i)) (Elm ls i) :. i
   splitIxCol p b (ElmSplitITbl _ _ i e ix) = collectIx p e :. ix
   {-# Inline splitIxCol #-}
 
 instance
   ( SplitIxCol uId (SameSid uId (Elm ls i)) (Elm ls i)
-  ) => SplitIxCol   uId True (Elm (ls :!: Split sId splitType (TwITblBt b l arr c j x mF mB r)) i) where
-  type SplitIxTy uId True (Elm (ls :!: Split sId splitType (TwITblBt b l arr c j x mF mB r)) i) = SplitIxTy uId (SameSid uId (Elm ls i)) (Elm ls i) :. i
+  ) => SplitIxCol   uId True (Elm (ls :!: Split sId splitType (TwITblBt b arr c j x mF mB r)) i) where
+  type SplitIxTy uId True (Elm (ls :!: Split sId splitType (TwITblBt b arr c j x mF mB r)) i) = SplitIxTy uId (SameSid uId (Elm ls i)) (Elm ls i) :. i
   splitIxCol p b (ElmSplitBtITbl _ _ i e ix) = collectIx p e :. ix
   {-# Inline splitIxCol #-}
 
