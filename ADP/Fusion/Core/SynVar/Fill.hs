@@ -3,7 +3,7 @@ module ADP.Fusion.Core.SynVar.Fill where
 
 import           Control.Monad
 import           Control.Monad.Morph (hoist, MFunctor (..))
-import           Control.Monad.Primitive (PrimMonad (..))
+import           Control.Monad.Primitive
 import           Control.Monad.ST
 import           Control.Monad.Trans.Class (lift, MonadTrans (..))
 import           Control.Monad (when,forM_)
@@ -25,6 +25,8 @@ import qualified Data.Vector.Mutable as VM
 import qualified Data.Vector.Unboxed as VU
 import qualified GHC.Generics as G
 import           System.IO.Unsafe
+import           System.CPUTime
+import           GHC.Conc (pseq)
 
 import           Data.PrimitiveArray
 
@@ -222,6 +224,33 @@ mutateTablesWithHints h t = unsafePerformIO $ mutateTables h (return . unId) t
 mutateTablesST t = runST $ mutateTablesNew t
 {-# Inline mutateTablesST #-}
 
+class CountNumberOfCells t where
+  countNumberOfCells ∷ t → Integer
+
+instance CountNumberOfCells Z where
+  countNumberOfCells Z = 0
+
+instance
+  ( CountNumberOfCells ts
+  , Index i
+  , PrimArrayOps arr i x
+  ) ⇒ CountNumberOfCells (ts:.TwITbl bo Id arr c i x) where
+  countNumberOfCells (ts:.(TW (ITbl lo _ arr) fun)) =
+    countNumberOfCells ts + (product . totalSize $ upperBound arr)
+
+data PerfCounter = PerfCounter
+  { picoSeconds   :: !Integer
+  , seconds       :: !Double
+  , numberOfCells :: !Integer
+  }
+  deriving (Eq,Ord,Show)
+
+data Mutated ts = Mutated
+  { mutatedTables ∷ !ts
+  , perfCounter   ∷ !PerfCounter
+  , eachBigPerfCounter  ∷ [PerfCounter]
+  }
+
 -- | 
 --
 -- TODO new way how to do table filling. Because we now have heterogeneous
@@ -240,9 +269,10 @@ mutateTablesNew
      , TSBO t
      , Monad m
      , PrimMonad m
+     , CountNumberOfCells t
      )
   => t
-  -> m t
+  -> m (Mutated t)
 mutateTablesNew ts = do
   -- sort the tables according to [bigorder,type,littleorder]. For each
   -- @bigorder@, we should have only one @type@ and can therefor do the
@@ -251,16 +281,25 @@ mutateTablesNew ts = do
   -- let !tbos = VU.fromList . nub . sort $ tableBigOrder ts
   let justOrder = L.map (\d → (qBigOrder d, qLittleOrder d))
   let ds = L.sort $ asDyn ts
-  let goM :: (Monad m, PrimMonad m) => [Q] -> m ()
-      goM [] = return ()
-      goM xs = do
-        ys <- fillWithDyn xs ts
-        if null ys
-          then return ()
-          else goM $ traceShow (justOrder ys) ys
+  let goM ∷ (Monad m, PrimMonad m) ⇒ [Q] → [PerfCounter] → m [PerfCounter]
+      goM [] ps = return $ reverse ps
+      goM xs ps = do
+        (ys,p) <- fillWithDyn xs ts
+        goM ys (p:ps)
       {-# Inlinable goM #-}
-  goM $ traceShow (justOrder ds) ds
-  return ts
+  startTime ← unsafeIOToPrim getCPUTime
+  ps ← goM ds []
+  stopTime  ← unsafeIOToPrim getCPUTime
+  let deltaTime = max 1 $ stopTime - startTime
+  return $! Mutated
+    { mutatedTables = ts
+    , perfCounter   = PerfCounter
+        { picoSeconds   = deltaTime
+        , seconds       = 1e-12 * fromIntegral deltaTime
+        , numberOfCells = countNumberOfCells ts
+        }
+    , eachBigPerfCounter = ps
+    }
 {-# Inline mutateTablesNew #-}
 
 data Q = Q
@@ -284,11 +323,11 @@ instance Ord Q where
 
 class TSBO t where
   asDyn :: t -> [Q]
-  fillWithDyn :: (Monad m, PrimMonad m) => [Q] -> t -> m [Q]
+  fillWithDyn :: (Monad m, PrimMonad m) => [Q] -> t -> m ([Q], PerfCounter)
 
 instance TSBO Z where
   asDyn Z = []
-  fillWithDyn qs Z = return qs
+  fillWithDyn qs Z = return (qs, PerfCounter 0 0 0)
   {-# Inlinable asDyn #-}
   {-# Inline fillWithDyn #-}
 
@@ -359,6 +398,7 @@ instance
         -- because @fDirect@ is partially floated out.
         --
         marrfs <- V.fromList <$> Prelude.mapM (\(TW (ITbl _ _ arr) f) -> unsafeThaw arr >>= \marr -> return (marr,f)) ms
+        startTime ← unsafeIOToPrim getCPUTime
         case (V.length marrfs) of
           1 -> do -- let (!marr,!f) = marrfs V.! 0   -- this takes 1.3 seconds for NeedlemanWunsch
                   -- marr <- unsafeThaw arrDirect  -- this takes 0.8 seconds for NeedlemanWunsch
@@ -374,7 +414,14 @@ instance
                       z <- (return . unId) $ f to k
                       writeM marr k z
         -- traceShow (hs,length ms) $
-        return ns
+        stopTime ← unsafeIOToPrim getCPUTime
+        let deltaTime = stopTime - startTime
+        let perf = PerfCounter
+              { picoSeconds   = deltaTime
+              , seconds       = 1e-12 * fromIntegral deltaTime
+              , numberOfCells = sum $ Prelude.map (\(TW t _) → product . totalSize . upperBound $ iTblArray t) ms
+              }
+        return (ns, perf)
   {-# Inline fillWithDyn #-}
 
 -- We don't need to capture @IRec@ tables as no table-filling takes place
