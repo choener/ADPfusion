@@ -161,8 +161,8 @@ instance
   ) ⇒ MkStream m (ps:.Complement) S (is:.PointL C) where
   mkStream Proxy S grd (lus:..LtPointL (I# u)) (is:.PointL (I# i))
     = error "write me"
-    -- = map (\(ElmS zi) → ElmS $ zi :.: RiPlC (I# i))
-    -- $ mkStream (Proxy ∷ Proxy ps) S (grd `andI#` (i >=# 0#) `andI#` (i <=# u)) lus is
+    -- -- = map (\(ElmS zi) → ElmS $ zi :.: RiPlC (I# i))
+    -- -- $ mkStream (Proxy ∷ Proxy ps) S (grd `andI#` (i >=# 0#) `andI#` (i <=# u)) lus is
   {-# Inline mkStream #-}
 
 
