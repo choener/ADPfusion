@@ -106,10 +106,12 @@ library
                , mtl                >= 2.0
                , primitive          >= 0.5.4
                , QuickCheck         >= 2.7
+               , singletons         >= 2.3
                , strict             >= 0.3
                , template-haskell   >= 2.0
                , th-orphans         >= 0.12
                , transformers       >= 0.3
+               , type-level-sets    >= 0.8
                , tuple              >= 0.3
                , vector             >= 0.11
                --
@@ -123,14 +125,12 @@ library
     ADP.Fusion.Core.Apply
     ADP.Fusion.Core.Classes
     ADP.Fusion.Core.Multi
-    ADP.Fusion.Core.TH
-    ADP.Fusion.Core.TH.Backtrack
-    ADP.Fusion.Core.TH.Common
     ADP.Fusion.Core.SynVar.Array
     ADP.Fusion.Core.SynVar.Array.Type
     ADP.Fusion.Core.SynVar.Axiom
     ADP.Fusion.Core.SynVar.Backtrack
     ADP.Fusion.Core.SynVar.Fill
+    ADP.Fusion.Core.SynVar.Fill.TyLvl
     ADP.Fusion.Core.SynVar.Indices
     ADP.Fusion.Core.SynVar.Recursive.Type
     ADP.Fusion.Core.SynVar.Split.Type
@@ -144,6 +144,10 @@ library
     ADP.Fusion.Core.Term.Str
     ADP.Fusion.Core.Term.Switch
     ADP.Fusion.Core.Term.Test
+    ADP.Fusion.Core.TH
+    ADP.Fusion.Core.TH.Backtrack
+    ADP.Fusion.Core.TH.Common
+    ADP.Fusion.Core.TyLvl
     ADP.Fusion.Core.TyLvlIx
 --    -- Point
     ADP.Fusion.Point
