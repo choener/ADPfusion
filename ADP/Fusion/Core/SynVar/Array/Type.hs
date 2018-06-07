@@ -36,7 +36,7 @@ data ITbl (bigorder ∷ Nat) {- (littleOrder ∷ Nat) -} arr c i x where
 instance (Show c, Show (arr i x)) ⇒ Show (ITbl bo arr c i x) where
   show (ITbl lo c arr) = "ITbl " ++ show lo ++ " " ++ show c ++ " [" ++ show arr ++ "]"
 
-type TwITbl b (m ∷ * → *) arr c i x = TW (ITbl b arr c i x) (LimitType i → i → m x)
+type TwITbl (b ∷ Nat) (m ∷ * → *) arr c i x = TW (ITbl b arr c i x) (LimitType i → i → m x)
 
 type TwITblBt b arr c i x mF mB r = TW (Backtrack (TwITbl b mF arr c i x) mF mB) (LimitType i → i → mB [r])
 
