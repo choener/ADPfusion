@@ -51,7 +51,7 @@ instance
   , KnownNat c
   ) => TermStream m (ps:.IStatic d) (TermSymbol ts (MultiChr c v x)) s (is:.PointL I) where
   termStream Proxy (ts:|MultiChr xs) (us:..LtPointL u) (is:.PointL i)
-    = let c = fromIntegral $ natVal (Proxy ∷ Proxy c) in
+    = let !c = fromIntegral $ natVal (Proxy ∷ Proxy c) in
       S.map (\(TState s ii ee) -> TState s (ii:.:RiPlI i) (ee:. VG.unsafeSlice (i-c) c xs))
     . termStream (Proxy ∷ Proxy ps) ts us is
   {-# Inline termStream #-}
