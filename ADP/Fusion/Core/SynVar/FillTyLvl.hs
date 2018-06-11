@@ -19,6 +19,7 @@ import           GHC.TypeNats
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
 import           Data.Vector.Fusion.Util (Id(..))
+import           System.CPUTime
 
 import           Data.PrimitiveArray
 
@@ -27,17 +28,17 @@ import           ADP.Fusion.Core.SynVar.Array
 
 
 
--- | Fill/mutate tables using @ST@.
-
-fillTablesST
-  ∷ forall bigOrder ts
-  . ( bigOrder ~ BigOrderNats ts
-    , EachBigOrder bigOrder ts
-    )
-  ⇒ ts
-  → ts
-{-# Inline fillTablesST #-}
-fillTablesST ts = runST $ fillTables ts
+--  -- | Fill/mutate tables using @ST@.
+--  
+--  fillTablesST
+--    ∷ forall bigOrder ts
+--    . ( bigOrder ~ BigOrderNats ts
+--      , EachBigOrder bigOrder ts
+--      )
+--    ⇒ ts
+--    → ts
+--  {-# Inline fillTablesST #-}
+--  fillTablesST ts = runST $ fillTables ts
 
 -- |
 
@@ -46,38 +47,60 @@ fillTables
 --  -- ^ Proxy that provides the set of @BigOrder@ naturals
   ∷ forall bigOrder s ts
   . ( bigOrder ~ BigOrderNats ts
-    , EachBigOrder bigOrder ts)
+    , EachBigOrder bigOrder ts
+    , CountNumberOfCells 0 ts
+    )
   ⇒ ts
   -- ^ The tables
-  → ST s ts
+  → ST s (Mutated ts)
 {-# Inline fillTables #-}
 fillTables ts = do
-  --fillEachBigOrder (Proxy ∷ Proxy (BigOrderNats ts)) ts
-  eachBigOrder (Proxy ∷ Proxy bigOrder) ts
-  return ts
+  startTime ← unsafeIOToPrim getCPUTime
+  ps ← eachBigOrder (Proxy ∷ Proxy bigOrder) ts
+  stopTime  ← unsafeIOToPrim getCPUTime
+  let deltaTime = max 1 $ stopTime - startTime
+  return $! Mutated
+    { mutatedTables = ts
+    , perfCounter   = PerfCounter
+        { picoSeconds   = deltaTime
+        , seconds       = 1e-12 * fromIntegral deltaTime
+        , numberOfCells = countNumberOfCells (Nothing ∷ Maybe (Proxy 0)) ts
+        }
+    , eachBigPerfCounter = ps
+    }
 
 -- | This type class instanciates to the specialized machinery for each
 -- @BigOrder Natural@ number.
 
 class EachBigOrder (boNats ∷ [Nat]) ts where
-  eachBigOrder ∷ Proxy boNats → ts → ST s ()
+  eachBigOrder ∷ Proxy boNats → ts → ST s [PerfCounter]
 
 -- | No more big orders to handle.
 
 instance EachBigOrder '[] ts where
   {-# Inline eachBigOrder #-}
-  eachBigOrder Proxy _ = return ()
+  eachBigOrder Proxy _ = return []
 
 -- | handle this big order.
 
 instance
   ( EachBigOrder ns ts
   , ThisBigOrder n (IsThisBigOrder n ts) ts
+  , CountNumberOfCells n ts
   ) ⇒ EachBigOrder (n ': ns) ts where
   {-# Inline eachBigOrder #-}
   eachBigOrder Proxy ts = do
+    startTime ← unsafeIOToPrim getCPUTime
     thisBigOrder (Proxy ∷ Proxy n) (Proxy ∷ Proxy (IsThisBigOrder n ts)) ts
-    eachBigOrder (Proxy ∷ Proxy ns) ts
+    stopTime  ← unsafeIOToPrim getCPUTime
+    let deltaTime = max 1 $ stopTime - startTime
+    ps ← eachBigOrder (Proxy ∷ Proxy ns) ts
+    let p = PerfCounter
+              { picoSeconds   = deltaTime
+              , seconds       = 1e-12 * fromIntegral deltaTime
+              , numberOfCells = countNumberOfCells (Just (Proxy ∷ Proxy n)) ts
+              }
+    return $ p:ps
 
 -- |
 
@@ -96,13 +119,13 @@ instance ThisBigOrder boNat anyOrder Z where
 -- this nat, since all tables are now being filled by the small order.
 
 instance
-  ( smallOrder ~ SmallOrderNats (ts:.TwITbl bo m arr c i x)
-  , EachSmallOrder boNat smallOrder (ts:.TwITbl bo m arr c i x) i
+  ( smallOrder ~ SmallOrderNats (ts:.TwITbl bo so m arr c i x)
+  , EachSmallOrder boNat smallOrder (ts:.TwITbl bo so m arr c i x) i
   , PrimArrayOps arr i x
   , IndexStream i
-  ) ⇒ ThisBigOrder boNat True (ts:.TwITbl bo m arr c i x) where
+  ) ⇒ ThisBigOrder boNat True (ts:.TwITbl bo so m arr c i x) where
   {-# Inline thisBigOrder #-}
-  thisBigOrder Proxy Proxy tst@(_:.TW (ITbl lo _ arr) _) = do
+  thisBigOrder Proxy Proxy tst@(_:.TW (ITbl _ arr) _) = do
     let to = upperBound arr
     let allBounds = getAllBounds (Proxy ∷ Proxy boNat) (Proxy ∷ Proxy True) tst
     -- TODO check bounds
@@ -182,10 +205,10 @@ instance
 instance
   ( PrimArrayOps arr i x
   , MPrimArrayOps arr i x
-  ) ⇒ ThisSmallOrder bigOrder smallOrder 'True (ts:.TwITbl bo Id arr c i x) i where
+  ) ⇒ ThisSmallOrder bigOrder smallOrder 'True (ts:.TwITbl bo so Id arr c i x) i where
   {-# Inline thisSmallOrder #-}
-  thisSmallOrder Proxy Proxy Proxy (ts:.TW (ITbl lo _ arr) f) i = do
-    let uB = undefined
+  thisSmallOrder Proxy Proxy Proxy (ts:.TW (ITbl _ arr) f) i = do
+    let uB = upperBound arr
     marr <- unsafeThaw arr
     z ← return . unId $ f uB i
     writeM marr i z
@@ -200,7 +223,7 @@ type family BigOrderNats' arr ∷ [Nat]
 
 type instance BigOrderNats' Z = '[]
 
-type instance BigOrderNats' (ts:.TwITbl bo m arr c i x) = bo ': BigOrderNats' ts
+type instance BigOrderNats' (ts:.TwITbl bo so m arr c i x) = bo ': BigOrderNats' ts
 
 
 
@@ -208,7 +231,7 @@ type family IsThisBigOrder (n ∷ Nat) arr ∷ Bool
 
 type instance IsThisBigOrder n Z = 'False
 
-type instance IsThisBigOrder n (ts:.TwITbl bo m arr c i x) = n == bo
+type instance IsThisBigOrder n (ts:.TwITbl bo so m arr c i x) = n == bo
 
 
 
@@ -220,7 +243,7 @@ type instance SmallOrderNats' Z = '[]
 
 -- TODO fix small order
 
-type instance SmallOrderNats' (ts:.TwITbl bo m arr c i x) = 1 ': SmallOrderNats' ts
+type instance SmallOrderNats' (ts:.TwITbl bo so m arr c i x) = so ': SmallOrderNats' ts
 
 
 
@@ -230,5 +253,42 @@ type instance IsThisSmallOrder n Z = 'False
 
 -- TODO fix small order comparision
 
-type instance IsThisSmallOrder n (ts:.TwITbl bo m arr c i x) = n == 1
+type instance IsThisSmallOrder n (ts:.TwITbl bo so m arr c i x) = n == so
+
+data Mutated ts = Mutated
+  { mutatedTables ∷ !ts
+  , perfCounter   ∷ !PerfCounter
+  , eachBigPerfCounter  ∷ [PerfCounter]
+  }
+
+data PerfCounter = PerfCounter
+  { picoSeconds   :: !Integer
+  , seconds       :: !Double
+  , numberOfCells :: !Integer
+  }
+  deriving (Eq,Ord,Show)
+
+class CountNumberOfCells (n ∷ Nat) t where
+  countNumberOfCells ∷ Maybe (Proxy n) → t → Integer
+
+instance CountNumberOfCells n Z where
+  {-# NoInline countNumberOfCells #-}
+  countNumberOfCells p Z = 0
+
+instance
+  ( CountNumberOfCells n ts
+  , Index i
+  , PrimArrayOps arr i x
+  , KnownNat n
+  , KnownNat bo
+  ) ⇒ CountNumberOfCells n (ts:.TwITbl bo so Id arr c i x) where
+  {-# NoInline countNumberOfCells #-}
+  countNumberOfCells mayP (ts:.(TW (ITbl _ arr) fun)) =
+    let n  = natVal (Proxy ∷ Proxy n)
+        bo = natVal (Proxy ∷ Proxy bo)
+        cs = countNumberOfCells mayP ts
+        c  = product . totalSize $ upperBound arr
+    in  case mayP of
+      Nothing → cs + c
+      Just _  → cs + if n==bo then c else 0
 

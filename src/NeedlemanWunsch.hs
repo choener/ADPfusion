@@ -259,13 +259,13 @@ runNeedlemanWunsch
   ∷ Int
   → String
   → String
-  → (Int,[[String]])
-runNeedlemanWunsch k i1' i2' = (d, take k bs) where
+  → (Int,[[String]],PerfCounter)
+runNeedlemanWunsch k i1' i2' = (d, take k bs,perf) where
   i1 = VU.fromList i1'
   i2 = VU.fromList i2'
   n1 = VU.length i1
   n2 = VU.length i2
-  !(Z:.t) = nwInsideForward i1 i2
+  Mutated (Z:.t) perf eachPerf = nwInsideForward i1 i2
   d = unId $ axiom t
   bs = nwInsideBacktrack i1 i2 t
 {-# Noinline runNeedlemanWunsch #-}
@@ -283,12 +283,13 @@ runNeedlemanWunsch k i1' i2' = (d, take k bs) where
 nwInsideForward
   ∷ VU.Vector Char
   → VU.Vector Char
-  → Z:.TwITbl _ _ Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int
+  → Mutated (Z:.TwITbl _ _ Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int)
 nwInsideForward i1 i2 = {-# SCC "nwInsideForward" #-} runST $ do
   arr ← newWithPA (ZZ:..LtPointL n1:..LtPointL n2) (-999999)
-  mutateTablesNew $ grammar sScore
+  ts ← fillTables $ grammar sScore
                       (ITbl @0 @0 (Z:.EmptyOk:.EmptyOk) arr)
                       i1 i2
+  return ts
   where n1 = VU.length i1
         n2 = VU.length i2
 {-# NoInline nwInsideForward #-}
@@ -312,13 +313,13 @@ runOutsideNeedlemanWunsch
   ∷ Int
   → String
   → String
-  → (Int,[[String]])
-runOutsideNeedlemanWunsch k i1' i2' = {-# SCC "runOutside" #-} (d, take k . unId $ axiom b) where
+  → (Int,[[String]],PerfCounter)
+runOutsideNeedlemanWunsch k i1' i2' = {-# SCC "runOutside" #-} (d, take k . unId $ axiom b, perf) where
   i1 = VU.fromList i1'
   i2 = VU.fromList i2'
   n1 = VU.length i1
   n2 = VU.length i2
-  !(Z:.t) = nwOutsideForward i1 i2
+  Mutated (Z:.t) perf eachPerf = nwOutsideForward i1 i2
   d = unId $ axiom t
   !(Z:.b) = grammar (sScore <|| sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
               :: Z:.TwITblBt _ _ Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL O:.PointL O) Int Id Id [String]
@@ -332,12 +333,13 @@ runOutsideNeedlemanWunsch k i1' i2' = {-# SCC "runOutside" #-} (d, take k . unId
 nwOutsideForward
   ∷ VU.Vector Char
   → VU.Vector Char
-  → Z:.TwITbl _ _ Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL O:.PointL O) Int
+  → Mutated (Z:.TwITbl _ _ Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL O:.PointL O) Int)
 nwOutsideForward i1 i2 = {-# SCC "nwOutsideForward" #-} runST $ do
   arr ← newWithPA (ZZ:..LtPointL n1:..LtPointL n2) (-999999)
-  mutateTablesNew $ grammar sScore
+  ts ← fillTables $ grammar sScore
                       (ITbl @0 @0 (Z:.EmptyOk:.EmptyOk) arr)
                       i1 i2
+  return ts
   where n1 = VU.length i1
         n2 = VU.length i2
 {-# Noinline nwOutsideForward #-}
@@ -359,12 +361,14 @@ align _ [c] = putStrLn "single last line"
 align (kI,kO) (a:b:xs) = {-# SCC "align" #-} do
   putStrLn a
   putStrLn b
-  let (sI,rsI) = runNeedlemanWunsch kI a b
-  let (sO,rsO) = runOutsideNeedlemanWunsch kO a b
+  let (sI,rsI,perfI) = runNeedlemanWunsch kI a b
+  let (sO,rsO,perfO) = runOutsideNeedlemanWunsch kO a b
   when (kI>=0) $ forM_ rsI $ \[u,l] -> printf "%s\n%s  %d\n\n" (reverse u) (reverse l) sI
   when (kO>=0) $ forM_ rsO $ \[u,l] -> printf "%s\n%s  %d\n\n" (id      u) (id      l) sO
   when (kI>=0) $ print sI
   when (kO>=0) $ print sO
+  when (kI>=0) $ print perfI
+  when (kO>=0) $ print perfO
   putStrLn ""
   align (kI,kO) xs
 

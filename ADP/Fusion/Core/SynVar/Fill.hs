@@ -38,6 +38,8 @@ import           Debug.Trace
 
 
 
+{-
+
 -- | A vanilla context-free grammar
 
 data CFG
@@ -435,4 +437,6 @@ instance
   fillWithDyn qs (ts:._) = fillWithDyn qs ts
   {-# Inlinable asDyn #-}
   {-# Inline fillWithDyn #-}
+
+-}
 

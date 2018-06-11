@@ -18,7 +18,7 @@ module ADP.Fusion.Core
   , module ADP.Fusion.Core.SynVar.Array.Type
   , module ADP.Fusion.Core.SynVar.Axiom
   , module ADP.Fusion.Core.SynVar.Backtrack
-  , module ADP.Fusion.Core.SynVar.Fill
+  , module ADP.Fusion.Core.SynVar.FillTyLvl
   , module ADP.Fusion.Core.SynVar.Indices
   , module ADP.Fusion.Core.SynVar.Recursive.Type
   , module ADP.Fusion.Core.SynVar.Split.Type
@@ -50,7 +50,7 @@ import           ADP.Fusion.Core.Multi hiding (iIx)
 import           ADP.Fusion.Core.SynVar.Array.Type
 import           ADP.Fusion.Core.SynVar.Axiom
 import           ADP.Fusion.Core.SynVar.Backtrack
-import           ADP.Fusion.Core.SynVar.Fill
+import           ADP.Fusion.Core.SynVar.FillTyLvl
 import           ADP.Fusion.Core.SynVar.Indices
 import           ADP.Fusion.Core.SynVar.Recursive.Type
 import           ADP.Fusion.Core.SynVar.Split.Type
