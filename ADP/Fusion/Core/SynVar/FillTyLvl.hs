@@ -268,6 +268,12 @@ data PerfCounter = PerfCounter
   }
   deriving (Eq,Ord,Show)
 
+-- | Adding two 'PerfCounter's yields the time they take together.
+
+instance Num PerfCounter where
+  PerfCounter p1 s1 n1 + PerfCounter p2 s2 n2 = PerfCounter (p1+p2) (s1+s2) (n1+n2)
+
+
 class CountNumberOfCells (n ∷ Nat) t where
   countNumberOfCells ∷ Maybe (Proxy n) → t → Integer
 
