@@ -16,43 +16,55 @@ import ADP.Fusion.Unit.Core
 
 
 
+type instance LeftPosTy (IStatic d) (TwITbl b s m arr EmptyOk (Unit I) x) (Unit I) = IStatic d
+type instance LeftPosTy (IStatic d) (TwITblBt b s arr EmptyOk (Unit I) x mB mF r) (Unit I) = IStatic d
+
+type instance LeftPosTy (OStatic d) (TwITbl b s m arr EmptyOk (Unit O) x) (Unit O) = OStatic d
+type instance LeftPosTy (OStatic d) (TwITblBt b s arr EmptyOk (Unit O) x mB mF r) (Unit O) = OStatic d
+
+type instance LeftPosTy Complement (TwITbl b s m arr EmptyOk (Unit I) x) (Unit C) = Complement
+type instance LeftPosTy Complement (TwITblBt b s arr EmptyOk (Unit I) x mB mF r) (Unit C) = Complement
+
+type instance LeftPosTy Complement (TwITbl b s m arr EmptyOk (Unit O) x) (Unit C) = Complement
+type instance LeftPosTy Complement (TwITblBt b s arr EmptyOk (Unit O) x mB mF r) (Unit C) = Complement
+
 instance
-  ( IndexHdr ps s x0 i0 us (Unit I) cs c is (Unit I)
-  , AddIndexDense ps (Elm x0 i0) cs us is
+  ( AddIndexDenseContext ps elm x0 i0 cs c us (Unit I) is (Unit I)
+  , MinSize c
   )
-  ⇒ AddIndexDense ('(:.) ps p) s (cs:.c) (us:.Unit I) (is:.Unit I) where
-  addIndexDenseGo Proxy (cs:._) (ubs:.._) (us:.._) (is:._)
-    = map (\(SvS s t y') -> SvS s (t:.Unit) (y':.:RiU))
+  ⇒ AddIndexDense (ps:.Unit d) elm (cs:.c) (us:.Unit I) (is:.Unit I) where
+  addIndexDenseGo Proxy (cs:._) (ubs:..ub) (us:..u) (is:.i)
+    = map (\(SvS s t y') → SvS s (t:.i) (y' :.: RiUnit))
     . addIndexDenseGo (Proxy ∷ Proxy ps) cs ubs us is
   {-# Inline addIndexDenseGo #-}
 
 instance
-  ( IndexHdr ps s x0 i0 us (Unit O) cs c is (Unit O)
-  , AddIndexDense ps (Elm x0 i0) cs us is
+  ( AddIndexDenseContext ps elm x0 i0 cs c us (Unit O) is (Unit O)
+  , MinSize c
   )
-  ⇒ AddIndexDense ('(:.) ps p) s (cs:.c) (us:.Unit O) (is:.Unit O) where
-  addIndexDenseGo Proxy (cs:._) (ubs:.._) (us:.._) (is:._)
-    = map (\(SvS s t y') -> SvS s (t:.Unit) (y':.:RiU))
+  ⇒ AddIndexDense (ps:.Unit d) elm (cs:.c) (us:.Unit O) (is:.Unit O) where
+  addIndexDenseGo Proxy (cs:._) (ubs:..ub) (us:..u) (is:.i)
+    = map (\(SvS s t y') → SvS s (t:.i) (y' :.: RiUnit))
     . addIndexDenseGo (Proxy ∷ Proxy ps) cs ubs us is
   {-# Inline addIndexDenseGo #-}
 
 instance
-  ( IndexHdr ps s x0 i0 us (Unit I) cs c is (Unit C)
-  , AddIndexDense ps (Elm x0 i0) cs us is
+  ( AddIndexDenseContext ps elm x0 i0 cs c us (Unit I) is (Unit C)
+  , MinSize c
   )
-  ⇒ AddIndexDense ('(:.) ps p) s (cs:.c) (us:.Unit I) (is:.Unit C) where
-  addIndexDenseGo Proxy (cs:._) (ubs:.._) (us:.._) (is:._)
-    = map (\(SvS s t y') -> SvS s (t:.Unit) (y':.:RiU))
+  ⇒ AddIndexDense (ps:.Unit d) elm (cs:.c) (us:.Unit I) (is:.Unit C) where
+  addIndexDenseGo Proxy (cs:._) (ubs:..ub) (us:..u) (is:.i)
+    = map (\(SvS s t y') → SvS s (t:.Unit) (y' :.: RiUnit))
     . addIndexDenseGo (Proxy ∷ Proxy ps) cs ubs us is
   {-# Inline addIndexDenseGo #-}
 
 instance
-  ( IndexHdr ps s x0 i0 us (Unit O) cs c is (Unit C)
-  , AddIndexDense ps (Elm x0 i0) cs us is
+  ( AddIndexDenseContext ps elm x0 i0 cs c us (Unit O) is (Unit C)
+  , MinSize c
   )
-  ⇒ AddIndexDense ('(:.) ps p) s (cs:.c) (us:.Unit O) (is:.Unit C) where
-  addIndexDenseGo Proxy (cs:._) (ubs:.._) (us:.._) (is:._)
-    = map (\(SvS s t y') -> SvS s (t:.Unit) (y':.:RiU))
+  ⇒ AddIndexDense (ps:.Unit d) elm (cs:.c) (us:.Unit O) (is:.Unit C) where
+  addIndexDenseGo Proxy (cs:._) (ubs:..ub) (us:..u) (is:.i)
+    = map (\(SvS s t y') → SvS s (t:.Unit) (y' :.: RiUnit))
     . addIndexDenseGo (Proxy ∷ Proxy ps) cs ubs us is
   {-# Inline addIndexDenseGo #-}
 

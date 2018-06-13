@@ -14,24 +14,32 @@ import           ADP.Fusion.Unit.Core
 
 
 instance
-  ( TmkCtx1 m ls Epsilon (Unit i)
-  ) => MkStream m (ls :!: Epsilon) (Unit i) where
-  mkStream grd (ls :!: Epsilon) sv us is
+  forall m pos posLeft ls i
+  . ( TermStream m (Z:.pos) (TermSymbol M Epsilon) (Elm (Term1 (Elm ls (Unit i))) (Z:.Unit i)) (Z:.Unit i)
+    , posLeft ~ LeftPosTy pos Epsilon (Unit i)
+    , TermStaticVar pos Epsilon (Unit i)
+    , MkStream m posLeft ls (Unit i)
+    )
+  ⇒ MkStream m pos (ls :!: Epsilon) (Unit i) where
+  mkStream pos (ls :!: Epsilon) grd us is
     = S.map (\(ss,ee,ii) -> ElmEpsilon ii ss)
-    . addTermStream1 Epsilon sv us is
-    $ mkStream (grd `andI#` termStaticCheck Epsilon is) ls (termStaticVar Epsilon sv is) us (termStreamIndex Epsilon sv is)
+    . addTermStream1 pos Epsilon us is
+    . mkStream (Proxy ∷ Proxy posLeft) ls (termStaticCheck pos Epsilon is grd) us
+    $ termStreamIndex pos Epsilon is
   {-# Inline mkStream #-}
 
 
 
-instance
-  ( TstCtx m ts s x0 i0 is (Unit I)
-  ) => TermStream m (TermSymbol ts Epsilon) s (is:.Unit I) where
-  termStream (ts:|Epsilon) (cs:.IStatic ()) (us:.._) (is:._)
-    = S.map (\(TState s ii ee) -> TState s (ii:.:RiU) (ee:.()))
-    . termStream ts cs us is
-  {-# Inline termStream #-}
+--instance
+--  ( TermStreamContext m ps ts s x0 i0 is (Unit I)
+--  , TermStream m ps ts (Elm x0 i0) is
+--  ) ⇒ TermStream m (TermSymbol ts Epsilon) s (is:.Unit I) where
+--  termStream (ts:|Epsilon) (cs:.IStatic ()) (us:.._) (is:._)
+--    = S.map (\(TState s ii ee) -> TState s (ii:.:RiU) (ee:.()))
+--    . termStream ts cs us is
+--  {-# Inline termStream #-}
 
+{-
 instance
   ( TstCtx m ts s x0 i0 is (Unit O)
   ) => TermStream m (TermSymbol ts Epsilon) s (is:.Unit O) where
@@ -53,4 +61,5 @@ instance TermStaticVar Epsilon (Unit O) where
   termStreamIndex _ _ _ = Unit
   {-# Inline [0] termStaticVar #-}
   {-# Inline [0] termStreamIndex #-}
+-}
 

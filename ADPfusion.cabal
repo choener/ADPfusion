@@ -160,12 +160,12 @@ library
     ADP.Fusion.Point.Term.Str
     ADP.Fusion.Point.Term.Switch
 --    ADP.Fusion.Point.Term.Test
---    -- Unit
---    ADP.Fusion.Unit
---    ADP.Fusion.Unit.Core
---    ADP.Fusion.Unit.SynVar.Indices
---    ADP.Fusion.Unit.Term.Deletion
---    ADP.Fusion.Unit.Term.Epsilon
+    -- Unit
+    ADP.Fusion.Unit
+    ADP.Fusion.Unit.Core
+    ADP.Fusion.Unit.SynVar.Indices
+    ADP.Fusion.Unit.Term.Deletion
+    ADP.Fusion.Unit.Term.Epsilon
 --    -- tutorials
 --    ADP.Fusion.Tutorial.NeedlemanWunsch
 
