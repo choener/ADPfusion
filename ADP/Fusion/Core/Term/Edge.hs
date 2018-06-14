@@ -50,16 +50,22 @@ newtype SetBoundary = SetBoundary Int
 
 newtype NewBoundary = NewBoundary Int
 
----- | In case our sets have a @First@ boundary, then we always point from
----- the boundary "into" the set. Hence @SetNode == To@ and @NewNode ==
----- From@.
+-- | In case our sets have a @First@ boundary, then we always point from
+-- the boundary "into" the set. Hence @SetNode == To@ and @NewNode ==
+-- From@.
 --
---instance EdgeFromTo First where
---  edgeFromTo Proxy (SetNode to) (NewNode from) = From from :. To to
---  {-# Inline edgeFromTo #-}
+-- @{1,2,(3)} <- (4)@ yields @From 4 :. To 3@. Note the arrow direction @INTO@
+-- the set.
+
+instance EdgeFromTo First where
+  edgeFromTo Proxy (SetBoundary to) (NewBoundary from) = From from :. To to
+  {-# Inline edgeFromTo #-}
 
 -- | And if the set has a @Last@ boundary, then we point from somewhere in
 -- the set @To@ the @NewNode@, which is @Last@.
+--
+-- @{1,2,(3)} -> (4)@ yields @From 3 :. To 4@. Note the arrow direction @OUT
+-- OF@ the set.
 
 instance EdgeFromTo Last where
   edgeFromTo Proxy (SetBoundary from) (NewBoundary to) = From from :. To to

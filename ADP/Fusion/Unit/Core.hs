@@ -1,8 +1,11 @@
 
 -- |
 --
--- TODO the 'mkStream' instances here are probably wonky for everything
--- that is non-static.
+-- TODO the 'mkStream' instances here are probably wonky for everything that is
+-- non-static.
+--
+-- TODO should @d@ in each case here be @d==0@? What is the exact meaning @d@
+-- should convey?
 
 module ADP.Fusion.Unit.Core where
 
@@ -32,6 +35,15 @@ instance
   ( Monad m
   )
   ⇒ MkStream m (IStatic d) S (Unit I) where
+  mkStream Proxy S grd LtUnit Unit
+    = staticCheck# grd
+    . singleton $ ElmS RiUnit
+  {-# Inline mkStream #-}
+
+instance
+  ( Monad m
+  )
+  ⇒ MkStream m (IVariable d) S (Unit I) where
   mkStream Proxy S grd LtUnit Unit
     = staticCheck# grd
     . singleton $ ElmS RiUnit
