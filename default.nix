@@ -12,7 +12,7 @@ rec {
     packages = p: [ p.ADPfusion ];
     withHoogle = true;
     buildInputs = [
-      cabal-install ghc
+      cabal-install ghc llvm_39
       DPutils
       OrderedBits
       PrimitiveArray

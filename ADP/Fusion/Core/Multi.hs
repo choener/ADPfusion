@@ -75,7 +75,8 @@ instance
 type instance LeftPosTy Z M Z = Z
 
 instance Monad m => MkStream m Z S Z where
-  mkStream Proxy S grd ZZ Z = S.filter (const $ isTrue# grd) $ S.singleton $ ElmS RiZ
+  -- mkStream Proxy S grd ZZ Z = S.filter (const $ isTrue# grd) $ S.singleton $ ElmS RiZ
+  mkStream Proxy S grd ZZ Z = staticCheck# grd $ S.singleton $ ElmS RiZ
   {-# Inline mkStream #-}
 
 -- | For multi-dimensional terminals we need to be able to calculate how the
