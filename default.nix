@@ -1,8 +1,14 @@
+{ compilerVersion ? "ghc822" }:
+
+with builtins;
 with (import <nixpkgs> {});
 with haskell.lib;
 
 rec {
-  hsSrcSet = (lib.foldl' (s: p: s // (import p).hsSrcSet) {} [
+  handle = f: if isFunction f
+              then (f { compilerVersion = compilerVersion; }).hsSrcSet
+              else f.hsSrcSet;
+  hsSrcSet = (lib.foldl' (s: p: s // handle (import p)) {} [
     ../Lib-DPutils
     ../Lib-OrderedBits
     ../Lib-PrimitiveArray
