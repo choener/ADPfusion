@@ -1,27 +1,33 @@
-{ compilerVersion ? "ghc822" }:
-
-with builtins;
-with (import <nixpkgs> {});
+{ pkgs ? <nixpkgs> }:
+with (import pkgs {});
 with haskell.lib;
+with builtins;
 
-rec {
-  handle = f: if isFunction f
-              then (f { compilerVersion = compilerVersion; }).hsSrcSet
-              else f.hsSrcSet;
-  hsSrcSet = (lib.foldl' (s: p: s // handle (import p)) {} [
-    ../Lib-DPutils
-    ../Lib-OrderedBits
-    ../Lib-PrimitiveArray
-  ]) // {ADPfusion = ./.;};
+let
+  # check directories below this one
+  parentContent = readDir ./..;
+  # extract sibling folders that contain a default.nix file
+  parentDirs = filter (d: pathExists (./.. + ("/" + d + "/default.nix"))) (attrNames parentContent);
+  # construct set of names / source directories for override
+  hsSrcSet = listToAttrs (map (d: {name = "${d}"; value = ./.. + ("/" + d);}) parentDirs);
+  # extend the set of packages with source overrides
   hsPkgs = haskellPackages.extend (packageSourceOverrides hsSrcSet);
+  # name of this module
+  this = baseNameOf ./.;
+  traceds = x: y: builtins.trace (builtins.deepSeq x x) y;
+in
+
+{
   hsShell = with hsPkgs; shellFor {
-    packages = p: [ p.ADPfusion ];
+    packages = p: let v = p.vector;
+                  in  [ p."${this}" ]; # traceds (p."${this}".buildInputs) [ ];
     withHoogle = true;
     buildInputs = [
-      cabal-install ghc llvm_39
-      DPutils
-      OrderedBits
-      PrimitiveArray
+      cabal-install
     ];
   };
+  # nix-build -A hsBuild
+  # this shall build and put into ./result
+  # the result is a typical ./bin/; ./lib/ etc.
+  hsBuild = with hsPkgs; callCabal2nix "${this}" ./. {};
 }
