@@ -106,7 +106,7 @@ library
                , mtl                >= 2.0
                , primitive          >= 0.5.4
                , QuickCheck         >= 2.7
-               , singletons         >= 2.3
+               , singletons         >= 2.4
                , strict             >= 0.3
                , template-haskell   >= 2.0
                , th-orphans         >= 0.12
