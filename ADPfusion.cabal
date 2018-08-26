@@ -111,7 +111,7 @@ library
                , template-haskell   >= 2.0
                , th-orphans         >= 0.12
                , transformers       >= 0.3
-               , type-level-sets    >= 0.8
+--               , type-level-sets    >= 0.8
                , tuple              >= 0.3
                , vector             >= 0.11
                --

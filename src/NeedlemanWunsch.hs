@@ -287,7 +287,7 @@ nwInsideForward
 nwInsideForward i1 i2 = {-# SCC "nwInsideForward" #-} runST $ do
   arr ← newWithPA (ZZ:..LtPointL n1:..LtPointL n2) (-999999)
   ts ← fillTables $ grammar sScore
-                      (ITbl @0 @0 (Z:.EmptyOk:.EmptyOk) arr)
+                      (ITbl @_ @_ @_ @_ @0 @0 (Z:.EmptyOk:.EmptyOk) arr)
                       i1 i2
   return ts
   where n1 = VU.length i1
@@ -337,7 +337,7 @@ nwOutsideForward
 nwOutsideForward i1 i2 = {-# SCC "nwOutsideForward" #-} runST $ do
   arr ← newWithPA (ZZ:..LtPointL n1:..LtPointL n2) (-999999)
   ts ← fillTables $ grammar sScore
-                      (ITbl @0 @0 (Z:.EmptyOk:.EmptyOk) arr)
+                      (ITbl @_ @_ @_ @_ @0 @0 (Z:.EmptyOk:.EmptyOk) arr)
                       i1 i2
   return ts
   where n1 = VU.length i1

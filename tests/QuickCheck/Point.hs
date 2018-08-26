@@ -235,7 +235,7 @@ prop_I_Itbl_SomeV ix@(PointL i) = zs == ls where
 -- @13@s.
 
 prop_I_Itbl_Str ix@(PointL i) = zs == ls where
-  zs = ((,) <<< tSI % Str @Nothing @13 @Nothing xs ... stoList) maxPLi ix
+  zs = ((,) <<< tSI % Str @_ @_ @Nothing @13 @Nothing xs ... stoList) maxPLi ix
   ls = [ (unsafeIndex xsP (PointL k), VU.slice k (i-k) xs) | k <- [0..i-13] ]
 
 -- | And now for some funny type-level shenanigans.
@@ -244,7 +244,7 @@ prop_I_Itbl_StrTyLvl (Positive bound', ix@(PointL i)) = let bound = bound' `mod`
   case (someNatVal bound) of
     Nothing → error "zzz"
     Just (SomeNat (Proxy ∷ Proxy b)) →
-      let zs = ((,) <<< tSI % Str @Nothing @b @Nothing xs ... stoList) maxPLi ix
+      let zs = ((,) <<< tSI % Str @_ @_ @Nothing @b @Nothing xs ... stoList) maxPLi ix
           ls = [ (unsafeIndex xsP (PointL k), VU.slice k (i-k) xs) | k <- [0..i-bv] ]
           bv = fromIntegral $ natVal (Proxy ∷ Proxy b)
       in  zs == ls
@@ -272,12 +272,12 @@ stoList = unId . SM.toList
 --infixl 8 >>>
 --(>>>) f xs = \lu ij -> SM.map f . mkStream (build xs) (initialContext ij) lu $ ij
 
-tSI  = TW (ITbl @0 @0 EmptyOk xsP)  (\ (_ :: LimitType (PointL I)) (_ :: PointL I) -> Id (1::Int))
-tSO  = TW (ITbl @0 @0 EmptyOk xsPo) (\ (_ :: LimitType (PointL O)) (_ :: PointL O) -> Id (1::Int))
-tZ1I = TW (ITbl @0 @0 (Z:.EmptyOk) xsZP) (\ (_::LimitType (Z:.PointL I)) (_::Z:.PointL I) -> Id (1::Int))
-tZ1O = TW (ITbl @0 @0 (Z:.EmptyOk) xsZPo) (\ (_::LimitType (Z:.PointL O)) (_::Z:.PointL O) -> Id (1::Int))
-tZ2I = TW (ITbl @0 @0 (Z:.EmptyOk:.EmptyOk) xsPP) (\ (_::LimitType (Z:.PointL I:.PointL I)) (_::Z:.PointL I:.PointL I) -> Id (1::Int))
-tZ2O = TW (ITbl @0 @0 (Z:.EmptyOk:.EmptyOk) xsPPo) (\ (_::LimitType (Z:.PointL O:.PointL O)) (_::Z:.PointL O:.PointL O) -> Id (1::Int))
+tSI  = TW (ITbl @_ @_ @_ @_ @0 @0 EmptyOk xsP)  (\ (_ :: LimitType (PointL I)) (_ :: PointL I) -> Id (1::Int))
+tSO  = TW (ITbl @_ @_ @_ @_ @0 @0 EmptyOk xsPo) (\ (_ :: LimitType (PointL O)) (_ :: PointL O) -> Id (1::Int))
+tZ1I = TW (ITbl @_ @_ @_ @_ @0 @0 (Z:.EmptyOk) xsZP) (\ (_::LimitType (Z:.PointL I)) (_::Z:.PointL I) -> Id (1::Int))
+tZ1O = TW (ITbl @_ @_ @_ @_ @0 @0 (Z:.EmptyOk) xsZPo) (\ (_::LimitType (Z:.PointL O)) (_::Z:.PointL O) -> Id (1::Int))
+tZ2I = TW (ITbl @_ @_ @_ @_ @0 @0 (Z:.EmptyOk:.EmptyOk) xsPP) (\ (_::LimitType (Z:.PointL I:.PointL I)) (_::Z:.PointL I:.PointL I) -> Id (1::Int))
+tZ2O = TW (ITbl @_ @_ @_ @_ @0 @0 (Z:.EmptyOk:.EmptyOk) xsPPo) (\ (_::LimitType (Z:.PointL O:.PointL O)) (_::Z:.PointL O:.PointL O) -> Id (1::Int))
 
 xsP :: Unboxed (PointL I) Int
 xsP = fromList maxPLi [0 ..]

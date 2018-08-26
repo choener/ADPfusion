@@ -18,12 +18,12 @@ let
 in
 
 {
-  hsShell = with hsPkgs; shellFor {
+  hsShell = hsPkgs.shellFor {
     packages = p: let v = p.vector;
                   in  [ p."${this}" ]; # traceds (p."${this}".buildInputs) [ ];
     withHoogle = true;
     buildInputs = [
-      cabal-install
+      cabal-install llvm
     ];
   };
   # nix-build -A hsBuild

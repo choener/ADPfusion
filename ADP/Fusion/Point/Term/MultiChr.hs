@@ -39,8 +39,8 @@ instance
   ⇒ MkStream m pos (ls :!: MultiChr c v x) (PointL i) where
   mkStream pos (ls :!: MultiChr xs) grd us is
     = S.map (\(ss,ee,ii) -> ElmMultiChr ee ii ss) -- recover ElmChr
-    . addTermStream1 pos (MultiChr @c xs) us is
-    $ mkStream (Proxy ∷ Proxy posLeft) ls (termStaticCheck pos (MultiChr @c xs) is grd) us (termStreamIndex pos (MultiChr @c xs) is)
+    . addTermStream1 pos (MultiChr @v @x @c xs) us is
+    $ mkStream (Proxy ∷ Proxy posLeft) ls (termStaticCheck pos (MultiChr @v @x @c xs) is grd) us (termStreamIndex pos (MultiChr @v @x @c xs) is)
   {-# Inline mkStream #-}
 
 

@@ -169,7 +169,7 @@ instance
   ( EachSmallOrder bigOrder so ts i
   , isThisBigOrder ~ IsThisBigOrder bigOrder ts
   , isThisSmallOrder ~ IsThisSmallOrder s ts
-  , isThisOrder ~ (:&&) isThisBigOrder isThisSmallOrder
+  , isThisOrder ~ (isThisBigOrder && isThisSmallOrder)
   , ThisSmallOrder bigOrder s isThisOrder ts i
   ) ⇒ EachSmallOrder bigOrder (s ': so) ts i where
   {-# Inline eachSmallOrder #-}
@@ -191,7 +191,7 @@ instance ThisSmallOrder b s any Z i where
 instance
   ( isThisBigOrder ~ IsThisBigOrder bigOrder ts
   , isThisSmallOrder ~ IsThisSmallOrder smallOrder ts
-  , isThisOrder ~ (:&&) isThisBigOrder isThisSmallOrder
+  , isThisOrder ~ (isThisBigOrder && isThisSmallOrder)
   , ThisSmallOrder bigOrder smallOrder isThisOrder ts i
   ) ⇒ ThisSmallOrder bigOrder smallOrder 'False (ts:.t) i where
   {-# Inline thisSmallOrder #-}

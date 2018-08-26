@@ -39,10 +39,10 @@ instance
   ⇒ MkStream m pos (ls :!: Str linked minSz maxSz v x) (PointL i) where
   mkStream pos (ls :!: Str xs) grd us is
     = S.map (\(ss,ee,ii) -> ElmStr ee ii ss) -- recover ElmChr
-    . addTermStream1 pos (Str @linked @minSz @maxSz xs) us is
+    . addTermStream1 pos (Str @v @x @linked @minSz @maxSz xs) us is
     $ mkStream (Proxy ∷ Proxy posLeft) ls
-               (termStaticCheck pos (Str @linked @minSz @maxSz xs) is grd)
-               us (termStreamIndex pos (Str @linked @minSz @maxSz xs) is)
+               (termStaticCheck pos (Str @v @x @linked @minSz @maxSz xs) is grd)
+               us (termStreamIndex pos (Str @v @x @linked @minSz @maxSz xs) is)
   {-# Inline mkStream #-}
 
 -- | Note that the @minSz@ should automatically work out due to the encoding in

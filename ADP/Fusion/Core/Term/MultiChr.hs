@@ -20,7 +20,7 @@ import           ADP.Fusion.Core.Multi
 
 -- | A multi-character parser.
 
-data MultiChr (c ∷ Nat) v x where
+data MultiChr (c ∷ Nat) (v ∷ * → *) (x ∷ *) where
   MultiChr ∷ VG.Vector v x
            ⇒ !(v x)
            → MultiChr c v x
