@@ -62,6 +62,7 @@ instance
 
 instance TermStaticVar (IStatic d) Switch (PointL I) where
   termStreamIndex Proxy (Switch s) (PointL j) = PointL $ j
+  -- TODO is trac #15696 a problem here?
   termStaticCheck Proxy (Switch s) (PointL j) grd = dataToTag# s `andI#` grd -- case s of {Enabled → grd; Disabled → 0# }
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}
