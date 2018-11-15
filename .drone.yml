@@ -17,9 +17,6 @@ steps:
     path: /tmp/cache
   commands:
   - mkdir -p /tmp/cache/.cabal
-  - ln -s /tmp/cache/.cabal /root/.cabal
-  - ls
-  - ls ../
   - cabal update
   - cabal new-build
 
