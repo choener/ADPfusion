@@ -1,0 +1,50 @@
+kind: pipeline
+name: default
+
+steps:
+
+- name: deps
+  image: docker:git
+  commands:
+    - git clone -b devel https://bia-christian.de/gitea/choener/Lib-DPutils.git
+    - git clone -b devel https://bia-christian.de/gitea/choener/Lib-OrderedBits.git
+    - git clone -b devel https://bia-christian.de/gitea/choener/Lib-PrimitiveArray.git
+
+- name: build
+  image: haskell
+  volumes:
+  - name: cache
+    path: /tmp/cache
+  commands:
+  - mkdir -p /tmp/cache/.cabal
+  - ln -s /tmp/cache/.cabal /root/.cabal
+  - ls
+  - ls ../
+  - cabal update
+  - cabal new-build
+
+- name: test
+  image: haskell
+  volumes:
+  - name: cache
+    path: /tmp/cache
+  commands:
+  - mkdir -p /tmp/cache/.cabal
+  - ln -s /tmp/cache/.cabal /root/.cabal
+  - cabal new-test
+
+- name: haddock
+  image: haskell
+  volumes:
+  - name: cache
+    path: /tmp/cache
+  commands:
+  - mkdir -p /tmp/cache/.cabal
+  - ln -s /tmp/cache/.cabal /root/.cabal
+  - cabal new-haddock
+
+volumes:
+- name: cache
+  host:
+    path: /home/choener/drone
+
