@@ -86,6 +86,19 @@ instance TermStaticVar (IStatic 0) Epsilon (PointL I) where
 
 instance TermStaticVar (OStatic 0) Epsilon (PointL O) where
   termStreamIndex Proxy Epsilon (PointL i     ) = PointL i
+  -- |
+  --
+  -- TODO Consider this as a potential bug: we do *not* check that the upper
+  -- bound @us@ (which we not even hand over to termStaticCheck but should) is
+  -- equal to the current index @i@. HERE this ends up not being a bug because
+  -- @Epsilon@ keeps the positional system at @OStatic@ and does not move to
+  -- @ORightOf@ or anything, and in correct epsilon rules, everything is fine.
+  --
+  -- We even end up being correct with @X -> whatever epsilon@ because epsilon
+  -- is neutral ...
+  --
+  -- TODO But we should probably statically assert that epsilon is the only
+  -- symbol on the r.h.s. of whatever we write ...
   termStaticCheck Proxy Epsilon (PointL (I# i)) grd = grd
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}
