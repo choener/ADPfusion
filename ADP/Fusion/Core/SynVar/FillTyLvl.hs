@@ -7,19 +7,20 @@
 
 module ADP.Fusion.Core.SynVar.FillTyLvl where
 
-import           Control.Monad.ST
 import           Control.Monad.Primitive
+import           Control.Monad.ST
 import           Data.Promotion.Prelude.Bool
 import           Data.Promotion.Prelude.List
 import           Data.Proxy
 import           Data.Singletons.Prelude.Bool
 import           Data.Type.Equality
+import           Data.Vector.Fusion.Util (Id(..))
 import           GHC.Exts
 import           GHC.TypeNats
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
-import           Data.Vector.Fusion.Util (Id(..))
 import           System.CPUTime
+import           Text.Printf
 
 import           Data.PrimitiveArray
 
@@ -267,6 +268,16 @@ data PerfCounter = PerfCounter
   , numberOfCells :: !Integer
   }
   deriving (Eq,Ord,Show)
+
+showPerfCounter ∷ PerfCounter → String
+{-# NoInline showPerfCounter #-}
+showPerfCounter PerfCounter{..} =
+  let cellsSecond = round $ fromIntegral numberOfCells / seconds
+      m ∷ Integer = 1000000
+  in  printf "%.4f seconds, %d,%06d cells @ %d,%06d cells/second"
+             seconds
+             (numberOfCells `div` m) (numberOfCells `mod` m)
+             (cellsSecond `div` m) (cellsSecond `mod` m)
 
 -- | Adding two 'PerfCounter's yields the time they take together.
 

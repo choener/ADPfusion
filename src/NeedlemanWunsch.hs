@@ -367,8 +367,8 @@ align (kI,kO) (a:b:xs) = {-# SCC "align" #-} do
   when (kO>=0) $ forM_ rsO $ \[u,l] -> printf "%s\n%s  %d\n\n" (id      u) (id      l) sO
   when (kI>=0) $ print sI
   when (kO>=0) $ print sO
-  when (kI>=0) $ print perfI
-  when (kO>=0) $ print perfO
+  when (kI>=0) . putStrLn $ showPerfCounter perfI
+  when (kO>=0) . putStrLn $ showPerfCounter perfO
   putStrLn ""
   align (kI,kO) xs
 
