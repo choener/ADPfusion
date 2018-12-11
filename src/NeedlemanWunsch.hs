@@ -1,5 +1,6 @@
 
 {-# Options_GHC -fforce-recomp #-}
+{-# Options_GHC -Wno-partial-type-signatures #-}
 
 -- | The Needleman-Wunsch global alignment algorithm. This algorithm is
 -- extremely simple but provides a good showcase for what ADPfusion offers.
@@ -284,14 +285,14 @@ nwInsideForward
   ∷ VU.Vector Char
   → VU.Vector Char
   → Mutated (Z:.TwITbl _ _ Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int)
-nwInsideForward i1 i2 = {-# SCC "nwInsideForward" #-} runST $ do
+nwInsideForward !i1 !i2 = {-# SCC "nwInsideForward" #-} runST $ do
   arr ← newWithPA (ZZ:..LtPointL n1:..LtPointL n2) (-999999)
   ts ← fillTables $ grammar sScore
                       (ITbl @_ @_ @_ @_ @0 @0 (Z:.EmptyOk:.EmptyOk) arr)
                       i1 i2
   return ts
-  where n1 = VU.length i1
-        n2 = VU.length i2
+  where !n1 = VU.length i1
+        !n2 = VU.length i2
 {-# NoInline nwInsideForward #-}
 
 nwInsideBacktrack
@@ -334,14 +335,14 @@ nwOutsideForward
   ∷ VU.Vector Char
   → VU.Vector Char
   → Mutated (Z:.TwITbl _ _ Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL O:.PointL O) Int)
-nwOutsideForward i1 i2 = {-# SCC "nwOutsideForward" #-} runST $ do
+nwOutsideForward !i1 !i2 = {-# SCC "nwOutsideForward" #-} runST $ do
   arr ← newWithPA (ZZ:..LtPointL n1:..LtPointL n2) (-999999)
   ts ← fillTables $ grammar sScore
                       (ITbl @_ @_ @_ @_ @0 @0 (Z:.EmptyOk:.EmptyOk) arr)
                       i1 i2
   return ts
-  where n1 = VU.length i1
-        n2 = VU.length i2
+  where !n1 = VU.length i1
+        !n2 = VU.length i2
 {-# Noinline nwOutsideForward #-}
 
 -- | This wrapper takes a list of input sequences and aligns each odd
