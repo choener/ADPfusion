@@ -308,8 +308,8 @@ executable NeedlemanWunsch
       -ddump-to-file
       -ddump-simpl
       -dsuppress-all
-      -dshow-passes
-      -dverbose-core2core
+--      -dshow-passes
+--      -dverbose-core2core
   if flag(llvm)
     ghc-options:
       -fllvm
