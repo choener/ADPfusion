@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
-int needlemanWunsch (int, int, char *, char *);
+int needlemanWunsch (const int, const int, const char *, const char *);
 
 int main () {
   char p[10000];
@@ -21,7 +21,7 @@ int main () {
   return 0;
 }
 
-int needlemanWunsch (int m, int n, char *p, char *q) {
+int needlemanWunsch (const int m, const int n, const char *p, const char *q) {
   int l = m*n;
   int i;
   int j;
