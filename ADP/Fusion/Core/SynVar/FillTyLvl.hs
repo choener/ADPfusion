@@ -211,7 +211,7 @@ instance
   thisSmallOrder Proxy Proxy Proxy (ts:.TW (ITbl _ arr) f) i = do
     let uB = upperBound arr
     marr <- unsafeThaw arr
-    z ← return . unId $ f uB i
+    z ← return . unId $ (inline f) uB i
     writeM marr i z
 
 -- | The set of arrays to fill is a tuple of the form @(Z:.a:.b:.c)@. Here, we
