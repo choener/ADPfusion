@@ -206,6 +206,10 @@ instance
 instance
   ( PrimArrayOps arr i x
   , MPrimArrayOps arr i x
+  , isThisBigOrder ~ IsThisBigOrder bigOrder ts
+  , isThisSmallOrder ~ IsThisSmallOrder smallOrder ts
+  , isThisOrder ~ (isThisBigOrder && isThisSmallOrder)
+  , ThisSmallOrder bigOrder smallOrder isThisOrder ts i
   ) ⇒ ThisSmallOrder bigOrder smallOrder 'True (ts:.TwITbl bo so Id arr c i x) i where
   {-# Inline thisSmallOrder #-}
   thisSmallOrder Proxy Proxy Proxy (ts:.TW (ITbl _ arr) f) i = do
@@ -213,6 +217,8 @@ instance
     marr <- unsafeThaw arr
     z ← return . unId $ (inline f) uB i
     writeM marr i z
+    -- TODO need to write test case that checks that all tables are always filled
+    thisSmallOrder (Proxy ∷ Proxy bigOrder) (Proxy ∷ Proxy smallOrder) (Proxy ∷ Proxy isThisOrder) ts i
 
 -- | The set of arrays to fill is a tuple of the form @(Z:.a:.b:.c)@. Here, we
 -- extract the big order @Nat@s. The set of @Nat@s being returned is already
