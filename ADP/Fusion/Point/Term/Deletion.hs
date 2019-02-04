@@ -14,7 +14,8 @@ import           ADP.Fusion.Point.Core
 
 
 
-type instance LeftPosTy (IStatic d) Deletion (PointL I) = IStatic d
+type instance LeftPosTy (IStatic   d) Deletion (PointL I) = IStatic d
+type instance LeftPosTy (IVariable d) Deletion (PointL I) = IVariable d
 
 type instance LeftPosTy (OStatic d) Deletion (PointL O) = OStatic d
 
@@ -44,6 +45,15 @@ instance
   {-# Inline termStream #-}
 
 instance
+  ( TermStreamContext m ps ts s x0 i0 is (PointL I)
+  )
+  ⇒ TermStream m (ps:.IVariable d) (TermSymbol ts Deletion) s (is:.PointL I) where
+  termStream Proxy (ts:|Deletion) (us:..LtPointL u) (is:.PointL i)
+    = S.map (\(TState s ii ee) -> TState s (ii:.:RiPlI i) (ee:.()))
+    . termStream (Proxy ∷ Proxy ps) ts us is
+  {-# Inline termStream #-}
+
+instance
   ( TermStreamContext m ps ts s x0 i0 is (PointL O)
   ) => TermStream m (ps:.OStatic d) (TermSymbol ts Deletion) s (is:.PointL O) where
   termStream Proxy (ts:|Deletion) (us:..LtPointL u) (is:.PointL i)
@@ -56,6 +66,12 @@ instance
 
 
 instance TermStaticVar (IStatic d) Deletion (PointL I) where
+  termStreamIndex Proxy Deletion (PointL j) = PointL j
+  termStaticCheck Proxy Deletion (PointL j) grd = grd
+  {-# Inline [0] termStreamIndex #-}
+  {-# Inline [0] termStaticCheck #-}
+
+instance TermStaticVar (IVariable d) Deletion (PointL I) where
   termStreamIndex Proxy Deletion (PointL j) = PointL j
   termStaticCheck Proxy Deletion (PointL j) grd = grd
   {-# Inline [0] termStreamIndex #-}
