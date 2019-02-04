@@ -24,7 +24,7 @@ instance
   mkStream pos (ls :!: Epsilon) grd us is
     = S.map (\(ss,ee,ii) -> ElmEpsilon ii ss)
     . addTermStream1 pos Epsilon us is
-    . mkStream (Proxy ∷ Proxy posLeft) ls (termStaticCheck pos Epsilon is grd) us
+    . mkStream (Proxy ∷ Proxy posLeft) ls (termStaticCheck pos Epsilon us is grd) us
     $ termStreamIndex pos Epsilon is
   {-# Inline mkStream #-}
 

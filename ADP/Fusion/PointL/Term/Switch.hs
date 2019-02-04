@@ -1,5 +1,5 @@
 
-module ADP.Fusion.Point.Term.Switch where
+module ADP.Fusion.PointL.Term.Switch where
 
 import           Data.Proxy
 import           Data.Strict.Tuple
@@ -12,7 +12,7 @@ import           Data.PrimitiveArray
 
 import           ADP.Fusion.Core
 import           ADP.Fusion.Core.Term.Switch
-import           ADP.Fusion.Point.Core
+import           ADP.Fusion.PointL.Core
 
 
 
@@ -34,7 +34,7 @@ instance
   mkStream pos (ls :!: Switch s) grd us is
     = S.map (\(ss,ee,ii) -> ElmSwitch ii ss) -- recover ElmChr
     . addTermStream1 pos (Switch s) us is
-    $ mkStream (Proxy ∷ Proxy posLeft) ls (termStaticCheck pos (Switch s) is grd) us (termStreamIndex pos (Switch s) is)
+    $ mkStream (Proxy ∷ Proxy posLeft) ls (termStaticCheck pos (Switch s) us is grd) us (termStreamIndex pos (Switch s) is)
   {-# Inline mkStream #-}
 
 
@@ -63,13 +63,13 @@ instance
 instance TermStaticVar (IStatic d) Switch (PointL I) where
   termStreamIndex Proxy (Switch s) (PointL j) = PointL $ j
   -- TODO is trac #15696 a problem here?
-  termStaticCheck Proxy (Switch s) (PointL j) grd = dataToTag# s `andI#` grd -- case s of {Enabled → grd; Disabled → 0# }
+  termStaticCheck Proxy (Switch s) _ (PointL j) grd = dataToTag# s `andI#` grd -- case s of {Enabled → grd; Disabled → 0# }
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}
 
 instance TermStaticVar (OStatic d) Switch (PointL O) where
   termStreamIndex Proxy (Switch s) (PointL j) = PointL $ j
-  termStaticCheck Proxy (Switch s) (PointL j) grd = case s of {Enabled → grd; Disabled → 0# }
+  termStaticCheck Proxy (Switch s) _ (PointL j) grd = case s of {Enabled → grd; Disabled → 0# }
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}
 

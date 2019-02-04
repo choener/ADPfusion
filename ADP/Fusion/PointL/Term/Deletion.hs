@@ -1,5 +1,5 @@
 
-module ADP.Fusion.Point.Term.Deletion where
+module ADP.Fusion.PointL.Term.Deletion where
 
 import           Data.Proxy
 import           Data.Strict.Tuple
@@ -10,7 +10,7 @@ import           Data.PrimitiveArray
 
 import           ADP.Fusion.Core
 import           ADP.Fusion.Core.Term.Deletion
-import           ADP.Fusion.Point.Core
+import           ADP.Fusion.PointL.Core
 
 
 
@@ -30,7 +30,7 @@ instance
   mkStream pos (ls :!: Deletion) grd us is
     = S.map (\(ss,ee,ii) -> ElmDeletion ii ss)
     . addTermStream1 pos Deletion us is
-    $ mkStream (Proxy ∷ Proxy posLeft) ls (termStaticCheck pos Deletion is grd) us (termStreamIndex pos Deletion is)
+    $ mkStream (Proxy ∷ Proxy posLeft) ls (termStaticCheck pos Deletion us is grd) us (termStreamIndex pos Deletion is)
   {-# Inline mkStream #-}
 
 
@@ -67,19 +67,19 @@ instance
 
 instance TermStaticVar (IStatic d) Deletion (PointL I) where
   termStreamIndex Proxy Deletion (PointL j) = PointL j
-  termStaticCheck Proxy Deletion (PointL j) grd = grd
+  termStaticCheck Proxy Deletion _ (PointL j) grd = grd
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}
 
 instance TermStaticVar (IVariable d) Deletion (PointL I) where
   termStreamIndex Proxy Deletion (PointL j) = PointL j
-  termStaticCheck Proxy Deletion (PointL j) grd = grd
+  termStaticCheck Proxy Deletion _ (PointL j) grd = grd
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}
 
 instance TermStaticVar oAny Deletion (PointL O) where
   termStreamIndex Proxy Deletion (PointL j) = PointL j
-  termStaticCheck Proxy Deletion (PointL j) grd = grd
+  termStaticCheck Proxy Deletion _ (PointL j) grd = grd
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}
 

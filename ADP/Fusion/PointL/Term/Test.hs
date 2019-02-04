@@ -1,5 +1,5 @@
 
-module ADP.Fusion.Point.Term.Test where
+module ADP.Fusion.PointL.Term.Test where
 
 import           Control.DeepSeq
 import           Data.Proxy

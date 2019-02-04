@@ -6,7 +6,7 @@
 -- or similar. However, we can expect to see @a@ as a string as well. Then, @X@
 -- on the r.h.s. is variable.
 
-module ADP.Fusion.Point.SynVar.Indices where
+module ADP.Fusion.PointL.SynVar.Indices where
 
 import Data.Proxy
 import Data.Vector.Fusion.Stream.Monadic (map,Stream,head,mapM,Step(..),flatten)
@@ -18,7 +18,7 @@ import Data.PrimitiveArray hiding (map)
 
 import ADP.Fusion.Core
 import ADP.Fusion.Core.SynVar.Indices
-import ADP.Fusion.Point.Core
+import ADP.Fusion.PointL.Core
 
 
 

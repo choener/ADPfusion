@@ -1,5 +1,5 @@
 
-module ADP.Fusion.Point.Term.Str where
+module ADP.Fusion.PointL.Term.Str where
 
 import           Data.Proxy
 import           Data.Strict.Tuple
@@ -13,7 +13,7 @@ import           Data.PrimitiveArray
 
 import           ADP.Fusion.Core
 import           ADP.Fusion.Core.Term.Str
-import           ADP.Fusion.Point.Core
+import           ADP.Fusion.PointL.Core
 
 
 
@@ -41,7 +41,7 @@ instance
     = S.map (\(ss,ee,ii) -> ElmStr ee ii ss) -- recover ElmChr
     . addTermStream1 pos (Str @v @x @linked @minSz @maxSz xs) us is
     $ mkStream (Proxy ∷ Proxy posLeft) ls
-               (termStaticCheck pos (Str @v @x @linked @minSz @maxSz xs) is grd)
+               (termStaticCheck pos (Str @v @x @linked @minSz @maxSz xs) us is grd)
                us (termStreamIndex pos (Str @v @x @linked @minSz @maxSz xs) is)
   {-# Inline mkStream #-}
 
@@ -73,7 +73,7 @@ instance
 instance (KnownNat minSz)
   ⇒ TermStaticVar (IStatic d) (Str Nothing minSz Nothing v x) (PointL I) where
   termStreamIndex Proxy (Str xs) (PointL j) = PointL $ j - fromIntegral (natVal (Proxy ∷ Proxy minSz))
-  termStaticCheck Proxy (Str xs) (PointL j) grd = grd
+  termStaticCheck Proxy (Str xs) _ (PointL j) grd = grd
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}
 

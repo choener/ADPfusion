@@ -1,7 +1,7 @@
 
 {-# Language MagicHash #-}
 
-module ADP.Fusion.Point.Core where
+module ADP.Fusion.PointL.Core where
 
 import GHC.Generics (Generic, Generic1)
 import Control.DeepSeq

@@ -148,18 +148,26 @@ library
     ADP.Fusion.Core.TH.Backtrack
     ADP.Fusion.Core.TH.Common
     ADP.Fusion.Core.TyLvlIx
---    -- Point
-    ADP.Fusion.Point
-    ADP.Fusion.Point.Core
-    ADP.Fusion.Point.SynVar.Indices
---    ADP.Fusion.Point.SynVar.Recursive
-    ADP.Fusion.Point.Term.Chr
-    ADP.Fusion.Point.Term.Deletion
-    ADP.Fusion.Point.Term.Epsilon
-    ADP.Fusion.Point.Term.MultiChr
-    ADP.Fusion.Point.Term.Str
-    ADP.Fusion.Point.Term.Switch
---    ADP.Fusion.Point.Term.Test
+--    -- Point L
+    ADP.Fusion.PointL
+    ADP.Fusion.PointL.Core
+    ADP.Fusion.PointL.SynVar.Indices
+--    ADP.Fusion.PointL.SynVar.Recursive
+    ADP.Fusion.PointL.Term.Chr
+    ADP.Fusion.PointL.Term.Deletion
+    ADP.Fusion.PointL.Term.Epsilon
+    ADP.Fusion.PointL.Term.MultiChr
+    ADP.Fusion.PointL.Term.Str
+    ADP.Fusion.PointL.Term.Switch
+--    ADP.Fusion.PointL.Term.Test
+--    -- Point R
+    ADP.Fusion.PointR
+    ADP.Fusion.PointR.Core
+    ADP.Fusion.PointR.SynVar.Indices
+    ADP.Fusion.PointR.Term.Chr
+    ADP.Fusion.PointR.Term.Deletion
+    ADP.Fusion.PointR.Term.Epsilon
+    ADP.Fusion.PointR.Term.MultiChr
     -- Unit
     ADP.Fusion.Unit
     ADP.Fusion.Unit.Core

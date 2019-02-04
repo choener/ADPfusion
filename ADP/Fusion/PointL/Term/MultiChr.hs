@@ -1,5 +1,5 @@
 
-module ADP.Fusion.Point.Term.MultiChr where
+module ADP.Fusion.PointL.Term.MultiChr where
 
 import           Data.Proxy
 import           Data.Strict.Tuple
@@ -13,7 +13,7 @@ import           Data.PrimitiveArray
 
 import           ADP.Fusion.Core
 import           ADP.Fusion.Core.Term.MultiChr
-import           ADP.Fusion.Point.Core
+import           ADP.Fusion.PointL.Core
 
 
 
@@ -40,7 +40,7 @@ instance
   mkStream pos (ls :!: MultiChr xs) grd us is
     = S.map (\(ss,ee,ii) -> ElmMultiChr ee ii ss) -- recover ElmChr
     . addTermStream1 pos (MultiChr @v @x @c xs) us is
-    $ mkStream (Proxy ∷ Proxy posLeft) ls (termStaticCheck pos (MultiChr @v @x @c xs) is grd) us (termStreamIndex pos (MultiChr @v @x @c xs) is)
+    $ mkStream (Proxy ∷ Proxy posLeft) ls (termStaticCheck pos (MultiChr @v @x @c xs) us is grd) us (termStreamIndex pos (MultiChr @v @x @c xs) is)
   {-# Inline mkStream #-}
 
 
@@ -72,14 +72,14 @@ instance
 
 instance (KnownNat c) ⇒ TermStaticVar (IStatic d) (MultiChr c v x) (PointL I) where
   termStreamIndex Proxy (MultiChr x) (PointL j) = PointL $ j-(fromIntegral $ natVal (Proxy ∷ Proxy c))
-  termStaticCheck Proxy (MultiChr x) (PointL j) grd = grd
+  termStaticCheck Proxy (MultiChr x) _ (PointL j) grd = grd
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}
 
 instance TermStaticVar (OStatic d) (MultiChr c v x) (PointL O) where
   termStreamIndex Proxy (MultiChr x) (PointL j) = PointL $ j
   -- | TODO check if @c@ to the right goes out of bounds?
-  termStaticCheck Proxy (MultiChr x) (PointL j) grd = grd
+  termStaticCheck Proxy (MultiChr x) _ (PointL j) grd = grd
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}
 

@@ -1,7 +1,7 @@
 
 -- | Rules of the type @X → ε@ denote termination of parsing if @X@ is empty.
 
-module ADP.Fusion.Point.Term.Epsilon where
+module ADP.Fusion.PointL.Term.Epsilon where
 
 import           Data.Proxy
 import           Data.Strict.Tuple
@@ -12,7 +12,7 @@ import           Data.PrimitiveArray
 
 import           ADP.Fusion.Core
 import           ADP.Fusion.Core.Term.Epsilon
-import           ADP.Fusion.Point.Core
+import           ADP.Fusion.PointL.Core
 
 
 
@@ -34,7 +34,7 @@ instance
     . addTermStream1 (Proxy ∷ Proxy pos) Epsilon us is
     $ mkStream (Proxy ∷ Proxy posLeft)
                ls
-               (termStaticCheck (Proxy ∷ Proxy pos) Epsilon is grd)
+               (termStaticCheck (Proxy ∷ Proxy pos) Epsilon us is grd)
                us
                (termStreamIndex (Proxy ∷ Proxy pos) Epsilon is)
   {-# Inline mkStream #-}
@@ -80,7 +80,7 @@ instance
 
 instance TermStaticVar (IStatic 0) Epsilon (PointL I) where
   termStreamIndex Proxy Epsilon (PointL i     ) = PointL i
-  termStaticCheck Proxy Epsilon (PointL (I# i)) grd = (i ==# 0#) `andI#` grd
+  termStaticCheck Proxy Epsilon _ (PointL (I# i)) grd = (i ==# 0#) `andI#` grd
   {-# Inline termStreamIndex #-}
   {-# Inline termStaticCheck #-}
 
@@ -99,7 +99,7 @@ instance TermStaticVar (OStatic 0) Epsilon (PointL O) where
   --
   -- TODO But we should probably statically assert that epsilon is the only
   -- symbol on the r.h.s. of whatever we write ...
-  termStaticCheck Proxy Epsilon (PointL (I# i)) grd = grd
+  termStaticCheck Proxy Epsilon _ (PointL (I# i)) grd = grd
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}
 
