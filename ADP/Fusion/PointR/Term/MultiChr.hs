@@ -17,8 +17,8 @@ import           ADP.Fusion.PointR.Core
 
 
 
-type instance LeftPosTy (IStatic d)   (MultiChr c v x) (PointR I) = IStatic d
-type instance LeftPosTy (IVariable d) (MultiChr c v x) (PointR I) = IVariable d
+type instance LeftPosTy (IStatic d)   (MultiChr c v x) (PointR I) = IStatic (d+c)
+type instance LeftPosTy (IVariable d) (MultiChr c v x) (PointR I) = IVariable (d+c)
 
 
 
@@ -37,22 +37,40 @@ instance
   {-# Inline mkStream #-}
 
 
--- | 
-
 instance
   ( TermStreamContext m ps ts s x0 i0 is (PointR I)
   , KnownNat c
   ) => TermStream m (ps:.IStatic d) (TermSymbol ts (MultiChr c v x)) s (is:.PointR I) where
   termStream Proxy (ts:|MultiChr xs) (us:..LtPointR u) (is:.PointR i)
     = let !c = fromIntegral $ natVal (Proxy ∷ Proxy c) in
-      S.map (\(TState s ii ee) -> TState s (ii:.:RiPrI i) (ee:. VG.unsafeSlice (i-c) c xs))
+      S.map (\(TState s ii ee) ->
+        let RiPrI k = getIndex (getIdx s) (Proxy ∷ PRI is (PointR I))
+        in  TState s (ii:.:RiPrI (k+c)) (ee:. VG.unsafeSlice k c xs))
+    . termStream (Proxy ∷ Proxy ps) ts us is
+  {-# Inline termStream #-}
+
+instance
+  ( TermStreamContext m ps ts s x0 i0 is (PointR I)
+  , KnownNat c
+  ) => TermStream m (ps:.IVariable d) (TermSymbol ts (MultiChr c v x)) s (is:.PointR I) where
+  termStream Proxy (ts:|MultiChr xs) (us:..LtPointR u) (is:.PointR i)
+    = let !c = fromIntegral $ natVal (Proxy ∷ Proxy c) in
+      S.map (\(TState s ii ee) ->
+        let RiPrI k = getIndex (getIdx s) (Proxy ∷ PRI is (PointR I))
+        in  TState s (ii:.:RiPrI (k+c)) (ee:. VG.unsafeSlice k c xs))
     . termStream (Proxy ∷ Proxy ps) ts us is
   {-# Inline termStream #-}
 
 
 
 instance (KnownNat c) ⇒ TermStaticVar (IStatic d) (MultiChr c v x) (PointR I) where
-  termStreamIndex Proxy (MultiChr x) (PointR j) = PointR $ j-(fromIntegral $ natVal (Proxy ∷ Proxy c))
+  termStreamIndex Proxy (MultiChr x) (PointR j) = PointR $ j
+  termStaticCheck Proxy (MultiChr x) _ (PointR j) grd = grd
+  {-# Inline [0] termStreamIndex #-}
+  {-# Inline [0] termStaticCheck #-}
+
+instance (KnownNat c) ⇒ TermStaticVar (IVariable d) (MultiChr c v x) (PointR I) where
+  termStreamIndex Proxy (MultiChr x) (PointR j) = PointR $ j
   termStaticCheck Proxy (MultiChr x) _ (PointR j) grd = grd
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}

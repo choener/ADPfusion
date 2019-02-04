@@ -35,8 +35,10 @@ instance
   , MinSize c
   )
   ⇒ AddIndexDense (ps:.IStatic d) elm (cs:.c) (us:.PointR I) (is:.PointR I) where
-  addIndexDenseGo Proxy (cs:._) (ubs:..ub) (us:..u) (is:.i)
-    = map (\(SvS s t y') → SvS s (t:.i) (y' :.: RiPrI (fromPointR i)))
+  addIndexDenseGo Proxy (cs:._) (ubs:..ub) (us:..LtPointR u) (is:.i)
+    = map (\(SvS s t y') →
+        let RiPrI k = getIndex (getIdx s) (Proxy ∷ PRI is (PointR I))
+        in  SvS s (t:.PointR k) (y' :.: RiPrI  u))
     . addIndexDenseGo (Proxy ∷ Proxy ps) cs ubs us is
   {-# Inline addIndexDenseGo #-}
 

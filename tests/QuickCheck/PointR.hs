@@ -62,46 +62,46 @@ prop_I_ZEpsilon ix@(Z:.PointR j) = zs == ls where
 --
 -- X_j -> c_j || j==1
 
---prop_I_Tt ix@(Z:.PointR j) = zs == ls where
---  zs = (id <<< (M:|chr xs) ... stoList) (ZZ:..maxPRi) ix
---  ls = [ (Z:.xs VU.! (j-1)) | 1==j ]
---
----- | Two single-character terminals
---
---prop_I_CC ix@(Z:.PointR i) = zs == ls where
---  zs = ((,) <<< (M:|chr xs) % (M:|chr xs) ... stoList) (ZZ:..maxPRi) ix
---  ls = [ (Z:.xs VU.! (i-2), Z:.xs VU.! (i-1)) | 2==i ]
---
----- | Just a table
---
---prop_I_It ix@(PointR j) = zs == ls where
---  zs = (id <<< tSI ... stoList) maxPRi ix
---  ls = [ unsafeIndex xsP ix | j>=0, j<=maxI ]
---
---prop_I_ZIt ix@(Z:.PointR j) = zs == ls where
---  zs = (id <<< tZ1I ... stoList) (ZZ:..maxPRi) ix
---  ls = [ unsafeIndex xsZP ix | j>=0, j<=maxI ]
---
---prop_I_2dimIt ix@(Z:.PointR i:.PointR j) = zs == ls where
---  zs = (id <<< tZ2I ... stoList) (ZZ:..maxPRi:..maxPRi) ix
---  ls = [ unsafeIndex xsPP ix | j>=0, j<=maxI ]
---
----- | Table, then single terminal
---
---prop_I_ItC ix@(PointR j) = zs == ls where
---  zs = ((,) <<< tSI % chr xs ... stoList) maxPRi ix
---  ls = [ ( unsafeIndex xsP (PointR $ j-1)
---         , xs VU.! (j-1)
---         ) | j>=1, j<=maxI ]
---
----- | synvar followed by a 2-tape character terminal
---
---prop_I_2dimItCC ix@(Z:.PointR j:.PointR l) = zs == ls where
---  zs = ((,,) <<< tZ2I % (M:|chr xs:|chr xs) % (M:|chr xs:|chr xs) ... stoList) (ZZ:..maxPRi:..maxPRi) ix
---  ls = [ ( unsafeIndex xsPP (Z:.PointR (j-2):.PointR (l-2))
---         , Z:.xs VU.! (j-2):.xs VU.! (l-2)
---         , Z:.xs VU.! (j-1):.xs VU.! (l-1)
---         ) | j>=2, l>=2, j<=maxI, l<=maxI ]
+prop_I_Tt ix@(Z:.PointR j) = zs == ls where
+  zs = (id <<< (M:|chr xs) ... stoList) (ZZ:..maxPRi) ix
+  ls = [ (Z:.xs VU.! j) | j==arbMaxPointR-1 ]
+
+-- | Two single-character terminals
+
+prop_I_CC ix@(Z:.PointR i) = zs == ls where
+  zs = ((,) <<< (M:|chr xs) % (M:|chr xs) ... stoList) (ZZ:..maxPRi) ix
+  ls = [ (Z:.xs VU.! (i+0), Z:.xs VU.! (i+1)) | i==arbMaxPointR-2 ]
+
+-- | Just a table
+
+prop_I_It ix@(PointR j) = zs == ls where
+  zs = (id <<< tSI ... stoList) maxPRi ix
+  ls = [ unsafeIndex xsP ix | j>=0, j<=arbMaxPointR ]
+
+prop_I_ZIt ix@(Z:.PointR j) = zs == ls where
+  zs = (id <<< tZ1I ... stoList) (ZZ:..maxPRi) ix
+  ls = [ unsafeIndex xsZP ix | j>=0, j<=arbMaxPointR ]
+
+prop_I_2dimIt ix@(Z:.PointR i:.PointR j) = zs == ls where
+  zs = (id <<< tZ2I ... stoList) (ZZ:..maxPRi:..maxPRi) ix
+  ls = [ unsafeIndex xsPP ix | j>=0, j<=arbMaxPointR ]
+
+-- | single terminal followed by table
+
+prop_I_ItC ix@(PointR j) = zs == ls where
+  zs = ((,) <<< chr xs % tSI ... stoList) maxPRi ix
+  ls = [ ( xs VU.! j
+         , unsafeIndex xsP (PointR $ j+1)
+         ) | j>=0, j+1<=arbMaxPointR ]
+
+-- | synvar followed by a 2-tape character terminal
+
+prop_I_2dimItCC ix@(Z:.PointR j:.PointR l) = zs == ls where
+  zs = ((,,) <<< (M:|chr xs:|chr xs) % (M:|chr xs:|chr xs) % tZ2I ... stoList) (ZZ:..maxPRi:..maxPRi) ix
+  ls = [ ( Z:.xs VU.! (j+0):.xs VU.! (l+0)
+         , Z:.xs VU.! (j+1):.xs VU.! (l+1)
+         , unsafeIndex xsPP (Z:.PointR (j+2):.PointR (l+2))
+         ) | j>=0, l>=0, j+2<=arbMaxPointR, l+2<=arbMaxPointR ]
 
 
 

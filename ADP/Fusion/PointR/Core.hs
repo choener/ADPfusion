@@ -50,8 +50,8 @@ instance
   )
   ⇒ MkStream m (IStatic d) S (PointR I) where
   mkStream Proxy S grd (LtPointR (I# u)) (PointR (I# i))
-    = staticCheck# ( grd `andI#` (i >=# 0#) `andI#` (i <=# u) )   -- TODO include @d@ correctly: i<=d
-    . singleton . ElmS . RiPrI $ I# u
+    = staticCheck# ( grd `andI#` (i >=# 0#) `andI#` (i +# d ==# u) )   -- TODO include @d@ correctly: i<=d
+    . singleton . ElmS . RiPrI $ I# i
     where (I# d) = fromIntegral $ natVal (Proxy ∷ Proxy d)
   {-# Inline mkStream #-}
 
@@ -61,8 +61,9 @@ instance
   )
   ⇒ MkStream m (IVariable d) S (PointR I) where
   mkStream Proxy S grd (LtPointR (I# u)) (PointR (I# i))
-    = staticCheck# (grd `andI#` (i >=# 0#) `andI#` (i <=# u) )
-    . singleton . ElmS . RiPrI $ I# u
+    = staticCheck# (grd `andI#` (i >=# 0#) `andI#` (i +# d <=# u))
+    . singleton . ElmS . RiPrI $ I# i
+    where (I# d) = fromIntegral $ natVal (Proxy ∷ Proxy d)
   {-# Inline mkStream #-}
 
 
@@ -75,9 +76,8 @@ instance
   , KnownNat d
   ) ⇒ MkStream m (ps:.IStatic d) S (is:.PointR I) where
   mkStream Proxy S grd (lus:..LtPointR (I# u)) (is:.PointR (I# i))
-    = map (\(ElmS e) -> ElmS $ e :.: RiPrI (I# u))
-    -- i <= d
-    $ mkStream (Proxy ∷ Proxy ps) S (grd `andI#` (i >=# 0#) `andI#` (i <=# u)) lus is
+    = map (\(ElmS e) -> ElmS $ e :.: RiPrI (I# i))
+    $ mkStream (Proxy ∷ Proxy ps) S (grd `andI#` (i >=# 0#) `andI#` (i +# d ==# u)) lus is
     where (I# d) = fromIntegral $ natVal (Proxy ∷ Proxy d)
   {-# Inline mkStream #-}
 
@@ -87,8 +87,9 @@ instance
   , KnownNat d
   ) ⇒ MkStream m (ps:.IVariable d) S (is:.PointR I) where
   mkStream Proxy S grd (lus:..LtPointR (I# u)) (is:.PointR (I# i))
-    = map (\(ElmS e) -> ElmS $ e :.: RiPrI (I# u))
-    $ mkStream (Proxy ∷ Proxy ps) S (grd `andI#` (i >=# 0#) `andI#` (i <=# u)) lus is
+    = map (\(ElmS e) -> ElmS $ e :.: RiPrI (I# i))
+    $ mkStream (Proxy ∷ Proxy ps) S (grd `andI#` (i >=# 0#) `andI#` (i +# d <=# u)) lus is
+    where (I# d) = fromIntegral $ natVal (Proxy ∷ Proxy d)
   {-# Inline mkStream #-}
 
 

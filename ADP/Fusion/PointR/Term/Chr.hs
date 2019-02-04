@@ -16,8 +16,8 @@ import           ADP.Fusion.PointR.Core
 
 
 
-type instance LeftPosTy (IStatic   d) (Chr r x) (PointR I) = IStatic   d
-type instance LeftPosTy (IVariable d) (Chr r x) (PointR I) = IVariable d
+type instance LeftPosTy (IStatic   d) (Chr r x) (PointR I) = IStatic   (d+1)
+type instance LeftPosTy (IVariable d) (Chr r x) (PointR I) = IVariable (d+1)
 
 
 
@@ -36,19 +36,36 @@ instance
     $ mkStream (Proxy ∷ Proxy posLeft) ls (termStaticCheck pos (Chr f xs) us is grd) us (termStreamIndex pos (Chr f xs) is)
 
 
+instance
+  ( TermStreamContext m ps ts s x0 i0 is (PointR I)
+  ) => TermStream m (ps:.IStatic d) (TermSymbol ts (Chr r x)) s (is:.PointR I) where
+  {-# Inline termStream #-}
+  termStream Proxy (ts:|Chr f xs) (us:..LtPointR u) (is:.PointR i)
+    = S.map (\(TState s ii ee) →
+        let RiPrI k = getIndex (getIdx s) (Proxy ∷ PRI is (PointR I))
+        in  TState s (ii:.:RiPrI (k+1)) (ee:. f xs k))
+    . termStream (Proxy ∷ Proxy ps) ts us is
 
 instance
   ( TermStreamContext m ps ts s x0 i0 is (PointR I)
   ) => TermStream m (ps:.IVariable d) (TermSymbol ts (Chr r x)) s (is:.PointR I) where
   {-# Inline termStream #-}
   termStream Proxy (ts:|Chr f xs) (us:..LtPointR u) (is:.PointR i)
-    = S.map (\(TState s ii ee) -> TState s (ii:.:RiPrI i) (ee:. f xs (i-1)))
+    = S.map (\(TState s ii ee) ->
+        let RiPrI k = getIndex (getIdx s) (Proxy ∷ PRI is (PointR I))
+        in  TState s (ii:.:RiPrI (k+1)) (ee:. f xs k))
     . termStream (Proxy ∷ Proxy ps) ts us is
 
 
 
 instance TermStaticVar (IStatic d) (Chr r x) (PointR I) where
-  termStreamIndex Proxy (Chr f x) (PointR j) = PointR $ j+1
+  termStreamIndex Proxy (Chr f x) (PointR j) = PointR $ j
+  termStaticCheck Proxy (Chr f x) (LtPointR _) (PointR j) grd = grd
+  {-# Inline [0] termStreamIndex #-}
+  {-# Inline [0] termStaticCheck #-}
+
+instance TermStaticVar (IVariable d) (Chr r x) (PointR I) where
+  termStreamIndex Proxy (Chr f x) (PointR j) = PointR $ j
   termStaticCheck Proxy (Chr f x) (LtPointR _) (PointR j) grd = grd
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}
