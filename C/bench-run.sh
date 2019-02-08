@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/usr/bin/env zsh
 
 # arguments:
 #   stdin: lines
@@ -15,7 +15,7 @@ do
 #  t[${#i}]+=" ${#i}"
 #  m[${#i}]+=" ${#i}"
 #  echo $i | /usr/bin/time -f "%e %M" $1
-  var1=`echo $i | /usr/bin/time -f "%e %M" $1` 2>&1 | read var2
+  var1=`echo $i | time -f "%e %M" $1` 2>&1 | read var2
 #  echo "O $var1"
 #  echo "E $var2"
   a=("${(@s/ /)var2}")
