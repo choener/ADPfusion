@@ -1,17 +1,17 @@
+cabal-version:  2.2
 name:           ADPfusion
 version:        0.6.0.0
-author:         Christian Hoener zu Siederdissen, 2011-2018
-copyright:      Christian Hoener zu Siederdissen, 2011-2018
+author:         Christian Hoener zu Siederdissen, 2011-2019
+copyright:      Christian Hoener zu Siederdissen, 2011-2019
 homepage:       https://github.com/choener/ADPfusion
 bug-reports:    https://github.com/choener/ADPfusion/issues
 maintainer:     choener@bioinf.uni-leipzig.de
 category:       Algorithms, Data Structures, Bioinformatics, Formal Languages
-license:        BSD3
+license:        BSD-3-Clause
 license-file:   LICENSE
 build-type:     Simple
 stability:      experimental
-cabal-version:  >= 1.10.0
-tested-with:    GHC == 8.0.2, GHC == 8.2.2
+tested-with:    GHC == 8.4.4
 synopsis:       Efficient, high-level dynamic programming.
 description:
                 <http://www.bioinf.uni-leipzig.de/Software/gADP/ generalized Algebraic Dynamic Programming>
@@ -96,7 +96,7 @@ flag llvm
 
 
 
-library
+common deps
   build-depends: base               >= 4.7    && < 5.0
                , bits               >= 0.4
                , containers
@@ -111,14 +111,59 @@ library
                , template-haskell   >= 2.0
                , th-orphans         >= 0.12
                , transformers       >= 0.3
---               , type-level-sets    >= 0.8
                , tuple              >= 0.3
                , vector             >= 0.11
                --
-               , DPutils            == 0.0.2.*
+               , DPutils            == 0.1.0.*
                , OrderedBits        == 0.0.1.*
-               , PrimitiveArray     == 0.9.0.*
+               , PrimitiveArray     == 0.9.1.*
+  default-extensions: BangPatterns
+                    , ConstraintKinds
+                    , CPP
+                    , DataKinds
+                    , DefaultSignatures
+                    , DeriveAnyClass
+                    , DeriveDataTypeable
+                    , DeriveGeneric
+                    , FlexibleContexts
+                    , FlexibleInstances
+                    , GADTs
+                    , KindSignatures
+                    , MagicHash
+                    , MultiParamTypeClasses
+                    -- PolyKinds is very important to get GHC to pick up all
+                    -- the instances correctly.
+                    , PolyKinds
+                    , RankNTypes
+                    , RecordWildCards
+                    , ScopedTypeVariables
+                    , StandaloneDeriving
+                    , TemplateHaskell
+                    , TupleSections
+                    , TypeApplications
+                    , TypeFamilies
+                    , TypeOperators
+                    , TypeSynonymInstances
+                    , UndecidableInstances
+                    , UnicodeSyntax
+  default-language:
+    Haskell2010
+  ghc-options:
+    -O2 -funbox-strict-fields
+  if flag(debugdump)
+    ghc-options:
+      -ddump-to-file
+      -ddump-simpl
+      -dsuppress-all
+  if flag(dump-core)
+    build-depends: dump-core
+    ghc-options: -fplugin=DumpCore -fplugin-opt DumpCore:core-html
 
+
+
+library
+  import:
+    deps
   exposed-modules:
     -- core system
     ADP.Fusion.Core
@@ -177,52 +222,11 @@ library
 --    -- tutorials
 --    ADP.Fusion.Tutorial.NeedlemanWunsch
 
-  default-extensions: BangPatterns
-                    , ConstraintKinds
-                    , CPP
-                    , DataKinds
-                    , DefaultSignatures
-                    , DeriveAnyClass
-                    , DeriveDataTypeable
-                    , DeriveGeneric
-                    , FlexibleContexts
-                    , FlexibleInstances
-                    , GADTs
-                    , KindSignatures
-                    , MagicHash
-                    , MultiParamTypeClasses
-                    -- PolyKinds is very important to get GHC to pick up all
-                    -- the instances correctly.
-                    , PolyKinds
-                    , RankNTypes
-                    , RecordWildCards
-                    , ScopedTypeVariables
-                    , StandaloneDeriving
-                    , TemplateHaskell
-                    , TupleSections
-                    , TypeApplications
-                    , TypeFamilies
-                    , TypeOperators
-                    , TypeSynonymInstances
-                    , UndecidableInstances
-                    , UnicodeSyntax
-
-  default-language:
-    Haskell2010
-  ghc-options:
-    -O2 -funbox-strict-fields
-  if flag(debugdump)
-    ghc-options:
-      -ddump-to-file
-      -ddump-simpl
-      -dsuppress-all
-  if flag(dump-core)
-    build-depends: dump-core
-    ghc-options: -fplugin=DumpCore -fplugin-opt DumpCore:core-html
-
 
 
 test-suite properties
+  import:
+    deps
   type:
     exitcode-stdio-1.0
   main-is:
@@ -234,34 +238,12 @@ test-suite properties
     -threaded -rtsopts -with-rtsopts=-N
   hs-source-dirs:
     tests
-  default-language:
-    Haskell2010
-  default-extensions: BangPatterns
-                    , CPP
-                    , DataKinds
-                    , FlexibleContexts
-                    , FlexibleInstances
-                    , MultiParamTypeClasses
-                    , ScopedTypeVariables
-                    , TemplateHaskell
-                    , TypeApplications
-                    , TypeFamilies
-                    , TypeOperators
-                    , TypeSynonymInstances
-                    , UnicodeSyntax
   cpp-options:
     -DADPFUSION_TEST_SUITE_PROPERTIES
-  build-depends: base
-               , ADPfusion
-               , bits
-               , OrderedBits
-               , PrimitiveArray
-               , QuickCheck
-               , strict
+  build-depends: ADPfusion
                , tasty                        >= 0.11
                , tasty-quickcheck             >= 0.8
                , tasty-th                     >= 0.1
-               , vector
 
 
 

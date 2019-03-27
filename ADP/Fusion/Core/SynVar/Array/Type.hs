@@ -63,10 +63,14 @@ instance
   , IndexStream i
   ) ⇒ Axiom (TwITbl b s m arr c i x) where
   type AxiomStream (TwITbl b s m arr c i x) = m x
+  type AxiomIx     (TwITbl b s m arr c i x) = i
   axiom (TW (ITbl c arr) _) = do
     k ← head . streamDown zeroBound' $ upperBound arr
     return $ arr ! k
   {-# Inline axiom #-}
+  axiomAt (TW (ITbl c arr) _) k = 
+    return $ arr ! k
+  {-# Inline axiomAt #-}
 
 -- | We need this somewhat annoying instance construction (@i ~ j@ and @m
 -- ~ mB@) in order to force selection of this instance.
@@ -79,10 +83,14 @@ instance
   , m ~ mB
   ) ⇒ Axiom (TW (Backtrack (TwITbl b s mF arr c i x) mF mB) (LimitType j → j → m [r])) where
   type AxiomStream (TW (Backtrack (TwITbl b s mF arr c i x) mF mB) (LimitType j → j → m [r])) = mB [r]
+  type AxiomIx     (TW (Backtrack (TwITbl b s mF arr c i x) mF mB) (LimitType j → j → m [r])) = i
   axiom (TW (BtITbl c arr) bt) = do
     h ← head . streamDown zeroBound' $ upperBound arr
     bt (upperBound arr) h
   {-# Inline axiom #-}
+  axiomAt (TW (BtITbl c arr) bt) k = do
+    bt (upperBound arr) k
+  {-# Inline axiomAt #-}
 
 
 

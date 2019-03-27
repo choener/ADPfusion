@@ -8,7 +8,13 @@ module ADP.Fusion.Core.SynVar.Axiom where
 
 class Axiom t where
   -- | The corresponding stream being returned by 'axiom'
-  type AxiomStream t :: *
+  type AxiomStream t ∷ *
+  -- | Index type when running the axiom
+  type AxiomIx t ∷ *
   -- | Given a table, run the axiom
-  axiom :: t -> AxiomStream t
+  axiom ∷ t → AxiomStream t
+  -- | Given a table and index, run the axiom from the index on. This is useful
+  -- for scanning type algorithms that need to return all locally optimal
+  -- structures, as a locally optimal may start at any given index.
+  axiomAt ∷ t → AxiomIx t → AxiomStream t
 
