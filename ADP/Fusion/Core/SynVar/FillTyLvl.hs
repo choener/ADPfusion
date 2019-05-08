@@ -9,8 +9,8 @@ module ADP.Fusion.Core.SynVar.FillTyLvl where
 
 import           Control.Monad.Primitive
 import           Control.Monad.ST
-import           Data.Promotion.Prelude.Bool
-import           Data.Promotion.Prelude.List
+import           Data.Singletons.Prelude.Bool
+import           Data.Singletons.Prelude.List
 import           Data.Proxy
 import           Data.Singletons.Prelude.Bool
 import           Data.Type.Equality
