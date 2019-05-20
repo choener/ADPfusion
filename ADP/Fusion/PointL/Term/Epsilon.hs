@@ -99,7 +99,7 @@ instance TermStaticVar (OStatic 0) Epsilon (PointL O) where
   --
   -- TODO But we should probably statically assert that epsilon is the only
   -- symbol on the r.h.s. of whatever we write ...
-  termStaticCheck Proxy Epsilon _ (PointL (I# i)) grd = grd
+  termStaticCheck Proxy Epsilon (LtPointL (I# u)) (PointL (I# i)) grd = (u ==# i) `andI#` grd
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}
 

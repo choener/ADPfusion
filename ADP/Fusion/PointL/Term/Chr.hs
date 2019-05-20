@@ -49,7 +49,9 @@ instance
   ( TermStreamContext m ps ts s x0 i0 is (PointL I)
   ) => TermStream m (ps:.IStatic d) (TermSymbol ts (Chr r x)) s (is:.PointL I) where
   termStream Proxy (ts:|Chr f xs) (us:..LtPointL u) (is:.PointL i)
-    = S.map (\(TState s ii ee) -> TState s (ii:.:RiPlI i) (ee:. f xs (i-1)))
+    -- NOTE changing from @f xs (i-1)@ to @f xs $! i-1@, forcing @i-1@ first,
+    -- yielding 50% better performance in Needleman-Wunsch
+    = S.map (\(TState s ii ee) -> TState s (ii:.:RiPlI i) (ee:. (f xs $! i-1)))
     . termStream (Proxy ∷ Proxy ps) ts us is
   {-# Inline termStream #-}
 
@@ -66,7 +68,7 @@ instance
 
 
 instance TermStaticVar (IStatic d) (Chr r x) (PointL I) where
-  termStreamIndex Proxy (Chr f x) (PointL j) = PointL $ j-1
+  termStreamIndex Proxy (Chr f x) (PointL j) = PointL $! j-1
   termStaticCheck Proxy (Chr f x) _ (PointL j) grd = grd
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}
