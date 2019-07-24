@@ -68,17 +68,15 @@ runNeedlemanWunsch
   ∷ Int
   → String
   → String
-  → ((Z:.PointL I:.PointL I,Int),[[String]],PerfCounter)
-runNeedlemanWunsch k i1' i2' = (dlocal, take k bs,perf) where
+  → ((Z:.PointL I:.PointL I),Int,[[String]],PerfCounter)
+runNeedlemanWunsch k i1' i2' = (fst dlocal, snd dlocal, take k bs,perf) where
   i1 = VU.fromList i1'
   i2 = VU.fromList i2'
   n1 = VU.length i1
   n2 = VU.length i2
   Mutated (Z:.t) perf eachPerf = nwInsideForward i1 i2
-  d = unId $ axiom t
-  -- ts xs = traceShow xs xs
   dlocal = let TW (ITbl _ t') _ = t in maximumBy (comparing snd) . PA.assocs $ t'
-  bs = nwInsideBacktrack i1 i2 t
+  bs = nwInsideBacktrack i1 i2 t (fst dlocal)
 {-# Noinline runNeedlemanWunsch #-}
 
 
@@ -100,8 +98,9 @@ nwInsideBacktrack
   ∷ VU.Vector Char
   → VU.Vector Char
   → TwITbl _ _ Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int
+  → (Z:.PointL I:.PointL I)
   → [[String]]
-nwInsideBacktrack i1 i2 t = {-# SCC "nwInsideBacktrack" #-} unId $ axiom b
+nwInsideBacktrack i1 i2 t k = {-# SCC "nwInsideBacktrack" #-} unId $ axiomAt b k
   where !(Z:.b) = grammar (sScore <|| sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
                     :: Z:.TwITblBt _ _ Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int Id Id [String]
 {-# NoInline nwInsideBacktrack #-}
@@ -155,9 +154,9 @@ align _ [c] = putStrLn "single last line"
 align (kI,kO) (a:b:xs) = {-# SCC "align" #-} do
   putStrLn a
   putStrLn b
-  let (sI,rsI,perfI) = runNeedlemanWunsch kI a b
+  let (posI,sI,rsI,perfI) = runNeedlemanWunsch kI a b
 --  let (sO,rsO,perfO) = runOutsideNeedlemanWunsch kO a b
-  when (kI>=0) $ forM_ rsI $ \[u,l] -> printf "%s\n%s  %s\n\n" (reverse u) (reverse l) (show sI)
+  when (kI>=0) $ forM_ rsI $ \[u,l] -> printf "%s\n%s\n  %d   %s\n\n" (reverse u) (reverse l) (sI) (show posI)
 --  when (kO>=0) $ forM_ rsO $ \[u,l] -> printf "%s\n%s  %d\n\n" (id      u) (id      l) sO
   when (kI>=0) $ print sI
 --  when (kO>=0) $ print sO
