@@ -43,6 +43,8 @@ newtype instance RunningIndex (PointL C) = RiPlC Int
 -- * Inside
 
 -- ** Single-tape
+--
+-- TODO should IStatic do these additional control of @I <=# d@? cf. Epsilon Local.
 
 instance
   ( Monad m

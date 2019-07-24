@@ -1,4 +1,7 @@
 
+-- | 'Epsilon' is a global or local starting (or ending, depending on the view)
+-- point for a grammar.
+
 module ADP.Fusion.Core.Term.Epsilon where
 
 import Data.Strict.Tuple
@@ -10,17 +13,19 @@ import ADP.Fusion.Core.Multi
 
 
 
-data Epsilon = Epsilon
+data LocalGlobal = Local | Global
 
-instance Build Epsilon
+data Epsilon (lg ∷ LocalGlobal) = Epsilon
 
-instance (Element ls i) => Element (ls :!: Epsilon) i where
-  data Elm (ls :!: Epsilon) i = ElmEpsilon !(RunningIndex i) !(Elm ls i)
-  type Arg (ls :!: Epsilon)   = Arg ls :. ()
+instance Build (Epsilon lg)
+
+instance (Element ls i) => Element (ls :!: Epsilon lg) i where
+  data Elm (ls :!: Epsilon lg) i = ElmEpsilon !(RunningIndex i) !(Elm ls i)
+  type Arg (ls :!: Epsilon lg)   = Arg ls :. ()
   getArg (ElmEpsilon _ l) = getArg l :. ()
   getIdx (ElmEpsilon i _) = i
   {-# Inline getArg #-}
   {-# Inline getIdx #-}
 
-type instance TermArg Epsilon = ()
+type instance TermArg (Epsilon lg) = ()
 

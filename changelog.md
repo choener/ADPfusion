@@ -4,6 +4,7 @@
 - major change as to how rule compilation proceeds (ctor spec -> type class instances)
 - use new PrimitiveArray-0.9.0.0
 - backtrace from any given index using 'axiomAt'
+- Epsilon is tagged @Global or @Local, to allow local-alignment style algorithms
 
 0.5.3.0
 -------

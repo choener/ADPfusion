@@ -202,7 +202,7 @@ grammar Signature{..} !a' !i1 !i2 =
   let a = TW a' ( step_step <<< a % (M:|chr i1:|chr i2)     |||
                   step_loop <<< a % (M:|chr i1:|Deletion  ) |||
                   loop_step <<< a % (M:|Deletion  :|chr i2) |||
-                  nil_nil   <<< (M:|Epsilon:|Epsilon)       ... h
+                  nil_nil   <<< (M:|Epsilon @Global:|Epsilon @Global)       ... h
                 )
   in Z:.a
 {-# INLINE grammar #-}

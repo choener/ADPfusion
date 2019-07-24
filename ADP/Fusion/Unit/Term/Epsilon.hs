@@ -14,18 +14,18 @@ import           ADP.Fusion.Unit.Core
 
 
 instance
-  forall m pos posLeft ls i
-  . ( TermStream m (Z:.pos) (TermSymbol M Epsilon) (Elm (Term1 (Elm ls (Unit i))) (Z:.Unit i)) (Z:.Unit i)
-    , posLeft ~ LeftPosTy pos Epsilon (Unit i)
-    , TermStaticVar pos Epsilon (Unit i)
+  forall m pos posLeft ls i lg
+  . ( TermStream m (Z:.pos) (TermSymbol M (Epsilon lg)) (Elm (Term1 (Elm ls (Unit i))) (Z:.Unit i)) (Z:.Unit i)
+    , posLeft ~ LeftPosTy pos (Epsilon lg) (Unit i)
+    , TermStaticVar pos (Epsilon lg) (Unit i)
     , MkStream m posLeft ls (Unit i)
     )
-  ⇒ MkStream m pos (ls :!: Epsilon) (Unit i) where
+  ⇒ MkStream m pos (ls :!: Epsilon lg) (Unit i) where
   mkStream pos (ls :!: Epsilon) grd us is
     = S.map (\(ss,ee,ii) -> ElmEpsilon ii ss)
-    . addTermStream1 pos Epsilon us is
-    . mkStream (Proxy ∷ Proxy posLeft) ls (termStaticCheck pos Epsilon us is grd) us
-    $ termStreamIndex pos Epsilon is
+    . addTermStream1 pos (Epsilon @lg) us is
+    . mkStream (Proxy ∷ Proxy posLeft) ls (termStaticCheck pos (Epsilon @lg) us is grd) us
+    $ termStreamIndex pos (Epsilon @lg) is
   {-# Inline mkStream #-}
 
 
