@@ -4,7 +4,10 @@
 
 module ADP.Fusion.Core.Term.Epsilon where
 
+import Data.Data
 import Data.Strict.Tuple
+import Data.Typeable
+import GHC.Generics(Generic)
 
 import Data.PrimitiveArray
 
@@ -14,6 +17,7 @@ import ADP.Fusion.Core.Multi
 
 
 data LocalGlobal = Local | Global
+  deriving (Eq,Ord,Read,Show,Data,Typeable,Generic)
 
 data Epsilon (lg ∷ LocalGlobal) = Epsilon
 
