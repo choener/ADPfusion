@@ -260,6 +260,7 @@ executable NeedlemanWunsch
                  ,  PrimitiveArray
                  ,  template-haskell
                  ,  vector
+                 ,  DPutils
   else
     buildable:
       False
@@ -321,6 +322,7 @@ executable SmithWaterman
                  ,  PrimitiveArray
                  ,  template-haskell
                  ,  vector
+                 ,  DPutils
   else
     buildable:
       False

@@ -2,6 +2,8 @@
 {-# Options_GHC -fforce-recomp #-}
 {-# Options_GHC -Wno-partial-type-signatures #-}
 
+{-# Language MagicHash #-}
+
 
 module Main (main) where
 
@@ -13,6 +15,8 @@ import           Control.Monad.Primitive
 import           Control.Monad.ST
 import           Data.Foldable (maximumBy)
 import           Data.Ord (comparing)
+import           Data.Ord.Fast
+import           GHC.Exts
 
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
@@ -42,13 +46,20 @@ grammar Signature{..} !a' !i1 !i2 =
   in Z:.a
 {-# INLINE grammar #-}
 
+fasteq ∷ Char → Char → Int → Int → Int
+{-# Inline fasteq #-}
+fasteq (C# a) (C# b) (I# x) (I# y) =
+  let l = (eqChar# a b)
+  in  I# ( (x *# l) +# (y *# (1# -# l)) )
+
 sScore ∷ Monad m ⇒ Signature m Int Int Char
 sScore = Signature
-  { step_step = \x (Z:.a:.b) → if a==b then x + 1 else x-2
+  -- { step_step = \x (Z:.a:.b) → if a==b then x + 1 else x-2
+  { step_step = \x (Z:.a:.b) → fasteq a b (x+1) (x-2) -- if a==b then x + 1 else x-2
   , step_loop = \x _         → x-1
   , loop_step = \x _         → x-1
   , nil_nil   = const 0
-  , h = SM.foldl' max (-999999)
+  , h = SM.foldl' fastmax (-999999)
   }
 {-# INLINE sScore #-}
 

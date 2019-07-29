@@ -84,11 +84,12 @@
 module Main (main) where
 
 import           Control.Monad (forM_,when)
+import           Control.Monad.Primitive
+import           Control.Monad.ST
+import           Data.Ord.Fast
 import           Debug.Trace
 import           System.Environment (getArgs)
 import           Text.Printf
-import           Control.Monad.Primitive
-import           Control.Monad.ST
 
 -- Streams of parses are the streams defined in the @vector@ package.
 
@@ -227,7 +228,7 @@ sScore = Signature
   , step_loop = \x _         → x-1
   , loop_step = \x _         → x-1
   , nil_nil   = const 0
-  , h = SM.foldl' max (-999999)
+  , h = SM.foldl' fastmax (-999999)
   }
 {-# INLINE sScore #-}
 
