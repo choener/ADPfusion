@@ -75,7 +75,8 @@ runNeedlemanWunsch k i1' i2' = (fst dlocal, snd dlocal, take k bs,perf) where
   n1 = VU.length i1
   n2 = VU.length i2
   Mutated (Z:.t) perf eachPerf = nwInsideForward i1 i2
-  dlocal = let TW (ITbl _ t') _ = t in maximumBy (comparing snd) . PA.assocs $ t'
+  dlocal = let TW (ITbl _ t') _ = t
+           in unId . SM.foldl' (\(ap,as) (p,s) → if s > as then (p,s) else (ap,as)) (Z:.PointL 0:.PointL 0,0) $ PA.assocsS t'
   bs = nwInsideBacktrack i1 i2 t (fst dlocal)
 {-# Noinline runNeedlemanWunsch #-}
 
@@ -155,13 +156,9 @@ align (kI,kO) (a:b:xs) = {-# SCC "align" #-} do
   putStrLn a
   putStrLn b
   let (posI,sI,rsI,perfI) = runNeedlemanWunsch kI a b
---  let (sO,rsO,perfO) = runOutsideNeedlemanWunsch kO a b
   when (kI>=0) $ forM_ rsI $ \[u,l] -> printf "%s\n%s\n  %d   %s\n\n" (reverse u) (reverse l) (sI) (show posI)
---  when (kO>=0) $ forM_ rsO $ \[u,l] -> printf "%s\n%s  %d\n\n" (id      u) (id      l) sO
   when (kI>=0) $ print sI
---  when (kO>=0) $ print sO
   when (kI>=0) . putStrLn $ showPerfCounter perfI
---  when (kO>=0) . putStrLn $ showPerfCounter perfO
   putStrLn ""
   align (kI,kO) xs
 
