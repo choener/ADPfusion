@@ -16,8 +16,10 @@ mkDerivation {
     template-haskell th-orphans transformers tuple vector
   ];
   testHaskellDepends = [
-    base bits OrderedBits PrimitiveArray QuickCheck strict tasty
-    tasty-quickcheck tasty-th vector
+    base bits containers deepseq DPutils ghc-prim mmorph mtl
+    OrderedBits primitive PrimitiveArray QuickCheck singletons strict
+    tasty tasty-quickcheck tasty-th template-haskell th-orphans
+    transformers tuple vector
   ];
   benchmarkHaskellDepends = [
     base fmlist PrimitiveArray template-haskell vector
