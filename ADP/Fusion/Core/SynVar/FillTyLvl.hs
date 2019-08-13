@@ -7,15 +7,17 @@
 
 module ADP.Fusion.Core.SynVar.FillTyLvl where
 
+import           Control.DeepSeq
 import           Control.Monad.Primitive
 import           Control.Monad.ST
-import           Data.Singletons.Prelude.Bool
-import           Data.Singletons.Prelude.List
 import           Data.Proxy
 import           Data.Singletons.Prelude.Bool
+import           Data.Singletons.Prelude.Bool
+import           Data.Singletons.Prelude.List
 import           Data.Type.Equality
 import           Data.Vector.Fusion.Util (Id(..))
 import           GHC.Exts
+import           GHC.Generics
 import           GHC.TypeNats
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
@@ -267,13 +269,18 @@ data Mutated ts = Mutated
   , perfCounter   ∷ !PerfCounter
   , eachBigPerfCounter  ∷ [PerfCounter]
   }
+  deriving (Eq,Ord,Show,Generic)
+
+instance NFData ts ⇒ NFData (Mutated ts)
 
 data PerfCounter = PerfCounter
   { picoSeconds   :: !Integer
   , seconds       :: !Double
   , numberOfCells :: !Integer
   }
-  deriving (Eq,Ord,Show)
+  deriving (Eq,Ord,Show,Generic)
+
+instance NFData PerfCounter
 
 showPerfCounter ∷ PerfCounter → String
 {-# NoInline showPerfCounter #-}
