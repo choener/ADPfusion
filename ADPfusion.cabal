@@ -11,7 +11,7 @@ license:        BSD-3-Clause
 license-file:   LICENSE
 build-type:     Simple
 stability:      experimental
-tested-with:    GHC == 8.4.4
+tested-with:    GHC == 8.6.4
 synopsis:       Efficient, high-level dynamic programming.
 description:
                 <http://www.bioinf.uni-leipzig.de/Software/gADP/ generalized Algebraic Dynamic Programming>
@@ -116,7 +116,7 @@ common deps
                --
                , DPutils            == 0.1.0.*
                , OrderedBits        == 0.0.2.*
-               , PrimitiveArray     == 0.9.1.*
+               , PrimitiveArray     == 0.10.0.*
   default-extensions: BangPatterns
                     , ConstraintKinds
                     , CPP
@@ -311,65 +311,65 @@ executable NeedlemanWunsch
 
 
 
-executable NWDouble
-
-  if flag(examples)
-    buildable:
-      True
-    build-depends:  base
-                 ,  ADPfusion
-                 ,  primitive
-                 ,  PrimitiveArray
-                 ,  template-haskell
-                 ,  vector
-                 ,  DPutils
-  else
-    buildable:
-      False
-  hs-source-dirs:
-    src
-  main-is:
-    NWDouble.hs
-  default-language:
-    Haskell2010
-  default-extensions: BangPatterns
-                    , DataKinds
-                    , FlexibleContexts
-                    , FlexibleInstances
-                    , MultiParamTypeClasses
-                    , PartialTypeSignatures
-                    , PolyKinds
-                    , RecordWildCards
-                    , TemplateHaskell
-                    , TypeApplications
-                    , TypeFamilies
-                    , TypeOperators
-                    , UnicodeSyntax
-  ghc-options:
-    -O2
-    -funbox-strict-fields
-    -- these parameters do well enough with GHC 8.2
-    -- for larger programs, we may have to increase the number of worker
-    -- arguments.
-    -flate-dmd-anal
-    -fspec-constr-count=20
-    -fspec-constr-keen
-    -fspec-constr-recursive=20
-    -fspec-constr-threshold=20
-  if flag(debugdump)
-    ghc-options:
-      -ddump-to-file
-      -ddump-simpl
-      -dsuppress-all
---      -dshow-passes
---      -dverbose-core2core
-  if flag(llvm)
-    ghc-options:
-      -fllvm
-      -optlo-O3
-  if flag(dump-core)
-    build-depends: dump-core
-    ghc-options: -fplugin=DumpCore -fplugin-opt DumpCore:core-html
+--executable NWDouble
+--
+--  if flag(examples)
+--    buildable:
+--      True
+--    build-depends:  base
+--                 ,  ADPfusion
+--                 ,  primitive
+--                 ,  PrimitiveArray
+--                 ,  template-haskell
+--                 ,  vector
+--                 ,  DPutils
+--  else
+--    buildable:
+--      False
+--  hs-source-dirs:
+--    src
+--  main-is:
+--    NWDouble.hs
+--  default-language:
+--    Haskell2010
+--  default-extensions: BangPatterns
+--                    , DataKinds
+--                    , FlexibleContexts
+--                    , FlexibleInstances
+--                    , MultiParamTypeClasses
+--                    , PartialTypeSignatures
+--                    , PolyKinds
+--                    , RecordWildCards
+--                    , TemplateHaskell
+--                    , TypeApplications
+--                    , TypeFamilies
+--                    , TypeOperators
+--                    , UnicodeSyntax
+--  ghc-options:
+--    -O2
+--    -funbox-strict-fields
+--    -- these parameters do well enough with GHC 8.2
+--    -- for larger programs, we may have to increase the number of worker
+--    -- arguments.
+--    -flate-dmd-anal
+--    -fspec-constr-count=20
+--    -fspec-constr-keen
+--    -fspec-constr-recursive=20
+--    -fspec-constr-threshold=20
+--  if flag(debugdump)
+--    ghc-options:
+--      -ddump-to-file
+--      -ddump-simpl
+--      -dsuppress-all
+----      -dshow-passes
+----      -dverbose-core2core
+--  if flag(llvm)
+--    ghc-options:
+--      -fllvm
+--      -optlo-O3
+--  if flag(dump-core)
+--    build-depends: dump-core
+--    ghc-options: -fplugin=DumpCore -fplugin-opt DumpCore:core-html
 
 
 

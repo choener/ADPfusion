@@ -99,6 +99,7 @@ import qualified Data.Vector.Fusion.Stream.Monadic as SM
 -- terminal parses work with any vector in the @vector@ package.
 
 import qualified Data.Vector.Unboxed as VU
+import qualified Data.Vector.Storable as VS
 
 -- @Data.PrimitiveArray@ contains data structures, and index structures for
 -- dynamic programming. Notably, the primitive arrays holding the cell data
@@ -285,7 +286,7 @@ runNeedlemanWunsch k i1' i2' = (d, take k bs,perf) where
 nwInsideForward
   ∷ VU.Vector Char
   → VU.Vector Char
-  → Mutated (Z:.TwITbl _ _ Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int)
+  → Mutated (Z:.TwITbl _ _ Id (Dense VU.Vector) (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int)
 nwInsideForward !i1 !i2 = {-# SCC "nwInsideForward" #-} runST $ do
   arr ← newWithPA (ZZ:..LtPointL n1:..LtPointL n2) (-999999)
   ts ← fillTables $ grammar sScore
@@ -299,11 +300,11 @@ nwInsideForward !i1 !i2 = {-# SCC "nwInsideForward" #-} runST $ do
 nwInsideBacktrack
   ∷ VU.Vector Char
   → VU.Vector Char
-  → TwITbl _ _ Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int
+  → TwITbl _ _ Id (Dense VU.Vector) (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int
   → [[String]]
 nwInsideBacktrack i1 i2 t = {-# SCC "nwInsideBacktrack" #-} unId $ axiom b
   where !(Z:.b) = grammar (sScore <|| sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
-                    :: Z:.TwITblBt _ _ Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int Id Id [String]
+                    :: Z:.TwITblBt _ _ (Dense VU.Vector) (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int Id Id [String]
 {-# NoInline nwInsideBacktrack #-}
 
 -- | The outside version of the Needleman-Wunsch alignment algorithm. The
@@ -324,7 +325,7 @@ runOutsideNeedlemanWunsch k i1' i2' = {-# SCC "runOutside" #-} (d, take k . unId
   Mutated (Z:.t) perf eachPerf = nwOutsideForward i1 i2
   d = unId $ axiom t
   !(Z:.b) = grammar (sScore <|| sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
-              :: Z:.TwITblBt _ _ Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL O:.PointL O) Int Id Id [String]
+              :: Z:.TwITblBt _ _ (Dense VU.Vector) (Z:.EmptyOk:.EmptyOk) (Z:.PointL O:.PointL O) Int Id Id [String]
 {-# Noinline runOutsideNeedlemanWunsch #-}
 
 -- | Again, to be able to observe performance, we have extracted the
@@ -335,7 +336,7 @@ runOutsideNeedlemanWunsch k i1' i2' = {-# SCC "runOutside" #-} (d, take k . unId
 nwOutsideForward
   ∷ VU.Vector Char
   → VU.Vector Char
-  → Mutated (Z:.TwITbl _ _ Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL O:.PointL O) Int)
+  → Mutated (Z:.TwITbl _ _ Id (Dense VU.Vector) (Z:.EmptyOk:.EmptyOk) (Z:.PointL O:.PointL O) Int)
 nwOutsideForward !i1 !i2 = {-# SCC "nwOutsideForward" #-} runST $ do
   arr ← newWithPA (ZZ:..LtPointL n1:..LtPointL n2) (-999999)
   ts ← fillTables $ grammar sScore
