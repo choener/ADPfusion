@@ -12,7 +12,7 @@ module ADP.Fusion.PointL
   ( module ADP.Fusion.Core
   , module ADP.Fusion.PointL.Core
   , module ADP.Fusion.PointL.SynVar.Indices
-  , module ADP.Fusion.PointL.SynVar.Recursive
+--  , module ADP.Fusion.PointL.SynVar.Recursive
   , module ADP.Fusion.PointL.Term.Chr
   , module ADP.Fusion.PointL.Term.Deletion
   , module ADP.Fusion.PointL.Term.Epsilon
@@ -24,7 +24,7 @@ import ADP.Fusion.Core
 
 import ADP.Fusion.PointL.Core
 import ADP.Fusion.PointL.SynVar.Indices
-import ADP.Fusion.PointL.SynVar.Recursive
+--import ADP.Fusion.PointL.SynVar.Recursive
 import ADP.Fusion.PointL.Term.Chr
 import ADP.Fusion.PointL.Term.Deletion
 import ADP.Fusion.PointL.Term.Epsilon
