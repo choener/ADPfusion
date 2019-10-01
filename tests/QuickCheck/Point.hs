@@ -15,10 +15,10 @@ import           System.IO.Unsafe
 import           Test.QuickCheck
 import           Test.QuickCheck.All
 import           Test.QuickCheck.Monadic
-#ifdef ADPFUSION_TEST_SUITE_PROPERTIES
+-- #ifdef ADPFUSION_TEST_SUITE_PROPERTIES
 import           Test.Tasty.TH
 import           Test.Tasty.QuickCheck
-#endif
+-- #endif
 
 import           Data.PrimitiveArray
 
@@ -29,23 +29,23 @@ import           ADP.Fusion.PointL
 -- * Epsilon cases
 
 prop_I_Epsilon ix@(PointL j) = zs == ls where
-  zs = (id <<< Epsilon ... stoList) maxPLi ix
+  zs = (id <<< Epsilon @Global ... stoList) maxPLi ix
   ls = [ () | j == 0 ]
 
 prop_O_Epsilon ix@(PointL j) = zs == ls where
-  zs = (id <<< Epsilon ... stoList) maxPLo ix
+  zs = (id <<< Epsilon @Global ... stoList) maxPLo ix
   ls = [ () | j == maxI ]
 
 prop_I_ZEpsilon ix@(Z:.PointL j) = zs == ls where
-  zs = (id <<< (M:|Epsilon) ... stoList) (ZZ:..maxPLi) ix
+  zs = (id <<< (M:|Epsilon @Global) ... stoList) (ZZ:..maxPLi) ix
   ls = [ Z:.() | j == 0 ]
 
 prop_O_ZEpsilon ix@(Z:.PointL j) = zs == ls where
-  zs = (id <<< (M:|Epsilon) ... stoList) (ZZ:..maxPLo) ix
+  zs = (id <<< (M:|Epsilon @Global) ... stoList) (ZZ:..maxPLo) ix
   ls = [ Z:.() | j == maxI ]
 
 prop_O_ZEpsilonEpsilon ix@(Z:.PointL j:.PointL l) = zs == ls where
-  zs = (id <<< (M:|Epsilon:|Epsilon) ... stoList) (ZZ:..maxPLo:..maxPLo) ix
+  zs = (id <<< (M:|Epsilon @Global:|Epsilon @Global) ... stoList) (ZZ:..maxPLo:..maxPLo) ix
   ls = [ Z:.():.() | j == maxI, l == maxI ]
 
 
@@ -322,7 +322,7 @@ allProps = $forAllProperties customCheck
 
 
 
-#ifdef ADPFUSION_TEST_SUITE_PROPERTIES
+-- #ifdef ADPFUSION_TEST_SUITE_PROPERTIES
 testgroup_point = $(testGroupGenerator)
-#endif
+-- #endif
 
