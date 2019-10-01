@@ -26,7 +26,7 @@ Ideas implemented here are described in a couple of papers:
     [preprint](http://www.bioinf.uni-leipzig.de/Software/gADP/preprints/hoe-pro-2015.pdf)  
 1.  Maik Riechert, Christian Höner zu Siederdissen, and Peter F. Stadler  
     *Algebraic dynamic programming for multiple context-free languages*  
-    2015, submitted  
+    2016, Theoretical Computer Science  
     [preprint](http://www.bioinf.uni-leipzig.de/Software/gADP/preprints/rie-hoe-2015.pdf)  
 
 

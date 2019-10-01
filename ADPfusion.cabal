@@ -16,30 +16,31 @@ synopsis:       Efficient, high-level dynamic programming.
 description:
                 <http://www.bioinf.uni-leipzig.de/Software/gADP/ generalized Algebraic Dynamic Programming>
                 .
-                ADPfusion combines stream-fusion (using the stream interface
-                provided by the vector library) and type-level programming to
-                provide highly efficient dynamic programming combinators.
+                ADPfusion combines stream-fusion (using the stream interface provided by the vector
+                library) and type-level programming to provide highly efficient dynamic programming
+                combinators.
                 .
-                ADPfusion allows writing dynamic programs for single- and
-                multi-tape problems. Inputs can be sequences, or sets. New
-                input types can be defined, without having to rewrite this
-                library thanks to the open-world assumption of ADPfusion.
+                ADPfusion allows writing dynamic programs for single- and multi-tape problems.
+                Inputs can be sequences, or sets. New input types can be defined, without having to
+                rewrite this library thanks to the open-world assumption of ADPfusion.
                 .
-                The library provides the machinery for Outside and Ensemble
-                algorithms as well. Ensemble algorithms combine Inside and
-                Outside calculations.
+                The library provides the machinery for Outside and Ensemble algorithms as well.
+                Ensemble algorithms combine Inside and Outside calculations.
                 .
-                Starting with version 0.4.1 we support writing multiple
-                context-free grammars (interleaved syntactic variables). Such
-                grammars have applications in bioinformatics and linguistics.
+                Starting with version 0.4.1 we support writing multiple context-free grammars
+                (interleaved syntactic variables). Such grammars have applications in bioinformatics
+                and linguistics.
                 .
-                The homepage provides a number of tutorial-style examples, with
-                linear and context-free grammars over sequence and set inputs.
+                The homepage provides a number of tutorial-style examples, with linear and
+                context-free grammars over sequence and set inputs.
                 .
-                The formal background for generalized algebraic dynamic
-                progrmaming and ADPfusion is described in a number of papers.
-                These can be found on the gADP homepage and in the README.
+                The formal background for generalized algebraic dynamic programming and ADPfusion is
+                described in a number of papers. These can be found on the gADP homepage and in the
+                README.
                 .
+                Note: The core @ADPfusion@ library only provides machinery for linear language over
+                sequences. The add-ons @ADPfusionSubword@, @ADPfusionForest@, and others provide
+                specialized machinery for other types of formal languages.
 
 
 
