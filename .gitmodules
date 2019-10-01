@@ -1,0 +1,12 @@
+[submodule "deps/PrimitiveArray"]
+	path = deps/PrimitiveArray
+	url = workrepo:Repository/Lib-PrimitiveArray
+	branch = devel
+[submodule "deps/DPutils"]
+	path = deps/DPutils
+	url = workrepo:Repository/Lib-DPutils
+	branch = devel
+[submodule "deps/OrderedBits"]
+	path = deps/OrderedBits
+	url = workrepo:Repository/Lib-OrderedBits
+	branch = devel

@@ -116,6 +116,8 @@ import           Data.PrimitiveArray as PA hiding (map)
 
 import           ADP.Fusion.PointL
 
+import           Data.Ord.Fast
+
 
 
 -- | A signature connects the types of all non-terminals and terminals with
@@ -225,11 +227,12 @@ grammar Signature{..} !a' !i1 !i2 =
 
 sScore ∷ Monad m ⇒ Signature m Int Int Char
 sScore = Signature
-  { step_step = \x (Z:.a:.b) → if a==b then x+1 else x-2
-  , step_loop = \x _         → x-1
-  , loop_step = \x _         → x-1
+  { step_step = \x (Z:.a:.b) → if a==b then x+7 else x-5
+  , step_loop = \x _         → x-3
+  , loop_step = \x _         → x-2
   , nil_nil   = const 0
-  , h = SM.foldl' max (-999999)
+  , h = SM.foldl' fastmax (-999999)
+--  , h = SM.foldl1' fastmax
   }
 {-# INLINE sScore #-}
 

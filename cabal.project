@@ -1,4 +1,6 @@
 packages: .
 
-optional-packages: ./*/*.cabal
+optional-packages:
+  ./deps/*/*.cabal
+
 
