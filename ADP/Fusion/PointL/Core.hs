@@ -77,7 +77,7 @@ instance
   mkStream Proxy S grd (lus:..LtPointL (I# u)) (is:.PointL (I# i))
     = map (\(ElmS e) -> ElmS $ e :.: RiPlI 0)
     $ mkStream (Proxy ∷ Proxy ps) S (grd `andI#` (i >=# 0#) `andI#` (i <=# d) `andI#` (i <=# u)) lus is
-    -- $ mkStream (Proxy ∷ Proxy ps) S (grd `andI#` (i >=# 0#)) lus is
+    --    $ mkStream (Proxy ∷ Proxy ps) S (grd `andI#` (i >=# 0#)) lus is
     -- NOTE we should optimize which parameters are actually required, the gain is about 10% on the
     -- NeedlemanWunsch algorithm
     where (I# d) = fromIntegral $ natVal (Proxy ∷ Proxy d)
@@ -91,7 +91,7 @@ instance
   mkStream Proxy S grd (lus:..LtPointL (I# u)) (is:.PointL (I# i))
     = map (\(ElmS e) -> ElmS $ e :.: RiPlI 0)
     $ mkStream (Proxy ∷ Proxy ps) S (grd `andI#` (i >=# 0#) `andI#` (i <=# u)) lus is
-    -- $ mkStream (Proxy ∷ Proxy ps) S (grd `andI#` (i >=# 0#)) lus is
+    --    $ mkStream (Proxy ∷ Proxy ps) S (grd `andI#` (i >=# 0#)) lus is
   {-# Inline mkStream #-}
 
 
