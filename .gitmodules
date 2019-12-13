@@ -1,7 +1,7 @@
 [submodule "deps/PrimitiveArray"]
 	path = deps/PrimitiveArray
 	url = workrepo:Repository/Lib-PrimitiveArray
-	branch = devel
+	branch = sparse
 [submodule "deps/DPutils"]
 	path = deps/DPutils
 	url = workrepo:Repository/Lib-DPutils
