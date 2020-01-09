@@ -105,7 +105,11 @@ instance
               }
     return $ p:ps
 
--- |
+-- | 'ThisBigOrder' provides machinery to fill tables correctly.
+--
+-- TODO @getAllBounds@ should return a sum structure providing either dense bounds, banded bounds,
+-- or a sparse set of elements, for @streamUp/streamDown@ to work on. This is currently not
+-- happening.
 
 class ThisBigOrder (boNat ∷ Nat) (thisOrder ∷ Bool) ts where
   thisBigOrder ∷ Proxy boNat → Proxy thisOrder → ts → ST s ()
@@ -131,7 +135,8 @@ instance
   thisBigOrder Proxy Proxy tst@(_:.TW (ITbl _ arr) _) = do
     let to = upperBound arr
     let allBounds = getAllBounds (Proxy ∷ Proxy boNat) (Proxy ∷ Proxy True) tst
-    -- TODO check bounds
+    -- TODO This should provide one of a multitude of different ways to stream indices: for dense
+    -- matrices, use what is below, but for other types, we will need unions of indices.
     flip SM.mapM_ (streamUp zeroBound' to) $ \k ->
       eachSmallOrder (Proxy ∷ Proxy boNat) (Proxy ∷ Proxy smallOrder) tst k
   {-# Inline getAllBounds #-}
