@@ -6,12 +6,14 @@ module ADP.Fusion.Core.SynVar.Array.Type where
 
 import Data.Proxy
 import Data.Strict.Tuple hiding (uncurry,snd)
-import Data.Vector.Fusion.Stream.Monadic (map,Stream,head,mapM,Step(..))
+import Data.Vector.Fusion.Stream.Monadic (map,mapMaybe,Stream,head,mapM,Step(..))
 import Debug.Trace
 import GHC.TypeNats
 import Prelude hiding (map,head,mapM)
+import qualified Data.Vector.Generic as VG
 
 import Data.PrimitiveArray hiding (map)
+import qualified Data.PrimitiveArray.SparseSearch as PAS
 
 import ADP.Fusion.Core.Classes
 import ADP.Fusion.Core.Multi
@@ -23,9 +25,6 @@ import ADP.Fusion.Core.SynVar.TableWrap
 
 
 -- | Immutable table.
---
--- NOTE / TODO We can *NOT* move the little order into the type-level until we
--- have a fully working TH-based table filler.
 
 data ITbl (bigorder ∷ Nat) (smallOrder ∷ Nat) arr c i x where
   ITbl ∷ { iTblConstraint  ∷ !c           -- TODO next to go?!
@@ -140,17 +139,22 @@ type instance LeftPosTy Z (TwITbl b s m arr Z Z x) Z = Z
 type instance LeftPosTy Z (TwITblBt b s arr Z Z x mF mB r) Z = Z
 
 
+
+-- * Dense
+
+-- | @mkStream@ indexes into the the table structure using dense lookup via @t!tt@.
+
 instance
-  forall b s l m pos ps p posLeft arr cs c us u x is i ls
+  forall b s l m pos ps p posLeft v cs c us u x is i ls
   . ( Monad m
   , pos ~ (ps:.p)
-  , posLeft ~ LeftPosTy pos (TwITbl b s m arr (cs:.c) (us:.u) x) (is:.i)
+  , posLeft ~ LeftPosTy pos (TwITbl b s m (Dense v) (cs:.c) (us:.u) x) (is:.i)
   , Element ls (is:.i)
   , TableStaticVar (ps:.p) (cs:.c) (us:.u) (is:.i)
   , AddIndexDense pos (Elm ls (is:.i)) (cs:.c) (us:.u) (is:.i)
   , MkStream m posLeft ls (is:.i)
-  , PrimArrayOps arr (us:.u) x
-  ) ⇒ MkStream m (ps:.p) (ls :!: TwITbl b s m arr (cs:.c) (us:.u) x) (is:.i) where
+  , PrimArrayOps (Dense v) (us:.u) x
+  ) ⇒ MkStream m (ps:.p) (ls :!: TwITbl b s m (Dense v) (cs:.c) (us:.u) x) (is:.i) where
   mkStream Proxy (ls :!: TW (ITbl csc t) _) grd usu isi
     = map (\(s,tt,ii') -> ElmITbl (t!tt) ii' s)
     . addIndexDense (Proxy ∷ Proxy pos) csc ub usu isi
@@ -161,15 +165,65 @@ instance
 instance
   ( Monad mB
   , pos ~ (ps:.p)
-  , posLeft ~ LeftPosTy pos (TwITblBt b s arr (cs:.c) (us:.u) x mF mB r) (is:.i)
+  , posLeft ~ LeftPosTy pos (TwITblBt b s (Dense v) (cs:.c) (us:.u) x mF mB r) (is:.i)
   , Element ls (is:.i)
   , TableStaticVar (ps:.p) (cs:.c) (us:.u) (is:.i)
   , AddIndexDense pos (Elm ls (is:.i)) (cs:.c) (us:.u) (is:.i)
   , MkStream mB posLeft ls (is:.i)
-  , PrimArrayOps arr (us:.u) x
-  ) ⇒ MkStream mB (ps:.p) (ls :!: TwITblBt b s arr (cs:.c) (us:.u) x mF mB r) (is:.i) where
+  , PrimArrayOps (Dense v) (us:.u) x
+  ) ⇒ MkStream mB (ps:.p) (ls :!: TwITblBt b s (Dense v) (cs:.c) (us:.u) x mF mB r) (is:.i) where
   mkStream Proxy (ls :!: TW (BtITbl csc t) bt) grd usu isi
     = mapM (\(s,tt,ii') -> bt ub tt >>= \ ~bb -> return $ ElmBtITbl (t!tt) bb ii' s)
+    . addIndexDense (Proxy ∷ Proxy pos) csc ub usu isi
+    $ mkStream (Proxy ∷ Proxy posLeft) ls grd usu (tableStreamIndex (Proxy :: Proxy pos) csc ub isi)
+    where ub = upperBound t
+  {-# Inline mkStream #-}
+
+
+
+-- * Sparse
+
+-- | @mkStream@ indexes into the the table structure using dense lookup via @t!tt@.
+
+instance
+  forall b s l m pos ps p posLeft ixw v cs c us u x is i ls
+  . ( Monad m
+  , pos ~ (ps:.p)
+  , posLeft ~ LeftPosTy pos (TwITbl b s m (PAS.Sparse ixw v) (cs:.c) (us:.u) x) (is:.i)
+  , Element ls (is:.i)
+  , TableStaticVar (ps:.p) (cs:.c) (us:.u) (is:.i)
+  , AddIndexDense pos (Elm ls (is:.i)) (cs:.c) (us:.u) (is:.i)
+  , MkStream m posLeft ls (is:.i)
+  , PAS.MPrimArrayVarOps (PAS.Sparse ixw v) (us:.u) x
+  , Index us, Index u, PAS.SparseBucket u, PAS.SparseBucket us, Ord us, Ord u
+  , VG.Vector ixw (us:.u)
+  , VG.Vector v x
+  , Show us, Show u, Show x
+  ) ⇒ MkStream m (ps:.p) (ls :!: TwITbl b s m (PAS.Sparse ixw v) (cs:.c) (us:.u) x) (is:.i) where
+  mkStream Proxy (ls :!: TW (ITbl csc t) _) grd usu isi
+    = mapMaybe (\(s,tt,ii') -> (\z -> ElmITbl z ii' s) <$> PAS.vunsafeIndex t tt)
+    . addIndexDense (Proxy ∷ Proxy pos) csc ub usu isi
+    $ mkStream (Proxy ∷ Proxy posLeft) ls grd usu (tableStreamIndex (Proxy ∷ Proxy pos) csc ub isi)
+    where ub = upperBound t
+  {-# Inline mkStream #-}
+
+instance
+  ( Monad mB
+  , pos ~ (ps:.p)
+  , posLeft ~ LeftPosTy pos (TwITblBt b s (PAS.Sparse ixw v) (cs:.c) (us:.u) x mF mB r) (is:.i)
+  , Element ls (is:.i)
+  , TableStaticVar (ps:.p) (cs:.c) (us:.u) (is:.i)
+  , AddIndexDense pos (Elm ls (is:.i)) (cs:.c) (us:.u) (is:.i)
+  , MkStream mB posLeft ls (is:.i)
+  , PAS.MPrimArrayVarOps (PAS.Sparse ixw v) (us:.u) x
+  , Index us, Index u, PAS.SparseBucket u, PAS.SparseBucket us, Ord us, Ord u
+  , VG.Vector ixw (us:.u)
+  , VG.Vector v x
+  , Show us, Show u, Show x
+  ) ⇒ MkStream mB (ps:.p) (ls :!: TwITblBt b s (PAS.Sparse ixw v) (cs:.c) (us:.u) x mF mB r) (is:.i) where
+  mkStream Proxy (ls :!: TW (BtITbl csc t) bt) grd usu isi
+    = mapM (\(s,tt,ii',z) -> bt ub tt >>= \ ~bb -> return $ ElmBtITbl z bb ii' s)
+    . mapMaybe (\(s,tt,ii') -> (\z -> (s,tt,ii',z)) <$> PAS.vunsafeIndex t tt)
     . addIndexDense (Proxy ∷ Proxy pos) csc ub usu isi
     $ mkStream (Proxy ∷ Proxy posLeft) ls grd usu (tableStreamIndex (Proxy :: Proxy pos) csc ub isi)
     where ub = upperBound t

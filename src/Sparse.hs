@@ -75,15 +75,16 @@ sPretty = Signature
 
 runNeedlemanWunsch
   ∷ Int
+  -> Int
   → String
   → String
   → (Int,[[String]],PerfCounter)
-runNeedlemanWunsch k i1' i2' = (d, take k bs,perf) where
+runNeedlemanWunsch cutoff k i1' i2' = (d, take k bs,perf) where
   i1 = VU.fromList i1'
   i2 = VU.fromList i2'
   n1 = VU.length i1
   n2 = VU.length i2
-  Mutated (Z:.t) perf eachPerf = nwInsideForward i1 i2
+  Mutated (Z:.t) perf eachPerf = nwInsideForward cutoff i1 i2
   d = unId $ axiom t
   bs = nwInsideBacktrack i1 i2 t
 {-# Noinline runNeedlemanWunsch #-}
@@ -91,27 +92,30 @@ runNeedlemanWunsch k i1' i2' = (d, take k bs,perf) where
 -- | 
 
 nwInsideForward
-  ∷ VU.Vector Char
+  ∷ Int
+  -> VU.Vector Char
   → VU.Vector Char
   → Mutated (Z:.TwITbl _ _ Id (SS.Sparse VU.Vector VU.Vector) (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int)
-nwInsideForward !i1 !i2 = {-# SCC "nwInsideForward" #-} runST $ do
+nwInsideForward !cutoff !i1 !i2 = {-# SCC "nwInsideForward" #-} runST $ do
   let band :: VU.Vector (Z:.PointL I:.PointL I)
       -- Provide a band of values around the main diagonal
       band = VU.fromList [ (Z:.PointL k:.PointL l)
                          | k <- [0..n1]
                          , l <- [0..n2]
                          , let q :: Double = fromIntegral n1 / fromIntegral n2
-                         , let p :: Double = fromIntegral k / fromIntegral l
-                         , True -- TODO set up band!
+                         , let p :: Double = fromIntegral k / fromIntegral (max 1 l)
+                         -- , traceShow (k,l,q,p) $ (1-α)*q <= p && (1+α)*q >= p
+                         , abs (k-l) <= cutoff
                          ]
+      α = 1.0
   arr ← SS.vnewWithPA (ZZ:..LtPointL n1:..LtPointL n2) band (-999999)
   ts ← fillTables $ grammar sScore
                       (ITbl @_ @_ @_ @_ @0 @0 (Z:.EmptyOk:.EmptyOk) arr)
                       i1 i2
-  -- let SS.Sparse{..} = arr in traceShow (PA.assocs arr) $ return ()
-  -- let SS.Sparse{..} = arr in traceShow ("ixs", sparseIndices) $ return ()
-  -- let SS.Sparse{..} = arr in traceShow ("dta", sparseData) $ return ()
-  -- let SS.Sparse{..} = arr in traceShow ("man", manhattanStart) $ return ()
+  --let SS.Sparse{..} = arr in traceShow (PA.assocs arr) $ return ()
+  --let SS.Sparse{..} = arr in traceShow ("ixs", sparseIndices) $ return ()
+  --let SS.Sparse{..} = arr in traceShow ("dta", sparseData) $ return ()
+  --let SS.Sparse{..} = arr in traceShow ("man", manhattanStart) $ return ()
   return ts
   where !n1 = VU.length i1
         !n2 = VU.length i2
@@ -129,30 +133,29 @@ nwInsideBacktrack i1 i2 t = {-# SCC "nwInsideBacktrack" #-} unId $ axiom b
 
 -- | 
 
-align _ [] = return ()
-align _ [c] = putStrLn "single last line"
-align kI (a:b:xs) = {-# SCC "align" #-} do
+align _ _ [] = return ()
+align _ _ [c] = putStrLn "single last line"
+align cutoff kI (a:b:xs) = {-# SCC "align" #-} do
   putStrLn a
   putStrLn b
-  let (sI,rsI,perfI) = runNeedlemanWunsch kI a b
+  let (sI,rsI,perfI) = runNeedlemanWunsch cutoff kI a b
   when (kI>=0) $ forM_ rsI $ \[u,l] -> printf "%s\n%s  %d\n\n" (reverse u) (reverse l) sI
   when (kI>=0) $ print sI
   when (kI>=0) . putStrLn $ showPerfCounter perfI
   putStrLn ""
-  align kI xs
+  align cutoff kI xs
 
 -- | 
 
 main = do
   as <- getArgs
-  let k = case as of
-            [] -> 1
-            [x] -> let x' = read x
-                   in  x'
+  let (cutoff, k) = case as of
+            [] -> (30,1)
+            [c,x] -> (read c, read x)
             args -> error $ "too many arguments"
   ls <- lines <$> getContents
-  align k ls
+  align cutoff k ls
 
 
 
-test = align 1 ["a","a"]
+test = align 3 1 ["a","a"]

@@ -16,15 +16,18 @@ import           Data.Singletons.Prelude.Bool
 import           Data.Singletons.Prelude.List
 import           Data.Type.Equality
 import           Data.Vector.Fusion.Util (Id(..))
+import           Debug.Trace (traceShow)
 import           GHC.Exts
 import           GHC.Generics
 import           GHC.TypeNats
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
+import qualified Data.Vector.Generic as VG
 import qualified Data.Vector.Unboxed as VU
 import           System.CPUTime
 import           Text.Printf
 
 import           Data.PrimitiveArray
+import qualified Data.PrimitiveArray.SparseSearch as PAS
 
 import           ADP.Fusion.Core.SynVar.TableWrap
 import           ADP.Fusion.Core.SynVar.Array
@@ -121,16 +124,16 @@ instance ThisBigOrder boNat anyOrder Z where
   {-# Inline getAllBounds #-}
   getAllBounds Proxy Proxy Z = []
 
--- | We have found the first table for our big order. Extract the bounds and
--- hand over to small order. We do not need to check for another big order with
--- this nat, since all tables are now being filled by the small order.
+-- | For 'Dense' tables, we have found the first table for our big order. Extract the bounds and
+-- hand over to small order. We do not need to check for another big order with this nat, since all
+-- tables are now being filled by the small order.
 
 instance
-  ( smallOrder ~ SmallOrderNats (ts:.TwITbl bo so m arr c i x)
-  , EachSmallOrder boNat smallOrder (ts:.TwITbl bo so m arr c i x) i
-  , PrimArrayOps arr i x
+  ( smallOrder ~ SmallOrderNats (ts:.TwITbl bo so m (Dense v) c i x)
+  , EachSmallOrder boNat smallOrder (ts:.TwITbl bo so m (Dense v) c i x) i
+  , PrimArrayOps (Dense v) i x
   , IndexStream i
-  ) ⇒ ThisBigOrder boNat True (ts:.TwITbl bo so m arr c i x) where
+  ) ⇒ ThisBigOrder boNat True (ts:.TwITbl bo so m (Dense v) c i x) where
   {-# Inline thisBigOrder #-}
   thisBigOrder Proxy Proxy tst@(_:.TW (ITbl _ arr) _) = do
     let to = upperBound arr
@@ -141,6 +144,23 @@ instance
       eachSmallOrder (Proxy ∷ Proxy boNat) (Proxy ∷ Proxy smallOrder) tst k
   {-# Inline getAllBounds #-}
   getAllBounds Proxy Proxy (ts:.t) = undefined
+
+-- | For 'Sparse' tables, we have found the first table ...
+
+instance
+  ( smallOrder ~ SmallOrderNats (ts:.TwITbl bo so m (PAS.Sparse ixw v) c i x)
+  , EachSmallOrder boNat smallOrder (ts:.TwITbl bo so m (PAS.Sparse ixw v) c i x) i
+  , PAS.MPrimArrayVarOps (PAS.Sparse ixw v) i x
+  , IndexStream i
+  , VG.Vector ixw i
+  ) ⇒ ThisBigOrder boNat True (ts:.TwITbl bo so m (PAS.Sparse ixw v) c i x) where
+  {-# Inline thisBigOrder #-}
+  thisBigOrder Proxy Proxy tst@(_:.TW (ITbl _ arr) _) = do
+    -- TODO merge all indices, this system only works partially for now!
+    let ixs = traceShow "WARNING: mergeIndices has not happened yet! All sparse tables need to have the union of indices!"
+            $ PAS.sparseIndices arr
+    flip VG.mapM_ ixs $ \k ->
+      eachSmallOrder (Proxy ∷ Proxy boNat) (Proxy ∷ Proxy smallOrder) tst k
 
 -- | Go down the tables until we find the first table for our big order.
 
@@ -206,24 +226,46 @@ instance
   thisSmallOrder Proxy Proxy Proxy (ts:.t) i =
     thisSmallOrder (Proxy ∷ Proxy bigOrder) (Proxy ∷ Proxy smallOrder) (Proxy ∷ Proxy isThisOrder) ts i
 
--- |
+-- | This instance fills only dense tables. Sparse tables will use a slightly different system,
+-- where writes may fail silently!
 --
 -- TODO generalize from @Id@ to any monad in a stack with a primitive base
 
 instance
-  ( PrimArrayOps arr i x
-  , MPrimArrayOps arr i x
+  ( PrimArrayOps (Dense v) i x
+  , MPrimArrayOps (Dense v) i x
   , isThisBigOrder ~ IsThisBigOrder bigOrder ts
   , isThisSmallOrder ~ IsThisSmallOrder smallOrder ts
   , isThisOrder ~ (isThisBigOrder && isThisSmallOrder)
   , ThisSmallOrder bigOrder smallOrder isThisOrder ts i
-  ) ⇒ ThisSmallOrder bigOrder smallOrder 'True (ts:.TwITbl bo so Id arr c i x) i where
+  ) ⇒ ThisSmallOrder bigOrder smallOrder 'True (ts:.TwITbl bo so Id (Dense v) c i x) i where
   {-# Inline thisSmallOrder #-}
   thisSmallOrder Proxy Proxy Proxy (ts:.TW (ITbl _ arr) f) i = do
     let uB = upperBound arr
     marr <- unsafeThaw arr
     z ← return . unId $ (inline f) uB i
     writeM marr i z
+    -- TODO need to write test case that checks that all tables are always filled
+    thisSmallOrder (Proxy ∷ Proxy bigOrder) (Proxy ∷ Proxy smallOrder) (Proxy ∷ Proxy isThisOrder) ts i
+
+instance
+  ( PAS.MPrimArrayVarOps (PAS.Sparse ixw v) i x
+  , Index i
+  , PAS.SparseBucket i, Ord i
+  , VG.Vector ixw i
+  , VG.Vector v x
+  , Show i, Show x
+  , isThisBigOrder ~ IsThisBigOrder bigOrder ts
+  , isThisSmallOrder ~ IsThisSmallOrder smallOrder ts
+  , isThisOrder ~ (isThisBigOrder && isThisSmallOrder)
+  , ThisSmallOrder bigOrder smallOrder isThisOrder ts i
+  ) ⇒ ThisSmallOrder bigOrder smallOrder 'True (ts:.TwITbl bo so Id (PAS.Sparse ixw v) c i x) i where
+  {-# Inline thisSmallOrder #-}
+  thisSmallOrder Proxy Proxy Proxy (ts:.TW (ITbl _ arr) f) i = do
+    let uB = upperBound arr
+    marr <- unsafeThaw arr
+    z ← return . unId $ (inline f) uB i
+    PAS.vwriteM marr i z
     -- TODO need to write test case that checks that all tables are always filled
     thisSmallOrder (Proxy ∷ Proxy bigOrder) (Proxy ∷ Proxy smallOrder) (Proxy ∷ Proxy isThisOrder) ts i
 
