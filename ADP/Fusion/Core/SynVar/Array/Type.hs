@@ -13,7 +13,7 @@ import Prelude hiding (map,head,mapM)
 import qualified Data.Vector.Generic as VG
 
 import Data.PrimitiveArray hiding (map)
-import qualified Data.PrimitiveArray.SparseSearch as PAS
+import qualified Data.PrimitiveArray.Sparse as PAS
 
 import ADP.Fusion.Core.Classes
 import ADP.Fusion.Core.Multi
@@ -194,14 +194,14 @@ instance
   , TableStaticVar (ps:.p) (cs:.c) (us:.u) (is:.i)
   , AddIndexDense pos (Elm ls (is:.i)) (cs:.c) (us:.u) (is:.i)
   , MkStream m posLeft ls (is:.i)
-  , PAS.MPrimArrayVarOps (PAS.Sparse ixw v) (us:.u) x
+  , PrimArrayOps (PAS.Sparse ixw v) (us:.u) x
   , Index us, Index u, PAS.SparseBucket u, PAS.SparseBucket us, Ord us, Ord u
   , VG.Vector ixw (us:.u)
   , VG.Vector v x
   , Show us, Show u, Show x
   ) ⇒ MkStream m (ps:.p) (ls :!: TwITbl b s m (PAS.Sparse ixw v) (cs:.c) (us:.u) x) (is:.i) where
   mkStream Proxy (ls :!: TW (ITbl csc t) _) grd usu isi
-    = mapMaybe (\(s,tt,ii') -> (\z -> ElmITbl z ii' s) <$> PAS.vunsafeIndex t tt)
+    = mapMaybe (\(s,tt,ii') -> (\z -> ElmITbl z ii' s) <$> safeIndex t tt)
     . addIndexDense (Proxy ∷ Proxy pos) csc ub usu isi
     $ mkStream (Proxy ∷ Proxy posLeft) ls grd usu (tableStreamIndex (Proxy ∷ Proxy pos) csc ub isi)
     where ub = upperBound t
@@ -215,7 +215,7 @@ instance
   , TableStaticVar (ps:.p) (cs:.c) (us:.u) (is:.i)
   , AddIndexDense pos (Elm ls (is:.i)) (cs:.c) (us:.u) (is:.i)
   , MkStream mB posLeft ls (is:.i)
-  , PAS.MPrimArrayVarOps (PAS.Sparse ixw v) (us:.u) x
+  , PrimArrayOps (PAS.Sparse ixw v) (us:.u) x
   , Index us, Index u, PAS.SparseBucket u, PAS.SparseBucket us, Ord us, Ord u
   , VG.Vector ixw (us:.u)
   , VG.Vector v x
@@ -223,7 +223,7 @@ instance
   ) ⇒ MkStream mB (ps:.p) (ls :!: TwITblBt b s (PAS.Sparse ixw v) (cs:.c) (us:.u) x mF mB r) (is:.i) where
   mkStream Proxy (ls :!: TW (BtITbl csc t) bt) grd usu isi
     = mapM (\(s,tt,ii',z) -> bt ub tt >>= \ ~bb -> return $ ElmBtITbl z bb ii' s)
-    . mapMaybe (\(s,tt,ii') -> (\z -> (s,tt,ii',z)) <$> PAS.vunsafeIndex t tt)
+    . mapMaybe (\(s,tt,ii') -> (\z -> (s,tt,ii',z)) <$> safeIndex t tt)
     . addIndexDense (Proxy ∷ Proxy pos) csc ub usu isi
     $ mkStream (Proxy ∷ Proxy posLeft) ls grd usu (tableStreamIndex (Proxy :: Proxy pos) csc ub isi)
     where ub = upperBound t

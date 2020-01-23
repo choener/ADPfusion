@@ -27,7 +27,7 @@ import           System.CPUTime
 import           Text.Printf
 
 import           Data.PrimitiveArray
-import qualified Data.PrimitiveArray.SparseSearch as PAS
+import qualified Data.PrimitiveArray.Sparse as PAS
 
 import           ADP.Fusion.Core.SynVar.TableWrap
 import           ADP.Fusion.Core.SynVar.Array
@@ -150,7 +150,7 @@ instance
 instance
   ( smallOrder ~ SmallOrderNats (ts:.TwITbl bo so m (PAS.Sparse ixw v) c i x)
   , EachSmallOrder boNat smallOrder (ts:.TwITbl bo so m (PAS.Sparse ixw v) c i x) i
-  , PAS.MPrimArrayVarOps (PAS.Sparse ixw v) i x
+  , PrimArrayOps (PAS.Sparse ixw v) i x
   , IndexStream i
   , VG.Vector ixw i
   ) ⇒ ThisBigOrder boNat True (ts:.TwITbl bo so m (PAS.Sparse ixw v) c i x) where
@@ -233,7 +233,6 @@ instance
 
 instance
   ( PrimArrayOps (Dense v) i x
-  , MPrimArrayOps (Dense v) i x
   , isThisBigOrder ~ IsThisBigOrder bigOrder ts
   , isThisSmallOrder ~ IsThisSmallOrder smallOrder ts
   , isThisOrder ~ (isThisBigOrder && isThisSmallOrder)
@@ -242,14 +241,14 @@ instance
   {-# Inline thisSmallOrder #-}
   thisSmallOrder Proxy Proxy Proxy (ts:.TW (ITbl _ arr) f) i = do
     let uB = upperBound arr
-    marr <- unsafeThaw arr
+    marr <- unsafeThawM arr
     z ← return . unId $ (inline f) uB i
     writeM marr i z
     -- TODO need to write test case that checks that all tables are always filled
     thisSmallOrder (Proxy ∷ Proxy bigOrder) (Proxy ∷ Proxy smallOrder) (Proxy ∷ Proxy isThisOrder) ts i
 
 instance
-  ( PAS.MPrimArrayVarOps (PAS.Sparse ixw v) i x
+  ( PrimArrayOps (PAS.Sparse ixw v) i x
   , Index i
   , PAS.SparseBucket i, Ord i
   , VG.Vector ixw i
@@ -263,9 +262,9 @@ instance
   {-# Inline thisSmallOrder #-}
   thisSmallOrder Proxy Proxy Proxy (ts:.TW (ITbl _ arr) f) i = do
     let uB = upperBound arr
-    marr <- unsafeThaw arr
+    marr <- unsafeThawM arr
     z ← return . unId $ (inline f) uB i
-    PAS.vwriteM marr i z
+    safeWriteM marr i z
     -- TODO need to write test case that checks that all tables are always filled
     thisSmallOrder (Proxy ∷ Proxy bigOrder) (Proxy ∷ Proxy smallOrder) (Proxy ∷ Proxy isThisOrder) ts i
 

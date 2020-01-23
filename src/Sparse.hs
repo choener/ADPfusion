@@ -18,7 +18,7 @@ import qualified Data.Vector.Unboxed as VU
 import qualified Data.Vector.Storable as VS
 
 import           Data.PrimitiveArray as PA hiding (map)
-import qualified Data.PrimitiveArray.SparseSearch as SS
+import qualified Data.PrimitiveArray.Sparse as SS
 import           ADP.Fusion.PointL
 
 import           Data.Ord.Fast
@@ -108,7 +108,7 @@ nwInsideForward !cutoff !i1 !i2 = {-# SCC "nwInsideForward" #-} runST $ do
                          , abs (k-l) <= cutoff
                          ]
       α = 1.0
-  arr ← SS.vnewWithPA (ZZ:..LtPointL n1:..LtPointL n2) band (-999999)
+  arr ← newWithSPA (ZZ:..LtPointL n1:..LtPointL n2) band (-999999)
   ts ← fillTables $ grammar sScore
                       (ITbl @_ @_ @_ @_ @0 @0 (Z:.EmptyOk:.EmptyOk) arr)
                       i1 i2
