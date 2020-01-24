@@ -195,7 +195,7 @@ instance
   , AddIndexDense pos (Elm ls (is:.i)) (cs:.c) (us:.u) (is:.i)
   , MkStream m posLeft ls (is:.i)
   , PrimArrayOps (PAS.Sparse ixw v) (us:.u) x
-  , Index us, Index u, PAS.SparseBucket u, PAS.SparseBucket us, Ord us, Ord u
+  , Index us, Index u, SparseBucket u, SparseBucket us, Ord us, Ord u
   , VG.Vector ixw (us:.u)
   , VG.Vector v x
   , Show us, Show u, Show x
@@ -216,7 +216,7 @@ instance
   , AddIndexDense pos (Elm ls (is:.i)) (cs:.c) (us:.u) (is:.i)
   , MkStream mB posLeft ls (is:.i)
   , PrimArrayOps (PAS.Sparse ixw v) (us:.u) x
-  , Index us, Index u, PAS.SparseBucket u, PAS.SparseBucket us, Ord us, Ord u
+  , Index us, Index u, SparseBucket u, SparseBucket us, Ord us, Ord u
   , VG.Vector ixw (us:.u)
   , VG.Vector v x
   , Show us, Show u, Show x

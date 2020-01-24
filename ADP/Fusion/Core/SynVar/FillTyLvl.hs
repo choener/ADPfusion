@@ -23,6 +23,7 @@ import           GHC.TypeNats
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Generic as VG
 import qualified Data.Vector.Unboxed as VU
+import qualified Data.Vector as V
 import           System.CPUTime
 import           Text.Printf
 
@@ -157,10 +158,10 @@ instance
   {-# Inline thisBigOrder #-}
   thisBigOrder Proxy Proxy tst@(_:.TW (ITbl _ arr) _) = do
     -- TODO merge all indices, this system only works partially for now!
-    let ixs = traceShow "WARNING: mergeIndices has not happened yet! All sparse tables need to have the union of indices!"
-            $ PAS.sparseIndices arr
-    flip VG.mapM_ ixs $ \k ->
-      eachSmallOrder (Proxy ∷ Proxy boNat) (Proxy ∷ Proxy smallOrder) tst k
+    let ixs = V.map (fromLinearIndex $ PAS.sparseUpperBound arr) $ V.convert $ PAS.sparseIndices arr
+    traceShow "WARNING: mergeIndices has not happened yet! All sparse tables need to have the union of indices!" $
+      flip V.mapM_ ixs $ \k ->
+        eachSmallOrder (Proxy ∷ Proxy boNat) (Proxy ∷ Proxy smallOrder) tst k
 
 -- | Go down the tables until we find the first table for our big order.
 
@@ -250,7 +251,7 @@ instance
 instance
   ( PrimArrayOps (PAS.Sparse ixw v) i x
   , Index i
-  , PAS.SparseBucket i, Ord i
+  , SparseBucket i, Ord i
   , VG.Vector ixw i
   , VG.Vector v x
   , Show i, Show x

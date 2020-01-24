@@ -136,9 +136,12 @@ nwInsideBacktrack i1 i2 t = {-# SCC "nwInsideBacktrack" #-} unId $ axiom b
 align _ _ [] = return ()
 align _ _ [c] = putStrLn "single last line"
 align cutoff kI (a:b:xs) = {-# SCC "align" #-} do
+  let lenA = length a
+      lenB = length b
+      minCut = abs $ lenA - lenB
   putStrLn a
   putStrLn b
-  let (sI,rsI,perfI) = runNeedlemanWunsch cutoff kI a b
+  let (sI,rsI,perfI) = runNeedlemanWunsch (minCut + cutoff) kI a b
   when (kI>=0) $ forM_ rsI $ \[u,l] -> printf "%s\n%s  %d\n\n" (reverse u) (reverse l) sI
   when (kI>=0) $ print sI
   when (kI>=0) . putStrLn $ showPerfCounter perfI
