@@ -17,6 +17,7 @@ module ADP.Fusion.PointL
   , module ADP.Fusion.PointL.Term.Deletion
   , module ADP.Fusion.PointL.Term.Epsilon
   , module ADP.Fusion.PointL.Term.MultiChr
+  , module ADP.Fusion.PointL.Term.PeekIndex
   , module ADP.Fusion.PointL.Term.Str
   ) where
 
@@ -29,5 +30,6 @@ import ADP.Fusion.PointL.Term.Chr
 import ADP.Fusion.PointL.Term.Deletion
 import ADP.Fusion.PointL.Term.Epsilon
 import ADP.Fusion.PointL.Term.MultiChr
+import ADP.Fusion.PointL.Term.PeekIndex
 import ADP.Fusion.PointL.Term.Str
 
