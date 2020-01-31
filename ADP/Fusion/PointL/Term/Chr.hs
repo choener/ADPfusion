@@ -57,7 +57,7 @@ instance
     -- at index 0. In case of empty inputs, this will be violated and we should check that nothing
     -- breaks. Compare performance of this version vs. the inline version. Inline also does not need
     -- @clamp@, but currently always evaluates @e@, even if the value is not actually needed.
-    = let !e = f xs $! clamp (i-1) in S.map (\(TState s ii ee) -> TState s (ii:.:RiPlI i) (ee:.e))
+    = S.map (\(TState s ii ee) -> let !e = f xs $! i-1 in TState s (ii:.:RiPlI i) (ee:.e))
     . termStream (Proxy ∷ Proxy ps) ts us is
   {-# Inline termStream #-}
 
