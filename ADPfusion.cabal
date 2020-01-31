@@ -75,6 +75,11 @@ flag examples
   default:      False
   manual:       True
 
+flag examplenw
+  description:  build the example NeedlemanWunsch
+  default:      False
+  manual:       True
+
 flag spectest
   description:  build the spec-ctor test case
   default:      False
@@ -252,7 +257,7 @@ test-suite properties
 
 executable NeedlemanWunsch
 
-  if flag(examples)
+  if flag(examples) || flag(examplenw)
     buildable:
       True
     build-depends:  base

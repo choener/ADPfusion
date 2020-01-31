@@ -9,6 +9,7 @@ import qualified Data.Vector.Generic as VG
 import           GHC.Exts
 
 import           Data.PrimitiveArray
+import           Data.Ord.Fast
 
 import           ADP.Fusion.Core
 import           ADP.Fusion.Core.Term.Chr
@@ -51,7 +52,12 @@ instance
   termStream Proxy (ts:|Chr f xs) (us:..LtPointL u) (is:.PointL i)
     -- NOTE changing from @f xs (i-1)@ to @f xs $! i-1@, forcing @i-1@ first,
     -- yielding 50% better performance in Needleman-Wunsch
-    = S.map (\(TState s ii ee) -> TState s (ii:.:RiPlI i) (ee:. (f xs $! i-1)))
+    --
+    -- NOTE the @let ... in@ part, in principle, requires that @xs@ contains at least one element,
+    -- at index 0. In case of empty inputs, this will be violated and we should check that nothing
+    -- breaks. Compare performance of this version vs. the inline version. Inline also does not need
+    -- @clamp@, but currently always evaluates @e@, even if the value is not actually needed.
+    = let !e = f xs $! clamp (i-1) in S.map (\(TState s ii ee) -> TState s (ii:.:RiPlI i) (ee:.e))
     . termStream (Proxy ∷ Proxy ps) ts us is
   {-# Inline termStream #-}
 
