@@ -208,6 +208,7 @@ library
     ADP.Fusion.PointL.Term.Deletion
     ADP.Fusion.PointL.Term.Epsilon
     ADP.Fusion.PointL.Term.MultiChr
+    ADP.Fusion.PointL.Term.PeekIndex
     ADP.Fusion.PointL.Term.Str
     ADP.Fusion.PointL.Term.Switch
 --    ADP.Fusion.PointL.Term.Test
