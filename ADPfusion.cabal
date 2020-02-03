@@ -80,6 +80,11 @@ flag examplenw
   default:      False
   manual:       True
 
+flag examplesparse
+  description:  build the sparse NeedlemanWunsch
+  default:      False
+  manual:       True
+
 flag spectest
   description:  build the spec-ctor test case
   default:      False
@@ -378,7 +383,7 @@ executable SmithWaterman
 
 executable Sparse
 
-  if flag(examples)
+  if flag(examples) || flag(examplenw)
     buildable:
       True
     build-depends:  base
