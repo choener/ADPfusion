@@ -23,7 +23,7 @@ let
   }); # extend
   # my own little tool
   cabalghcisrc =
-    let local = ~/Documents/University/devel/ghcicabal;
+    let local = ~/Documents/University/active/ghcicabal;
     in  if builtins.pathExists local
         then local
         else builtins.fetchGit {
