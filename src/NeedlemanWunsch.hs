@@ -241,10 +241,9 @@ sScore = Signature
   , step_loop = \x _         → x-3
   , loop_step = \x _         → x-2
   , nil_nil   = const 0
---  , h = SM.foldl' max (-999999)
-  , h = SM.foldl' fastmax (-999999)     // 160 megacells / second
---  , h = SM.foldl' (+) 0 -- just for performance testing! // 280 megacells / second
---  , h = SM.foldl1' fastmax
+--  , h = SM.foldl' max (-999999)       -- 150 megacells / second
+  , h = SM.foldl' fastmax (-999999)     -- 160 megacells / second
+--  , h = SM.foldl' (+) 0 -- just for performance testing! -- 280 megacells / second
   }
 {-# INLINE sScore #-}
 
