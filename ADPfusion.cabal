@@ -298,9 +298,6 @@ executable NeedlemanWunsch
   ghc-options:
     -O2
     -funbox-strict-fields
-    -- these parameters do well enough with GHC 8.2
-    -- for larger programs, we may have to increase the number of worker
-    -- arguments.
     -flate-dmd-anal
     -fspec-constr-count=20
     -fspec-constr-keen

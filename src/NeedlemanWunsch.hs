@@ -2,6 +2,16 @@
 {-# Options_GHC -fforce-recomp #-}
 {-# Options_GHC -Wno-partial-type-signatures #-}
 
+-- these parameters do well enough with GHC 8.2
+-- for larger programs, we may have to increase the number of worker
+-- arguments.
+
+{-# Options_GHC -flate-dmd-anal            #-}
+{-# Options_GHC -fspec-constr-count=20     #-}
+{-# Options_GHC -fspec-constr-keen         #-}
+{-# Options_GHC -fspec-constr-recursive=20 #-}
+{-# Options_GHC -fspec-constr-threshold=20 #-}
+
 -- | The Needleman-Wunsch global alignment algorithm. This algorithm is
 -- extremely simple but provides a good showcase for what ADPfusion offers.
 --
@@ -232,7 +242,8 @@ sScore = Signature
   , loop_step = \x _         → x-2
   , nil_nil   = const 0
 --  , h = SM.foldl' max (-999999)
-  , h = SM.foldl' fastmax (-999999)
+  , h = SM.foldl' fastmax (-999999)     // 160 megacells / second
+--  , h = SM.foldl' (+) 0 -- just for performance testing! // 280 megacells / second
 --  , h = SM.foldl1' fastmax
   }
 {-# INLINE sScore #-}
