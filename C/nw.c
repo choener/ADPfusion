@@ -5,8 +5,8 @@
 int needlemanWunsch (const int, const int, const char *, const char *);
 
 int main () {
-  char p[10000];
-  char q[10000];
+  char p[11000];
+  char q[11000];
   int m;
   int n;
   int e;
