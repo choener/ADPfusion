@@ -10,6 +10,7 @@
 {-# Options_GHC -fspec-constr-count=200     #-}
 {-# Options_GHC -fspec-constr-keen          #-}
 {-# Options_GHC -fspec-constr-recursive=200 #-}
+{- Options_GHC -fno-liberate-case          #-}
 
 {- Options_GHC -fexpose-all-unfoldings -ffun-to-thunk -fspecialise-aggressively -flate-specialise #-}
 {- Options_GHC -fstatic-argument-transformation -funbox-strict-fields -fdicts-cheap -fasm #-}
@@ -114,6 +115,8 @@ import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
 import qualified Data.Vector.Storable as VS
 
+import GHC.Exts
+
 -- @Data.PrimitiveArray@ contains data structures, and index structures for
 -- dynamic programming. Notably, the primitive arrays holding the cell data
 -- with Boxed and Unboxed tables. In addition, linear, context-free, and
@@ -155,11 +158,11 @@ import           Data.Ord.Fast
 -- capable, which is a really cool feature for advanced algorithms.
 
 data Signature m x r c = Signature
-  { step_step ∷ x → (Z:.c :.c ) → x
-  , step_loop ∷ x → (Z:.c :.()) → x
-  , loop_step ∷ x → (Z:.():.c ) → x
-  , nil_nil   ∷     (Z:.():.()) → x
-  , h         ∷ Stream m x -> m r
+  { step_step :: x -> (Z:.c :.c ) -> x
+  , step_loop :: x -> (Z:.c :.()) -> x
+  , loop_step :: x -> (Z:.():.c ) -> x
+  , nil_nil   ::     (Z:.():.()) -> x
+  , h         :: Stream m x -> m r
   }
 
 -- | We also want to be able to backtrace the optimal result. Given our
@@ -238,17 +241,22 @@ grammar Signature{..} !a' !i1 !i2 =
 -- @-999999@ and find the maximum of that score and the choices we are
 -- given.
 
-sScore ∷ Monad m ⇒ Signature m Int Int Char
+sScore :: Monad m => Signature m Int Int Char
 sScore = Signature
-  { step_step = \x (Z:.a:.b) → if a==b then x+7 else x-5
-  , step_loop = \x _         → x-3
-  , loop_step = \x _         → x-2
+  { step_step = \x (Z:.a:.b) -> fastCharScore 7 (negate 5) a b x -- let C# a' = a; C# b' = b; I# x' = x in I# ( (eqChar# a' b' *# ( x' +# 12#)) -# 5# ) -- if a==b then x+7 else x-5
+  , step_loop = \x _         -> x-3
+  , loop_step = \x _         -> x-2
   , nil_nil   = const 0
 --  , h = SM.foldl' max (-999999)       -- 150 megacells / second
   , h = SM.foldl' fastmax (-999999)     -- 160 megacells / second
 --  , h = SM.foldl' (+) 0 -- just for performance testing! -- 280 megacells / second
   }
 {-# INLINE sScore #-}
+
+fastCharScore :: Int -> Int -> Char -> Char -> Int -> Int
+{-# Inline [0] fastCharScore #-}
+fastCharScore (I# match) (I# mis) (C# a) (C# b) (I# x) = I# (x +# s)
+  where s = eqChar# a b *# (match +# mis) -# mis
 
 -- | Scores alone are not enough, we also want to pretty-print alignments.
 -- An alignment are basically two strings @[String 1, String 2]@, being
@@ -260,11 +268,11 @@ sScore = Signature
 -- rather returns all alignments. You already heard about @<**@, we'll use
 -- it below.
 
-sPretty ∷ Monad m ⇒ Signature m [String] [[String]] Char
+sPretty :: Monad m ⇒ Signature m [String] [[String]] Char
 sPretty = Signature
-  { step_step = \[x,y] (Z:.a :.b ) → [a  :x, b  :y]
-  , step_loop = \[x,y] (Z:.a :.()) → [a  :x, '-':y]
-  , loop_step = \[x,y] (Z:.():.b ) → ['-':x, b  :y]
+  { step_step = \[x,y] (Z:.a :.b ) -> [a  :x, b  :y]
+  , step_loop = \[x,y] (Z:.a :.()) -> [a  :x, '-':y]
+  , loop_step = \[x,y] (Z:.():.b ) -> ['-':x, b  :y]
   , nil_nil   = const ["",""]
   , h = SM.toList
   }
@@ -276,10 +284,10 @@ sPretty = Signature
 -- returned is the score, the @snd@ are the co-optimal parses.
 
 runNeedlemanWunsch
-  ∷ Int
-  → String
-  → String
-  → (Int,[[String]],PerfCounter)
+  :: Int
+  -> String
+  -> String
+  -> (Int,[[String]],PerfCounter)
 runNeedlemanWunsch k i1' i2' = (d, take k bs,perf) where
   i1 = VU.fromList i1'
   i2 = VU.fromList i2'
@@ -301,9 +309,9 @@ runNeedlemanWunsch k i1' i2' = (d, take k bs,perf) where
 -- 'runOutsideNeedlemanWunsch'.
 
 nwInsideForward
-  ∷ VU.Vector Char
-  → VU.Vector Char
-  → Mutated (Z:.TwITbl _ _ Id (Dense VU.Vector) (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int)
+  :: VU.Vector Char
+  -> VU.Vector Char
+  -> Mutated (Z:.TwITbl _ _ Id (Dense VU.Vector) (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int)
 nwInsideForward !i1 !i2 = {-# SCC "nwInsideForward" #-} runST $ do
   arr ← newWithPA (ZZ:..LtPointL n1:..LtPointL n2) (-999999)
   ts ← fillTables $ grammar sScore
@@ -315,10 +323,10 @@ nwInsideForward !i1 !i2 = {-# SCC "nwInsideForward" #-} runST $ do
 {-# NoInline nwInsideForward #-}
 
 nwInsideBacktrack
-  ∷ VU.Vector Char
-  → VU.Vector Char
-  → TwITbl _ _ Id (Dense VU.Vector) (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int
-  → [[String]]
+  :: VU.Vector Char
+  -> VU.Vector Char
+  -> TwITbl _ _ Id (Dense VU.Vector) (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int
+  -> [[String]]
 nwInsideBacktrack i1 i2 t = {-# SCC "nwInsideBacktrack" #-} unId $ axiom b
   where !(Z:.b) = grammar (sScore <|| sPretty) (toBacktrack t (undefined :: Id a -> Id a)) i1 i2
                     :: Z:.TwITblBt _ _ (Dense VU.Vector) (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int Id Id [String]
@@ -330,10 +338,10 @@ nwInsideBacktrack i1 i2 t = {-# SCC "nwInsideBacktrack" #-} unId $ axiom b
 -- and the grammar from above.
 
 runOutsideNeedlemanWunsch
-  ∷ Int
-  → String
-  → String
-  → (Int,[[String]],PerfCounter)
+  :: Int
+  -> String
+  -> String
+  -> (Int,[[String]],PerfCounter)
 runOutsideNeedlemanWunsch k i1' i2' = {-# SCC "runOutside" #-} (d, take k . unId $ axiom b, perf) where
   i1 = VU.fromList i1'
   i2 = VU.fromList i2'
@@ -351,9 +359,9 @@ runOutsideNeedlemanWunsch k i1' i2' = {-# SCC "runOutside" #-} (d, take k . unId
 -- The partial type signature is filled by GHC.
 
 nwOutsideForward
-  ∷ VU.Vector Char
-  → VU.Vector Char
-  → Mutated (Z:.TwITbl _ _ Id (Dense VU.Vector) (Z:.EmptyOk:.EmptyOk) (Z:.PointL O:.PointL O) Int)
+  :: VU.Vector Char
+  -> VU.Vector Char
+  -> Mutated (Z:.TwITbl _ _ Id (Dense VU.Vector) (Z:.EmptyOk:.EmptyOk) (Z:.PointL O:.PointL O) Int)
 nwOutsideForward !i1 !i2 = {-# SCC "nwOutsideForward" #-} runST $ do
   arr ← newWithPA (ZZ:..LtPointL n1:..LtPointL n2) (-999999)
   ts ← fillTables $ grammar sScore
