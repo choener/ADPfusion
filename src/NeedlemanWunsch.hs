@@ -219,10 +219,10 @@ makeAlgebraProduct ''Signature
 -- Giegerichs @ADP@, we hide the actual index calculations.
 
 grammar Signature{..} !a' !i1 !i2 =
-  let a = TW a' ( step_step <<< a % (M:|chr i1:|chr i2)     |||
-                  step_loop <<< a % (M:|chr i1:|Deletion  ) |||
-                  loop_step <<< a % (M:|Deletion  :|chr i2) |||
-                  nil_nil   <<< (M:|Epsilon @Global:|Epsilon @Global)       ... h
+  let a = TW a' ( nil_nil   <<< (M:|Epsilon @Global:|Epsilon @Global)  |||
+                  step_loop <<< a % (M:|chr i1:|Deletion  )            |||
+                  loop_step <<< a % (M:|Deletion  :|chr i2)            |||
+                  step_step <<< a % (M:|chr i1:|chr i2)                ... h
                 )
   in Z:.a
 {-# INLINE grammar #-}
@@ -243,7 +243,7 @@ grammar Signature{..} !a' !i1 !i2 =
 
 sScore :: Monad m => Signature m Int Int Char
 sScore = Signature
-  { step_step = \x (Z:.a:.b) -> fastCharScore 7 (negate 5) a b x -- let C# a' = a; C# b' = b; I# x' = x in I# ( (eqChar# a' b' *# ( x' +# 12#)) -# 5# ) -- if a==b then x+7 else x-5
+  { step_step = \x (Z:.a:.b) -> fastCharScore 7 (negate 5) a b + x
   , step_loop = \x _         -> x-3
   , loop_step = \x _         -> x-2
   , nil_nil   = const 0
@@ -253,9 +253,9 @@ sScore = Signature
   }
 {-# INLINE sScore #-}
 
-fastCharScore :: Int -> Int -> Char -> Char -> Int -> Int
+fastCharScore :: Int -> Int -> Char -> Char -> Int
 {-# Inline [0] fastCharScore #-}
-fastCharScore (I# match) (I# mis) (C# a) (C# b) (I# x) = I# (x +# s)
+fastCharScore (I# match) (I# mis) (C# a) (C# b) = I# s
   where s = eqChar# a b *# (match +# mis) -# mis
 
 -- | Scores alone are not enough, we also want to pretty-print alignments.
