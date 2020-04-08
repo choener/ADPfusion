@@ -1,16 +1,19 @@
 
-{-# Options_GHC -fforce-recomp #-}
+{- Options_GHC -fforce-recomp #-}
 {-# Options_GHC -Wno-partial-type-signatures #-}
 
 -- these parameters do well enough with GHC 8.2
 -- for larger programs, we may have to increase the number of worker
 -- arguments.
 
-{-# Options_GHC -flate-dmd-anal            #-}
-{-# Options_GHC -fspec-constr-count=20     #-}
-{-# Options_GHC -fspec-constr-keen         #-}
-{-# Options_GHC -fspec-constr-recursive=20 #-}
-{-# Options_GHC -fspec-constr-threshold=20 #-}
+{-# Options_GHC -flate-dmd-anal             #-}
+{-# Options_GHC -fspec-constr-count=200     #-}
+{-# Options_GHC -fspec-constr-keen          #-}
+{-# Options_GHC -fspec-constr-recursive=200 #-}
+
+{- Options_GHC -fexpose-all-unfoldings -ffun-to-thunk -fspecialise-aggressively -flate-specialise #-}
+{- Options_GHC -fstatic-argument-transformation -funbox-strict-fields -fdicts-cheap -fasm #-}
+{-# Options_GHC -ddump-to-file -ddump-simpl -dsuppress-all #-}
 
 -- | The Needleman-Wunsch global alignment algorithm. This algorithm is
 -- extremely simple but provides a good showcase for what ADPfusion offers.
