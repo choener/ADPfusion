@@ -10,7 +10,9 @@
 {-# Options_GHC -fspec-constr-count=200     #-}
 {-# Options_GHC -fspec-constr-keen          #-}
 {-# Options_GHC -fspec-constr-recursive=200 #-}
-{- Options_GHC -fno-liberate-case          #-}
+
+-- better in 8.6.5, but worse in 8.8.x to have enabled
+{-# Options_GHC -fno-liberate-case          #-}
 
 {- Options_GHC -fexpose-all-unfoldings -ffun-to-thunk -fspecialise-aggressively -flate-specialise #-}
 {- Options_GHC -fstatic-argument-transformation -funbox-strict-fields -fdicts-cheap -fasm #-}
