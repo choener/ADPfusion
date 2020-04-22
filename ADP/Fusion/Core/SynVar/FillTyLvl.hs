@@ -250,7 +250,7 @@ instance
   thisSmallOrder Proxy Proxy Proxy (ts:.TW (ITbl _ arr) f) i = do
     let uB = upperBound arr
     marr <- unsafeThawM arr
-    z ← return . unId $ f uB i
+    z ← return . unId $ inline f uB i
     safeWriteM marr i z
     -- TODO need to write test case that checks that all tables are always filled
     thisSmallOrder (Proxy ∷ Proxy bigOrder) (Proxy ∷ Proxy smallOrder) (Proxy ∷ Proxy isThisOrder) ts i
