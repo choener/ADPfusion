@@ -10,9 +10,13 @@
 {-# Options_GHC -fspec-constr-count=200     #-}
 {-# Options_GHC -fspec-constr-keen          #-}
 {-# Options_GHC -fspec-constr-recursive=200 #-}
+{-# Options_GHC -fdicts-cheap             #-}
 
--- better in 8.6.5, but worse in 8.8.x to have enabled
-{-# Options_GHC -fno-liberate-case          #-}
+-- In ghc 8.8.x we need no-full-laziness, otherwise the @Char@'s are boxed, which massively reduces
+-- performance. Sharing is, in principle, good, but here we'd rather access memory twice, instead of
+-- boxing @Char@'s and repeatedly unboxing them again.
+{-# Options_GHC -fno-liberate-case        #-}
+{-# Options_GHC -fno-full-laziness        #-}
 
 {- Options_GHC -fexpose-all-unfoldings -ffun-to-thunk -fspecialise-aggressively -flate-specialise #-}
 {- Options_GHC -fstatic-argument-transformation -funbox-strict-fields -fdicts-cheap -fasm #-}

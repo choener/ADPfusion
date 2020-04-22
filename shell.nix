@@ -6,7 +6,8 @@ with import pkgs {};
 
 let
   hsPkgs0 = haskellPackages.override {
-  #hsPkgs0 = haskell.packages.ghc881.override {
+  #hsPkgs0 = haskell.packages.ghc883.override {
+  #hsPkgs0 = haskell.packages.ghc8101.override {
     overrides = hself: hsuper:
       {
         semirings = hself.callPackage ./overrides/semirings.nix {};
