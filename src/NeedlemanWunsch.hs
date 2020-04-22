@@ -274,7 +274,7 @@ fastCharScore (I# match) (I# mis) (C# a) (C# b) = I# s
 -- rather returns all alignments. You already heard about @<**@, we'll use
 -- it below.
 
-sPretty :: Monad m ⇒ Signature m [String] [[String]] Char
+sPretty :: Monad m => Signature m [String] [[String]] Char
 sPretty = Signature
   { step_step = \[x,y] (Z:.a :.b ) -> [a  :x, b  :y]
   , step_loop = \[x,y] (Z:.a :.()) -> [a  :x, '-':y]
@@ -319,8 +319,8 @@ nwInsideForward
   -> VU.Vector Char
   -> Mutated (Z:.TwITbl _ _ Id (Dense VU.Vector) (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Int)
 nwInsideForward !i1 !i2 = {-# SCC "nwInsideForward" #-} runST $ do
-  arr ← newWithPA (ZZ:..LtPointL n1:..LtPointL n2) (-999999)
-  ts ← fillTables $ grammar sScore
+  arr <- newWithPA (ZZ:..LtPointL n1:..LtPointL n2) (-999999)
+  ts <- fillTables $ grammar sScore
                       (ITbl @_ @_ @_ @_ @0 @0 (Z:.EmptyOk:.EmptyOk) arr)
                       i1 i2
   return ts

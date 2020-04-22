@@ -231,7 +231,11 @@ genAttributeFunction
   -> Q (Name,Exp)
 genAttributeFunction nts fL fR (name,_,t) = do
   (lamPat,funL,funR) <-recBuildLamPat nts fL fR (init $ getRuleSynVarNames nts t) -- @init@ since we don't want the result as a parameter
+#if MIN_VERSION_template_haskell(2,16,0)
+  let exp = LamE lamPat $ TupE [Just funL, Just funR]
+#else
   let exp = LamE lamPat $ TupE [funL,funR]
+#endif
   return (name,exp)
 
 -- | Now things become trickly. We are given all non-terminal names (to

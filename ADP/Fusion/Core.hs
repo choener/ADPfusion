@@ -129,7 +129,7 @@ Stream stepa ta `streamappend` Stream stepb tb = Stream step (SAL ta)
 -- things).
 
 infixl 5 ...
-(...) s h = \lu ij -> (inline h) $ s lu ij
+(...) s h = \lu ij -> h $ s lu ij
 {-# INLINE (...) #-}
 
 -- -- | Additional outer check with user-given check function

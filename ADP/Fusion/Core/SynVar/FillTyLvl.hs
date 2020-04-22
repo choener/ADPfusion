@@ -35,36 +35,22 @@ import           ADP.Fusion.Core.SynVar.Array
 
 
 
---  -- | Fill/mutate tables using @ST@.
---  
---  fillTablesST
---    ∷ forall bigOrder ts
---    . ( bigOrder ~ BigOrderNats ts
---      , EachBigOrder bigOrder ts
---      )
---    ⇒ ts
---    → ts
---  {-# Inline fillTablesST #-}
---  fillTablesST ts = runST $ fillTables ts
-
 -- |
 
 fillTables
---  ∷ Proxy (BigOrderNats ts)
---  -- ^ Proxy that provides the set of @BigOrder@ naturals
-  ∷ forall bigOrder s ts
-  . ( bigOrder ~ BigOrderNats ts
-    , EachBigOrder bigOrder ts
-    , CountNumberOfCells 0 ts
-    )
-  ⇒ ts
+  :: forall bigOrder s ts
+  .  ( bigOrder ~ BigOrderNats ts
+     , EachBigOrder bigOrder ts
+     , CountNumberOfCells 0 ts
+  )
+  => ts
   -- ^ The tables
-  → ST s (Mutated ts)
+  -> ST s (Mutated ts)
 {-# Inline fillTables #-}
 fillTables ts = do
-  startTime ← unsafeIOToPrim getCPUTime
-  ps ← eachBigOrder (Proxy ∷ Proxy bigOrder) ts
-  stopTime  ← unsafeIOToPrim getCPUTime
+  !startTime <- unsafeIOToPrim getCPUTime
+  ps <- eachBigOrder (Proxy :: Proxy bigOrder) ts
+  !stopTime  <- unsafeIOToPrim getCPUTime
   let deltaTime = max 1 $ stopTime - startTime
   return $! Mutated
     { mutatedTables = ts
@@ -79,8 +65,8 @@ fillTables ts = do
 -- | This type class instanciates to the specialized machinery for each
 -- @BigOrder Natural@ number.
 
-class EachBigOrder (boNats ∷ [Nat]) ts where
-  eachBigOrder ∷ Proxy boNats → ts → ST s [PerfCounter]
+class EachBigOrder (boNats :: [Nat]) ts where
+  eachBigOrder :: Proxy boNats -> ts -> ST s [PerfCounter]
 
 -- | No more big orders to handle.
 
@@ -94,14 +80,14 @@ instance
   ( EachBigOrder ns ts
   , ThisBigOrder n (IsThisBigOrder n ts) ts
   , CountNumberOfCells n ts
-  ) ⇒ EachBigOrder (n ': ns) ts where
+  ) => EachBigOrder (n ': ns) ts where
   {-# Inline eachBigOrder #-}
   eachBigOrder Proxy ts = do
-    startTime ← unsafeIOToPrim getCPUTime
-    thisBigOrder (Proxy ∷ Proxy n) (Proxy ∷ Proxy (IsThisBigOrder n ts)) ts
-    stopTime  ← unsafeIOToPrim getCPUTime
+    !startTime <- unsafeIOToPrim getCPUTime
+    thisBigOrder (Proxy :: Proxy n) (Proxy :: Proxy (IsThisBigOrder n ts)) ts
+    !stopTime  <- unsafeIOToPrim getCPUTime
     let deltaTime = max 1 $ stopTime - startTime
-    ps ← eachBigOrder (Proxy ∷ Proxy ns) ts
+    ps <- eachBigOrder (Proxy :: Proxy ns) ts
     let p = PerfCounter
               { picoSeconds   = deltaTime
               , seconds       = 1e-12 * fromIntegral deltaTime
@@ -243,7 +229,7 @@ instance
   thisSmallOrder Proxy Proxy Proxy (ts:.TW (ITbl _ arr) f) i = do
     let uB = upperBound arr
     marr <- unsafeThawM arr
-    z ← return . unId $ (inline f) uB i
+    z <- return . unId $ f uB i
     writeM marr i z
     -- TODO need to write test case that checks that all tables are always filled
     thisSmallOrder (Proxy ∷ Proxy bigOrder) (Proxy ∷ Proxy smallOrder) (Proxy ∷ Proxy isThisOrder) ts i
@@ -264,7 +250,7 @@ instance
   thisSmallOrder Proxy Proxy Proxy (ts:.TW (ITbl _ arr) f) i = do
     let uB = upperBound arr
     marr <- unsafeThawM arr
-    z ← return . unId $ (inline f) uB i
+    z ← return . unId $ f uB i
     safeWriteM marr i z
     -- TODO need to write test case that checks that all tables are always filled
     thisSmallOrder (Proxy ∷ Proxy bigOrder) (Proxy ∷ Proxy smallOrder) (Proxy ∷ Proxy isThisOrder) ts i
