@@ -229,7 +229,7 @@ instance
   thisSmallOrder Proxy Proxy Proxy (ts:.TW (ITbl _ arr) f) i = do
     let uB = upperBound arr
     marr <- unsafeThawM arr
-    z <- return . unId $ f uB i
+    z <- return . unId $ inline f uB i
     writeM marr i z
     -- TODO need to write test case that checks that all tables are always filled
     thisSmallOrder (Proxy ∷ Proxy bigOrder) (Proxy ∷ Proxy smallOrder) (Proxy ∷ Proxy isThisOrder) ts i
@@ -298,9 +298,9 @@ type instance IsThisSmallOrder n Z = 'False
 type instance IsThisSmallOrder n (ts:.TwITbl bo so m arr c i x) = n == so
 
 data Mutated ts = Mutated
-  { mutatedTables ∷ !ts
-  , perfCounter   ∷ !PerfCounter
-  , eachBigPerfCounter  ∷ [PerfCounter]
+  { mutatedTables       :: ts
+  , perfCounter         :: PerfCounter
+  , eachBigPerfCounter  :: [PerfCounter]
   }
   deriving (Eq,Ord,Show,Generic)
 
