@@ -1,13 +1,12 @@
-{ pkgs ? <nixpkgs> }:
+{ pkgs ? <nixpkgs>, compiler ? null }:
 
 # nixos 19-03
 
 with import pkgs {};
 
 let
-  hsPkgs0 = haskellPackages.override {
-  #hsPkgs0 = haskell.packages.ghc883.override {
-  #hsPkgs0 = haskell.packages.ghc8101.override {
+  hsp = if compiler == null then haskellPackages else haskell.packages."${compiler}";
+  hsPkgs0 = hsp.override {
     overrides = hself: hsuper:
       {
         semirings = hself.callPackage ./overrides/semirings.nix {};
