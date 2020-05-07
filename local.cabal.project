@@ -1,0 +1,7 @@
+packages: .
+
+optional-packages:
+  ./deps/*/*.cabal
+
+-- cabal v2-build --project-file=./local.cabal.project
+

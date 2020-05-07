@@ -1,6 +1,17 @@
 packages: .
 
-optional-packages:
-  ./deps/*/*.cabal
+source-repository-package
+  type: git
+  location: https://github.com/choener/OrderedBits
+  tag: master
 
+source-repository-package
+  type: git
+  location: https://github.com/choener/DPutils
+  tag: master
+
+source-repository-package
+  type: git
+  location: https://github.com/choener/PrimitiveArray
+  tag: master
 

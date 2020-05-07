@@ -9,7 +9,7 @@ let
   hsPkgs0 = hsp.override {
     overrides = hself: hsuper:
       {
-        semirings    = hself.callHackageDirect { pkg = "semirings"  ; ver = "0.5.3" ; sha256 = "0000000000000000000000000000000000000000000000000000"; } {};
+        semirings    = hself.callHackageDirect { pkg = "semirings"  ; ver = "0.5.3" ; sha256 = lib.fakeSha256; } {};
       } // (if compiler == null then {} else {
         lens         = hself.callHackageDirect { pkg = "lens"       ; ver = "4.19.2"; sha256 = "0cgkigb7p0igzg9l669xkq787bb1cw32lx03pcgv5ivd6zsx3fpm"; } {};
         singletons   = hself.callHackageDirect { pkg = "singletons" ; ver = "2.7"   ; sha256 = "0ssbswl72fr3wx8br2c4snzi4qnic821wq57s042cjw61kzrrg5b"; } {};
@@ -52,7 +52,7 @@ hsPkgs.shellFor {
     # haskellPackages.hpack
     cabalghci
     # hsPkgs.nvim-hs-ghcid
-    #haskell-ci
+    hsPkgs.haskell-ci
   ];
 } # shellFor
 
