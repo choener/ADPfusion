@@ -1,0 +1,9 @@
+
+[deps/DPutils]
+checkout = git clone 'git@github.com:choener/DPutils.git' 'DPutils'
+
+[deps/OrderedBits]
+checkout = git clone 'git@github.com:choener/OrderedBits.git' 'OrderedBits'
+
+[deps/PrimitiveArray]
+checkout = git clone 'git@github.com:choener/PrimitiveArray.git' 'PrimitiveArray'
