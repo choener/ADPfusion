@@ -136,7 +136,7 @@ import           Data.PrimitiveArray as PA hiding (map)
 -- provided in this package. @.Core@ exports only the core modules required
 -- to extend ADPfusion.
 
-import           ADP.Fusion.PointL
+import           ADPfusion.PointL
 
 import           Data.Ord.Fast
 
