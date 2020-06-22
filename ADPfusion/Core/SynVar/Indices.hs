@@ -18,7 +18,7 @@ import ADPfusion.Core.TyLvlIx
 
 
 
--- | This type classes enable enumeration both in single- and multi-dim
+-- | This type class enables enumeration both in single- and multi-dim
 -- cases. The type @a@ is the type of the /full stack/ of indices, i.e. the
 -- full multi-tape problem.
 --
@@ -30,24 +30,24 @@ import ADPfusion.Core.TyLvlIx
 
 class AddIndexDense pos elm minSize tableIx ix where
   addIndexDenseGo
-    ∷ (Monad m)
-    ⇒ Proxy pos
+    :: (Monad m)
+    => Proxy pos
     -- ^ Positional information in the rule (static/variable/etc)
-    → minSize
+    -> minSize
     -- ^ Minimal size of the structure under consideration. We might want to
     -- constrain enumeration over syntactic variables to only consider at least
     -- "size>=1" cases. Normally, a syntactic variable may be of size 0 as
     -- well, but with rules like @X -> X X@, we don't want to have one of the
     -- @X@'s on the r.h.s. be of size 0.
-    → LimitType tableIx
+    -> LimitType tableIx
     -- ^ The upper limit imposed by the structure to traverse over.
-    → LimitType ix
+    -> LimitType ix
     -- ^ The upper limit imposed by the rule that traverses.
-    → ix
+    -> ix
     -- ^ The current index for the full rule.
-    → Stream m (SvState elm Z Z)
+    -> Stream m (SvState elm Z Z)
     -- ^ Initial stream state with @Z@ero indices.
-    → Stream m (SvState elm tableIx ix)
+    -> Stream m (SvState elm tableIx ix)
     -- ^ The type of the full stream.
 
 instance AddIndexDense pos elm Z Z Z where
@@ -60,11 +60,11 @@ instance AddIndexDense pos elm Z Z Z where
 -- this will not be true -- herein for @Set@ index structures.
 
 data SvState elm tableIx ix = SvS
-  { sS  ∷ !elm
+  { sS  :: !elm
   -- ^ state coming in from the left
-  , tx  ∷ !tableIx
+  , tx  :: !tableIx
   -- ^ @I/C@ building up state to index the @table@.
-  , iIx ∷ !(RunningIndex ix)
+  , iIx :: !(RunningIndex ix)
   -- ^ @I/C@ building up state to hand over to next symbol
   }
 
@@ -73,18 +73,18 @@ data SvState elm tableIx ix = SvS
 -- current syntactic variable / symbol.
 
 addIndexDense
-  ∷ ( Monad m
+  :: ( Monad m
     , AddIndexDense pos elm minSize tableIx ix
     , elm ~ Elm x0 i0
     , Element x0 i0
     )
-  ⇒ Proxy pos
-  → minSize
-  → LimitType tableIx
-  → LimitType ix
-  → ix
-  → Stream m elm
-  → Stream m (elm,tableIx,RunningIndex ix)
+  => Proxy pos
+  -> minSize
+  -> LimitType tableIx
+  -> LimitType ix
+  -> ix
+  -> Stream m elm
+  -> Stream m (elm,tableIx,RunningIndex ix)
 addIndexDense pos minSize tableBound upperBound ix
   = map (\(SvS s z i') -> (s,z,i'))
   . addIndexDenseGo pos minSize tableBound upperBound ix
@@ -96,23 +96,23 @@ addIndexDense pos minSize tableBound upperBound ix
 -- a single instance.
 
 addIndexDense1
-  ∷ forall m pos x0 a ix minSize tableIx elm
+  :: forall m pos x0 a ix minSize tableIx elm
   . ( Monad m
     , AddIndexDense (Z:.pos) (Elm (SynVar1 (Elm x0 a)) (Z:.ix)) (Z:.minSize) (Z:.tableIx) (Z:.ix)
     , GetIndex (Z:.a) (Z:.ix)
     , elm ~ Elm x0 a
     , Element x0 a
     )
-  ⇒ Proxy pos
-  → minSize
-  → LimitType tableIx
-  → LimitType ix
-  → ix
-  → Stream m elm
-  → Stream m (elm,tableIx,RunningIndex ix)
+  => Proxy pos
+  -> minSize
+  -> LimitType tableIx
+  -> LimitType ix
+  -> ix
+  -> Stream m elm
+  -> Stream m (elm,tableIx,RunningIndex ix)
 addIndexDense1 Proxy minSize tableBound upperBound ix
   = map (\(SvS (ElmSynVar1 s) (Z:.z) (RiZ:.:i')) -> (s,z,i'))
-  . addIndexDenseGo (Proxy ∷ Proxy (Z:.pos)) (Z:.minSize) (ZZ:..tableBound) (ZZ:..upperBound) (Z:.ix)
+  . addIndexDenseGo (Proxy :: Proxy (Z:.pos)) (Z:.minSize) (ZZ:..tableBound) (ZZ:..upperBound) (Z:.ix)
   . map (\s -> (SvS (elmSynVar1 s ix) Z RiZ))
 {-# Inline addIndexDense1 #-}
 

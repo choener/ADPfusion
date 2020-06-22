@@ -148,6 +148,7 @@ instance
     traceShow "WARNING: mergeIndices has not happened yet! All sparse tables need to have the union of indices!" $
       flip V.mapM_ ixs $ \k ->
         eachSmallOrder (Proxy ∷ Proxy boNat) (Proxy ∷ Proxy smallOrder) tst k
+  getAllBounds = undefined
 
 -- | Go down the tables until we find the first table for our big order.
 
@@ -157,6 +158,7 @@ instance
   {-# Inline thisBigOrder #-}
   thisBigOrder Proxy Proxy (ts:.t) =
     thisBigOrder (Proxy ∷ Proxy n) (Proxy ∷ Proxy (IsThisBigOrder n ts)) ts
+  getAllBounds = undefined
 
 -- |
 
@@ -325,10 +327,10 @@ showPerfCounter PerfCounter{..} =
              (numberOfCells `div` m) (numberOfCells `mod` m)
              (cellsSecond `div` m) (cellsSecond `mod` m)
 
--- | Adding two 'PerfCounter's yields the time they take together.
+-- | Semigroup of PerfCounter's just adds up numbers.
 
-instance Num PerfCounter where
-  PerfCounter p1 s1 n1 + PerfCounter p2 s2 n2 = PerfCounter (p1+p2) (s1+s2) (n1+n2)
+instance Semigroup PerfCounter where
+  PerfCounter p1 s1 n1 <> PerfCounter p2 s2 n2 = PerfCounter (p1+p2) (s1+s2) (n1+n2)
 
 
 class CountNumberOfCells (n ∷ Nat) t where
