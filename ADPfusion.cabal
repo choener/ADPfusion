@@ -50,16 +50,6 @@ Extra-Source-Files:
 
 
 
-flag debug
-  description:  Enable bounds checking and various other debug operations at the cost of a significant performance penalty.
-  default:      False
-  manual:       True
-
-flag debugoutput
-  description:  Enable debug output, which spams the screen full of index information
-  default:      False
-  manual:       True
-
 flag debugdump
   description:  Enable dumping intermediate / core files
   default:      False
@@ -87,16 +77,6 @@ flag examplesparse
 
 flag spectest
   description:  build the spec-ctor test case
-  default:      False
-  manual:       True
-
-flag devel
-  description:  build additional tests
-  default:      False
-  manual:       True
-
-flag btstruc
-  description:  performance test for backtracking structures
   default:      False
   manual:       True
 
