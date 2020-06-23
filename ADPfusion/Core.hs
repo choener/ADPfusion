@@ -30,6 +30,7 @@ module ADPfusion.Core
   , module ADPfusion.Core.Term.MultiChr
   , module ADPfusion.Core.Term.PeekIndex
   , module ADPfusion.Core.Term.Str
+  , module ADPfusion.Core.Term.Switch
   , module ADPfusion.Core.TH
   , module ADPfusion.Core.TyLvlIx
   , module Data.Vector.Fusion.Stream.Monadic
@@ -62,6 +63,7 @@ import           ADPfusion.Core.Term.Epsilon
 import           ADPfusion.Core.Term.MultiChr
 import           ADPfusion.Core.Term.PeekIndex
 import           ADPfusion.Core.Term.Str
+import           ADPfusion.Core.Term.Switch
 import           ADPfusion.Core.TH
 import           ADPfusion.Core.TyLvlIx
 

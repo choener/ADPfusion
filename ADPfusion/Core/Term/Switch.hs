@@ -37,10 +37,13 @@ instance
   ) => Element (ls :!: Switch) i where
     data Elm (ls :!: Switch) i = ElmSwitch !(RunningIndex i) !(Elm ls i)
     type Arg (ls :!: Switch)   = Arg ls :. ()
+    type RecElm (ls :!: Switch) i = Elm (ls :!: Switch) i
     getArg (ElmSwitch _ ls) = getArg ls :. ()
     getIdx (ElmSwitch i _ ) = i
+    getElm = id
     {-# Inline getArg #-}
     {-# Inline getIdx #-}
+    {-# Inline getElm #-}
 
 deriving instance (Show i, Show (RunningIndex i), Show (Elm ls i)) => Show (Elm (ls :!: Switch) i)
 

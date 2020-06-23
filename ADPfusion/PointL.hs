@@ -19,6 +19,7 @@ module ADPfusion.PointL
   , module ADPfusion.PointL.Term.MultiChr
   , module ADPfusion.PointL.Term.PeekIndex
   , module ADPfusion.PointL.Term.Str
+  , module ADPfusion.PointL.Term.Switch
   ) where
 
 import ADPfusion.Core
@@ -32,4 +33,5 @@ import ADPfusion.PointL.Term.Epsilon
 import ADPfusion.PointL.Term.MultiChr
 import ADPfusion.PointL.Term.PeekIndex
 import ADPfusion.PointL.Term.Str
+import ADPfusion.PointL.Term.Switch
 
