@@ -136,6 +136,7 @@ common deps
                     , DeriveAnyClass
                     , DeriveDataTypeable
                     , DeriveGeneric
+                    , DerivingStrategies
                     , FlexibleContexts
                     , FlexibleInstances
                     , GADTs

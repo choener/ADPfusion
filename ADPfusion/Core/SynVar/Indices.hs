@@ -9,6 +9,7 @@ module ADPfusion.Core.SynVar.Indices where
 import Data.Proxy (Proxy(..))
 import Data.Vector.Fusion.Stream.Monadic (map,Stream,head,mapM,flatten,Step(..))
 import Prelude hiding (map,head,mapM)
+import Data.Void
 
 import Data.PrimitiveArray hiding (map)
 
@@ -124,7 +125,11 @@ elmSynVar1 s _ = ElmSynVar1 s
 
 instance (s ~ Elm x0 i, Element x0 i) => Element (SynVar1 s) (Z:.i) where
   newtype Elm (SynVar1 s) (Z:.i) = ElmSynVar1 s
+  type Arg (SynVar1 s) = Void
+  type RecElm (SynVar1 s) (Z:.i) = Void
   getIdx (ElmSynVar1 s) = RiZ :.: getIdx s
+  getArg = error "wrapper: not required"
+  getElm = error "wrapper: not required"
   {-# Inline getIdx #-}
 
 

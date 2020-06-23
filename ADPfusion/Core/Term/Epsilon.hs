@@ -26,10 +26,13 @@ instance Build (Epsilon lg)
 instance (Element ls i) => Element (ls :!: Epsilon lg) i where
   data Elm (ls :!: Epsilon lg) i = ElmEpsilon !(RunningIndex i) !(Elm ls i)
   type Arg (ls :!: Epsilon lg)   = Arg ls :. ()
+  type RecElm (ls :!: Epsilon lg) i = Elm (ls :!: Epsilon lg) i
   getArg (ElmEpsilon _ l) = getArg l :. ()
   getIdx (ElmEpsilon i _) = i
+  getElm = id
   {-# Inline getArg #-}
   {-# Inline getIdx #-}
+  {-# Inline getElm #-}
 
 type instance TermArg (Epsilon lg) = ()
 

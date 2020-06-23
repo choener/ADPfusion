@@ -29,10 +29,13 @@ instance
   ) => Element (ls :!: Edge) i where
     data Elm (ls :!: Edge) i = ElmEdge !(From:.To) !(RunningIndex i) !(Elm ls i)
     type Arg (ls :!: Edge)   = Arg ls :. (From:.To)
+    type RecElm (ls :!: Edge) i = Elm (ls :!: Edge) i
     getArg (ElmEdge e _ ls) = getArg ls :. e
     getIdx (ElmEdge _ i _ ) = i
+    getElm = id
     {-# Inline getArg #-}
     {-# Inline getIdx #-}
+    {-# Inline getElm #-}
 
 deriving instance (Show i, Show (RunningIndex i), Show (Elm ls i)) => Show (Elm (ls :!: Edge) i)
 

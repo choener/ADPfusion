@@ -51,10 +51,13 @@ instance
   ) => Element (ls :!: Chr r x) i where
     data Elm (ls :!: Chr r x) i = ElmChr !r !(RunningIndex i) !(Elm ls i)
     type Arg (ls :!: Chr r x)   = Arg ls :. r
+    type RecElm (ls :!: Chr r x) i = Elm (ls :!: Chr r x) i
     getArg (ElmChr x _ ls) = getArg ls :. x
     getIdx (ElmChr _ i _ ) = i
+    getElm = id
     {-# Inline getArg #-}
     {-# Inline getIdx #-}
+    {-# Inline getElm #-}
 
 deriving instance (Show i, Show (RunningIndex i), Show r, Show (Elm ls i)) => Show (Elm (ls :!: Chr r x) i)
 

@@ -50,10 +50,13 @@ instance
   ) => Element (ls :!: Str linked minSz maxSz v x) i where
     data Elm (ls :!: Str linked minSz maxSz v x) i = ElmStr !(v x) !(RunningIndex i) !(Elm ls i)
     type Arg (ls :!: Str linked minSz maxSz v x)   = Arg ls :. v x
+    type RecElm (ls :!: Str linked minSz maxSz v x) i = Elm (ls :!: Str linked minSz maxSz v x) i
     getArg (ElmStr x _ ls) = getArg ls :. x
     getIdx (ElmStr _ i _ ) = i
+    getElm = id
     {-# Inline getArg #-}
     {-# Inline getIdx #-}
+    {-# Inline getElm #-}
 
 deriving instance (Show i, Show (RunningIndex i), Show (v x), Show (Elm ls i)) => Show (Elm (ls :!: Str linked minSz maxSz v x) i)
 

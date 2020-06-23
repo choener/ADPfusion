@@ -22,7 +22,7 @@ import           Test.Tasty.QuickCheck
 
 import           Data.PrimitiveArray
 
-import           ADP.Fusion.PointL
+import           ADPfusion.PointL
 
 
 

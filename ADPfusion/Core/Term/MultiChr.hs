@@ -38,10 +38,13 @@ instance
   ) => Element (ls :!: MultiChr c v x) i where
     data Elm (ls :!: MultiChr c v x) i = ElmMultiChr !(v x) !(RunningIndex i) !(Elm ls i)
     type Arg (ls :!: MultiChr c v x)   = Arg ls :. v x
+    type RecElm (ls :!: MultiChr c v x) i = Elm (ls :!: MultiChr c v x) i
     getArg (ElmMultiChr x _ ls) = getArg ls :. x
     getIdx (ElmMultiChr _ i _ ) = i
+    getElm = id
     {-# Inline getArg #-}
     {-# Inline getIdx #-}
+    {-# Inline getElm #-}
 
 deriving instance (Show i, Show (RunningIndex i), Show (v x), Show (Elm ls i)) => Show (Elm (ls :!: MultiChr c v x) i)
 
