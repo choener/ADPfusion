@@ -28,9 +28,8 @@ type instance InitialContext (PointR O) = OStatic 0
 type instance InitialContext (PointR C) = Complement
 
 newtype instance RunningIndex (PointR I) = RiPrI Int
-  deriving (Generic)
-
-deriving instance NFData (RunningIndex (PointR I))
+  deriving Generic
+  deriving newtype NFData
 
 data instance RunningIndex (PointR O) = RiPrO !Int !Int
   deriving (Generic)
