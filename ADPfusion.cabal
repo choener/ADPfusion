@@ -140,6 +140,7 @@ common deps
                     , FlexibleContexts
                     , FlexibleInstances
                     , GADTs
+                    , GeneralizedNewtypeDeriving
                     , KindSignatures
                     , MagicHash
                     , MultiParamTypeClasses
@@ -200,7 +201,6 @@ library
     ADPfusion.Core.Term.PeekIndex
     ADPfusion.Core.Term.Str
     ADPfusion.Core.Term.Switch
-    ADPfusion.Core.Term.Test
     ADPfusion.Core.TH
     ADPfusion.Core.TH.Backtrack
     ADPfusion.Core.TH.Common
@@ -217,7 +217,6 @@ library
     ADPfusion.PointL.Term.PeekIndex
     ADPfusion.PointL.Term.Str
     ADPfusion.PointL.Term.Switch
---    ADP.Fusion.PointL.Term.Test
 --    -- Point R
     ADPfusion.PointR
     ADPfusion.PointR.Core
