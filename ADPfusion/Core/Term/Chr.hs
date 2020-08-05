@@ -37,12 +37,42 @@ chr = Chr VG.unsafeIndex
 
 -- | Smart constructor for Maybe Peeking, followed by a character.
 
+chrLeft :: VG.Vector v x => v x -> Chr (Maybe x, x) x
+{-# Inline chrLeft #-}
 chrLeft xs = Chr f xs where
+  {-# Inline [0] f #-}
   f xs k = ( xs VG.!? (k-1)
            , VG.unsafeIndex xs k
            )
+
+chrRight :: VG.Vector v x => v x -> Chr (x, Maybe x) x
+{-# Inline chrRight #-}
+chrRight xs = Chr f xs where
   {-# Inline [0] f #-}
-{-# Inline chrLeft #-}
+  f xs k = ( VG.unsafeIndex xs k
+           , xs VG.!? (k+1)
+           )
+
+-- | Return the character at position @k@ and also the whole vector to the left of it, without
+-- actually consuming the left part.
+
+chrVecL :: VG.Vector v x => v x -> Chr (v x, x) x
+{-# Inline chrVecL #-}
+chrVecL xs = Chr f xs where
+  {-# Inline [0] f #-}
+  f xs k = ( VG.take k xs
+           , VG.unsafeIndex xs k    -- get character at position @k@
+           )
+
+chrVecR :: VG.Vector v x => v x -> Chr (x,v x) x
+{-# Inline chrVecR #-}
+chrVecR xs = Chr f xs where
+  {-# Inline [0] f #-}
+  f xs k = ( VG.unsafeIndex xs k    -- get character at position @k@
+           , VG.drop k xs
+           )
+
+
 
 instance Build (Chr r x)
 
