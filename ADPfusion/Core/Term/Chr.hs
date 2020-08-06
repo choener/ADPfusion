@@ -32,8 +32,8 @@ data Chr r x where
 -- | smart constructor for regular 1-character parsers
 
 chr :: VG.Vector v x => v x -> Chr x x
-chr = Chr VG.unsafeIndex
 {-# Inline chr #-}
+chr = Chr VG.unsafeIndex
 
 -- | Smart constructor for Maybe Peeking, followed by a character.
 
@@ -60,7 +60,7 @@ chrVecL :: VG.Vector v x => v x -> Chr (v x, x) x
 {-# Inline chrVecL #-}
 chrVecL xs = Chr f xs where
   {-# Inline [0] f #-}
-  f xs k = ( VG.take k xs
+  f xs k = ( VG.unsafeTake k xs
            , VG.unsafeIndex xs k    -- get character at position @k@
            )
 
@@ -69,8 +69,19 @@ chrVecR :: VG.Vector v x => v x -> Chr (x,v x) x
 chrVecR xs = Chr f xs where
   {-# Inline [0] f #-}
   f xs k = ( VG.unsafeIndex xs k    -- get character at position @k@
-           , VG.drop k xs
+           , VG.unsafeDrop (k+1) xs
            )
+
+-- | The fully generic chr context version, where both the full left, and full right remainder of
+-- the vector are returned. The internal unsafe take/drop should be safe as long as @chrContext@ is
+-- used in a legal production rule, as this will guarantee that internal indices will not be
+-- out-of-bounds.
+
+chrContext :: VG.Vector v x => v x -> Chr (v x,x,v x) x
+{-# Inline chrContext #-}
+chrContext xs = Chr f xs where
+  {-# Inline [0] f #-}
+  f xs k = ( VG.unsafeTake k xs, VG.unsafeIndex xs k, VG.unsafeDrop (k+1) xs )
 
 
 
