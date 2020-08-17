@@ -35,6 +35,15 @@ chr :: VG.Vector v x => v x -> Chr x x
 {-# Inline chr #-}
 chr = Chr VG.unsafeIndex
 
+-- | @Chr@ with its index. This version exposes the index, where the character @x@ is located on the
+-- input vector.
+
+chrIx :: VG.Vector v x => v x -> Chr (x,Int) x
+{-# Inline chrIx #-}
+chrIx xs = Chr f xs where
+  {-# Inline [0] f #-}
+  f xs k = (VG.unsafeIndex xs k, k)
+
 -- | Smart constructor for Maybe Peeking, followed by a character.
 
 chrLeft :: VG.Vector v x => v x -> Chr (Maybe x, x) x
