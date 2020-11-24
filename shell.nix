@@ -50,7 +50,7 @@ hsPkgs.shellFor {
   withHoogle = true;
   buildInputs = [
     cabal-install
-    (if compiler == "ghc8101" then llvm_9 else llvm)
+    ({ "ghc8102" = llvm_9; }.${compiler} or llvm)
     # haskellPackages.ghcid
     # haskellPackages.hpack
     cabalghci
