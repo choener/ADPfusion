@@ -1,8 +1,8 @@
-{ pkgs ? <nixpkgs>, compiler ? null }:
+{ pkgs ? import <nixpkgs> {}, compiler ? null }:
 
 # nixos 19-03
 
-with import pkgs {};
+with pkgs;
 
 let
   hsp = if compiler==null then haskellPackages else haskell.packages."${compiler}";
@@ -50,7 +50,7 @@ hsPkgs.shellFor {
   withHoogle = true;
   buildInputs = [
     cabal-install
-    ({ "ghc8102" = llvm_9; }.${compiler} or llvm)
+    (if compiler==null then llvm else { "ghc8102" = llvm_9; }.${compiler} or llvm)
     # haskellPackages.ghcid
     # haskellPackages.hpack
     cabalghci
