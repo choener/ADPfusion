@@ -6,7 +6,7 @@
   '';
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-20.09";
+    nixpkgs.url = "github:NixOS/nixpkgs";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
@@ -17,9 +17,10 @@
         {
           devShell = pkgs.mkShell {
             "NIX_PATH" = "nixpkgs=${nixpkgs}";
-            #shellHook = ''
-            #  nix-shell --argstr compiler ghc8102 --run zsh
-            #'';
+            shellHook = ''
+              nix-shell --run zsh
+              exit
+            '';
           };
           # NOTE unfortunately, this requires that all dependencies are known to the flake, which is
           # not working out for this type of development, since I "share" in-progress repositories
