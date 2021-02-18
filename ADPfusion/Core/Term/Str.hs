@@ -5,6 +5,7 @@ import           Data.Strict.Tuple
 import           GHC.TypeLits
 import           GHC.TypeNats
 import qualified Data.Vector.Generic as VG
+import           Data.Proxy
 
 import           Data.PrimitiveArray
 
