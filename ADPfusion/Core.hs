@@ -78,7 +78,7 @@ import           ADPfusion.Core.TyLvlIx
 
 infixl 8 <<<
 (<<<)
-  ∷ forall k m initCtx symbols i b
+  :: forall k m initCtx symbols i b
   . ( Monad m
     , Build symbols
     , Element (Stack symbols) i
@@ -86,13 +86,13 @@ infixl 8 <<<
     , initCtx ~ InitialContext i
     , MkStream m initCtx (Stack symbols) i
     )
-  ⇒ (Fun (Arg (Stack symbols) → b))
-  → symbols
-  → (LimitType i → i → Stream m b)
+  => (Fun (Arg (Stack symbols) → b))
+  -> symbols
+  -> (LimitType i → i → Stream m b)
 (<<<) f xs
   = \lu ij
-  → S.map (apply (inline f) . getArg)
-  $ mkStream (Proxy ∷ Proxy initCtx) (build xs) 1# lu ij
+  -> S.map (apply (inline f) . getArg)
+  $ mkStream (Proxy :: Proxy initCtx) (build xs) 1# lu ij
 {-# INLINE (<<<) #-}
 
 --infixl 8 <<#
@@ -108,7 +108,7 @@ infixl 7 |||
 data StreamAppend a b = SAL a | SAR b
 
 streamappend :: Monad m => Stream m a -> Stream m a -> Stream m a
-{-# Inline streamappend #-}
+{-# Inline [1] streamappend #-}
 Stream stepa ta `streamappend` Stream stepb tb = Stream step (SAL ta)
   where
     {-# Inline [0] step #-}

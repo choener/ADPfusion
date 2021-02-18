@@ -27,27 +27,31 @@ import           ADPfusion.Core.Multi
 
 data Str (linked :: Symbol) (minSz :: Nat) (maxSz :: Maybe Nat) v x (r :: *) where
   Str :: VG.Vector v x
-      => (Int -> Int -> v x -> r)
+      => (v x -> Int -> Int -> r)
       -> !(v x)
       -> Str linked minSz maxSz v x r
 
 str :: VG.Vector v x => v x -> Str linked minSz maxSz v x (v x)
-str = Str (\i j -> VG.unsafeSlice i (j-i))
 {-# Inline str #-}
+str = Str (\xs i j -> VG.unsafeSlice i (j-i) xs)
 
 -- | Construct string parsers with no special constraints.
 
 manyV :: VG.Vector v x => v x → Str "" 0 Nothing v x (v x)
-manyV = Str (\i j -> VG.unsafeSlice i (j-i))
 {-# Inline manyV #-}
+manyV = Str f
+  where f = (\xs i j -> VG.unsafeSlice i (j-i) xs)
+        {-# Inline [0] f #-}
 
 someV :: VG.Vector v x => v x → Str "" 1 Nothing v x (v x)
-someV = Str (\i j -> VG.unsafeSlice i (j-i))
 {-# Inline someV #-}
+someV = Str (\xs i j -> VG.unsafeSlice i (j-i) xs)
 
 strContext :: VG.Vector v x => v x -> Str linked minSz maxSz v x (v x,v x, v x)
-strContext = Str (\i j xs -> (VG.unsafeTake i xs, VG.unsafeSlice i (j-i) xs, VG.unsafeDrop j xs))
 {-# Inline strContext #-}
+strContext = Str f
+  where f = (\xs i j -> (VG.unsafeTake i xs, VG.unsafeSlice i (j-i) xs, VG.unsafeDrop j xs))
+        {-# Inline [0] f #-}
 
 -- TODO really need to be able to remove this system. Forgetting @Build@ gives
 -- very strange type errors.
