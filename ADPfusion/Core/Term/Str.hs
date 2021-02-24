@@ -53,6 +53,14 @@ strContext = Str f
   where f = (\xs i j -> (VG.unsafeTake i xs, VG.unsafeSlice i (j-i) xs, VG.unsafeDrop j xs))
         {-# Inline [0] f #-}
 
+-- | This parser always parses strings of length @0@, its use is in peeking at the split point.
+
+strPeek :: VG.Vector v x => v x -> Str "" 0 (Just 0) v x (v x, v x)
+{-# Inline strPeek #-}
+strPeek = Str f
+  where f = (\xs i j -> VG.splitAt i xs)
+        {-# Inline [0] f #-}
+
 -- TODO really need to be able to remove this system. Forgetting @Build@ gives
 -- very strange type errors.
 
