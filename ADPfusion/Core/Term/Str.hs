@@ -3,7 +3,7 @@ module ADPfusion.Core.Term.Str where
 
 import           Data.Strict.Tuple
 import           GHC.TypeLits
-import           GHC.TypeNats
+import           GHC.TypeNats ()
 import qualified Data.Vector.Generic as VG
 import           Data.Proxy
 
@@ -60,6 +60,43 @@ strPeek :: VG.Vector v x => v x -> Str "" 0 (Just 0) v x (v x, v x)
 strPeek = Str f
   where f = (\xs i j -> VG.splitAt i xs)
         {-# Inline [0] f #-}
+
+-- | This class provides the machineary to calculate the total size of linked string parsers.
+
+class LinkedSz (eqEmpty::Bool) (p::Symbol) ts i where
+  -- | Given a recursive @Elm@ structure, 'linkedSz' returns the number of terminals that have been
+  -- parsed by 'Str' parsers with the same @linked@ tag.
+  linkedSz :: Elm ts i -> Int
+
+-- | This class handles maximal-size constraints.
+
+class MaybeMaxSz (maxSz :: Maybe Nat) where
+  -- | If the first argument is @<= maxSz@, then we return @Just@ the value, otherwise nothing.
+  maybeMaxSz :: Int -> a -> Maybe a
+  -- | @greater@ check for @maxSz@.
+  gtMaxSz :: Int -> Bool
+
+-- | No maximal size constraint, 'maybeMaxSz' shall always return @Just@ with the value, while
+-- @gtMaxSz@ is always @False@.
+
+instance MaybeMaxSz Nothing where
+  {-# Inline maybeMaxSz #-}
+  maybeMaxSz _ = Just
+  {-# Inline gtMaxSz #-}
+  gtMaxSz _ = False
+
+-- | A maximal size constriant was given, and @maybeMaxSz@ will let pass only values @<= maxSz@ with
+-- a @Just value@, while @gtMaxSz@ checks if the value is @> maxSz@.
+
+instance (KnownNat maxSz) => MaybeMaxSz (Just maxSz) where
+  {-# Inline maybeMaxSz #-}
+  maybeMaxSz k a
+    | k <= maxSz = Just a
+    | otherwise  = Nothing
+    where maxSz = fromIntegral (natVal (Proxy :: Proxy maxSz))
+  {-# Inline gtMaxSz #-}
+  gtMaxSz k = k > fromIntegral (natVal (Proxy :: Proxy maxSz))
+
 
 -- TODO really need to be able to remove this system. Forgetting @Build@ gives
 -- very strange type errors.
