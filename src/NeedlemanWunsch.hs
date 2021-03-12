@@ -1,26 +1,26 @@
 
-{- Options_GHC -fforce-recomp #-}
 {-# Options_GHC -Wno-partial-type-signatures #-}
 
--- these parameters do well enough with GHC 8.2
--- for larger programs, we may have to increase the number of worker
--- arguments.
+-- these parameters do well enough with GHC 8.2 for larger programs, we may have to increase the
+-- number of worker arguments.
 
 {-# Options_GHC -flate-dmd-anal             #-}
-{-# Options_GHC -fspec-constr-count=200     #-}
+{-# Options_GHC -fspec-constr-count=20000     #-}
 {-# Options_GHC -fspec-constr-keen          #-}
-{-# Options_GHC -fspec-constr-recursive=200 #-}
-{-# Options_GHC -fdicts-cheap             #-}
+{-# Options_GHC -fspec-constr-recursive=20000 #-}
+{-# Options_GHC -fdicts-cheap               #-}
+
+--
+
+{-# Options_GHC -fno-liberate-case        #-}
 
 -- In ghc 8.8.x we need no-full-laziness, otherwise the @Char@'s are boxed, which massively reduces
 -- performance. Sharing is, in principle, good, but here we'd rather access memory twice, instead of
 -- boxing @Char@'s and repeatedly unboxing them again.
-{-# Options_GHC -fno-liberate-case        #-}
+
 {-# Options_GHC -fno-full-laziness        #-}
 
-{- Options_GHC -fexpose-all-unfoldings -ffun-to-thunk -fspecialise-aggressively -flate-specialise #-}
-{- Options_GHC -fstatic-argument-transformation -funbox-strict-fields -fdicts-cheap -fasm #-}
-{-# Options_GHC -ddump-to-file -ddump-simpl -dsuppress-all #-}
+
 
 -- | The Needleman-Wunsch global alignment algorithm. This algorithm is
 -- extremely simple but provides a good showcase for what ADPfusion offers.
