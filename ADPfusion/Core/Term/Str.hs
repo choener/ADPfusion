@@ -1,11 +1,12 @@
 
 module ADPfusion.Core.Term.Str where
 
+import           Data.Proxy
 import           Data.Strict.Tuple
+import           Data.Type.Equality
 import           GHC.TypeLits
 import           GHC.TypeNats ()
 import qualified Data.Vector.Generic as VG
-import           Data.Proxy
 
 import           Data.PrimitiveArray
 
@@ -61,12 +62,46 @@ strPeek = Str f
   where f = (\xs i j -> VG.splitAt i xs)
         {-# Inline [0] f #-}
 
--- | This class provides the machineary to calculate the total size of linked string parsers.
+
+
+-- | This class provides the machinery to calculate the total size of linked string parsers.
 
 class LinkedSz (eqEmpty::Bool) (p::Symbol) ts i where
   -- | Given a recursive @Elm@ structure, 'linkedSz' returns the number of terminals that have been
   -- parsed by 'Str' parsers with the same @linked@ tag.
   linkedSz :: Proxy eqEmpty -> Proxy p -> Elm ts i -> Int
+
+-- | Stop linked size recursion at @S@.
+
+instance LinkedSz False linked (Term1 (Elm S anyIx)) anyFullIx where
+  {-# Inline linkedSz #-}
+  linkedSz _ _ _ = 0
+
+-- | If the @Str@ we want to calculate for has a symbol @""@ then there is no need to sum up the
+-- linked sizes, since "" declares independence.
+--
+-- @True@ here means that @p==""@ and we do NOT have linked strings.
+
+instance LinkedSz True p any i where
+  {-# Inline linkedSz #-}
+  linkedSz _ _ _ = 0
+
+-- | We have an instance of the @linked@ tag being non-empty (@False@) and now need to call the
+-- actual size calculation implementation via @linkedSzEq@.
+
+instance (eq ~ (p == linked), LinkedSzEq eq p (ls :!: Str linked minSz maxSz v x r) i )
+  => LinkedSz False p (ls :!: Str linked minSz maxSz v x r) i where
+  {-# Inline linkedSz #-}
+  linkedSz _ _ ts = linkedSzEq (Proxy @eq) (Proxy @p) ts
+
+-- | This class calculates the actual link sizes.
+
+class LinkedSzEq (eq::Bool) (p::Symbol) ts i where
+  linkedSzEq :: Proxy eq -> Proxy p -> Elm ts i -> Int
+
+
+
+
 
 -- | This class handles maximal-size constraints.
 
