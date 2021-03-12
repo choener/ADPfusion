@@ -57,7 +57,7 @@ instance
   termStream Proxy (ts:|Str f xs) (us:..LtPointL u) (is:.PointL i)
     = S.mapMaybe (\(TState s ii ee) ->
                 let RiPlI k = getIndex (getIdx s) (Proxy ∷ PRI is (PointL I))
-                in  maybeMaxSz @maxSz (i-k) $ TState s (ii:.:RiPlI i) (ee:.f xs k i))
+                in  maybeMaxSz (Proxy @maxSz) (i-k) $ TState s (ii:.:RiPlI i) (ee:.f xs k i))
     . termStream (Proxy ∷ Proxy ps) ts us is
   {-# Inline termStream #-}
 

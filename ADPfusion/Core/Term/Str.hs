@@ -66,36 +66,36 @@ strPeek = Str f
 class LinkedSz (eqEmpty::Bool) (p::Symbol) ts i where
   -- | Given a recursive @Elm@ structure, 'linkedSz' returns the number of terminals that have been
   -- parsed by 'Str' parsers with the same @linked@ tag.
-  linkedSz :: Elm ts i -> Int
+  linkedSz :: Proxy eqEmpty -> Proxy p -> Elm ts i -> Int
 
 -- | This class handles maximal-size constraints.
 
 class MaybeMaxSz (maxSz :: Maybe Nat) where
   -- | If the first argument is @<= maxSz@, then we return @Just@ the value, otherwise nothing.
-  maybeMaxSz :: Int -> a -> Maybe a
+  maybeMaxSz :: Proxy maxSz -> Int -> a -> Maybe a
   -- | @greater@ check for @maxSz@.
-  gtMaxSz :: Int -> Bool
+  gtMaxSz :: Proxy maxSz -> Int -> Bool
 
 -- | No maximal size constraint, 'maybeMaxSz' shall always return @Just@ with the value, while
 -- @gtMaxSz@ is always @False@.
 
 instance MaybeMaxSz Nothing where
   {-# Inline maybeMaxSz #-}
-  maybeMaxSz _ = Just
+  maybeMaxSz _ _ = Just
   {-# Inline gtMaxSz #-}
-  gtMaxSz _ = False
+  gtMaxSz _ _ = False
 
 -- | A maximal size constriant was given, and @maybeMaxSz@ will let pass only values @<= maxSz@ with
 -- a @Just value@, while @gtMaxSz@ checks if the value is @> maxSz@.
 
 instance (KnownNat maxSz) => MaybeMaxSz (Just maxSz) where
   {-# Inline maybeMaxSz #-}
-  maybeMaxSz k a
+  maybeMaxSz _ k a
     | k <= maxSz = Just a
     | otherwise  = Nothing
     where maxSz = fromIntegral (natVal (Proxy :: Proxy maxSz))
   {-# Inline gtMaxSz #-}
-  gtMaxSz k = k > fromIntegral (natVal (Proxy :: Proxy maxSz))
+  gtMaxSz _ k = k > fromIntegral (natVal (Proxy :: Proxy maxSz))
 
 
 -- TODO really need to be able to remove this system. Forgetting @Build@ gives
