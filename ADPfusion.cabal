@@ -1,8 +1,8 @@
 cabal-version:  2.2
 name:           ADPfusion
 version:        0.6.0.0
-author:         Christian Hoener zu Siederdissen, 2011-2020
-copyright:      Christian Hoener zu Siederdissen, 2011-2020
+author:         Christian Hoener zu Siederdissen, 2011-2021
+copyright:      Christian Hoener zu Siederdissen, 2011-2021
 homepage:       https://github.com/choener/ADPfusion
 bug-reports:    https://github.com/choener/ADPfusion/issues
 maintainer:     choener@bioinf.uni-leipzig.de
@@ -11,7 +11,7 @@ license:        BSD-3-Clause
 license-file:   LICENSE
 build-type:     Simple
 stability:      experimental
-tested-with:    GHC == 8.6.5
+tested-with:    GHC == 8.8.4
 synopsis:       Efficient, high-level dynamic programming.
 description:
                 <http://www.bioinf.uni-leipzig.de/Software/gADP/ generalized Algebraic Dynamic Programming>
@@ -107,7 +107,7 @@ common deps
                --
                , DPutils            == 0.1.0.*
                , OrderedBits        == 0.0.2.*
-               , PrimitiveArray     == 0.10.0.*
+               , PrimitiveArray     == 0.10.1.*
   default-extensions: BangPatterns
                     , ConstraintKinds
                     , CPP
