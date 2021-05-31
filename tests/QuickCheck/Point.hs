@@ -235,7 +235,7 @@ prop_I_Itbl_SomeV ix@(PointL i) = zs == ls where
 -- @13@s.
 
 prop_I_Itbl_Str ix@(PointL i) = zs == ls where
-  zs = ((,) <<< tSI % Str @_ @_ @Nothing @13 @Nothing xs ... stoList) maxPLi ix
+  zs = ((,) <<< tSI % str @_ @_ @"" @13 @Nothing xs ... stoList) maxPLi ix
   ls = [ (unsafeIndex xsP (PointL k), VU.slice k (i-k) xs) | k <- [0..i-13] ]
 
 -- | And now for some funny type-level shenanigans.
@@ -244,7 +244,7 @@ prop_I_Itbl_StrTyLvl (Positive bound', ix@(PointL i)) = let bound = bound' `mod`
   case (someNatVal bound) of
     Nothing → error "zzz"
     Just (SomeNat (Proxy ∷ Proxy b)) →
-      let zs = ((,) <<< tSI % Str @_ @_ @Nothing @b @Nothing xs ... stoList) maxPLi ix
+      let zs = ((,) <<< tSI % str @_ @_ @"" @b @Nothing xs ... stoList) maxPLi ix
           ls = [ (unsafeIndex xsP (PointL k), VU.slice k (i-k) xs) | k <- [0..i-bv] ]
           bv = fromIntegral $ natVal (Proxy ∷ Proxy b)
       in  zs == ls
