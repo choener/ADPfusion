@@ -8,7 +8,7 @@ jobs:
         ghc: ['8.8'] # , '8.10', '9.0']
         cabal: ['3.2'] # , '3.4']
         os: [ubuntu-latest]
-    name: Haskell GHC ${{ matrix.ghc }} sample
+    name: Haskell GHC ${{ matrix.ghc }}
     steps:
       - uses: actions/checkout@v2
       - name: Setup Haskell
