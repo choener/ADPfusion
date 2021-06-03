@@ -5,7 +5,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        ghc: ['8.8', '8.10', '9.0']
+        ghc: ['8.8', '8.10'] # , '9.0'] # singletons
         cabal: ['3.2', '3.4']
         os: [ubuntu-latest]
     name: Haskell GHC ${{ matrix.ghc }}, cabal ${{ matrix.cabal }}
