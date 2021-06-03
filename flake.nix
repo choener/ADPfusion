@@ -46,7 +46,7 @@
   in
     flake-utils.lib.eachDefaultSystem (system: let
       pkgs = import nixpkgs { inherit system; overlays = [ ghcicabal.overlay self.overlay ]; };
-      sharedBuildInputs = with pkgs; [ llvm ];
+      sharedBuildInputs = with pkgs; [ llvm_9 ];
     in {
       # update dependencies via mr, develop the package, push changes, and update the flake
       # dependencies if major changes were made or before releasing
