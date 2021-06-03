@@ -23,7 +23,7 @@ import qualified Data.Vector.Unboxed as VU
 
 import           Data.PrimitiveArray as PA hiding (map)
 
-import           ADP.Fusion.PointL
+import           ADPfusion.PointL
 
 
 

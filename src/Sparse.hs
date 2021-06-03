@@ -19,7 +19,7 @@ import qualified Data.Vector.Storable as VS
 
 import           Data.PrimitiveArray as PA hiding (map)
 import qualified Data.PrimitiveArray.Sparse as SS
-import           ADP.Fusion.PointL
+import           ADPfusion.PointL
 
 import           Data.Ord.Fast
 
