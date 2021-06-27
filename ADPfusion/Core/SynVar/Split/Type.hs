@@ -96,6 +96,11 @@ instance
   {-# Inline getIdx #-}
   {-# Inline getElm #-}
 
+instance
+  ( Monad m
+  ) => MkStream m (ps:.p) (ls :!: Split uId splitType (TwITbl b s m (Dense v) (cs:.c) (us:.u) x)) (is:.i) where
+
+
 
 
 -- | 'collectIx' gobbles up indices that are tagged with the same symbolic

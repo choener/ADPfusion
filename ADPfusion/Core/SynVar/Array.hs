@@ -96,6 +96,10 @@ instance
   mkStream = btITblStream
   {-# Inline mkStream #-}
 
+-- |
+--
+-- TODO Unify the IOC streams, since they all have the same implementation
+
 instance
   ( Monad m
   , ITblCx m pos ls arr x u c (i O)

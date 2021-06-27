@@ -10,6 +10,7 @@ module ADPfusion.Core.SynVar.FillTyLvl where
 import           Control.DeepSeq
 import           Control.Monad.Primitive
 import           Control.Monad.ST
+import           Control.Monad
 import           Data.Proxy
 import           Data.Singletons.Prelude.Bool
 import           Data.Singletons.Prelude.Bool
@@ -256,6 +257,33 @@ instance
     safeWriteM marr i z
     -- TODO need to write test case that checks that all tables are always filled
     thisSmallOrder (Proxy ∷ Proxy bigOrder) (Proxy ∷ Proxy smallOrder) (Proxy ∷ Proxy isThisOrder) ts i
+
+-- | This is a mixed instance for MCFG's. Beware of the mixture of dimensions here! Right now, this
+-- is only for testing, check how the outer index structure is "larger" than the inner index
+-- structure.
+--
+-- Given @(Z:.low:.high)@ we fill based on @low@, using @high==0:.0@ to determine when to actually
+-- fill. No need to call too often.
+--
+-- TODO I think it is possible to rewrite this to something along the lines of @ix@ vs @ix:.higher@
+-- which would allow "stepping down once". For now, we just want to have a working prototype.
+
+instance
+  ( ()
+  , VG.Vector v x
+  , ThisSmallOrder bigOrder smallOrder isThisOrder ts (Z:.Subword ioc:.Subword ioc)
+  ) => ThisSmallOrder bigOrder smallOrder 'True (ts:.TwITbl bo so Id (Dense v) c (Subword ioc) x) (Z:.Subword ioc:.Subword ioc) where
+  {-# Inline thisSmallOrder #-}
+  thisSmallOrder Proxy Proxy Proxy (ts:.TW (ITbl _ arr) f) i@(Z:.low:.high) = do
+    let (hI:.hJ) = fromSubword high
+    when (hI == 0 && hJ == 0) $ do
+      let uB = upperBound arr
+      marr <- unsafeThawM arr
+      z <- return . unId $ inline f uB low
+      safeWriteM marr low z
+    thisSmallOrder (Proxy ∷ Proxy bigOrder) (Proxy ∷ Proxy smallOrder) (Proxy ∷ Proxy isThisOrder) ts i
+
+
 
 -- | The set of arrays to fill is a tuple of the form @(Z:.a:.b:.c)@. Here, we
 -- extract the big order @Nat@s. The set of @Nat@s being returned is already

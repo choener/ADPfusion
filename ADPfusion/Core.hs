@@ -15,13 +15,13 @@ module ADPfusion.Core
   , module ADPfusion.Core.Apply
   , module ADPfusion.Core.Classes
   , module ADPfusion.Core.Multi
-  , module ADPfusion.Core.SynVar.Array.Type
+  , module ADPfusion.Core.SynVar.Array
   , module ADPfusion.Core.SynVar.Axiom
   , module ADPfusion.Core.SynVar.Backtrack
   , module ADPfusion.Core.SynVar.FillTyLvl
   , module ADPfusion.Core.SynVar.Indices
   , module ADPfusion.Core.SynVar.Recursive.Type
-  , module ADPfusion.Core.SynVar.Split.Type
+  , module ADPfusion.Core.SynVar.Split
   , module ADPfusion.Core.SynVar.TableWrap
   , module ADPfusion.Core.Term.Chr
   , module ADPfusion.Core.Term.Deletion
@@ -48,13 +48,13 @@ import           Data.PrimitiveArray
 import           ADPfusion.Core.Apply
 import           ADPfusion.Core.Classes hiding (iIx)
 import           ADPfusion.Core.Multi hiding (iIx)
-import           ADPfusion.Core.SynVar.Array.Type
+import           ADPfusion.Core.SynVar.Array
 import           ADPfusion.Core.SynVar.Axiom
 import           ADPfusion.Core.SynVar.Backtrack
 import           ADPfusion.Core.SynVar.FillTyLvl
 import           ADPfusion.Core.SynVar.Indices
 import           ADPfusion.Core.SynVar.Recursive.Type
-import           ADPfusion.Core.SynVar.Split.Type
+import           ADPfusion.Core.SynVar.Split
 import           ADPfusion.Core.SynVar.TableWrap
 import           ADPfusion.Core.Term.Chr
 import           ADPfusion.Core.Term.Deletion
