@@ -269,10 +269,12 @@ instance
 -- which would allow "stepping down once". For now, we just want to have a working prototype.
 
 instance
-  ( ()
-  , VG.Vector v x
+  ( VG.Vector v x
+  , isThisBigOrder ~ IsThisBigOrder bigOrder ts
+  , isThisSmallOrder ~ IsThisSmallOrder smallOrder ts
+  , isThisOrder ~ (isThisBigOrder && isThisSmallOrder)
   , ThisSmallOrder bigOrder smallOrder isThisOrder ts (Z:.Subword ioc:.Subword ioc)
-  ) => ThisSmallOrder bigOrder smallOrder 'True (ts:.TwITbl bo so Id (Dense v) c (Subword ioc) x) (Z:.Subword ioc:.Subword ioc) where
+  ) => ThisSmallOrder bigOrder smallOrder 'True (ts:.TwITbl bigOrder smallOrder Id (Dense v) c (Subword ioc) x) (Z:.Subword ioc:.Subword ioc) where
   {-# Inline thisSmallOrder #-}
   thisSmallOrder Proxy Proxy Proxy (ts:.TW (ITbl _ arr) f) i@(Z:.low:.high) = do
     let (hI:.hJ) = fromSubword high

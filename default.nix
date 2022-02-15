@@ -1,8 +1,7 @@
-{ mkDerivation, base, bits, containers, deepseq, DPutils, fmlist
-, ghc-prim, mmorph, mtl, OrderedBits, primitive, PrimitiveArray
-, QuickCheck, singletons, stdenv, strict, tasty, tasty-quickcheck
-, tasty-th, template-haskell, th-orphans, transformers, tuple
-, vector
+{ mkDerivation, base, bits, containers, deepseq, DPutils, ghc-prim
+, lib, mmorph, mtl, OrderedBits, primitive, PrimitiveArray
+, QuickCheck, singletons, strict, tasty, tasty-quickcheck, tasty-th
+, template-haskell, th-orphans, transformers, tuple, vector
 }:
 mkDerivation {
   pname = "ADPfusion";
@@ -21,10 +20,7 @@ mkDerivation {
     tasty tasty-quickcheck tasty-th template-haskell th-orphans
     transformers tuple vector
   ];
-  benchmarkHaskellDepends = [
-    base fmlist PrimitiveArray template-haskell vector
-  ];
   homepage = "https://github.com/choener/ADPfusion";
   description = "Efficient, high-level dynamic programming";
-  license = stdenv.lib.licenses.bsd3;
+  license = lib.licenses.bsd3;
 }
