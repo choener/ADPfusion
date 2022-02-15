@@ -27,7 +27,7 @@
     , OrderedBits-src
     , PrimitiveArray-src
   }: let
-    over = final: prev: {
+    overlay = final: prev: {
       #haskellPackages = (prev.haskell.packages.ghc8102.override{ overrides= hself: hsuper: let
       haskellPackages = (prev.haskellPackages.override{ overrides= hself: hsuper: let
           checked   = a: hself.callHackageDirect a {};
@@ -64,6 +64,6 @@
           pkgs.ghcicabal # be explicit to get the final package
         ] ++ sharedBuildInputs;
       }; # devShell
-    }) // { overlay = over; };
+    }) // { inherit overlay; };
 }
 
