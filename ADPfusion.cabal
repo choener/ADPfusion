@@ -105,9 +105,9 @@ common deps
                , tuple              >= 0.3
                , vector             >= 0.11
                --
-               , DPutils            == 0.1.0.*
+               , DPutils            == 0.1.1.*
                , OrderedBits        == 0.0.2.*
-               , PrimitiveArray     == 0.10.1.*
+               , PrimitiveArray     == 0.10.2.*
   default-extensions: BangPatterns
                     , ConstraintKinds
                     , CPP
