@@ -62,6 +62,7 @@
         buildInputs = with pkgs; [
           cabal-install
           pkgs.ghcicabal # be explicit to get the final package
+          haskellPackages.haskell-language-server
         ] ++ sharedBuildInputs;
       }; # devShell
     }) // { inherit overlay; };
