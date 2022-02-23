@@ -63,6 +63,7 @@
           cabal-install
           pkgs.ghcicabal # be explicit to get the final package
           haskellPackages.haskell-language-server
+          nodejs # required for lsp
         ] ++ sharedBuildInputs;
       }; # devShell
     }) // { inherit overlay; };

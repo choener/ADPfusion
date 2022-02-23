@@ -1,5 +1,8 @@
 
 {-# Language MagicHash #-}
+-- we do not want since those explicit @f = \ij@ are to keep the fusion system happy
+-- TODO might have changed with newer GHC and should be checked
+{-# ANN module "HLint: ignore ignore Eta reduce" #-}
 
 -- | Generalized fusion system for grammars.
 --
