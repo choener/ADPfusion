@@ -172,6 +172,7 @@ library
     ADPfusion.Core.SynVar.Indices
     ADPfusion.Core.SynVar.Recursive.Type
     ADPfusion.Core.SynVar.Split.Type
+    ADPfusion.Core.SynVar.Split
     ADPfusion.Core.SynVar.TableWrap
     ADPfusion.Core.Term.Chr
     ADPfusion.Core.Term.Deletion

@@ -1,8 +1,5 @@
 
 {-# Language MagicHash #-}
--- we do not want since those explicit @f = \ij@ are to keep the fusion system happy
--- TODO might have changed with newer GHC and should be checked
-{-# ANN module "HLint: ignore ignore Eta reduce" #-}
 
 -- | Generalized fusion system for grammars.
 --
@@ -69,6 +66,10 @@ import           ADPfusion.Core.Term.Str
 import           ADPfusion.Core.Term.Switch
 import           ADPfusion.Core.TH
 import           ADPfusion.Core.TyLvlIx
+
+-- we do not want since those explicit @f = \ij@ are to keep the fusion system happy
+-- TODO might have changed with newer GHC and should be checked
+{-# ANN module "HLint: ignore Redundant lambda" #-}
 
 
 
