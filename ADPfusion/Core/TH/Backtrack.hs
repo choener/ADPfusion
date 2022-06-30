@@ -97,10 +97,10 @@ makeProductInstances tyconName = do
 
 -- | Returns the 'Name' of the monad variable.
 
-getMonadName :: [TyVarBndr] -> Maybe Name
+getMonadName :: [TyVarBndr flag] -> Maybe Name
 getMonadName = go
   where go [] = Nothing
-        go (KindedTV m (AppT (AppT ArrowT StarT) StarT) : _) = Just m
+        go (KindedTV m f (AppT (AppT ArrowT StarT) StarT) : _) = Just m
         go (_ : xs) = go xs
 
 -- | Returns the 'Name's of the objective function variables, as well as
@@ -121,38 +121,38 @@ getObjectiveNames = go
 -- | The left algebra type. Assumes that in @choice :: Stream m x -> m r@
 -- we have that @x ~ r@.
 
-buildLeftType :: Name -> (Name, Name, Name) -> (Name, Name) -> [TyVarBndr] -> Type
+buildLeftType :: Name -> (Name, Name, Name) -> (Name, Name) -> [TyVarBndr flag] -> Type
 buildLeftType tycon (m, x, r) (mL, xL) = foldl AppT (ConT tycon) . map (VarT . go)
-  where go (PlainTV z)
+  where go (PlainTV z f)
           | z == m        = mL  -- correct monad name
           | z == x        = xL  -- point to new x type
           | z == r        = xL  -- stream and return type are the same
           | otherwise     = z   -- everything else can stay as is
-        go (KindedTV z _) = go (PlainTV z)
+        go (KindedTV z f _) = go (PlainTV z f)
 
 -- | Here, we do not set any restrictions on the types @m@ and @r@.
 
-buildRightType :: Name -> (Name, Name, Name) -> (Name, Name, Name) -> [TyVarBndr] -> Type
+buildRightType :: Name -> (Name, Name, Name) -> (Name, Name, Name) -> [TyVarBndr flag] -> Type
 buildRightType tycon (m, x, r) (mR, xR, rR) = foldl AppT (ConT tycon) . map (VarT . go)
-  where go (PlainTV z)
+  where go (PlainTV z f)
           | z == m    = mR  -- have discovered a monadic type
           | z == x    = xR  -- have discovered a type that is equal to the stream type (and hence we have a synvar type)
           | z == r    = rR  -- have discovered a type that is equal to the result type (for @<||@) equal to the stream type, hence synvar
           | otherwise = z   -- this is a terminal or a terminal stack (we don't care)
-        go (KindedTV z _) = go (PlainTV z)
+        go (KindedTV z f _) = go (PlainTV z f)
 
 -- | Build up the type for backtracking. We want laziness in the right
 -- return type. Hence, we have @AppT ListT (VarT xR)@ ; i.e. we want to
 -- return results in a list.
 
-buildSigBacktrackingType :: Name -> (Name, Name, Name) -> (Name) -> (Name, Name, Name) -> [TyVarBndr] -> TypeQ
+buildSigBacktrackingType :: Name -> (Name, Name, Name) -> (Name) -> (Name, Name, Name) -> [TyVarBndr flag] -> TypeQ
 buildSigBacktrackingType tycon (m, x, r) (xL) (mR, xR, rR) = foldl appT (conT tycon) . map go
-  where go (PlainTV z)
+  where go (PlainTV z f)
           | z == m    = varT mR
           | z == x    = [t| ($(varT xL) , [ $(varT xR) ] ) |]
           | z == r    = varT rR
           | otherwise = varT z
-        go (KindedTV z _) = go (PlainTV z)
+        go (KindedTV z f _) = go (PlainTV z f)
 
 -- |
 --
@@ -160,14 +160,14 @@ buildSigBacktrackingType tycon (m, x, r) (xL) (mR, xR, rR) = foldl appT (conT ty
 -- least that was the reason for backtracking. For forward mode, we may not
 -- want this. We will have to change the function combination then?
 
-buildSigCombiningType :: Name -> Name -> (Name, Name, Name) -> (Name, Name, Name) -> (Name, Name, Name) -> [TyVarBndr] -> TypeQ
+buildSigCombiningType :: Name -> Name -> (Name, Name, Name) -> (Name, Name, Name) -> (Name, Name, Name) -> [TyVarBndr flag] -> TypeQ
 buildSigCombiningType tycon vG (m, x, r) (mL, xL, rL) (mR, xR, rR) = foldl appT (conT tycon) . map go
-  where go (PlainTV z)
+  where go (PlainTV z f)
           | z == m    = varT mR
           | z == x    = [t| ($(varT xL) , [ $(varT xR) ] ) |]   -- [1]
           | z == r    = [t| V.Vector ($(varT rL) , $(varT rR)) |]
           | otherwise = varT z
-        go (KindedTV z _) = go (PlainTV z)
+        go (KindedTV z f _) = go (PlainTV z f)
 
 
 

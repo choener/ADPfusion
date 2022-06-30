@@ -12,9 +12,11 @@ import           Control.Monad.Primitive
 import           Control.Monad.ST
 import           Control.Monad
 import           Data.Proxy
-import           Data.Singletons.Prelude.Bool
-import           Data.Singletons.Prelude.Bool
-import           Data.Singletons.Prelude.List
+--import           Data.Singletons.Prelude.Bool
+--import           Data.Singletons.Prelude.Bool
+--import           Data.Singletons.Prelude.List
+import           Data.Bool.Singletons
+import           Data.List.Singletons
 import           Data.Type.Equality
 import           Data.Vector.Fusion.Util (Id(..))
 import           Debug.Trace (traceShow)

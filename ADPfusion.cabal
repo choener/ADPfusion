@@ -11,7 +11,7 @@ license:        BSD-3-Clause
 license-file:   LICENSE
 build-type:     Simple
 stability:      experimental
-tested-with:    GHC == 8.8.4, GHC == 8.10.4, GHC == 9.0
+tested-with:    GHC == 9.0
 synopsis:       Efficient, high-level dynamic programming.
 description:
                 <http://www.bioinf.uni-leipzig.de/Software/gADP/ generalized Algebraic Dynamic Programming>
@@ -88,7 +88,7 @@ flag llvm
 
 
 common deps
-  build-depends: base               >= 4.7    && < 5.0
+  build-depends: base               >= 4.7
                , bits               >= 0.4
                , containers
                , deepseq
@@ -97,13 +97,15 @@ common deps
                , mtl                >= 2.0
                , primitive          >= 0.5.4
                , QuickCheck         >= 2.7
-               , singletons         >= 2.4    && < 3.0
+               , singletons         >= 3.0
+               , singletons-base
                , strict             >= 0.3
                , template-haskell   >= 2.0
                , th-orphans         >= 0.12
                , transformers       >= 0.3
                , tuple              >= 0.3
                , vector             >= 0.11
+               , th-abstraction     >= 0.4
                --
                , DPutils            == 0.1.1.*
                , OrderedBits        == 0.0.2.*

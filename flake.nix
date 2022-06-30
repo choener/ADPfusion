@@ -1,11 +1,11 @@
 {
   description = ''
-    WienRNA is a secondary structure folding testbed to test how well ADPfusion performs.
+    ADPfusion allows writing highly efficient, high-level dynamic programming code in Haskell.
   '';
 
   inputs = {
     # NOTE Only update if we are sure that all packages can build with nixos>20.09.
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-21.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.05";
     flake-utils.url = "github:numtide/flake-utils";
     ghcicabal = { url = "github:choener/ghcicabal"; inputs.nixpkgs.follows = "nixpkgs"; };
     DPutils-src = {
