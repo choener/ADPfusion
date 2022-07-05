@@ -34,6 +34,31 @@ import           ADPfusion.Core.SynVar.TableWrap
 import           ADPfusion.Core.SynVar.Array
 
 
+-- * Very simple type-level based lookup table
+
+data BOI (bigOrder :: Nat) sh = BOI sh
+
+findboi
+  :: forall cmp ls (that::Nat) tsh (fnd::Nat)
+  . (cmp ~ (that == fnd), FindBOI cmp (ls:.BOI that tsh) fnd)
+  => (ls:.BOI that tsh) -> Proxy fnd -> RetTy cmp (ls:.BOI that tsh) fnd
+findboi = findboi' (Proxy :: Proxy cmp)
+
+class FindBOI (tf :: Bool) down (bigOrder :: Nat) where
+  type RetTy tf down bigOrder :: *
+  findboi' :: Proxy tf -> down -> Proxy bigOrder -> RetTy tf down bigOrder
+
+instance FindBOI tf Z fnd where
+  findboi' = undefined
+
+instance (sh ~ ret) => FindBOI True (ls:.BOI this sh) fnd where
+  type RetTy True (ls:.BOI this sh) fnd = sh
+  findboi' _ (_ :. BOI sh) _ = sh
+
+instance (cmp ~ (that == fnd), FindBOI cmp (ls:.BOI that tsh) fnd) => FindBOI False ((ls:.BOI that tsh):.BOI this sh) fnd where
+  type RetTy False (ls:.BOI that tsh:.BOI this sh) fnd = RetTy (that==fnd) (ls:.BOI that tsh) fnd
+  findboi' _ (ls:._) = findboi' (Proxy :: Proxy cmp) ls
+
 
 -- | This version of @fillTables@ requires an explicit 'LimitType', which allows us to handle
 -- heterogenous tables.
@@ -47,14 +72,14 @@ import           ADPfusion.Core.SynVar.Array
 -- should be possible to be different.
 
 fillTablesDim
-  :: forall bigOrder s ts sh
-  .  (bigOrder ~ BigOrderNats ts, EachBigOrder bigOrder ts, CountNumberOfCells 0 ts)
-  => LimitType sh -> ts -> ST s (Mutated ts)
+  :: forall bigOrder s ts sh boi
+  .  (bigOrder ~ BigOrderNats ts, EachBigOrder bigOrder ts boi, CountNumberOfCells 0 ts)
+  => boi -> ts -> ST s (Mutated ts)
 --{{{
 {-# Inline fillTablesDim #-}
 fillTablesDim sh ts = do
   !startTime <- unsafeIOToPrim getCPUTime
-  ps <- eachBigOrder (Proxy :: Proxy bigOrder) ts
+  ps <- eachBigOrder (Proxy :: Proxy bigOrder) ts sh
   !stopTime  <- unsafeIOToPrim getCPUTime
   let deltaTime = max 1 $ stopTime - startTime
   return $! Mutated
@@ -77,13 +102,13 @@ fillTablesDim sh ts = do
 
 fillTables
   :: forall bigOrder s ts
-  .  (bigOrder ~ BigOrderNats ts, EachBigOrder bigOrder ts, CountNumberOfCells 0 ts)
+  .  (bigOrder ~ BigOrderNats ts, EachBigOrder bigOrder ts (), CountNumberOfCells 0 ts)
   => ts -> ST s (Mutated ts)
 --{{{
 {-# Inline fillTables #-}
 fillTables ts = do
   !startTime <- unsafeIOToPrim getCPUTime
-  ps <- eachBigOrder (Proxy :: Proxy bigOrder) ts
+  ps <- eachBigOrder (Proxy :: Proxy bigOrder) ts ()
   !stopTime  <- unsafeIOToPrim getCPUTime
   let deltaTime = max 1 $ stopTime - startTime
   return $! Mutated
@@ -102,29 +127,29 @@ fillTables ts = do
 -- algorithm, that are not interdependent, but are rather run one after another. Of course later
 -- stages may use data from earlier stages, but not vice versa.
 
-class EachBigOrder (boNats :: [Nat]) ts where
-  eachBigOrder :: Proxy boNats -> ts -> ST s [PerfCounter]
+class EachBigOrder (boNats :: [Nat]) ts gi where
+  eachBigOrder :: Proxy boNats -> ts -> gi -> ST s [PerfCounter]
 
 -- | No more big orders to handle.
 
-instance EachBigOrder '[] ts where
+instance EachBigOrder '[] ts gi where
   {-# Inline eachBigOrder #-}
-  eachBigOrder Proxy _ = return []
+  eachBigOrder Proxy _ _ = return []
 
 -- | handle this big order.
 
 instance
-  ( EachBigOrder ns ts
-  , ThisBigOrder n (IsThisBigOrder n ts) ts
+  ( EachBigOrder ns ts gi
+  , ThisBigOrder n (IsThisBigOrder n ts) ts gi
   , CountNumberOfCells n ts
-  ) => EachBigOrder (n ': ns) ts where
+  ) => EachBigOrder (n ': ns) ts gi where
   {-# Inline eachBigOrder #-}
-  eachBigOrder Proxy ts = do
+  eachBigOrder Proxy ts gi = do
     !startTime <- unsafeIOToPrim getCPUTime
-    thisBigOrder (Proxy :: Proxy n) (Proxy :: Proxy (IsThisBigOrder n ts)) ts
+    thisBigOrder (Proxy :: Proxy n) (Proxy :: Proxy (IsThisBigOrder n ts)) ts gi
     !stopTime  <- unsafeIOToPrim getCPUTime
     let deltaTime = max 1 $ stopTime - startTime
-    ps <- eachBigOrder (Proxy :: Proxy ns) ts
+    ps <- eachBigOrder (Proxy :: Proxy ns) ts gi
     let p = PerfCounter
               { picoSeconds   = deltaTime
               , seconds       = 1e-12 * fromIntegral deltaTime
@@ -138,15 +163,12 @@ instance
 -- or a sparse set of elements, for @streamUp/streamDown@ to work on. This is currently not
 -- happening.
 
-class ThisBigOrder (boNat :: Nat) (thisOrder :: Bool) ts where
-  thisBigOrder :: Proxy boNat -> Proxy thisOrder -> ts -> ST s ()
-  getAllBounds :: Proxy boNat -> Proxy thisOrder -> ts -> [()]
+class ThisBigOrder (boNat :: Nat) (thisOrder :: Bool) ts gi where
+  thisBigOrder :: Proxy boNat -> Proxy thisOrder -> ts -> gi -> ST s ()
 
-instance ThisBigOrder boNat anyOrder Z where
+instance ThisBigOrder boNat anyOrder Z gi where
   {-# Inline thisBigOrder #-}
-  thisBigOrder Proxy Proxy Z = return ()
-  {-# Inline getAllBounds #-}
-  getAllBounds Proxy Proxy Z = []
+  thisBigOrder Proxy Proxy Z _ = return ()
 
 -- | For 'Dense' tables, we have found the first table for our big order. Extract the bounds and
 -- hand over to small order. We do not need to check for another big order with this nat, since all
@@ -157,17 +179,27 @@ instance
   , EachSmallOrder boNat smallOrder (ts:.TwITbl bo so m (Dense v) c i x) i
   , PrimArrayOps (Dense v) i x
   , IndexStream i
-  ) ⇒ ThisBigOrder boNat True (ts:.TwITbl bo so m (Dense v) c i x) where
+  ) ⇒ ThisBigOrder boNat True (ts:.TwITbl bo so m (Dense v) c i x) () where
   {-# Inline thisBigOrder #-}
-  thisBigOrder Proxy Proxy tst@(_:.TW (ITbl _ arr) _) = do
+  thisBigOrder Proxy Proxy tst@(_:.TW (ITbl _ arr) _) gi = do
     let to = upperBound arr
-    let allBounds = getAllBounds (Proxy :: Proxy boNat) (Proxy :: Proxy True) tst
-    -- TODO This should provide one of a multitude of different ways to stream indices: for dense
-    -- matrices, use what is below, but for other types, we will need unions of indices.
     flip SM.mapM_ (streamUp zeroBound' to) $ \k ->
       eachSmallOrder (Proxy :: Proxy boNat) (Proxy :: Proxy smallOrder) tst k
-  {-# Inline getAllBounds #-}
-  getAllBounds Proxy Proxy (ts:.t) = undefined
+
+instance
+  ( smallOrder ~ SmallOrderNats (ts:.TwITbl bo so m (Dense v) c i x)
+  , EachSmallOrder boNat smallOrder (ts:.TwITbl bo so m (Dense v) c i x) streamTy
+--  , PrimArrayOps (Dense v) i x
+--  , IndexStream i
+  , FindBOI (that == boNat) (ls:.BOI that tsh) boNat
+  , LimitType streamTy ~ RetTy (that==boNat) (ls:.BOI that tsh) boNat
+  , Index streamTy, IndexStream streamTy
+  ) ⇒ ThisBigOrder boNat True (ts:.TwITbl bo so m (Dense v) c i x) (ls:.BOI that tsh) where
+  {-# Inline thisBigOrder #-}
+  thisBigOrder Proxy Proxy tst@(_:.TW (ITbl _ arr) _) gi = do
+    let boi = findboi gi (Proxy :: Proxy boNat)
+    flip SM.mapM_ (streamUp zeroBound' boi) $ \k ->
+      eachSmallOrder (Proxy :: Proxy boNat) (Proxy :: Proxy smallOrder) tst k
 
 -- | For 'Sparse' tables, we have found the first table ...
 
@@ -177,25 +209,23 @@ instance
   , PrimArrayOps (PAS.Sparse ixw v) i x
   , IndexStream i
   , VG.Vector ixw i
-  ) ⇒ ThisBigOrder boNat True (ts:.TwITbl bo so m (PAS.Sparse ixw v) c i x) where
+  ) ⇒ ThisBigOrder boNat True (ts:.TwITbl bo so m (PAS.Sparse ixw v) c i x) gi where
   {-# Inline thisBigOrder #-}
-  thisBigOrder Proxy Proxy tst@(_:.TW (ITbl _ arr) _) = do
+  thisBigOrder Proxy Proxy tst@(_:.TW (ITbl _ arr) _) gi = do
     -- TODO merge all indices, this system only works partially for now!
     let ixs = V.map (fromLinearIndex $ PAS.sparseUpperBound arr) $ V.convert $ PAS.sparseIndices arr
     traceShow "WARNING: mergeIndices has not happened yet! All sparse tables need to have the union of indices!" $
       flip V.mapM_ ixs $ \k ->
         eachSmallOrder (Proxy :: Proxy boNat) (Proxy :: Proxy smallOrder) tst k
-  getAllBounds = undefined
 
 -- | Go down the tables until we find the first table for our big order.
 
 instance
-  ( ThisBigOrder n (IsThisBigOrder n ts) ts
-  ) ⇒ ThisBigOrder n False (ts:.t) where
+  ( ThisBigOrder n (IsThisBigOrder n ts) ts gi
+  ) ⇒ ThisBigOrder n False (ts:.t) gi where
   {-# Inline thisBigOrder #-}
   thisBigOrder Proxy Proxy (ts:.t) =
     thisBigOrder (Proxy :: Proxy n) (Proxy :: Proxy (IsThisBigOrder n ts)) ts
-  getAllBounds = undefined
 
 -- |
 
