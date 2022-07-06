@@ -102,7 +102,6 @@ instance
 
 
 
-
 -- | 'collectIx' gobbles up indices that are tagged with the same symbolic
 -- identifier.
 

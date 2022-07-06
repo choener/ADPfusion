@@ -282,6 +282,9 @@ instance
   -- TODO eta-reduced, does this destroy performance?
   thisSmallOrder Proxy Proxy Proxy (ts:.t) = thisSmallOrder (Proxy :: Proxy bigOrder) (Proxy :: Proxy smallOrder) (Proxy :: Proxy isThisOrder) ts
 
+class IndexConversion gi i where
+  convertIndex :: gi -> Maybe i
+
 -- | This instance fills only dense tables. Sparse tables will use a slightly different system,
 -- where writes may fail silently!
 --
@@ -292,16 +295,20 @@ instance
   , isThisBigOrder ~ IsThisBigOrder bigOrder ts
   , isThisSmallOrder ~ IsThisSmallOrder smallOrder ts
   , isThisOrder ~ (isThisBigOrder && isThisSmallOrder)
-  , ThisSmallOrder bigOrder smallOrder isThisOrder ts i
-  ) => ThisSmallOrder bigOrder smallOrder 'True (ts:.TwITbl bo so Id (Dense v) c i x) i where
+  , ThisSmallOrder bigOrder smallOrder isThisOrder ts gi
+  , IndexConversion gi i
+  ) => ThisSmallOrder bigOrder smallOrder 'True (ts:.TwITbl bo so Id (Dense v) c i x) gi where
   {-# Inline thisSmallOrder #-}
-  thisSmallOrder Proxy Proxy Proxy (ts:.TW (ITbl _ arr) f) i = do
+  thisSmallOrder Proxy Proxy Proxy (ts:.TW (ITbl _ arr) f) gi = do
     let uB = upperBound arr
     marr <- unsafeThawM arr
-    z <- return . unId $ inline f uB i
-    writeM marr i z
+    case convertIndex gi of
+      Nothing -> return ()
+      Just i  -> do
+        z <- return . unId $ inline f uB i
+        writeM marr i z
     -- TODO need to write test case that checks that all tables are always filled
-    thisSmallOrder (Proxy :: Proxy bigOrder) (Proxy :: Proxy smallOrder) (Proxy :: Proxy isThisOrder) ts i
+    thisSmallOrder (Proxy :: Proxy bigOrder) (Proxy :: Proxy smallOrder) (Proxy :: Proxy isThisOrder) ts gi
 
 instance
   ( PrimArrayOps (PAS.Sparse ixw v) i x

@@ -11,11 +11,15 @@ import Debug.Trace
 import Prelude hiding (map,filter)
 import GHC.Exts
 import GHC.TypeLits
+import Data.Strict.Tuple
 
 import Data.PrimitiveArray hiding (map)
 
 import ADPfusion.Core.Classes
 import ADPfusion.Core.Multi
+import ADPfusion.Core.SynVar.Split.Type
+import ADPfusion.Core.SynVar.Array
+import ADPfusion.Core.SynVar.FillTyLvl (IndexConversion(..))
 
 
 
@@ -188,3 +192,25 @@ instance (MinSize minSize) ⇒ TableStaticVar pos minSize u (PointL C) where
   tableStreamIndex Proxy minSz _upperBound (PointL k) = PointL $ k - minSize minSz
   {-# INLINE [0] tableStreamIndex #-}
 
+
+
+instance IndexConversion (Z:.PointL ioc:.PointL ioc) (Z:.PointL ioc:.PointL ioc) where
+  {-# Inline convertIndex #-}
+  convertIndex = Just
+
+instance IndexConversion (Z:.PointL I:.PointL I) (PointL I) where
+  {-# Inline convertIndex #-}
+  convertIndex (Z:.i:.j)
+    | i==j = Just i
+    | otherwise = Nothing
+
+
+-- * Split conversion
+
+instance
+  ( Monad m
+  ) => MkStream m (IStatic 0) (ls :!: Split uId splitType (TwITbl b s m (Dense v) (cs:.c) (us:.u) x)) (PointL I) where
+
+instance TermStaticVar (IStatic d) (TwITbl bo so m arr c (PointL I) x) (PointL I) where
+
+instance TermStream m (TermSymbol ts (TwITbl bo so m arr c (PointL I) x)) s (is:.PointL I) bla where
