@@ -19,6 +19,7 @@ instance
   , left ~ LeftPosTy (IVariable 0) split (PointL I)
   , Monad m, MkStream m left ls (PointL I), TermStaticVar (IVariable 0) split (PointL I)
   ) => MkStream m (IVariable 0) (ls :!: Split uId Fragment (TwITbl b s m (Dense v) (cs:.c) (us:.u) x)) (PointL I) where
+--{{{
   {-# Inline mkStream #-}
   mkStream proxy (ls :!: split@(Split _)) grd us i
     = SP.map (\elm ->
@@ -27,6 +28,7 @@ instance
     $ mkStream (Proxy :: Proxy left) ls
         (termStaticCheck proxy split us i grd)
         us i
+--}}}
 
 -- |
 --

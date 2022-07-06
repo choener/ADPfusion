@@ -42,6 +42,7 @@ findboi
   :: forall cmp ls (that::Nat) tsh (fnd::Nat)
   . (cmp ~ (that == fnd), FindBOI cmp (ls:.BOI that tsh) fnd)
   => (ls:.BOI that tsh) -> Proxy fnd -> RetTy cmp (ls:.BOI that tsh) fnd
+{-# Inline findboi #-}
 findboi = findboi' (Proxy :: Proxy cmp)
 
 class FindBOI (tf :: Bool) down (bigOrder :: Nat) where
@@ -49,14 +50,17 @@ class FindBOI (tf :: Bool) down (bigOrder :: Nat) where
   findboi' :: Proxy tf -> down -> Proxy bigOrder -> RetTy tf down bigOrder
 
 instance FindBOI tf Z fnd where
+  {-# Inline findboi' #-}
   findboi' = undefined
 
 instance (sh ~ ret) => FindBOI True (ls:.BOI this sh) fnd where
   type RetTy True (ls:.BOI this sh) fnd = sh
+  {-# Inline findboi' #-}
   findboi' _ (_ :. BOI sh) _ = sh
 
 instance (cmp ~ (that == fnd), FindBOI cmp (ls:.BOI that tsh) fnd) => FindBOI False ((ls:.BOI that tsh):.BOI this sh) fnd where
   type RetTy False (ls:.BOI that tsh:.BOI this sh) fnd = RetTy (that==fnd) (ls:.BOI that tsh) fnd
+  {-# Inline findboi' #-}
   findboi' _ (ls:._) = findboi' (Proxy :: Proxy cmp) ls
 
 
