@@ -11,6 +11,7 @@
 module ADPfusion.PointL
   ( module ADPfusion.Core
   , module ADPfusion.PointL.Core
+  , module ADPfusion.PointL.SynVar
   , module ADPfusion.PointL.SynVar.Indices
 --  , module ADPfusion.PointL.SynVar.Recursive
   , module ADPfusion.PointL.Term.Chr
@@ -25,6 +26,7 @@ module ADPfusion.PointL
 import ADPfusion.Core
 
 import ADPfusion.PointL.Core
+import ADPfusion.PointL.SynVar
 import ADPfusion.PointL.SynVar.Indices
 --import ADPfusion.PointL.SynVar.Recursive
 import ADPfusion.PointL.Term.Chr

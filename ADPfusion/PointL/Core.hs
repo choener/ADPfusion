@@ -207,10 +207,4 @@ instance IndexConversion (Z:.PointL I:.PointL I) (PointL I) where
 
 -- * Split conversion
 
-instance
-  ( Monad m
-  ) => MkStream m (IStatic 0) (ls :!: Split uId splitType (TwITbl b s m (Dense v) (cs:.c) (us:.u) x)) (PointL I) where
-
-instance TermStaticVar (IStatic d) (TwITbl bo so m arr c (PointL I) x) (PointL I) where
-
 instance TermStream m (TermSymbol ts (TwITbl bo so m arr c (PointL I) x)) s (is:.PointL I) bla where

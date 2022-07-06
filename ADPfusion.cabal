@@ -191,6 +191,7 @@ library
 --    -- Point L
     ADPfusion.PointL
     ADPfusion.PointL.Core
+    ADPfusion.PointL.SynVar
     ADPfusion.PointL.SynVar.Indices
     ADPfusion.PointL.SynVar.Split
 --    ADP.Fusion.PointL.SynVar.Recursive
