@@ -20,6 +20,7 @@ import           Debug.Trace (traceShow)
 import           GHC.Exts
 import           GHC.Generics
 import           GHC.TypeNats
+import           GHC.TypeLits (TypeError(..), ErrorMessage(..))
 import qualified Data.Vector as V
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Generic as VG
@@ -36,32 +37,52 @@ import           ADPfusion.Core.SynVar.Array
 
 -- * Very simple type-level based lookup table
 
+-- | Associate a bigorder index (BOI) with a particular shape @sh@. This shape, typically an upper
+-- bound, will be used further down to initialize a loop over indices.
+
 data BOI (bigOrder :: Nat) sh = BOI sh
+
+-- | "Start" function to find a big order index. @cmp@ does a type-level equality check between the
+-- proxy we test against, and the lookup table.
+-- @findboi (Proxy @1) (Z:.BOI @0 ():.BOI @1 'A')@ will return @'A'@.
 
 findboi
   :: forall cmp ls (that::Nat) tsh (fnd::Nat)
   . (cmp ~ (that == fnd), FindBOI cmp (ls:.BOI that tsh) fnd)
   => (ls:.BOI that tsh) -> Proxy fnd -> RetTy cmp (ls:.BOI that tsh) fnd
+--{{{
 {-# Inline findboi #-}
 findboi = findboi' (Proxy :: Proxy cmp)
+--}}}
 
 class FindBOI (tf :: Bool) down (bigOrder :: Nat) where
+--{{{
+  -- | We need to compute the actual return type, based on the incoming type.
   type RetTy tf down bigOrder :: *
+  -- | Recursively scan the lookup table.
   findboi' :: Proxy tf -> down -> Proxy bigOrder -> RetTy tf down bigOrder
+--}}}
 
 instance FindBOI tf Z fnd where
+--{{{
+  type RetTy tf Z fnd = TypeError (Text "Missing FindBOI instance in lookup table for bigorder Nat: " :<>: ShowType fnd)
   {-# Inline findboi' #-}
-  findboi' = undefined
+  findboi' = undefined -- impossible to write this instance now!
+--}}}
 
 instance (sh ~ ret) => FindBOI True (ls:.BOI this sh) fnd where
+--{{{
   type RetTy True (ls:.BOI this sh) fnd = sh
   {-# Inline findboi' #-}
   findboi' _ (_ :. BOI sh) _ = sh
+--}}}
 
 instance (cmp ~ (that == fnd), FindBOI cmp (ls:.BOI that tsh) fnd) => FindBOI False ((ls:.BOI that tsh):.BOI this sh) fnd where
+--{{{
   type RetTy False (ls:.BOI that tsh:.BOI this sh) fnd = RetTy (that==fnd) (ls:.BOI that tsh) fnd
   {-# Inline findboi' #-}
   findboi' _ (ls:._) = findboi' (Proxy :: Proxy cmp) ls
+--}}}
 
 
 -- | This version of @fillTables@ requires an explicit 'LimitType', which allows us to handle
@@ -132,7 +153,9 @@ fillTables ts = do
 -- stages may use data from earlier stages, but not vice versa.
 
 class EachBigOrder (boNats :: [Nat]) ts gi where
+--{{{
   eachBigOrder :: Proxy boNats -> ts -> gi -> ST s [PerfCounter]
+--}}}
 
 -- | No more big orders to handle.
 
