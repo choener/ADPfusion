@@ -368,22 +368,22 @@ instance
 -- TODO I think it is possible to rewrite this to something along the lines of @ix@ vs @ix:.higher@
 -- which would allow "stepping down once". For now, we just want to have a working prototype.
 
-instance
-  ( VG.Vector v x
-  , isThisBigOrder ~ IsThisBigOrder bigOrder ts
-  , isThisSmallOrder ~ IsThisSmallOrder smallOrder ts
-  , isThisOrder ~ (isThisBigOrder && isThisSmallOrder)
-  , ThisSmallOrder bigOrder smallOrder isThisOrder ts (Z:.Subword ioc:.Subword ioc)
-  ) => ThisSmallOrder bigOrder smallOrder 'True (ts:.TwITbl bigOrder smallOrder Id (Dense v) c (Subword ioc) x) (Z:.Subword ioc:.Subword ioc) where
-  {-# Inline thisSmallOrder #-}
-  thisSmallOrder Proxy Proxy Proxy (ts:.TW (ITbl _ arr) f) i@(Z:.low:.high) = do
-    let (hI:.hJ) = fromSubword high
-    when (hI == 0 && hJ == 0) $ do
-      let uB = upperBound arr
-      marr <- unsafeThawM arr
-      z <- return . unId $ inline f uB low
-      safeWriteM marr low z
-    thisSmallOrder (Proxy :: Proxy bigOrder) (Proxy :: Proxy smallOrder) (Proxy :: Proxy isThisOrder) ts i
+--instance
+--  ( VG.Vector v x
+--  , isThisBigOrder ~ IsThisBigOrder bigOrder ts
+--  , isThisSmallOrder ~ IsThisSmallOrder smallOrder ts
+--  , isThisOrder ~ (isThisBigOrder && isThisSmallOrder)
+--  , ThisSmallOrder bigOrder smallOrder isThisOrder ts (Z:.Subword ioc:.Subword ioc)
+--  ) => ThisSmallOrder bigOrder smallOrder 'True (ts:.TwITbl bigOrder smallOrder Id (Dense v) c (Subword ioc) x) (Z:.Subword ioc:.Subword ioc) where
+--  {-# Inline thisSmallOrder #-}
+--  thisSmallOrder Proxy Proxy Proxy (ts:.TW (ITbl _ arr) f) i@(Z:.low:.high) = do
+--    let (hI:.hJ) = fromSubword high
+--    when (hI == 0 && hJ == 0) $ do
+--      let uB = upperBound arr
+--      marr <- unsafeThawM arr
+--      z <- return . unId $ inline f uB low
+--      safeWriteM marr low z
+--    thisSmallOrder (Proxy :: Proxy bigOrder) (Proxy :: Proxy smallOrder) (Proxy :: Proxy isThisOrder) ts i
 
 
 
