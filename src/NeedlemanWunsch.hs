@@ -1,5 +1,7 @@
 
-{-# Options_GHC -Wno-partial-type-signatures -XMagicHash #-}
+{-# Options_GHC -Wno-partial-type-signatures #-}
+
+{-# Language MagicHash #-}
 
 -- these parameters do well enough with GHC 8.2 for larger programs, we may have to increase the
 -- number of worker arguments.
