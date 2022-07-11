@@ -63,15 +63,15 @@ instance
   , TermStream m pos (TermSymbol a b) (Elm ls i) i
   , posLeft ~ LeftPosTy pos (TermSymbol a b) i
   ) => MkStream m pos (ls :!: TermSymbol a b) i where
+  {-# Inline mkStream #-}
   mkStream Proxy (ls :!: ts) grd lu i
     = map (\(TState sS ii ee) -> ElmTS ee ii sS)
-    . termStream (Proxy ∷ Proxy pos) ts lu i
+    . termStream (Proxy :: Proxy pos) ts lu i
     . map (\s -> TState s RiZ Z)
-    $ mkStream (Proxy ∷ Proxy posLeft)
+    $ mkStream (Proxy :: Proxy posLeft)
                ls
-               (termStaticCheck (Proxy ∷ Proxy pos) ts lu i grd)
-               lu (termStreamIndex (Proxy ∷ Proxy pos) ts i)
-  {-# Inline mkStream #-}
+               (termStaticCheck (Proxy :: Proxy pos) ts lu i grd)
+               lu (termStreamIndex (Proxy :: Proxy pos) ts i)
 
 -- | 
 
@@ -87,9 +87,9 @@ instance Monad m => MkStream m Z S Z where
 -- be modified.
 
 class TermStaticVar pos sym ix where
---  termStaticVar   ∷ sym → Context i → i → Context i
-  termStreamIndex ∷ Proxy pos → sym → ix → ix
-  termStaticCheck ∷ Proxy pos → sym → LimitType ix → ix → Int# → Int#
+--  termStaticVar   :: sym -> Context i -> i -> Context i
+  termStreamIndex :: Proxy pos -> sym -> ix -> ix
+  termStaticCheck :: Proxy pos -> sym -> LimitType ix -> ix -> Int# -> Int#
 
 instance TermStaticVar pos M Z where
   termStreamIndex Proxy M Z = Z
@@ -101,8 +101,8 @@ instance
   ( TermStaticVar ps ts is
   , TermStaticVar p  t  i
   ) => TermStaticVar (ps:.p) (TermSymbol ts t) (is:.i) where
-  termStreamIndex Proxy (ts:|t) (is:.i) = termStreamIndex (Proxy ∷ Proxy ps) ts is :. termStreamIndex (Proxy ∷ Proxy p) t i
-  termStaticCheck Proxy (ts:|t) (us:..u) (is:.i) grd = termStaticCheck (Proxy ∷ Proxy ps) ts us is (termStaticCheck (Proxy ∷ Proxy p) t u i grd)
+  termStreamIndex Proxy (ts:|t) (is:.i) = termStreamIndex (Proxy :: Proxy ps) ts is :. termStreamIndex (Proxy :: Proxy p) t i
+  termStaticCheck Proxy (ts:|t) (us:..u) (is:.i) grd = termStaticCheck (Proxy :: Proxy ps) ts us is (termStaticCheck (Proxy :: Proxy p) t u i grd)
   {-# INLINE [0] termStreamIndex #-}
   {-# INLINE [0] termStaticCheck #-}
 
@@ -114,18 +114,18 @@ type instance InitialContext (is:.i) = InitialContext is:.InitialContext i
 
 class TableStaticVar pos minSize tableIx ix where
   tableStreamIndex
-    ∷ Proxy pos
+    :: Proxy pos
     -- ^ provide type-level information on if we are currently static/variable/
     -- etc
-    → minSize
+    -> minSize
     -- ^ Information on the minimal size of the corresponding table.
-    → LimitType tableIx
+    -> LimitType tableIx
     -- ^ provide type-level information on the index structure of the table we
     -- are looking at. This index structure might well be different than the
     -- @ix@ index we use in the grammar.
-    → ix
+    -> ix
     -- ^ current right-most index
-    → ix
+    -> ix
     -- ^ right-most index for symbol to the left of us
 
 -- | Index "0" for multi-dimensional syntactic variables.
@@ -138,10 +138,10 @@ instance
   ( TableStaticVar ps cs us is
   , TableStaticVar p  c  u  i
   )
-  ⇒ TableStaticVar (ps:.p) (cs:.c) (us:.u) (is:.i) where
+  => TableStaticVar (ps:.p) (cs:.c) (us:.u) (is:.i) where
   tableStreamIndex Proxy (cs:.c) (us:..u) (is:.i)
-    =  tableStreamIndex (Proxy ∷ Proxy ps) cs us is
-    :. tableStreamIndex (Proxy ∷ Proxy p ) c  u  i
+    =  tableStreamIndex (Proxy :: Proxy ps) cs us is
+    :. tableStreamIndex (Proxy :: Proxy p ) c  u  i
   {-# INLINE [0] tableStreamIndex #-}
 
 
@@ -156,16 +156,16 @@ data TermState s i e = TState
 
 class TermStream m pos t s i where
   termStream
-    ∷ Proxy pos
-    → t
-    → LimitType i
-    → i
-    → Stream m (TermState s Z Z)
-    → Stream m (TermState s i (TermArg t))
+    :: Proxy pos
+    -> t
+    -> LimitType i
+    -> i
+    -> Stream m (TermState s Z Z)
+    -> Stream m (TermState s i (TermArg t))
 
 instance (Monad m) => TermStream m pos M s Z where
-  termStream Proxy M ZZ Z = id
   {-# Inline termStream #-}
+  termStream Proxy M ZZ Z s = s
 
 -- |
 --
@@ -175,19 +175,19 @@ instance (Monad m) => TermStream m pos M s Z where
 -- returning @u@ !!!
 
 addTermStream1
-  ∷ forall m pos t s i
+  :: forall m pos t s i
   . ( Monad m
     , TermStream m (Z:.pos) (TermSymbol M t) (Elm (Term1 s) (Z:.i)) (Z:.i)
     )
-  ⇒ Proxy pos
-  → t
-  → LimitType i
-  → i
-  → Stream m s
-  → Stream m (s,TermArg t,RunningIndex i)
+  => Proxy pos
+  -> t
+  -> LimitType i
+  -> i
+  -> Stream m s
+  -> Stream m (s,TermArg t,RunningIndex i)
 addTermStream1 Proxy t u i
   = map (\(TState (ElmTerm1 sS) (RiZ:.:ii) (Z:.ee)) -> (sS,ee,ii))
-  . termStream (Proxy ∷ Proxy (Z:.pos)) (M:|t) (ZZ:..u) (Z:.i)
+  . termStream (Proxy :: Proxy (Z:.pos)) (M:|t) (ZZ:..u) (Z:.i)
   . map (\s -> TState (elmTerm1 s i) RiZ Z)
 {-# Inline addTermStream1 #-}
 
@@ -212,7 +212,7 @@ instance (s ~ Elm x0 i, Element x0 i) => Element (Term1 s) (Z:.i) where
 --
 -- TODO prepare for deletion
 
---type TermMkStreamContext m (pos ∷ k) ls t i
+--type TermMkStreamContext m (pos :: k) ls t i
 --  = ( Monad m
 --    , MkStream m pos ls i
 --    , TermStream m pos (TermSymbol M t) (Elm (Term1 (Elm ls i)) (Z:.i)) (Z:.i)
@@ -222,7 +222,7 @@ instance (s ~ Elm x0 i, Element x0 i) => Element (Term1 s) (Z:.i) where
 
 -- | @Term TermStream@ context
 
-type TermStreamContext m (pos ∷ k) ts s x0 sixty is i
+type TermStreamContext m (pos :: k) ts s x0 sixty is i
   = ( Monad m
     , TermStream m pos ts s is
     , GetIndex (RunningIndex sixty) (RunningIndex (is:.i))
