@@ -223,10 +223,10 @@ instance
   , Index streamTy, IndexStream streamTy
   ) ⇒ ThisBigOrder boNat True (ts:.TwITbl bo so m (Dense v) c i x) (ls:.BOI that tsh) where
   {-# Inline thisBigOrder #-}
-  thisBigOrder Proxy Proxy tst@(_:.TW (ITbl _ arr) _) gi = do
+  thisBigOrder Proxy Proxy tst@(_:.TW (ITbl _ _) _) gi = do
     let boi = findboi gi (Proxy :: Proxy boNat)
     flip SM.mapM_ (streamUp zeroBound' boi) $ \k ->
-      eachSmallOrder (Proxy :: Proxy boNat) (Proxy :: Proxy smallOrder) tst k
+      inline eachSmallOrder (Proxy :: Proxy boNat) (Proxy :: Proxy smallOrder) tst k
 
 -- | For 'Sparse' tables, we have found the first table ...
 
@@ -296,7 +296,7 @@ class ThisSmallOrder (bigNat :: Nat) (smallNat :: Nat) (thisOrder :: Bool) ts i 
   thisSmallOrder :: Proxy bigNat -> Proxy smallNat -> Proxy thisOrder -> ts -> i -> ST s ()
 
 instance ThisSmallOrder b s any Z i where
-  {-# Inline thisSmallOrder #-}
+  {-# Inline [1] thisSmallOrder #-}
   thisSmallOrder _ _ _ _ _ = return ()
 
 instance
@@ -305,7 +305,7 @@ instance
   , isThisOrder ~ (isThisBigOrder && isThisSmallOrder)
   , ThisSmallOrder bigOrder smallOrder isThisOrder ts i
   ) ⇒ ThisSmallOrder bigOrder smallOrder 'False (ts:.t) i where
-  {-# Inline thisSmallOrder #-}
+  {-# Inline [1] thisSmallOrder #-}
   -- TODO eta-reduced, does this destroy performance?
   thisSmallOrder Proxy Proxy Proxy (ts:.t) = thisSmallOrder (Proxy :: Proxy bigOrder) (Proxy :: Proxy smallOrder) (Proxy :: Proxy isThisOrder) ts
 
@@ -325,7 +325,7 @@ instance
   , ThisSmallOrder bigOrder smallOrder isThisOrder ts gi
   , IndexConversion gi i
   ) => ThisSmallOrder bigOrder smallOrder 'True (ts:.TwITbl bo so Id (Dense v) c i x) gi where
-  {-# Inline thisSmallOrder #-}
+  {-# Inline [1] thisSmallOrder #-}
   thisSmallOrder Proxy Proxy Proxy (ts:.TW (ITbl _ arr) f) gi = do
     let uB = upperBound arr
     marr <- unsafeThawM arr
@@ -349,7 +349,7 @@ instance
   , isThisOrder ~ (isThisBigOrder && isThisSmallOrder)
   , ThisSmallOrder bigOrder smallOrder isThisOrder ts i
   ) ⇒ ThisSmallOrder bigOrder smallOrder 'True (ts:.TwITbl bo so Id (PAS.Sparse ixw v) c i x) i where
-  {-# Inline thisSmallOrder #-}
+  {-# Inline [1] thisSmallOrder #-}
   thisSmallOrder Proxy Proxy Proxy (ts:.TW (ITbl _ arr) f) i = do
     let uB = upperBound arr
     marr <- unsafeThawM arr

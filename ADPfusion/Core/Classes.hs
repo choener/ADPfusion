@@ -1,5 +1,5 @@
 
-{-# Language MagicHash #-}
+{-# Language MagicHash, UnboxedTuples #-}
 
 module ADPfusion.Core.Classes where
 
