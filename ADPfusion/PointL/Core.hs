@@ -195,15 +195,30 @@ instance (MinSize minSize) ⇒ TableStaticVar pos minSize u (PointL C) where
 
 
 instance IndexConversion (Z:.PointL ioc:.PointL ioc) (Z:.PointL ioc:.PointL ioc) where
+--{{{
   {-# Inline convertIndex #-}
   convertIndex = Just
+--}}}
 
 instance IndexConversion (Z:.PointL I:.PointL I) (PointL I) where
+--{{{
   {-# Inline convertIndex #-}
   convertIndex (Z:.i:.j)
     | i==j = Just i
     | otherwise = Nothing
+--}}}
 
+instance IndexConversion (Z:.PointL I) (Z:.PointL I) where
+--{{{
+  {-# Inline convertIndex #-}
+  convertIndex = Just
+--}}}
+
+instance IndexConversion (PointL I) (PointL I) where
+--{{{
+  {-# Inline convertIndex #-}
+  convertIndex = Just
+--}}}
 
 -- * Split conversion
 

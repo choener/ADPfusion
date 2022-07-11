@@ -166,10 +166,9 @@ instance EachBigOrder '[] ts gi where
 -- | handle this big order.
 
 instance
-  ( EachBigOrder ns ts gi
-  , ThisBigOrder n (IsThisBigOrder n ts) ts gi
-  , CountNumberOfCells n ts
-  ) => EachBigOrder (n ': ns) ts gi where
+  ( EachBigOrder ns ts gi, ThisBigOrder n (IsThisBigOrder n ts) ts gi, CountNumberOfCells n ts)
+  => EachBigOrder (n ': ns) ts gi where
+--{{{
   {-# Inline eachBigOrder #-}
   eachBigOrder Proxy ts gi = do
     !startTime <- unsafeIOToPrim getCPUTime
@@ -183,6 +182,7 @@ instance
               , numberOfCells = countNumberOfCells (Just (Proxy :: Proxy n)) ts
               }
     return $ p:ps
+--}}}
 
 -- | 'ThisBigOrder' provides machinery to fill tables correctly.
 --
@@ -194,8 +194,10 @@ class ThisBigOrder (boNat :: Nat) (thisOrder :: Bool) ts gi where
   thisBigOrder :: Proxy boNat -> Proxy thisOrder -> ts -> gi -> ST s ()
 
 instance ThisBigOrder boNat anyOrder Z gi where
+--{{{
   {-# Inline thisBigOrder #-}
   thisBigOrder Proxy Proxy Z _ = return ()
+--}}}
 
 -- | For 'Dense' tables, we have found the first table for our big order. Extract the bounds and
 -- hand over to small order. We do not need to check for another big order with this nat, since all
@@ -206,27 +208,28 @@ instance
   , EachSmallOrder boNat smallOrder (ts:.TwITbl bo so m (Dense v) c i x) i
   , PrimArrayOps (Dense v) i x
   , IndexStream i
-  ) ⇒ ThisBigOrder boNat True (ts:.TwITbl bo so m (Dense v) c i x) () where
+  ) => ThisBigOrder boNat True (ts:.TwITbl bo so m (Dense v) c i x) () where
   {-# Inline thisBigOrder #-}
+--{{{
   thisBigOrder Proxy Proxy tst@(_:.TW (ITbl _ arr) _) gi = do
     let to = upperBound arr
-    flip SM.mapM_ (streamUp zeroBound' to) $ \k ->
-      eachSmallOrder (Proxy :: Proxy boNat) (Proxy :: Proxy smallOrder) tst k
+    SM.mapM_ (eachSmallOrder (Proxy @boNat) (Proxy @smallOrder) tst) (streamUp zeroBound' to)
+--}}}
 
 instance
   ( smallOrder ~ SmallOrderNats (ts:.TwITbl bo so m (Dense v) c i x)
   , EachSmallOrder boNat smallOrder (ts:.TwITbl bo so m (Dense v) c i x) streamTy
---  , PrimArrayOps (Dense v) i x
---  , IndexStream i
   , FindBOI (that == boNat) (ls:.BOI that tsh) boNat
   , LimitType streamTy ~ RetTy (that==boNat) (ls:.BOI that tsh) boNat
   , Index streamTy, IndexStream streamTy
-  ) ⇒ ThisBigOrder boNat True (ts:.TwITbl bo so m (Dense v) c i x) (ls:.BOI that tsh) where
+  ) => ThisBigOrder boNat True (ts:.TwITbl bo so m (Dense v) c i x) (ls:.BOI that tsh) where
+--{{{
   {-# Inline thisBigOrder #-}
   thisBigOrder Proxy Proxy tst@(_:.TW (ITbl _ _) _) gi = do
     let boi = findboi gi (Proxy :: Proxy boNat)
     flip SM.mapM_ (streamUp zeroBound' boi) $ \k ->
       eachSmallOrder (Proxy :: Proxy boNat) (Proxy :: Proxy smallOrder) tst k
+--}}}
 
 -- | For 'Sparse' tables, we have found the first table ...
 
@@ -236,7 +239,8 @@ instance
   , PrimArrayOps (PAS.Sparse ixw v) i x
   , IndexStream i
   , VG.Vector ixw i
-  ) ⇒ ThisBigOrder boNat True (ts:.TwITbl bo so m (PAS.Sparse ixw v) c i x) gi where
+  ) => ThisBigOrder boNat True (ts:.TwITbl bo so m (PAS.Sparse ixw v) c i x) gi where
+--{{{
   {-# Inline thisBigOrder #-}
   thisBigOrder Proxy Proxy tst@(_:.TW (ITbl _ arr) _) gi = do
     -- TODO merge all indices, this system only works partially for now!
@@ -244,12 +248,13 @@ instance
     traceShow "WARNING: mergeIndices has not happened yet! All sparse tables need to have the union of indices!" $
       flip V.mapM_ ixs $ \k ->
         eachSmallOrder (Proxy :: Proxy boNat) (Proxy :: Proxy smallOrder) tst k
+--}}}
 
 -- | Go down the tables until we find the first table for our big order.
 
 instance
   ( ThisBigOrder n (IsThisBigOrder n ts) ts gi
-  ) ⇒ ThisBigOrder n False (ts:.t) gi where
+  ) => ThisBigOrder n False (ts:.t) gi where
   {-# Inline thisBigOrder #-}
   thisBigOrder Proxy Proxy (ts:.t) =
     thisBigOrder (Proxy :: Proxy n) (Proxy :: Proxy (IsThisBigOrder n ts)) ts
@@ -282,7 +287,7 @@ instance
   , isThisSmallOrder ~ IsThisSmallOrder s ts
   , isThisOrder ~ (isThisBigOrder && isThisSmallOrder)
   , ThisSmallOrder bigOrder s isThisOrder ts i
-  ) ⇒ EachSmallOrder bigOrder (s ': so) ts i where
+  ) => EachSmallOrder bigOrder (s ': so) ts i where
   {-# Inline eachSmallOrder #-}
   eachSmallOrder Proxy Proxy ts i = do
     -- fill all tables that have the same big & small order
@@ -304,7 +309,7 @@ instance
   , isThisSmallOrder ~ IsThisSmallOrder smallOrder ts
   , isThisOrder ~ (isThisBigOrder && isThisSmallOrder)
   , ThisSmallOrder bigOrder smallOrder isThisOrder ts i
-  ) ⇒ ThisSmallOrder bigOrder smallOrder 'False (ts:.t) i where
+  ) => ThisSmallOrder bigOrder smallOrder 'False (ts:.t) i where
   {-# Inline thisSmallOrder #-}
   -- TODO eta-reduced, does this destroy performance?
   thisSmallOrder Proxy Proxy Proxy (ts:.t) = thisSmallOrder (Proxy :: Proxy bigOrder) (Proxy :: Proxy smallOrder) (Proxy :: Proxy isThisOrder) ts
@@ -348,7 +353,7 @@ instance
   , isThisSmallOrder ~ IsThisSmallOrder smallOrder ts
   , isThisOrder ~ (isThisBigOrder && isThisSmallOrder)
   , ThisSmallOrder bigOrder smallOrder isThisOrder ts i
-  ) ⇒ ThisSmallOrder bigOrder smallOrder 'True (ts:.TwITbl bo so Id (PAS.Sparse ixw v) c i x) i where
+  ) => ThisSmallOrder bigOrder smallOrder 'True (ts:.TwITbl bo so Id (PAS.Sparse ixw v) c i x) i where
   {-# Inline thisSmallOrder #-}
   thisSmallOrder Proxy Proxy Proxy (ts:.TW (ITbl _ arr) f) i = do
     let uB = upperBound arr
@@ -358,32 +363,6 @@ instance
     -- TODO need to write test case that checks that all tables are always filled
     thisSmallOrder (Proxy :: Proxy bigOrder) (Proxy :: Proxy smallOrder) (Proxy :: Proxy isThisOrder) ts i
 
--- | This is a mixed instance for MCFG's. Beware of the mixture of dimensions here! Right now, this
--- is only for testing, check how the outer index structure is "larger" than the inner index
--- structure.
---
--- Given @(Z:.low:.high)@ we fill based on @low@, using @high==0:.0@ to determine when to actually
--- fill. No need to call too often.
---
--- TODO I think it is possible to rewrite this to something along the lines of @ix@ vs @ix:.higher@
--- which would allow "stepping down once". For now, we just want to have a working prototype.
-
---instance
---  ( VG.Vector v x
---  , isThisBigOrder ~ IsThisBigOrder bigOrder ts
---  , isThisSmallOrder ~ IsThisSmallOrder smallOrder ts
---  , isThisOrder ~ (isThisBigOrder && isThisSmallOrder)
---  , ThisSmallOrder bigOrder smallOrder isThisOrder ts (Z:.Subword ioc:.Subword ioc)
---  ) => ThisSmallOrder bigOrder smallOrder 'True (ts:.TwITbl bigOrder smallOrder Id (Dense v) c (Subword ioc) x) (Z:.Subword ioc:.Subword ioc) where
---  {-# Inline thisSmallOrder #-}
---  thisSmallOrder Proxy Proxy Proxy (ts:.TW (ITbl _ arr) f) i@(Z:.low:.high) = do
---    let (hI:.hJ) = fromSubword high
---    when (hI == 0 && hJ == 0) $ do
---      let uB = upperBound arr
---      marr <- unsafeThawM arr
---      z <- return . unId $ inline f uB low
---      safeWriteM marr low z
---    thisSmallOrder (Proxy :: Proxy bigOrder) (Proxy :: Proxy smallOrder) (Proxy :: Proxy isThisOrder) ts i
 
 
 
@@ -436,7 +415,7 @@ data Mutated ts = Mutated
   }
   deriving (Eq,Ord,Show,Generic)
 
-instance NFData ts ⇒ NFData (Mutated ts)
+instance NFData ts => NFData (Mutated ts)
 
 data PerfCounter = PerfCounter
   { picoSeconds   :: !Integer
@@ -476,7 +455,7 @@ instance
   , PrimArrayOps arr i x
   , KnownNat n
   , KnownNat bo
-  ) ⇒ CountNumberOfCells n (ts:.TwITbl bo so Id arr c i x) where
+  ) => CountNumberOfCells n (ts:.TwITbl bo so Id arr c i x) where
   {-# NoInline countNumberOfCells #-}
   countNumberOfCells mayP (ts:.(TW (ITbl _ arr) fun)) =
     let n  = natVal (Proxy :: Proxy n)

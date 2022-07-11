@@ -135,8 +135,13 @@ Stream stepa ta `streamappend` Stream stepb tb = Stream step (SAL ta)
 -- things).
 
 infixl 5 ...
-(...) s h = \lu ij -> h $ s lu ij
+(...) :: (i -> j -> x) -> (x -> r) -> (i -> j -> r)
+--{{{
 {-# INLINE (...) #-}
+-- Note: Inlining @h@ is crucial for multi-table grammars, since GHC will otherwise try to re-use
+-- @h@ between tables, killing performance.
+(...) s h = \lu ij -> inline h $ s lu ij
+--}}}
 
 -- -- | Additional outer check with user-given check function
 -- 
