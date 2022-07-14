@@ -1,2 +1,0 @@
-with (import <nixpkgs> {});
-hsDevFunctions ./.
