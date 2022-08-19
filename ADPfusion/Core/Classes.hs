@@ -14,8 +14,8 @@ import           Data.PrimitiveArray.Index.Class
 
 
 
--- TODO Until I figure out how to use @InitialContext ∷ k@ instead of
--- @InitialContext ∷ *@ we need to live in @*@. Unfortunately, @(<<<)@ does not
+-- TODO Until I figure out how to use @InitialContext :: k@ instead of
+-- @InitialContext :: *@ we need to live in @*@. Unfortunately, @(<<<)@ does not
 -- like differently-kinded types.
 
 {-
@@ -55,18 +55,18 @@ data ExtComplementContext s
   = CStatic s
   | CVariable s
 
--- | For each index type @ix@, @initialContext (Proxy ∷ ix)@ yields the initial
+-- | For each index type @ix@, @initialContext (Proxy :: ix)@ yields the initial
 -- context from which to start up rules.
 --
 -- TODO turn into type family and make 'initialContext' a global function.
 
-type family InitialContext ix ∷ *
+type family InitialContext ix :: *
 
 {-
 class RuleContext ix where
-  type InitialContext ix ∷ *
-  initialContext ∷ Proxy ix → Proxy (InitialContext ix)
---  default initialContext ∷ Proxy ix → Proxy (InitialContext ix ∷ k)
+  type InitialContext ix :: *
+  initialContext :: Proxy ix → Proxy (InitialContext ix)
+--  default initialContext :: Proxy ix → Proxy (InitialContext ix :: k)
   initialContext Proxy = Proxy
   {-# Inline initialContext #-}
 -}
@@ -95,25 +95,25 @@ deriving instance (NFData (RunningIndex is), NFData (RunningIndex i)) => NFData 
 -- @Elm@ data constructors are all eradicated during fusion and should never
 -- show up in CORE.
 
-class Element (x ∷ *) i where
+class Element (x :: *) i where
   -- | Runtime representation of parsed elements "in flight". A parser of @x@s with index @i@
   -- creates a stream of @Elm x i@s with the goal that the @Elm@ representation will be fused away.
   -- Each @Elm@ will hold parsed elements, say @c@ given a list @[c]@. It will also hold
   -- @RunningIndex@ indices, and finally a recursive way to attach more symbols (by attaching
   -- another @Elm@ inside.
-  data Elm    x i ∷ *
+  data Elm    x i :: *
   -- | Provide access to the recursive @Elm@ stack. This allows inspection of all previous elements.
   -- Used by "split symbols" that need to access prior indices.
-  type RecElm x i ∷ *
+  type RecElm x i :: *
   -- | The argument of the parser is a single parsed type for the collection type @x@. Say @c@ given
   -- @[c]@.
-  type Arg    x   ∷ *
+  type Arg    x   :: *
   -- | Extract the argument from an elm. Used by parser implementations.
-  getArg ∷ Elm x i → Arg x
+  getArg :: Elm x i → Arg x
   -- | Extract the running index.
-  getIdx ∷ Elm x i → RunningIndex i
+  getIdx :: Elm x i → RunningIndex i
   -- | Extract the full re
-  getElm ∷ Elm x i → RecElm x i
+  getElm :: Elm x i → RecElm x i
 
 -- | @mkStream@ creates the actual stream of elements (@Elm@) that will be fed
 -- to functions on the left of the @(<<<)@ operator. Streams work over all
@@ -122,7 +122,7 @@ class Element (x ∷ *) i where
 
 class (Monad m) ⇒ MkStream m pos sym ix where
   mkStream
-    ∷ Proxy pos
+    :: Proxy pos
     -- ^ Fix static/variable/... depending on position in r.h.s. of rule.
     → sym
     -- ^ the symbol type (syntactic variable with or with memoization, terminal types like char, string, etc)
@@ -135,12 +135,12 @@ class (Monad m) ⇒ MkStream m pos sym ix where
     → S.Stream m (Elm sym ix)
     -- ^ resulting stream of elements
 
--- | This type family yields for a given positional type @posty ∷ k@, the
+-- | This type family yields for a given positional type @posty :: k@, the
 -- current symbol type @symty@ and index type @ix@ the next-left positional
 -- type within the same kind @k@ Keeping within the same kind should prevent
 -- accidental switching from Inside to Outside or similar bugs.
 
-type family LeftPosTy (pos ∷ *) sym ix ∷ *
+type family LeftPosTy (pos :: *) sym ix :: *
 
 -- | Finally, we need to be able to correctly build together symbols on the
 -- right-hand side of the @(<<<)@ operator.

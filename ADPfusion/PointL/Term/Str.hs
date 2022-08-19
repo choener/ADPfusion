@@ -8,6 +8,7 @@ import           GHC.Exts
 import           Data.Type.Equality
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Generic as VG
+import           Text.Printf
 
 import           Data.PrimitiveArray
 
@@ -22,9 +23,11 @@ import           ADPfusion.PointL.Core
 type instance LeftPosTy (IStatic   d) (Str linked minSz maxSz v x r) (PointL I) = IVariable d
 type instance LeftPosTy (IVariable d) (Str linked minSz maxSz v x r) (PointL I) = IVariable d
 
-type instance LeftPosTy (OStatic d) (Str linked minSz maxSz v x r) (PointL O) = ORightOf d
-type instance LeftPosTy (ORightOf d) (Str linked minSz maxSz v x r) (PointL O) = TypeError
+type instance LeftPosTy (OStatic '(low,high)) (Str linked minSz Nothing v x r) (PointL O) = ORightOf '(low+minSz,high+2^64)
+type instance LeftPosTy (ORightOf '(low,high)) (Str linked minSz maxSz v x r) (PointL O) = TypeError
   (Text "Implement this instance to allow @X -> X str str")
+
+type instance LeftPosTy (OStatic '(low,high)) (Str linked minSz (Just maxSz) v x r) (PointL O) = ORightOf '(low+minSz,high+maxSz)
 
 
 -- | 
@@ -64,16 +67,26 @@ instance
     . termStream (Proxy ∷ Proxy ps) ts us is
   {-# Inline termStream #-}
 
+--
+--
+--TODO for @ORightOf@, we need to make sure we deal with low/high correctly, by moving the k index
+--accordingly
+--
+--TODO this should be @termIx + minSz@ for all cases, while guarding against being over the max
+--size
+
 instance
-  ( TermStreamContext m ps ts s x0 i0 is (PointL O), MaybeMaxSz maxSz
-  ) => TermStream m (ps:.OStatic d) (TermSymbol ts (Str linked minSz maxSz v x r)) s (is:.PointL O) where
+  ( TermStreamContext m ps ts s x0 i0 is (PointL O), MaybeMaxSz maxSz, KnownNat low, KnownNat minSz
+  ) => TermStream m (ps:.OStatic '(low,high)) (TermSymbol ts (Str linked minSz maxSz v x r)) s (is:.PointL O) where
 --{{{
---TODO still horribly wrong!
   {-# Inline termStream #-}
   termStream Proxy (ts:|Str f xs) (us:..LtPointL u) (is:.PointL i)
-    = S.mapMaybe (\(TState s ii ee) ->
-                let RiPlO k o = getIndex (getIdx s) (Proxy ∷ PRI is (PointL O))
-                in  traceShow ("wrong",i,k,o) . maybeMaxSz (Proxy @maxSz) (i-k) $ TState s (ii:.:RiPlO (k+1) o) (ee:.f xs k i))
+    = let !low = fromIntegral $ natVal (Proxy @low)
+          !minSz = fromIntegral $ natVal (Proxy @minSz)
+    in S.mapMaybe (\(TState s ii ee) ->
+                let RiPlO synvarIx termIx = getIndex (getIdx s) (Proxy ∷ PRI is (PointL O))
+                in  traceShow (printf "Str/OStatic %d(%d) synvarIx %d termIx %d" i u synvarIx termIx :: String) .
+                    maybeMaxSz (Proxy @maxSz) 0 $ TState s (ii:.:RiPlO synvarIx (termIx + minSz)) (ee:.f xs undefined undefined))
     . termStream (Proxy ∷ Proxy ps) ts us is
 --}}}
 
@@ -86,8 +99,8 @@ instance KnownNat minSz => TermStaticVar (IStatic d) (Str linked minSz maxSz v x
   {-# Inline [0] termStaticCheck #-}
 --}}}
 
-instance KnownNat minSz => TermStaticVar (OStatic d) (Str linked minSz maxSz v x r) (PointL O) where
-  termStreamIndex Proxy (Str _ _)   (PointL j)     = PointL $ j -- - fromIntegral (natVal (Proxy ∷ Proxy minSz))
+instance TermStaticVar (OStatic '(low,high)) (Str linked minSz maxSz v x r) (PointL O) where
+  termStreamIndex Proxy (Str _ _)   (PointL j)     = PointL $ j
   termStaticCheck Proxy (Str _ _) _ (PointL j) grd = grd
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}

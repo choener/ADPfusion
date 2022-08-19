@@ -4,9 +4,10 @@ module ADPfusion.PointL.Term.Chr where
 import           Data.Proxy
 import           Data.Strict.Tuple
 import           Debug.Trace
+import           GHC.Exts
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Generic as VG
-import           GHC.Exts
+import           Text.Printf
 
 import           Data.PrimitiveArray
 import           Data.Ord.Fast
@@ -20,7 +21,7 @@ import           ADPfusion.PointL.Core
 type instance LeftPosTy (IStatic d) (Chr r x) (PointL I) = IStatic d
 --type instance LeftPosTy (IVariable d) (Chr r x) (PointL I) = IVariable d
 
-type instance LeftPosTy (OStatic d) (Chr r x) (PointL O) = OStatic (d+1)
+type instance LeftPosTy (OStatic '(low,high)) (Chr r x) (PointL O) = OStatic '(low+1,high+1)
 
 -- | First try in getting this right with a @termStream@.
 --
@@ -62,12 +63,15 @@ instance
   {-# Inline termStream #-}
 
 instance
-  ( TermStreamContext m ps ts s x0 i0 is (PointL O)
-  ) => TermStream m (ps:.OStatic d) (TermSymbol ts (Chr r x)) s (is:.PointL O) where
+  ( TermStreamContext m ps ts s x0 i0 is (PointL O), KnownNat low, KnownNat high
+  ) => TermStream m (ps:.OStatic '(low,high)) (TermSymbol ts (Chr r x)) s (is:.PointL O) where
   termStream Proxy (ts:|Chr f xs) (us:..LtPointL u) (is:.PointL i)
-    = S.map (\(TState s ii ee) ->
-                let RiPlO k o = getIndex (getIdx s) (Proxy :: PRI is (PointL O))
-                in  TState s (ii:.: RiPlO (k+1) o) (ee:.f xs k))
+    = let !low  :: Int = fromIntegral $ natVal (Proxy @low)
+          !high :: Int = fromIntegral $ natVal (Proxy @high)
+    in S.map (\(TState s ii ee) ->
+                let RiPlO synvarIx termIx = getIndex (getIdx s) (Proxy :: PRI is (PointL O))
+                in  traceShow (printf "Chr/OStatic @ %d, synvarIx %d, termIx %d" i synvarIx termIx :: String) $
+                    TState s (ii:.: RiPlO synvarIx (termIx+1)) (ee:.f xs termIx))
     . termStream (Proxy ∷ Proxy ps) ts us is
   {-# Inline termStream #-}
 

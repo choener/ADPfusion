@@ -32,12 +32,12 @@ instance
   ⇒ MkStream m pos (ls :!: (Epsilon lg)) (PointL i) where
   mkStream Proxy (ls :!: Epsilon) grd us is
     = S.map (\(ss,ee,ii) -> ElmEpsilon ii ss)
-    . addTermStream1 (Proxy ∷ Proxy pos) (Epsilon @lg) us is
-    $ mkStream (Proxy ∷ Proxy posLeft)
+    . addTermStream1 (Proxy :: Proxy pos) (Epsilon @lg) us is
+    $ mkStream (Proxy :: Proxy posLeft)
                ls
-               (termStaticCheck (Proxy ∷ Proxy pos) (Epsilon @lg) us is grd)
+               (termStaticCheck (Proxy :: Proxy pos) (Epsilon @lg) us is grd)
                us
-               (termStreamIndex (Proxy ∷ Proxy pos) (Epsilon @lg) is)
+               (termStreamIndex (Proxy :: Proxy pos) (Epsilon @lg) is)
   {-# Inline mkStream #-}
 
 
@@ -49,7 +49,7 @@ instance
     = S.map (\(TState s ii ee) ->
               let RiPlI k = getIndex (getIdx s) (Proxy :: PRI is (PointL I))
               in  TState s (ii:.:RiPlI k) (ee:.()))
-    . termStream (Proxy ∷ Proxy ps) ts us is
+    . termStream (Proxy :: Proxy ps) ts us is
   {-# Inline termStream #-}
 
 {-
@@ -61,7 +61,7 @@ instance
     = S.map (\(TState s ii ee) ->
               let RiPlI k = getIndex (getIdx s) (Proxy :: PRI is (PointL I))
               in  TState s (ii:.:RiPlI k) (ee:.()))
-    . termStream (Proxy ∷ Proxy ps) ts us is
+    . termStream (Proxy :: Proxy ps) ts us is
   {-# Inline termStream #-}
 -}
 
@@ -72,7 +72,7 @@ instance
     = S.map (\(TState s ii ee) ->
                 let io = getIndex (getIdx s) (Proxy :: PRI is (PointL O))
                 in  TState s (ii:.:io) (ee:.()))
-    . termStream (Proxy ∷ Proxy ps) ts us is
+    . termStream (Proxy :: Proxy ps) ts us is
   {-# Inline termStream #-}
 
 -- | We assume that @ε / Epsilon@ is ever only the single symbol (maybe apart
@@ -92,7 +92,7 @@ instance TermStaticVar (IStatic 0) (Epsilon Local) (PointL I) where
   {-# Inline termStreamIndex #-}
   {-# Inline termStaticCheck #-}
 
-instance TermStaticVar (OStatic 0) (Epsilon Global) (PointL O) where
+instance TermStaticVar (OStatic '(0,0)) (Epsilon Global) (PointL O) where
   termStreamIndex Proxy Epsilon (PointL i     ) = PointL i
   -- |
   --
@@ -111,7 +111,7 @@ instance TermStaticVar (OStatic 0) (Epsilon Global) (PointL O) where
   {-# Inline [0] termStreamIndex #-}
   {-# Inline [0] termStaticCheck #-}
 
-instance TermStaticVar (OStatic 0) (Epsilon Local) (PointL O) where
+instance TermStaticVar (OStatic '(0,0)) (Epsilon Local) (PointL O) where
   termStreamIndex Proxy Epsilon (PointL i     ) = PointL i
   termStaticCheck Proxy Epsilon (LtPointL (I# u)) (PointL (I# i)) grd = grd
   {-# Inline [0] termStreamIndex #-}
