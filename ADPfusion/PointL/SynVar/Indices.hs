@@ -37,6 +37,9 @@ type instance LeftPosTy (IVariable d) (TwITblBt b s arr EmptyOk (PointL I) x mB 
 type instance LeftPosTy (OStatic d) (TwITbl b s m arr EmptyOk (PointL O) x) (PointL O) = OFirstLeft d
 type instance LeftPosTy (OStatic d) (TwITblBt b s arr EmptyOk (PointL O) x mB mF r) (PointL O) = OFirstLeft d
 
+type instance LeftPosTy (ORightOf d) (TwITbl b s m arr EmptyOk (PointL O) x) (PointL O) = OFirstLeft d
+type instance LeftPosTy (ORightOf d) (TwITblBt b s arr EmptyOk (PointL O) x mB mF r) (PointL O) = OFirstLeft d
+
 -- TODO @OLeftOf@
 
 type instance LeftPosTy (OFirstLeft d) (TwITbl b s m arr EmptyOk (PointL O) x) (PointL O) = TypeError
@@ -74,22 +77,21 @@ instance
     . addIndexDenseGo (Proxy ∷ Proxy ps) cs ubs us is
   {-# Inline addIndexDenseGo #-}
 
-instance
-  ( AddIndexDenseContext ps elm x0 i0 cs c us (PointL I) is (PointL I)
-  , MinSize c
-  )
-  ⇒ AddIndexDense (ps:.IVariable d) elm (cs:.c) (us:.PointL I) (is:.PointL I) where
+instance ( AddIndexDenseContext ps elm x0 i0 cs c us (PointL I) is (PointL I), MinSize c
+  ) => AddIndexDense (ps:.IVariable d) elm (cs:.c) (us:.PointL I) (is:.PointL I) where
+--{{{
+  {-# Inline addIndexDenseGo #-}
   addIndexDenseGo Proxy (cs:.c) (ubs:..ub) (us:..u) (is:.PointL i)
     = flatten mk step . addIndexDenseGo (Proxy ∷ Proxy ps) cs ubs us is
-    where mk svS = let RiPlI k = getIndex (getIdx $ sS svS {- sIx svS -} ) (Proxy :: PRI is (PointL I))
+    where mk svS = let RiPlI k = getIndex (getIdx $ sS svS) (Proxy :: PRI is (PointL I))
                    in  return $ svS :. k
           step (svS@(SvS s t y') :. k)
-            | k + csize > i = return $ Done
+            | k + csize > i = return Done
             | otherwise     = return $ Yield (SvS s (t:.PointL k) (y' :.: RiPlI k)) (svS :. k+1)
             where csize = minSize c
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
-  {-# Inline addIndexDenseGo #-}
+--}}}
 
 
 
@@ -99,21 +101,22 @@ instance
   ( AddIndexDenseContext ps elm x0 i0 cs c us (PointL O) is (PointL O)
   , MinSize c
   ) ⇒ AddIndexDense (ps:.OStatic d) elm (cs:.c) (us:.PointL O) (is:.PointL O) where
+  {-# Inline addIndexDenseGo #-}
   addIndexDenseGo Proxy (cs:._) (ubs:..ub) (us:..u) (is:.i)
     = map (\(SvS s t y') → let RiPlO oi oo = getIndex (getIdx s) (Proxy :: PRI is (PointL O))
                            in  SvS s (t:.PointL oo) (y' :.: RiPlO oi oo) )
     . addIndexDenseGo (Proxy ∷ Proxy ps) cs ubs us is
-  {-# Inline addIndexDenseGo #-}
 
 instance
   ( AddIndexDenseContext ps elm x0 i0 cs c us (PointL O) is (PointL O)
   , MinSize c
   ) ⇒ AddIndexDense (ps:.ORightOf d) elm (cs:.c) (us:.PointL O) (is:.PointL O) where
-  addIndexDenseGo Proxy (cs:._) (ubs:..ub) (us:..u) (is:.i)
-    = map (\(SvS s t y') → let RiPlO oi oo = getIndex (getIdx s) (Proxy :: PRI is (PointL O))
-                           in  SvS s (t:.PointL oo) (y' :.: RiPlO oi oo) )
-    . addIndexDenseGo (Proxy ∷ Proxy ps) cs ubs us is
-  {-# Inline addIndexDenseGo #-}
+  addIndexDenseGo Proxy (cs:._) (ubs:..ub) (us:..u) (is:.i) = error "this should use flatten?!"
+  --addIndexDenseGo Proxy (cs:._) (ubs:..ub) (us:..u) (is:.i)
+  --  = map (\(SvS s t y') → let RiPlO oi oo = getIndex (getIdx s) (Proxy :: PRI is (PointL O))
+  --                         in  SvS s (t:.PointL oo) (y' :.: RiPlO oi oo) )
+  --  . addIndexDenseGo (Proxy ∷ Proxy ps) cs ubs us is
+  --{-# Inline addIndexDenseGo #-}
 
 
 
