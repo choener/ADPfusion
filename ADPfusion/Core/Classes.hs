@@ -3,48 +3,28 @@
 
 module ADPfusion.Core.Classes where
 
-import           Control.DeepSeq
-import           Data.Proxy
-import           Data.Strict.Tuple
-import           GHC.Exts hiding (build)
-import           GHC.Generics (Generic, Generic1)
+import Control.DeepSeq
+import Data.Proxy
+import Data.Strict.Tuple
+import GHC.Exts hiding (build)
+import GHC.Generics (Generic, Generic1)
+import GHC.TypeNats
+import GHC.Types (Nat)
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
-import           Data.PrimitiveArray.Index.Class
+import Data.PrimitiveArray.Index.Class
 
 
 
--- TODO Until I figure out how to use @InitialContext :: k@ instead of
--- @InitialContext :: *@ we need to live in @*@. Unfortunately, @(<<<)@ does not
--- like differently-kinded types.
-
-{-
-data OutsideContext s
-  = OStatic     s
-  | ORightOf    s
-  | OFirstLeft  s
-  | OLeftOf     s
-  deriving (Show)
--}
 data OStatic    s
 data ORightOf   s
 data OFirstLeft s
 data OLeftOf    s
 
-{-
-data InsideContext s
-  = IStatic   {iGetContext :: s}
-  | IVariable {iGetContext :: s}
-  deriving (Show)
--}
+-- TODO Introduce a further symbol that only allows @S@, nothing more @IonlyS s@
 data IStatic   s
 data IVariable s
 
-{-
-data ComplementContext
-  = Complemented
-  deriving (Show)
--}
 data Complement
 
 -- | Needed for structures that have long-range interactions and "expand",
@@ -61,15 +41,6 @@ data ExtComplementContext s
 -- TODO turn into type family and make 'initialContext' a global function.
 
 type family InitialContext ix :: *
-
-{-
-class RuleContext ix where
-  type InitialContext ix :: *
-  initialContext :: Proxy ix → Proxy (InitialContext ix)
---  default initialContext :: Proxy ix → Proxy (InitialContext ix :: k)
-  initialContext Proxy = Proxy
-  {-# Inline initialContext #-}
--}
 
 -- | While we ostensibly use an index of type @i@ we typically do not need
 -- every element of an @i@. For example, when looking at 'Subword's, we do
@@ -245,4 +216,6 @@ class ModifyConstraint t where
   type TE  t :: *
   toNonEmpty :: t -> TNE t
   toEmpty    :: t -> TE  t
+
+type MaxSz = 2^32 :: Nat
 

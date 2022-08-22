@@ -3,15 +3,15 @@
 
 module ADPfusion.PointL.Core where
 
-import GHC.Generics (Generic, Generic1)
 import Control.DeepSeq
 import Data.Proxy
+import Data.Strict.Tuple
 import Data.Vector.Fusion.Stream.Monadic (singleton,map,filter,Step(..))
 import Debug.Trace
-import Prelude hiding (map,filter)
 import GHC.Exts
+import GHC.Generics (Generic, Generic1)
 import GHC.TypeLits
-import Data.Strict.Tuple
+import Prelude hiding (map,filter)
 
 import Data.PrimitiveArray hiding (map)
 
@@ -24,8 +24,11 @@ import ADPfusion.Core.SynVar.FillTyLvl (IndexConversion(..))
 
 
 -- * Contexts, and running indices.
+--
+-- Note how both @I@ and @O@ instances statically track the minimal and maximal width of a parse.
+-- This allows, sometimes, for more efficient parsing.
 
-type instance InitialContext (PointL I) = IStatic 0
+type instance InitialContext (PointL I) = IStatic '(0,0)
 
 -- | The pair of Nats encodes the minimal maximal "enlargement" of the non-terminal on the rhs. A
 -- 'Chr', for example enlarges by @1@, while a 'Str' enlarges by @(0.., 0..unbounded)@
@@ -89,54 +92,42 @@ newtype instance RunningIndex (PointL C) = RiPlC Int
 -- ** Single-tape
 --
 -- TODO should IStatic do these additional control of @I <=# d@? cf. Epsilon Local.
+--
+-- TODO have constraint @low ~ high@ ?
 
-instance
-  ( Monad m
-  , KnownNat d
-  )
-  => MkStream m (IStatic d) S (PointL I) where
+instance (Monad m, KnownNat low, KnownNat high) => MkStream m (IStatic '(low,high)) S (PointL I) where
   mkStream Proxy S grd (LtPointL (I# u)) (PointL (I# i))
-    = staticCheck# ( grd `andI#` (i >=# 0#) `andI#` (i <=# d) `andI#` (i <=# u) )
+    = staticCheck# (grd `andI#` (low <=# u) `andI#` (i ==# low))
     . singleton . ElmS $ RiPlI 0
-    where (I# d) = fromIntegral $ natVal (Proxy :: Proxy d)
+    where (I# low) = fromIntegral $ natVal (Proxy @low)
+          (I# high) = fromIntegral $ natVal (Proxy @high)
   {-# Inline mkStream #-}
 
-instance
-  ( Monad m
-  , KnownNat d
-  )
-  => MkStream m (IVariable d) S (PointL I) where
+instance (Monad m, KnownNat low, KnownNat high) => MkStream m (IVariable '(low,high)) S (PointL I) where
   mkStream Proxy S grd (LtPointL (I# u)) (PointL (I# i))
-    = staticCheck# (grd `andI#` (i >=# 0#) `andI#` (i <=# u) )
+    = staticCheck# (grd `andI#` (i >=# low) `andI#` (i <=# high))
     . singleton . ElmS $ RiPlI 0
+    where (I# low) = fromIntegral $ natVal (Proxy @low)
+          (I# high) = fromIntegral $ natVal (Proxy @high)
   {-# Inline mkStream #-}
 
 -- ** Multi-tape
 
-instance
-  ( Monad m
-  , MkStream m ps S is
-  , KnownNat d
-  ) => MkStream m (ps:.IStatic d) S (is:.PointL I) where
+instance (Monad m, MkStream m ps S is, KnownNat low, KnownNat high) => MkStream m (ps:.IStatic '(low,high)) S (is:.PointL I) where
   mkStream Proxy S grd (lus:..LtPointL (I# u)) (is:.PointL (I# i))
     = map (\(ElmS e) -> ElmS $ e :.: RiPlI 0)
-    $ mkStream (Proxy :: Proxy ps) S (grd `andI#` (i >=# 0#) `andI#` (i <=# d) `andI#` (i <=# u)) lus is
-    --    $ mkStream (Proxy :: Proxy ps) S (grd `andI#` (i >=# 0#)) lus is
-    -- NOTE we should optimize which parameters are actually required, the gain is about 10% on the
-    -- NeedlemanWunsch algorithm
-    where (I# d) = fromIntegral $ natVal (Proxy :: Proxy d)
+    $ mkStream (Proxy :: Proxy ps) S (grd `andI#` (low <=# u) `andI#` (i ==# low)) lus is
+    where (I# low) = fromIntegral $ natVal (Proxy @low)
+          (I# high) = fromIntegral $ natVal (Proxy @high)
   {-# Inline mkStream #-}
 
-instance
-  ( Monad m
-  , MkStream m ps S is
-  , KnownNat d
-  ) => MkStream m (ps:.IVariable d) S (is:.PointL I) where
+instance (Monad m, MkStream m ps S is, KnownNat low, KnownNat high) => MkStream m (ps:.IVariable '(low,high)) S (is:.PointL I) where
+  {-# Inline mkStream #-}
   mkStream Proxy S grd (lus:..LtPointL (I# u)) (is:.PointL (I# i))
     = map (\(ElmS e) -> ElmS $ e :.: RiPlI 0)
-    $ mkStream (Proxy :: Proxy ps) S (grd `andI#` (i >=# 0#) `andI#` (i <=# u)) lus is
-    --    $ mkStream (Proxy :: Proxy ps) S (grd `andI#` (i >=# 0#)) lus is
-  {-# Inline mkStream #-}
+    $ mkStream (Proxy :: Proxy ps) S (grd `andI#` (i >=# low) `andI#` (i <=# high)) lus is
+    where (I# low) = fromIntegral $ natVal (Proxy @low)
+          (I# high) = fromIntegral $ natVal (Proxy @high)
 
 
 

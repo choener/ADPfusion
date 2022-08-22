@@ -27,11 +27,11 @@ import ADPfusion.PointL.Core
 
 -- ** Inside
 
-type instance LeftPosTy (IStatic d) (TwITbl b s m arr EmptyOk (PointL I) x) (PointL I) = IVariable d
-type instance LeftPosTy (IStatic d) (TwITblBt b s arr EmptyOk (PointL I) x mB mF r) (PointL I) = IVariable d
+type instance LeftPosTy (IStatic '(low,high)) (TwITbl b s m arr EmptyOk (PointL I) x) (PointL I) = IVariable '(low,MaxSz)
+type instance LeftPosTy (IStatic '(low,high)) (TwITblBt b s arr EmptyOk (PointL I) x mB mF r) (PointL I) = IVariable '(low,MaxSz)
 
-type instance LeftPosTy (IVariable d) (TwITbl b s m arr EmptyOk (PointL I) x) (PointL I) = IVariable d
-type instance LeftPosTy (IVariable d) (TwITblBt b s arr EmptyOk (PointL I) x mB mF r) (PointL I) = IVariable d
+type instance LeftPosTy (IVariable '(low,high)) (TwITbl b s m arr EmptyOk (PointL I) x) (PointL I) = IVariable '(low,MaxSz)
+type instance LeftPosTy (IVariable '(low,high)) (TwITblBt b s arr EmptyOk (PointL I) x mB mF r) (PointL I) = IVariable '(low,MaxSz)
 
 -- ** Outside
 
@@ -72,24 +72,28 @@ instance
   ( AddIndexDenseContext ps elm x0 i0 cs c us (PointL I) is (PointL I)
   , MinSize c
   )
-  ⇒ AddIndexDense (ps:.IStatic d) elm (cs:.c) (us:.PointL I) (is:.PointL I) where
+  => AddIndexDense (ps:.IStatic '(low,high)) elm (cs:.c) (us:.PointL I) (is:.PointL I) where
+--{{{
   addIndexDenseGo Proxy (cs:._) (ubs:..ub) (us:..u) (is:.i)
     = map (\(SvS s t y') → SvS s (t:.i) (y' :.: RiPlI (fromPointL i)))
-    . addIndexDenseGo (Proxy ∷ Proxy ps) cs ubs us is
+    . addIndexDenseGo (Proxy :: Proxy ps) cs ubs us is
   {-# Inline addIndexDenseGo #-}
+--}}}
 
-instance ( AddIndexDenseContext ps elm x0 i0 cs c us (PointL I) is (PointL I), MinSize c
-  ) => AddIndexDense (ps:.IVariable d) elm (cs:.c) (us:.PointL I) (is:.PointL I) where
+instance (AddIndexDenseContext ps elm x0 i0 cs c us (PointL I) is (PointL I), MinSize c, KnownNat low, KnownNat high) =>
+  AddIndexDense (ps:.IVariable '(low,high)) elm (cs:.c) (us:.PointL I) (is:.PointL I) where
 --{{{
   {-# Inline addIndexDenseGo #-}
   addIndexDenseGo Proxy (cs:.c) (ubs:..ub) (us:..u) (is:.PointL i)
-    = flatten mk step . addIndexDenseGo (Proxy ∷ Proxy ps) cs ubs us is
+    = flatten mk step . addIndexDenseGo (Proxy @ps) cs ubs us is
     where mk svS = let RiPlI k = getIndex (getIdx $ sS svS) (Proxy :: PRI is (PointL I))
                    in  return $ svS :. k
           step (svS@(SvS s t y') :. k)
-            | k + csize > i = return Done
-            | otherwise     = return $ Yield (SvS s (t:.PointL k) (y' :.: RiPlI k)) (svS :. k+1)
+            | k + csize + low > i = return Done
+            | otherwise           = return $ Yield (SvS s (t:.PointL k) (y' :.: RiPlI k)) (svS :. k+1)
             where csize = minSize c
+                  low = fromIntegral . natVal $ Proxy @low
+                  high = fromIntegral . natVal $ Proxy @high
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
 --}}}
@@ -109,7 +113,7 @@ instance
           !high :: Int = fromIntegral $ natVal (Proxy @high)
     in map (\(SvS s t y') -> let RiPlO synvarIx termIx = getIndex (getIdx s) (Proxy :: PRI is (PointL O))
                                  k = synvarIx + low
-                             in  traceShow (printf "Ix/OStatic @ %d(%d) low/high %d/%d synvarIx %d termIx %d" i u low high synvarIx termIx :: String) $
+                             in  -- traceShow (printf "Ix/OStatic @ %d(%d) low/high %d/%d synvarIx %d termIx %d" i u low high synvarIx termIx :: String) $
                                  SvS s (t:.PointL k) (y' :.: RiPlO k termIx) )
     . addIndexDenseGo (Proxy :: Proxy ps) cs ubs us is
 --}}}
@@ -134,11 +138,11 @@ instance
           step (svS@(SvS s t y') :. d)
             | d > high-low || d > u-i = return Done
             | synvarIx+d+low > u = return Done
-            | otherwise = traceShow (printf "Ix/ORightOf %d(%d) low/high %d/%d synvarix %d termix %d synvartgt %d termtgt %d" i u low high synvarIx termIx synvarTgt termTgt :: String) .
+            | otherwise = -- traceShow (printf "Ix/ORightOf %d(%d) low/high %d/%d synvarix %d termix %d synvartgt %d termtgt %d" i u low high synvarIx termIx synvarTgt termTgt :: String) .
                           return $ Yield (SvS s (t:.PointL synvarTgt) (y' :.: RiPlO synvarTgt termTgt)) (svS:.d+1)
             where RiPlO synvarIx termIx = getIndex (getIdx $ sS svS) (Proxy :: PRI is (PointL O))
                   !synvarTgt = synvarIx + d + low
-                  !termTgt = termIx + d
+                  !termTgt = termIx
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
     in flatten mk step . addIndexDenseGo (Proxy :: Proxy ps) cs ubs us is

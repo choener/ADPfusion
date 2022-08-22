@@ -57,7 +57,7 @@ prop_I_ItNC ix@(PointL j) = zs == ls where
   ls = [ ( unsafeIndex xsP (PointL $ j-1)
          , ()
          , xs VU.! (j-1)
-         ) | j >= 1, j <= (maxI) ]
+         ) | j >= 1, j <= maxI ]
 
 prop_O_ItNC ix@(PointL j) = zs == ls where
   zs = ((,,) <<< tSO % Deletion % chr xs ... stoList) maxPLo ix
@@ -96,7 +96,7 @@ prop_I_2dimIt_NC_CN ix@(Z:.PointL j:.PointL l) = zs == ls where
 --
 -- X_j -> c_j || j==1
 
-prop_I_Tt ix@(Z:.PointL j) = zs == ls where
+prop_I_C ix@(Z:.PointL j) = zs == ls where
   zs = (id <<< (M:|chr xs) ... stoList) (ZZ:..maxPLi) ix
   ls = [ (Z:.xs VU.! (j-1)) | 1==j ]
 
@@ -121,7 +121,10 @@ prop_I_CC ix@(Z:.PointL i) = zs == ls where
 
 -- | Just a table
 
-prop_I_It ix@(PointL j) = zs == ls where
+prop_I_It ix@(PointL j)
+  | zs == ls  = True
+  | otherwise = traceShow (ix,zs,ls) False
+  where
   zs = (id <<< tSI ... stoList) maxPLi ix
   ls = [ unsafeIndex xsP ix | j>=0, j<=maxI ]
 
@@ -151,7 +154,7 @@ prop_I_ItC ix@(PointL j) = zs == ls where
 
 -- | @A^*_j -> A^*_{j+1} c_{j+1)@ !
 
-prop_O_ItC ix@(PointL j)
+prop_O_ITbl_C ix@(PointL j)
   | zs == ls  = True
   | otherwise = traceShow (j,zs,ls) False
   where
@@ -159,6 +162,16 @@ prop_O_ItC ix@(PointL j)
     ls = [ ( unsafeIndex xsPo (PointL $ j+1)
            , xs VU.! (j+0)  -- j-1 in inside, here moved one right!
            ) | j >= 0, j <= (maxI-1) ]
+
+prop_O_1_ITbl_C ix@(Z:.PointL j)
+  | zs == ls  = True
+  | otherwise = traceShow (j,zs,ls) False
+  where
+    zs = ((,) <<< tZ1O % (M:|chr xs) ... stoList) (ZZ:..maxPLo) ix
+    ls = [ ( unsafeIndex xsPo (PointL $ j+1)
+           , Z:.xs VU.! (j+0)  -- j-1 in inside, here moved one right!
+           ) | j >= 0, j <= (maxI-1) ]
+
 
 prop_O_ItCC ix@(PointL j) = zs == ls where
   zs = ((,,) <<< tSO % chr xs % chr xs ... stoList) maxPLo ix
@@ -204,14 +217,28 @@ prop_O_2dimItCC ix@(Z:.PointL j:.PointL l) = zs == ls where
 
 prop_I_ManyV ix@(PointL j) = zs == ls where
   zs = (id <<< manyV xs ... stoList) maxPLi ix
-  ls = [ (VU.slice 0 j xs) ]
+  ls = [ VU.slice 0 j xs ]
 
 prop_I_SomeV ix@(PointL j)
   | zs == ls  = True
   | otherwise = traceShow (ix,zs,ls) False
   where
   zs = (id <<< someV xs ... stoList) maxPLi ix
-  ls = [ (VU.slice 0 j xs) | j>0 ]
+  ls = [ VU.slice 0 j xs | j>0 ]
+
+prop_I_Str_C ix@(PointL j)
+  | zs == ls = True
+  | otherwise = traceShow (ix,zs,ls) False
+  where
+  zs = ((,) <<< str @_ @_ @"" @1 @50 xs % chr xs ... stoList) maxPLi ix
+  ls = [ (VU.slice 0 (j-1) xs, xs VU.! (j-1)) | j>=2 , j<=51 ]
+
+--prop_I_Str_Str ix@(PointL j)
+--  | zs == ls = True
+--  | otherwise = traceShow (ix,zs,ls) False
+--  where
+--  zs = ((,) <<< str @_ @_ @"" @2 @13 xs % str @_ @_ @"" @3 @17 xs ... stoList) maxPLi ix
+--  ls = [ (VU.slice 0 k xs, VU.slice k (j-k) xs) | j>=5, j<=30, k <- [2..13] ]
 
 prop_2dim_ManyV_ManyV ix@(Z:.PointL i:.PointL j) = zs == ls where
   zs = (id <<< (M:|manyV xs:|manyV xs) ... stoList) (ZZ:..maxPLi:..maxPLi) ix
@@ -223,7 +250,10 @@ prop_2dim_SomeV_SomeV ix@(Z:.PointL i:.PointL j) = zs == ls where
 
 -- ** Together with a syntactic variable.
 
-prop_I_Itbl_ManyV ix@(PointL i) = zs == ls where
+prop_I_Itbl_ManyV ix@(PointL i)
+  | zs == ls  = True
+  | otherwise = traceShow (ix,zs,ls) False
+  where
   zs = ((,) <<< tSI % manyV xs ... stoList) maxPLi ix
   ls = [ (unsafeIndex xsP (PointL k), VU.slice k (i-k) xs) | k <- [0..i] ]
 
@@ -234,17 +264,20 @@ prop_I_Itbl_SomeV ix@(PointL i) = zs == ls where
 -- | NOTE Be aware of the needed match between the type-level and value-level
 -- @13@s.
 
-prop_I_Itbl_Str ix@(PointL i) = zs == ls where
-  zs = ((,) <<< tSI % str @_ @_ @"" @13 @Nothing xs ... stoList) maxPLi ix
+prop_I_Itbl_Str ix@(PointL i)
+  | zs == ls  = True
+  | otherwise = traceShow (ix,zs,ls) False
+  where
+  zs = ((,) <<< tSI % str @_ @_ @"" @13 @MaxSz xs ... stoList) maxPLi ix
   ls = [ (unsafeIndex xsP (PointL k), VU.slice k (i-k) xs) | k <- [0..i-13] ]
 
 -- | And now for some funny type-level shenanigans.
 
 prop_I_Itbl_StrTyLvl (Positive bound', ix@(PointL i)) = let bound = bound' `mod` 23 in
-  case (someNatVal bound) of
+  case someNatVal bound of
     Nothing → error "zzz"
     Just (SomeNat (Proxy ∷ Proxy b)) →
-      let zs = ((,) <<< tSI % str @_ @_ @"" @b @Nothing xs ... stoList) maxPLi ix
+      let zs = ((,) <<< tSI % str @_ @_ @"" @b @MaxSz xs ... stoList) maxPLi ix
           ls = [ (unsafeIndex xsP (PointL k), VU.slice k (i-k) xs) | k <- [0..i-bv] ]
           bv = fromIntegral $ natVal (Proxy ∷ Proxy b)
       in  zs == ls
@@ -265,6 +298,29 @@ prop_I_2dim_Itbl_SomeV_SomeV ix@(Z:.PointL i:.PointL j) = zs == ls where
   zs = ((,) <<< tZ2I % (M:|someV xs:|someV xs) ... stoList) (ZZ:..maxPLi:..maxPLi) ix
   ls = [ (unsafeIndex xsPP (Z:.PointL k:.PointL l), Z:. VU.slice k (i-k) xs :. VU.slice l (j-l) xs) | k <- [0..i-1], l <- [0..j-1] ]
 
+
+prop_I_1_ITbl_Str ix@(Z:.PointL i)
+  | zs == ls  = True
+  | otherwise = traceShow (ix,zs,ls) False
+  where
+  zs = ((,) <<< tZ1I % (M:|str @_ @_ @"" @13 @MaxSz xs) ... stoList) (ZZ:..maxPLi) ix
+  ls = [ (unsafeIndex xsP (PointL k), Z:.VU.slice k (i-k) xs) | k <- [0..i-13] ]
+
+prop_O_1_ITbl_Str ix@(Z:.PointL j)
+  | zs == ls  = True
+  | otherwise = traceShow (j,zs,ls) False
+  where
+    zs = ((,) <<< tZ1O % (M:|str @_ @_ @"" @13 @MaxSz xs) ... stoList) (ZZ:..maxPLo) ix
+    ls = [ ( unsafeIndex xsZPo (Z:.PointL k)
+           , Z:.VU.slice j (k-j) xs
+           ) | k <- [j+13 .. maxI] ]
+
+
+--prop_O_ITbl_Str ix@(PointL i)
+--  | zs == ls  = True
+--  | otherwise = traceShow (ix,zs,ls) False
+--  where
+--  zs = 
 
 
 stoList = unId . SM.toList
