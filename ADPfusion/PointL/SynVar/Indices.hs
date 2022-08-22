@@ -74,12 +74,11 @@ instance
   )
   => AddIndexDense (ps:.IStatic '(low,high)) elm (cs:.c) (us:.PointL I) (is:.PointL I) where
 --{{{
-  addIndexDenseGo Proxy (cs:._) (ubs:..ub) (us:..u) (is:.PointL i)
-    = map (\(SvS s t y') -> let -- RiPlI k = getIndex (getIdx s) (Proxy :: PRI is (PointL I))
-        in SvS s (t:.PointL (i-low)) (y' :.: RiPlI (i-low)))
-    . addIndexDenseGo (Proxy :: Proxy ps) cs ubs us is
-    where low = fromIntegral . natVal $ Proxy @low
   {-# Inline addIndexDenseGo #-}
+  addIndexDenseGo Proxy (cs:._) (ubs:..ub) (us:..u) (is:.PointL i)
+    = map (\(SvS s t y') -> SvS s (t:.PointL (i-low)) (y' :.: RiPlI (i-low)))
+    . addIndexDenseGo (Proxy :: Proxy ps) cs ubs us is
+    where !low :: Int = fromIntegral . natVal $ Proxy @low
 --}}}
 
 instance (AddIndexDenseContext ps elm x0 i0 cs c us (PointL I) is (PointL I), MinSize c, KnownNat low, KnownNat high) =>
@@ -89,13 +88,15 @@ instance (AddIndexDenseContext ps elm x0 i0 cs c us (PointL I) is (PointL I), Mi
   addIndexDenseGo Proxy (cs:.c) (ubs:..ub) (us:..u) (is:.PointL i)
     = flatten mk step . addIndexDenseGo (Proxy @ps) cs ubs us is
     where mk svS = let RiPlI k = getIndex (getIdx $ sS svS) (Proxy :: PRI is (PointL I))
-                   in  return $ svS :. k
+                   in  return $ svS :. max k (i-high)
+          -- In @mk@, we have to be careful with calculating @k@ we begin with. There might well be
+          -- a "high" size on the rhs, hence we put the index at @max k (i-high)@.
           step (svS@(SvS s t y') :. k)
             | k + csize + low > i = return Done
             | otherwise           = return $ Yield (SvS s (t:.PointL k) (y' :.: RiPlI k)) (svS :. k+1)
-            where csize = minSize c
-                  low = fromIntegral . natVal $ Proxy @low
-                  high = fromIntegral . natVal $ Proxy @high
+          !csize :: Int = minSize c
+          !low   :: Int = fromIntegral . natVal $ Proxy @low
+          !high  :: Int = fromIntegral . natVal $ Proxy @high
           {-# Inline [0] mk   #-}
           {-# Inline [0] step #-}
 --}}}

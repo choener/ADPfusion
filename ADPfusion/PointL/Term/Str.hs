@@ -35,13 +35,13 @@ instance
     )
   => MkStream m pos (ls :!: Str linked minSz maxSz v x r) (PointL i) where
 --{{{
+  {-# Inline mkStream #-}
   mkStream pos (ls :!: Str f xs) grd us is
     = S.map (\(ss,ee,ii) -> ElmStr ee ii ss) -- recover ElmChr
     . addTermStream1 pos (Str @v @x @r @linked @minSz @maxSz f xs) us is
     $ mkStream (Proxy ∷ Proxy posLeft) ls
                (termStaticCheck pos (Str @v @x @r @linked @minSz @maxSz f xs) us is grd)
                us (termStreamIndex pos (Str @v @x @r @linked @minSz @maxSz f xs) is)
-  {-# Inline mkStream #-}
 --}}}
 
 -- | Note that the @minSz@ should automatically work out due to the encoding in
@@ -50,15 +50,17 @@ instance
 -- TODO handle minSz/maxSz
 
 instance
-  ( TermStreamContext m ps ts s x0 i0 is (PointL I), KnownNat low, KnownNat high
-  ) => TermStream m (ps:.IStatic '(low,high)) (TermSymbol ts (Str linked minSz maxSz v x r)) s (is:.PointL I) where
+  ( TermStreamContext m ps ts s x0 i0 is (PointL I), KnownNat low, KnownNat high) =>
+  TermStream m (ps:.IStatic '(low,high)) (TermSymbol ts (Str linked minSz maxSz v x r)) s (is:.PointL I) where
+--{{{
+  {-# Inline termStream #-}
   termStream Proxy (ts:|Str f xs) (us:..LtPointL u) (is:.PointL i)
     = S.map (\(TState s ii ee) ->
                 let RiPlI k = getIndex (getIdx s) (Proxy ∷ PRI is (PointL I))
                 in  TState s (ii:.:RiPlI i) (ee:.f xs k (i-low)))
     . termStream (Proxy ∷ Proxy ps) ts us is
-    where low = fromIntegral $ natVal (Proxy @low)
-  {-# Inline termStream #-}
+    where !low = fromIntegral $ natVal (Proxy @low)
+--}}}
 
 
 

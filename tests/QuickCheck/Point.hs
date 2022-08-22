@@ -310,10 +310,10 @@ prop_I_2dim_Itbl_SomeV_SomeV ix@(Z:.PointL i:.PointL j) = zs == ls where
 
 prop_I_1_ITbl_Str ix@(Z:.PointL i)
   | zs == ls  = traceShow (ix,zs,ls) True
-  | otherwise = traceShow (ix,zs,ls) False
+  | otherwise = traceShow (ix,zs,' ',ls) False
   where
-  zs = ((,) <<< tZ1I % (M:|str @_ @_ @"" @13 @MaxSz xs) ... stoList) (ZZ:..maxPLi) ix
-  ls = [ (unsafeIndex xsP (PointL k), Z:.VU.slice k (i-k) xs) | k <- [0..i-13] ]
+  zs = ((,) <<< tZ1I % (M:|str @_ @_ @"" @3 @7 xs) ... stoList) (ZZ:..maxPLi) ix
+  ls = [ (unsafeIndex xsP (PointL k), Z:.VU.slice k (i-k) xs) | k <- [i-7..i-3],k>=0 ]
 
 prop_O_1_ITbl_Str ix@(Z:.PointL j)
   | zs == ls  = True
