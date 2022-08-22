@@ -152,6 +152,15 @@ prop_I_ItC ix@(PointL j) = zs == ls where
          , xs VU.! (j-1)
          ) | j>=1, j<=maxI ]
 
+prop_I_1_ITbl_Chr ix@(Z:.PointL j)
+  | zs == ls  = True
+  | otherwise = traceShow (ix,zs,ls) False
+  where
+  zs = ((,) <<< tZ1I % (M:|chr xs) ... stoList) (ZZ:..maxPLi) ix
+  ls = [ ( unsafeIndex xsP (PointL $ j-1)
+         , Z:.xs VU.! (j-1)
+         ) | j>=1, j<=maxI ]
+
 -- | @A^*_j -> A^*_{j+1} c_{j+1)@ !
 
 prop_O_ITbl_C ix@(PointL j)
@@ -300,7 +309,7 @@ prop_I_2dim_Itbl_SomeV_SomeV ix@(Z:.PointL i:.PointL j) = zs == ls where
 
 
 prop_I_1_ITbl_Str ix@(Z:.PointL i)
-  | zs == ls  = True
+  | zs == ls  = traceShow (ix,zs,ls) True
   | otherwise = traceShow (ix,zs,ls) False
   where
   zs = ((,) <<< tZ1I % (M:|str @_ @_ @"" @13 @MaxSz xs) ... stoList) (ZZ:..maxPLi) ix

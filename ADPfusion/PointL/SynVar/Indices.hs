@@ -70,13 +70,15 @@ type instance LeftPosTy Complement (TwITblBt b s arr EmptyOk (PointL O) x mB mF 
 
 instance
   ( AddIndexDenseContext ps elm x0 i0 cs c us (PointL I) is (PointL I)
-  , MinSize c
+  , MinSize c, KnownNat low
   )
   => AddIndexDense (ps:.IStatic '(low,high)) elm (cs:.c) (us:.PointL I) (is:.PointL I) where
 --{{{
-  addIndexDenseGo Proxy (cs:._) (ubs:..ub) (us:..u) (is:.i)
-    = map (\(SvS s t y') → SvS s (t:.i) (y' :.: RiPlI (fromPointL i)))
+  addIndexDenseGo Proxy (cs:._) (ubs:..ub) (us:..u) (is:.PointL i)
+    = map (\(SvS s t y') -> let -- RiPlI k = getIndex (getIdx s) (Proxy :: PRI is (PointL I))
+        in SvS s (t:.PointL (i-low)) (y' :.: RiPlI (i-low)))
     . addIndexDenseGo (Proxy :: Proxy ps) cs ubs us is
+    where low = fromIntegral . natVal $ Proxy @low
   {-# Inline addIndexDenseGo #-}
 --}}}
 
