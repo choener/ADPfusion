@@ -27,7 +27,7 @@ instance
     , MkStream m posLeft ls (PointL i)
     , pi ~ PointL i
     )
-  ⇒ MkStream m pos (ls :!: PeekIndex pi) (PointL i) where
+  => MkStream m pos (ls :!: PeekIndex pi) (PointL i) where
   mkStream pos (ls :!: PeekIndex) grd us is
     = S.map (\(ss,ee,ii) -> ElmPeekIndex is ii ss)
     . addTermStream1 pos (PeekIndex @pi) us is
@@ -40,7 +40,7 @@ instance
   ( TermStreamContext m ps ts s x0 i0 is (PointL I)
   , pi ~ PointL I
   )
-  ⇒ TermStream m (ps:.IStatic d) (TermSymbol ts (PeekIndex pi)) s (is:.PointL I) where
+  => TermStream m (ps:.IStatic d) (TermSymbol ts (PeekIndex pi)) s (is:.PointL I) where
   termStream Proxy (ts:|PeekIndex) (us:..LtPointL u) (is:.PointL i)
     = S.map (\(TState s ii ee) -> TState s (ii:.:RiPlI i) (ee:.pointLI i))
     . termStream (Proxy ∷ Proxy ps) ts us is
@@ -50,7 +50,7 @@ instance
   ( TermStreamContext m ps ts s x0 i0 is (PointL I)
   , pi ~ PointL I
   )
-  ⇒ TermStream m (ps:.IVariable d) (TermSymbol ts (PeekIndex pi)) s (is:.PointL I) where
+  => TermStream m (ps:.IVariable d) (TermSymbol ts (PeekIndex pi)) s (is:.PointL I) where
   termStream Proxy (ts:|PeekIndex) (us:..LtPointL u) (is:.PointL i)
     = S.map (\(TState s ii ee) -> TState s (ii:.:RiPlI i) (ee:.pointLI i))
     . termStream (Proxy ∷ Proxy ps) ts us is
