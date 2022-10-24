@@ -25,6 +25,8 @@ import ADPfusion.Core.SynVar.TableWrap
 
 
 -- | Immutable table.
+--
+-- TODO replace @iTblConstraint@ and @c@ with @minSz@ / @maxSz@ constraints.
 
 data ITbl (bigorder ∷ Nat) (smallOrder ∷ Nat) arr c i x where
   ITbl ∷ { iTblConstraint  ∷ !c           -- TODO next to go?!

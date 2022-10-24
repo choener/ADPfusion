@@ -26,7 +26,7 @@ import           ADPfusion.Core.Multi
 --
 -- TODO consider if @maxSz@ could do with just @Nat@
 
-data Str (linked :: Symbol) (minSz :: Nat) (maxSz :: Maybe Nat) v x (r :: *) where
+data Str (linked :: Symbol) (minSz :: Nat) (maxSz :: Nat) v x (r :: *) where
   Str :: VG.Vector v x
       => (v x -> Int -> Int -> r)
       -> !(v x)
@@ -38,28 +38,28 @@ str = Str (\xs i j -> VG.unsafeSlice i (j-i) xs)
 
 -- | Construct string parsers with no special constraints.
 
-manyV :: VG.Vector v x => v x → Str "" 0 Nothing v x (v x)
+manyV :: VG.Vector v x => v x → Str "" 0 MaxSz v x (v x)
 {-# Inline manyV #-}
 manyV = Str f
-  where f = (\xs i j -> VG.unsafeSlice i (j-i) xs)
+  where f xs i j = VG.unsafeSlice i (j-i) xs
         {-# Inline [0] f #-}
 
-someV :: VG.Vector v x => v x → Str "" 1 Nothing v x (v x)
+someV :: VG.Vector v x => v x → Str "" 1 MaxSz v x (v x)
 {-# Inline someV #-}
 someV = Str (\xs i j -> VG.unsafeSlice i (j-i) xs)
 
 strContext :: VG.Vector v x => v x -> Str linked minSz maxSz v x (v x,v x, v x)
 {-# Inline strContext #-}
 strContext = Str f
-  where f = (\xs i j -> (VG.unsafeTake i xs, VG.unsafeSlice i (j-i) xs, VG.unsafeDrop j xs))
+  where f xs i j = (VG.unsafeTake i xs, VG.unsafeSlice i (j-i) xs, VG.unsafeDrop j xs)
         {-# Inline [0] f #-}
 
 -- | This parser always parses strings of length @0@, its use is in peeking at the split point.
 
-strPeek :: VG.Vector v x => v x -> Str "" 0 (Just 0) v x (v x, v x)
+strPeek :: VG.Vector v x => v x -> Str "" 0 0 v x (v x, v x)
 {-# Inline strPeek #-}
 strPeek = Str f
-  where f = (\xs i j -> VG.splitAt i xs)
+  where f xs i j = VG.splitAt i xs
         {-# Inline [0] f #-}
 
 
