@@ -1,0 +1,20 @@
+cradle:
+  cabal:
+    - path: "./ADPfusion/./"
+      component: "lib:ADPfusion"
+
+    - path: "./ADPfusion/tests"
+      component: "ADPfusion:test:properties"
+
+    - path: "./ADPfusion/src"
+      component: "ADPfusion:exe:NeedlemanWunsch"
+
+    - path: "./ADPfusion/src"
+      component: "ADPfusion:exe:SmithWaterman"
+
+    - path: "./ADPfusion/src"
+      component: "ADPfusion:exe:Sparse"
+
+    - path: "./ADPfusion/src"
+      component: "ADPfusion:exe:spectest"
+
