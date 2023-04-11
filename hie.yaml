@@ -1,20 +1,175 @@
 cradle:
   cabal:
-    - path: "./ADPfusion/./"
-      component: "lib:ADPfusion"
-
-    - path: "./ADPfusion/tests"
+    - path: "./tests/properties.hs"
       component: "ADPfusion:test:properties"
 
-    - path: "./ADPfusion/src"
-      component: "ADPfusion:exe:NeedlemanWunsch"
+    - path: "./tests/QuickCheck/Common.hs"
+      component: "ADPfusion:test:properties"
 
-    - path: "./ADPfusion/src"
-      component: "ADPfusion:exe:SmithWaterman"
+    - path: "./tests/QuickCheck/Point.hs"
+      component: "ADPfusion:test:properties"
 
-    - path: "./ADPfusion/src"
-      component: "ADPfusion:exe:Sparse"
-
-    - path: "./ADPfusion/src"
+    - path: "./src/SpecTest.hs"
       component: "ADPfusion:exe:spectest"
 
+    - path: "./src/Sparse.hs"
+      component: "ADPfusion:exe:Sparse"
+
+    - path: "./src/SmithWaterman.hs"
+      component: "ADPfusion:exe:SmithWaterman"
+
+    - path: "./src/NeedlemanWunsch.hs"
+      component: "ADPfusion:exe:NeedlemanWunsch"
+
+    - path: "././ADPfusion/Core.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/Core/Apply.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/Core/Classes.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/Core/Multi.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/Core/SynVar/Array.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/Core/SynVar/Array/Type.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/Core/SynVar/Axiom.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/Core/SynVar/Backtrack.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/Core/SynVar/Fill.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/Core/SynVar/FillTyLvl.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/Core/SynVar/Indices.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/Core/SynVar/Recursive/Type.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/Core/SynVar/Split/Type.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/Core/SynVar/Split.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/Core/SynVar/TableWrap.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/Core/Term/Chr.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/Core/Term/Deletion.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/Core/Term/Edge.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/Core/Term/Epsilon.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/Core/Term/MultiChr.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/Core/Term/PeekIndex.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/Core/Term/Str.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/Core/Term/Switch.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/Core/TH.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/Core/TH/Backtrack.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/Core/TH/Common.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/Core/TyLvlIx.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/PointL.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/PointL/Core.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/PointL/SynVar.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/PointL/SynVar/Indices.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/PointL/SynVar/Split.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/PointL/Term/Chr.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/PointL/Term/Deletion.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/PointL/Term/Epsilon.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/PointL/Term/MultiChr.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/PointL/Term/PeekIndex.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/PointL/Term/Str.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/PointL/Term/Switch.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/PointR.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/PointR/Core.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/PointR/SynVar/Indices.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/PointR/Term/Chr.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/PointR/Term/Deletion.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/PointR/Term/Epsilon.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/PointR/Term/MultiChr.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/Unit.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/Unit/Core.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/Unit/SynVar/Indices.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/Unit/Term/Deletion.hs"
+      component: "lib:ADPfusion"
+
+    - path: "././ADPfusion/Unit/Term/Epsilon.hs"
+      component: "lib:ADPfusion"
