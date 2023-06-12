@@ -41,6 +41,12 @@
         DPutils = hself.callPackage DPutils-src {};
         OrderedBits = hself.callPackage OrderedBits-src {};
         PrimitiveArray = hself.callPackage PrimitiveArray-src {};
+        #
+        #adp = with final.haskell.lib;  (dontCheck (enableCabalFlag hself.ADPfusion "enablenw"));
+        adp = with final.haskell.lib.compose; final.lib.pipe hself.ADPfusion [
+          dontCheck
+          (enableCabalFlag "examplenw")
+        ];
       });
     };
   in
@@ -67,6 +73,25 @@
           nodejs # required for lsp
         ] ++ sharedBuildInputs;
       }; # devShell
+
+      apps = let
+        C = pkgs.stdenv.mkDerivation {
+          name = "C";
+          src = [ ./C/nw.c ];
+          buildInputs = [];
+          unpackPhase = ":";
+          buildPhase = ''
+            ${pkgs.gcc}/bin/gcc -O3 -o C $src
+          '';
+          installPhase = ''
+            mkdir -p $out/bin
+            cp C $out/bin
+          '';
+        };
+      in {
+        C = { type = "app"; program = "${C}/bin/C"; };
+        NW = { type = "app"; program = "${pkgs.haskellPackages.adp}/bin/NeedlemanWunsch"; };
+      };
     }) // { inherit overlay; };
 }
 

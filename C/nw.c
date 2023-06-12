@@ -5,24 +5,26 @@
 int needlemanWunsch (const int, const int, const char *, const char *);
 
 int main () {
-  char p[11000];
-  char q[11000];
+  char *p;
+  char *q;
+  p = malloc(10000);
+  q = malloc(10000);
   int m;
   int n;
   int e;
-  while (1==scanf ("%9999s", &p) && 1==scanf ("%9999s", &q)) { // only GNU C
+  while (1==scanf ("%9999s", p) && 1==scanf ("%9999s", q)) { // only GNU C
     m = strlen(p);
     n = strlen(q);
     e = needlemanWunsch (m, n, p, q);
     printf ("%s\n%s\n%d\n", p, q, e);
-    //free(p);
-    //p=0;
   };
+  free(p);
+  free(q);
   return 0;
 }
 
 int needlemanWunsch (const int m, const int n, const char *p, const char *q) {
-  int l = m*n;
+  int l = (m+1)*(n+1);
   int i;
   int j;
   int at;
