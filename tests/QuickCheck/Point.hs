@@ -380,6 +380,7 @@ xs = VU.fromList [0 .. maxI - 1 :: Int]
 
 options = stdArgs {maxSuccess = 1000 } -- 0}
 
+customCheck :: Testable prop0 => prop0 -> IO Result
 customCheck = quickCheckWithResult options
 
 return []
