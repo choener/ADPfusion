@@ -62,7 +62,25 @@ samples structures stochastically, among others things.
 
 # Installation
 
-Follow the [gADP examples](http://www.bioinf.uni-leipzig.de/Software/gADP/index.html).
+ADPfusion is "mostly" a library, with some examples. It is suggested to use nix (flakes).
+
+- ``nix develop`` will drop you into a development shell, where all dependencies are available.
+    - The small ``ghcicabal`` and ``buildcabal`` programs are available within the dev-shell.
+    - ``ghcicabal`` provides an interactive shell, which makes more dependencies available.
+    - ``buildcabal src/NeedlemanWunsch.hs`` (for example) builds the NeedlemanWunsch example using globally (via Nix) available libraries, ignoring local cabal builds.
+- One example program is immediately available:
+    - ``nix run .#NW`` provides a simple "Needleman-Wunsch" style alignment algorithm. Use it as such:
+        ```
+          zcat runtimes/0100.input.gz | head -n 2 | time nix run .#NW -- 1 -1
+        ```
+        where the numbers ``1 -1`` call for a single backtrace in the Forward mode, and no calculation in the backward mode (here these modes are only used for showing consistency, in more serious programs, we calculate posterior probabilities with their combined outputs).
+        For comparison, a ``C`` program is available as well:
+        ```
+          zcat runtimes/0100.input.gz | head -n 2 | time nix run .#C
+        ```
+        It does not provide a backward mode or backtracing, since we are mostly interested in running time performance comparisons.
+    - Otherwise, examples can be enabled using cabal via ``-fexamples``
+
 
 
 
@@ -73,7 +91,7 @@ These have been moved to [HACKING.md](https://github.com/choener/ADPfusion/blob/
 #### Contact
 
 Christian Hoener zu Siederdissen  
-Leipzig University, Leipzig, Germany  
-choener@bioinf.uni-leipzig.de  
-<http://www.bioinf.uni-leipzig.de/~choener/>  
+Friedrich-Schiller-Universitaet Jena, Germany  
+christian.hoener.zu.siederdissen@uni-jena.de  
+<https://choener.github.io/>  
 
