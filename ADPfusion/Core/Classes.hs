@@ -9,7 +9,6 @@ import Data.Strict.Tuple
 import GHC.Exts hiding (build)
 import GHC.Generics (Generic, Generic1)
 import GHC.TypeNats
-import GHC.Types (Nat)
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
 import Data.PrimitiveArray.Index.Class
